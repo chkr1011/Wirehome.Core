@@ -1,0 +1,1 @@
+start dotnet ./Wirehome.Core.Hosts.Console.dll

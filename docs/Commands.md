@@ -10,9 +10,6 @@ The following table contains all predefined commands in Wirehome. Other adapters
 | `type` | `"turn_on"` ||
 | **Turn off** || Turns a component off. |
 | `type` | `"turn_off"` ||
-| **Set level** || Sets the level of a component (e.g. ventilation). |
-| `type` | `"set_level"` ||
-| `level` | `0 - n` | Defines the index of the level where 0 means off. |
 | **Increase level** || Increases the level of a component (e.g. ventilation). |
 | `type` | `"increase_level"` ||
 | **Decrease level** || Decreases the level of a component (e.g. ventilation). |
@@ -27,10 +24,20 @@ The following table contains all predefined commands in Wirehome. Other adapters
 | `type` | `"close"`||
 | **Set brightness** || Sets the brightness of a component (e.g. lamps). |
 | `type` | `"set_brightness"` ||
-| `value` | `0 - 100` | The brightness in %. |
+| `brightness` | `0 - 100` | The brightness in %. |
+| **Set state** || Sets the state of a component (e.g. state machines). |
+| `type` | `"set_state"` ||
+| `state` | `"xyz"` | The ID of the state. |
+| **Set next state** || Sets the next of a component (e.g. state machines). |
+| `type` | `"set_next_state"` ||
+| **Set previous state** || Sets the previous of a component (e.g. state machines). |
+| `type` | `"set_previous_state"` ||
 | **Set color** || Sets the brightness of a component (e.g. lamps). |
 | `type` | `"set_color"`||
-| `value` | `"0xFFFFFF"`| The hex representation of the value.
-| `value_format` | `"rgb" | "rgbw" | "hsv"` | The format of the value.
+| `color` | `"0xFFFFFF"`| The hex representation of the value. |
+| `color_format` | `"rgb" | "rgbw" | "hsv"` | The format of the value. |
+| **Set level** || Sets the level of a component (e.g. ventilation). |
+| `type` | `"set_level"` ||
+| `level` | `0 - n` | Defines the index of the level where 0 means off. |
 | **Refresh** || Forces a sensor to refresh its value (e.g. temperature sensors). |
 | `type` | `"refresh"` ||

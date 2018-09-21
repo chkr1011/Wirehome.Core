@@ -1,0 +1,5 @@
+﻿<span class="status-icon pull-left glyphicon glyphicon-record" ng-class="component.status['motion_detection.state']==='detected' ? 'status-icon-danger' : 'status-icon-default'"></span>
+
+<a href="#" class="btn pull-right action-button" ng-class="component.settings['is_enabled']===false ? 'btn-danger' : 'btn-success'" ng-click="ctrl.toggleIsEnabled(component)">
+    {{ ctrl.localizationService.get(component.settings['is_enabled']===false ? 'UI.MotionDetectorDisabled' : 'UI.MotionDetectorEnabled') }}
+</a>

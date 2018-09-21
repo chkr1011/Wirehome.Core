@@ -1,0 +1,14 @@
+﻿<div id="{{area.uid}}" class="row panel" ng-class="ctrl.activePanel===area.uid ? 'panel-primary' : 'panel-default'" ng-repeat="area in ctrl.areas | orderBy:['sortValue']">
+    <div class="panel pointer clearfix" ng-click="ctrl.setActivePanel(area.uid)">
+        <span class="panel-title pull-left">{{area.caption}}</span>
+    </div>
+
+    <ul class="list-group" ng-show="ctrl.activePanel===area.uid">
+        <li class="list-group-item" ng-repeat="component in area.components | orderBy:['sortValue']">
+            <span><img class="icon" ng-src="Content/Images/{{component.image}}.png" /></span>
+            <span>{{component.caption}}</span>
+
+            <div class="container-fluid" style="padding: 0; padding-top: 5px;" ng-include="component.template"></div>
+        </li>
+    </ul>
+</div>

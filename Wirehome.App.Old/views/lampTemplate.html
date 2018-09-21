@@ -1,0 +1,47 @@
+﻿<div>
+    <div class="btn-group pull-right" role="group">
+        
+        <a href="#" id="color-button-{{component.Id}}" class="btn btn-default action-button" ng-if="component.status['color']!=undefined" ng-click="ctrl.showSetColorPopover(component)">
+            {{ ctrl.localizationService.get('UI.LampColor') }}
+        </a>
+
+        <a href="#" class="btn action-button" ng-class="component.status['power.state']==='on' ? 'btn-danger' : 'btn-default'" ng-click="ctrl.componentService.togglePowerState(component)">
+            <span>{{ ctrl.localizationService.get(component.status['power.state']==='on' ? 'UI.On' : 'UI.Off') }}</span>
+        </a>
+        
+        <div class="btn-group" role="group">
+            <a href="#" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-right">
+                <li><a href="#" ng-click="ctrl.componentService.disable(component)">{{ctrl.localizationService.get('UI.DisableComponent')}}</a></li>
+                <li><a href="#" ng-click="ctrl.componentService.enable(component)">{{ctrl.localizationService.get('UI.EnableComponent')}}</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div ng-if="component.properties['color']!=undefined" class="container" ng-show="component.showColorSelector===true">
+    <br />
+    <br />
+
+    <h4>Hue</h4>
+    <br />
+    <input type="range" step="1" min="0" max="360" ng-model="component.colorSelector.hue" />
+    <br />
+    <img src="Images/HueRange.png" class="slider-legend" />
+    <br />
+    <h4>Saturation</h4>
+    <br />
+    <input type="range" step="0.01" min="0" max="1" ng-model="component.colorSelector.saturation" />
+    <br />
+    <div class="slider-legend" style="background: linear-gradient(to right, #837D7C, #FF0000)"></div>
+    <br />
+    <h4>Value</h4>
+    <br />
+    <input type="range" step="0.01" min="0" max="1" ng-model="component.colorSelector.value" />
+    <br />
+    <div class="slider-legend" style="background: linear-gradient(to right, black, white)"></div>
+    <br />
+    <a href="#" class="btn btn-primary pull-right" ng-click="ctrl.componentService.setColor(component, component.colorSelector.hue, component.colorSelector.saturation, component.colorSelector.value)">{{ctrl.localizationService.get('UI.Accept')}}</a>
+</div>

@@ -1,0 +1,67 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <link rel="apple-touch-icon" sizes="120x120" href="touch-icon-iphone-retina.png" />
+    <link rel="icon" href="favicon.ico" type="image/vnd.microsoft.icon">
+
+    <title>Wirehome.App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+</head>
+
+<body style="background: #0D1940;" ng-app="app" ng-controller="AppController as ctrl">
+    <div ng-hide="ctrl.isInitialized">
+        <div class="loadingIndicator">
+            <div class="loadingAnimation"></div>
+            <h3 class="loadingTitle">
+                Wirehome.App
+                <br />
+                <br />
+                <span class="loadingMessage">Home Automation</span>
+            </h3>
+        </div>
+    </div>
+
+    <div ng-include="'views/modalTemplate.html'"></div>
+
+    <div class="container-fluid" id="content" ng-show="ctrl.isInitialized">
+        <div ng-include="'views/notificationsBarTemplate.html'"></div>
+        <div ng-show="ctrl.appConfiguration.showWeatherStation" ng-include="'views/weatherStationTemplate.html'"></div>
+        <div ng-include="'views/areasOverviewTemplate.html'"></div>
+        <div ng-show="ctrl.appConfiguration.showSensorsOverview" ng-include="'views/sensorsOverviewTemplate.html'"></div>
+        <div ng-show="ctrl.appConfiguration.showRollerShuttersOverview" ng-include="'views/rollerShuttersOverviewTemplate.html'"></div>
+        <div ng-show="ctrl.appConfiguration.showWindowsOverview" ng-include="'views/windowsOverviewTemplate.html'"></div>
+        <div ng-show="ctrl.appConfiguration.showMotionDetectorsOverview" ng-include="'views/motionDetectorsOverviewTemplate.html'"></div>
+
+        <div ng-include="'views/bottomBarTemplate.html'"></div>
+    </div>
+
+    <link rel="stylesheet" href="Content/bootstrap.min.css" />
+    <link rel="stylesheet" href="Content/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="Content/CustomStyle.css">
+
+    <script type="text/javascript" src="scripts/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="scripts/bootstrap.min.js"></script>
+    <script type="text/javascript" src="scripts/angular.min.js"></script>
+    
+    <script type="text/javascript">
+        history.replaceState(null, null, window.location.pathname);
+    </script>
+
+    <script type="text/javascript" src="services/apiService.js"></script>
+    <script type="text/javascript" src="services/localizationService.js"></script>
+    <script type="text/javascript" src="services/modalService.js"></script>
+    <script type="text/javascript" src="services/componentService.js"></script>
+    <script type="text/javascript" src="services/notificationService.js"></script>
+
+    <script type="text/javascript" src="appController.js"></script>
+    <script type="text/javascript" src="module.js"></script>
+</body>
+</html>
