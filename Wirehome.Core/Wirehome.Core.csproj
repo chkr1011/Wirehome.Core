@@ -35,10 +35,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Environment\OpenWeatherMap\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="History\Scripts\Initialize.V1.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
