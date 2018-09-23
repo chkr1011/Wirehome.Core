@@ -1,9 +1,9 @@
-﻿<div class="row panel" id="weatherStation" ng-class="{'panel-primary': ctrl.activePanel==='weatherStation' ? 'panel-primary' : 'panel-default'}">
-    <div class="panel pointer" ng-click="ctrl.setActivePanel('weatherStation')">
-        <span class="panel-title">{{ctrl.localizationService.get('UI.WeatherStation')}}</span>
+﻿<div id="weatherStation" class="row panel panel-active" style="background: white;">
+    <div class="panel-heading panel-active pointer clearfix" ng-click="ctrl.setActivePanel('weatherStation')">
+        <span class="panel-title pull-left">{{ctrl.localizationService.get('UI.WeatherStation')}}</span>
     </div>
 
-    <div class="container-fluid" style="margin: 10px">
+    <div class="container-fluid" style="margin: 10px;">
         <div class="row">
             <div class="col-xs-3 text-center">
                 <img class="iconDefault text-center" ng-src="Content/Images/Temperature.png" />

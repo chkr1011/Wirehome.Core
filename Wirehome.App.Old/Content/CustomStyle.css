@@ -5,8 +5,11 @@
     border: 0;
 }
 
-.panel-heading {
+.panel-active {
     background: #0D1940;
+}
+
+.panel-heading {
     background-image: none !important;
     color: whitesmoke
 }
@@ -158,11 +161,11 @@ body {
     border-right: 7px solid gray;
     border-top: 7px solid white;
     box-sizing: border-box;
-    height: 75px;
+    height: 85px;
     left: calc(50% - 50px);
     position: absolute;
-    top: calc(50% - 75px);
-    width: 75px;
+    top: calc(50% - 85px);
+    width: 85px;
 }
 
 @keyframes rotate {

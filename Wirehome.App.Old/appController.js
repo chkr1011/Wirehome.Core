@@ -1,18 +1,5 @@
-function getVersion(callback) {
-    $.get("cache.manifest", function (data) {
-        var parser = new RegExp("# Version ([0-9|.]*)", "");
-        var results = parser.exec(data);
-
-        callback(results[1]);
-    });
-}
-
 function createAppController($http, $scope, modalService, apiService, localizationService, componentService, notificationService) {
     var c = this;
-
-    $scope.getVersion = function (version) {
-        c.version = version;
-    };
 
     $scope.getNumbers = function (num) {
         var a = new Array(num + 1);
@@ -273,6 +260,13 @@ function createAppController($http, $scope, modalService, apiService, localizati
             c.configureComponent(component, area, componentStatus, isFirstRun);
         });
     }
+
+    $http.get("cache.manifest").then(function (response) {
+        var parser = new RegExp("# Version ([0-9|.]*)", "");
+        var results = parser.exec(response.data);
+
+        c.version = results[1];
+    });
 
     // Start the polling loop for new status.
     apiService.newStatusReceivedCallback = c.applyNewStatus;
