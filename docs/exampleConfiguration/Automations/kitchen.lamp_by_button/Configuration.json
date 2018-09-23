@@ -1,0 +1,19 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.toggler",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "buttons": [
+                    "kitchen.button_passage_lower"
+                ],
+                "targets": [
+                    "kitchen.lamp"
+                ]
+            }
+        }
+    }
+}

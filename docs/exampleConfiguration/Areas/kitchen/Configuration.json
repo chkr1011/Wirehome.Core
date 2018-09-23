@@ -1,0 +1,8 @@
+{
+  "components": [
+    "kitchen.lamp",
+    "kitchen.lamp.spots_window",
+    "kitchen.lamp.spots_wall",
+    "kitchen.lamp.spots_passage"
+  ]
+}

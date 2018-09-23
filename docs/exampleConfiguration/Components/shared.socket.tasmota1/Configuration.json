@@ -1,0 +1,22 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Socket",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.tasmota.relay",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "device_uid": "sonoff1",
+          "supports_power_consumption": true,
+          "power_consumption_update_interval": 1000
+        }
+      }
+    }
+  }
+}

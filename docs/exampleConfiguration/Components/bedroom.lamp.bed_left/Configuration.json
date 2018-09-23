@@ -1,0 +1,27 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Lamp",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.mqtt.relay",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "on": {
+            "topic": "bed/$patch/lamp-left",
+            "payload": "on"
+          },
+          "off": {
+            "topic": "bed/$patch/lamp-left",
+            "payload": "off"
+          }
+        }
+      }
+    }
+  }
+}

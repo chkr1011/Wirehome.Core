@@ -1,0 +1,19 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.toggler",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "buttons": [
+                    "bedroom.button.bed_left_right"
+                ],
+                "targets": [
+                    "bedroom.lamp.bed_left"
+                ]
+            }
+        }
+    }
+}

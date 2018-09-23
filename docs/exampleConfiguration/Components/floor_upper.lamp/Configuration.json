@@ -1,0 +1,41 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Lamp",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.relay",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "ports": [
+            {
+              "device_uid": "office+upperFloor_hspe8",
+              "port": 4,
+              "is_inverted": true
+            },
+            {
+              "device_uid": "office+upperFloor_hspe8",
+              "port": 5,
+              "is_inverted": true
+            },
+            {
+              "device_uid": "office+upperFloor_hspe8",
+              "port": 7,
+              "is_inverted": true
+            },
+            {
+              "device_uid": "office+upperFloor_hspe8",
+              "port": 6,
+              "is_inverted": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

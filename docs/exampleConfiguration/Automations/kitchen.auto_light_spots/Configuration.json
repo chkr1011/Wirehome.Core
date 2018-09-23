@@ -1,0 +1,22 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.auto_light",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "duration": 10000,
+                "motion_detectors": [
+                    "kitchen.motion_detector"
+                ],
+                "targets": [
+                    "kitchen.lamp.spots_wall",
+                    "kitchen.lamp.spots_window",
+                    "kitchen.lamp.spots_passage"
+                ]
+            }
+        }
+    }
+}

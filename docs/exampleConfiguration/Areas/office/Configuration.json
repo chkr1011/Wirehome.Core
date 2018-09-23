@@ -1,0 +1,21 @@
+{
+  "components": [
+    "office.socket.front_left",
+    "office.socket.front_right",
+    "office.socket.window_left",
+    "office.socket.window_right",
+    "office.socket.rear_left_edge",
+    "office.socket.rear_left",
+    "office.socket.rear_right",
+    "office.lamp",
+    "office.motion_detector",
+    "office.button.door_bottom_right",
+    "office.button.door_bottom_left",
+    "office.button.door_top_right",
+    "office.button.door_top_left",
+    "office.button.edge_left",
+    "office.button.edge_right",
+    "shared.socket.tasmota1",
+    "shared.socket.tasmota2"
+  ]
+}

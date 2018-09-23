@@ -1,0 +1,16 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.roller_shutter_buttons",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "up_button": "children_2.button.up",
+                "down_button": "children_2.button.down",
+                "roller_shutter": "children_2.roller_shutter"
+            }
+        }
+    }
+}

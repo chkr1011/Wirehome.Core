@@ -1,0 +1,31 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Lamp",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.relay",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "ports": [
+            {
+              "device_uid": "kitchen_hsrel5",
+              "port": 7,
+              "is_inverted": true
+            },
+            {
+              "device_uid": "kitchen_hspe8",
+              "port": 0,
+              "is_inverted": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

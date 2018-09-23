@@ -1,0 +1,9 @@
+{
+  "components": [
+    "children_1.lamp",
+    "children_1.socket.window",
+    "children_1.socket.wall_left",
+    "children_1.socket.wall_right",
+    "children_1.roller_shutter"
+  ]
+}

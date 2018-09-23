@@ -1,0 +1,18 @@
+{
+  "components": [
+    "bedroom.lamp",
+    "bedroom.lamp.spots",
+    "bedroom.lamp.bed_left",
+    "bedroom.lamp.bed_right",
+    "bedroom.sensor.temperature",
+    "bedroom.sensor.humidity",
+    "bedroom.button_door",
+    "bedroom.button_window_upper",
+    "bedroom.button_window_lower",
+    "bedroom.button.bed_left_left",
+    "bedroom.button.bed_left_right",
+    "bedroom.button.bed_right_left",
+    "bedroom.button.bed_right_right",
+    "bedroom.fan"
+  ]
+}

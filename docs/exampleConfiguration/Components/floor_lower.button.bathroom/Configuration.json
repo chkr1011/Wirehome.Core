@@ -1,0 +1,21 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Button",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.button",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "device_uid": "input1",
+          "port": 1
+        }
+      }
+    }
+  }
+}

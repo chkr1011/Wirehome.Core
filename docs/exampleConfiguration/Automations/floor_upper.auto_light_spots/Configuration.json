@@ -1,0 +1,21 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.auto_light",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "duration": 20000,
+                "motion_detectors": [
+                    "floor_upper.motion_detector_upper",
+                    "floor_upper.motion_detector_lower"
+                ],
+                "targets": [
+                    "floor_upper.lamp"
+                ]
+            }
+        }
+    }
+}

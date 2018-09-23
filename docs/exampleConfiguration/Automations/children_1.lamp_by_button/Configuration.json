@@ -1,0 +1,19 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.toggler",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "buttons": [
+                    "children_1.button_door"
+                ],
+                "targets": [
+                    "children_1.lamp"
+                ]
+            }
+        }
+    }
+}

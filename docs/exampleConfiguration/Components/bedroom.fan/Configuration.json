@@ -1,0 +1,97 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Ventilation",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.ventilation",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "level_definitions": [
+            {
+              "states": [
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 0,
+                  "state": "open"
+                },
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 1,
+                  "state": "open"
+                },
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 2,
+                  "state": "open"
+                }
+              ]
+            },
+            {
+              "states": [
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 0,
+                  "state": "closed"
+                },
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 1,
+                  "state": "open"
+                },
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 2,
+                  "state": "closed"
+                }
+              ]
+            },
+            {
+              "states": [
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 0,
+                  "state": "closed"
+                },
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 1,
+                  "state": "closed"
+                },
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 2,
+                  "state": "open"
+                }
+              ]
+            },
+            {
+              "states": [
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 0,
+                  "state": "closed"
+                },
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 1,
+                  "state": "closed"
+                },
+                {
+                  "device_uid": "bedroom_hsrel8",
+                  "port": 2,
+                  "state": "closed"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

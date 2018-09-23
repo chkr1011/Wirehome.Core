@@ -1,0 +1,7 @@
+{
+    "components": [
+        "stairway.lamp",
+        "stairway.button",
+        "stairway.roller_shutter"
+    ]
+}

@@ -1,0 +1,19 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.toggler",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "buttons": [
+                    "living_room.button_lower"
+                ],
+                "targets": [
+                    "living_room.socket.wall_right_edge_right"
+                ]
+            }
+        }
+    }
+}

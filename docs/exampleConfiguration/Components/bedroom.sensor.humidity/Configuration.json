@@ -1,0 +1,20 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.HumiditySensor",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.mqtt.sensor",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "topic": "sensors-bridge/humidity/8"
+        }
+      }
+    }
+  }
+}

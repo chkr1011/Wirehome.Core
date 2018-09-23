@@ -1,0 +1,21 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.MotionDetector",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.motion_detector",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "device_uid": "input5",
+          "port": 12
+        }
+      }
+    }
+  }
+}

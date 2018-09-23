@@ -1,0 +1,20 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Button",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.mqtt.button",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "topic": "office/edge/button-right"
+        }
+      }
+    }
+  }
+}

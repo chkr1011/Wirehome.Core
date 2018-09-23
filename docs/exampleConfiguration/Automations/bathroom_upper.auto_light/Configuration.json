@@ -1,0 +1,21 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.auto_light",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "duration": 240000,
+                "motion_detectors": [
+                    "bathroom_upper.motion_detector"
+                ],
+                "targets": [
+                    "bathroom_upper.lamp.cabinet",
+                    "bathroom_upper.lamp.spots"
+                ]
+            }
+        }
+    }
+}

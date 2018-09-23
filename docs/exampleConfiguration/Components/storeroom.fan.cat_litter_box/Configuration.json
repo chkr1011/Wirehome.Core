@@ -1,0 +1,39 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Ventilation",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.ventilation",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "level_definitions": [
+            {
+              "states": [
+                {
+                  "device_uid": "stairway_hsrel5",
+                  "port": 7,
+                  "state": "open"
+                }
+              ]
+            },
+            {
+              "states": [
+                {
+                  "device_uid": "stairway_hsrel5",
+                  "port": 7,
+                  "state": "closed"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

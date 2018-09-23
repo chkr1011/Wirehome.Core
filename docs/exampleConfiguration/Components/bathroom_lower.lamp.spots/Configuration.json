@@ -1,0 +1,73 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.StateMachine",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.state_machine",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "initial_state": "off",
+          "state_definitions": {
+            "off": [
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 0,
+                "state": "high"
+              },
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 1,
+                "state": "high"
+              },
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 2,
+                "state": "high"
+              }
+            ],
+            "on": [
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 0,
+                "state": "low"
+              },
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 1,
+                "state": "low"
+              },
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 2,
+                "state": "low"
+              }
+            ],
+            "bath_mode": [
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 0,
+                "state": "low"
+              },
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 1,
+                "state": "high"
+              },
+              {
+                "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                "port": 2,
+                "state": "high"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

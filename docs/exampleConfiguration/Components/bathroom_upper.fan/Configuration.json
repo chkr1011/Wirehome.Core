@@ -1,0 +1,63 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Ventilation",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.ventilation",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "level_definitions": [
+            {
+              "states": [
+                {
+                  "device_uid": "upperBathroom_hsrel5",
+                  "port": 4,
+                  "state": "open"
+                },
+                {
+                  "device_uid": "upperBathroom_hsrel5",
+                  "port": 5,
+                  "state": "open"
+                }
+              ]
+            },
+            {
+              "states": [
+                {
+                  "device_uid": "upperBathroom_hsrel5",
+                  "port": 4,
+                  "state": "closed"
+                },
+                {
+                  "device_uid": "upperBathroom_hsrel5",
+                  "port": 5,
+                  "state": "open"
+                }
+              ]
+            },
+            {
+              "states": [
+                {
+                  "device_uid": "upperBathroom_hsrel5",
+                  "port": 4,
+                  "state": "closed"
+                },
+                {
+                  "device_uid": "upperBathroom_hsrel5",
+                  "port": 5,
+                  "state": "closed"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

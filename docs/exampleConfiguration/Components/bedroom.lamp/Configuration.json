@@ -1,0 +1,26 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "Wirehome.Lamp",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.relay",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "ports": [
+            {
+              "device_uid": "bedroom_hsrel5",
+              "port": 5,
+              "is_inverted": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,127 @@
+[
+    {
+        "uid": {
+            "id": "wirehome.cc_tools.board_manager",
+            "version": "1.0.0"
+        },
+        "isEnabled": true,
+        "variables": {
+            "config": {
+                "devices": {
+                    "input0": {
+                        "board": "HSPE16-IN",
+                        "address": 42,
+                        "interrupt_gpio_id": 4,
+                        "fetch_mode": "poll_interrupt"
+                    },
+                    "input1": {
+                        "board": "HSPE16-IN",
+                        "address": 43,
+                        "interrupt_gpio_id": 4,
+                        "fetch_mode": "poll_interrupt"
+                    },
+                    "input2": {
+                        "board": "HSPE16-IN",
+                        "address": 47,
+                        "interrupt_gpio_id": 4,
+                        "fetch_mode": "poll_interrupt"
+                    },
+                    "input3": {
+                        "board": "HSPE16-IN",
+                        "address": 45,
+                        "interrupt_gpio_id": 4,
+                        "fetch_mode": "poll_interrupt"
+                    },
+                    "input4": {
+                        "board": "HSPE16-IN",
+                        "address": 46,
+                        "interrupt_gpio_id": 4,
+                        "fetch_mode": "poll_interrupt"
+                    },
+                    "input5": {
+                        "board": "HSPE16-IN",
+                        "address": 44,
+                        "interrupt_gpio_id": 4,
+                        "fetch_mode": "poll_interrupt"
+                    },
+                    "office_hsrel8": {
+                        "board": "HSREL8",
+                        "address": 20
+                    },
+                    "office+upperFloor_hspe8": {
+                        "board": "HSPE8-OUT",
+                        "address": 37
+                    },
+                    "upperBathroom_hsrel5": {
+                        "board": "HSREL5",
+                        "address": 61
+                    },
+                    "bedroom_hsrel5": {
+                        "board": "HSREL5",
+                        "address": 38
+                    },
+                    "bedroom_hsrel8": {
+                        "board": "HSREL8",
+                        "address": 21
+                    },
+                    "stairway_hsrel5": {
+                        "board": "HSREL5",
+                        "address": 60
+                    },
+                    "lowerFloor+lowerBathroom_hspe16": {
+                        "board": "HSPE16-OUT",
+                        "address": 17
+                    },
+                    "heating_hsrel8": {
+                        "board": "HSREL8",
+                        "address": 16
+                    },
+                    "heating_hsrel5": {
+                        "board": "HSREL5",
+                        "address": 56
+                    },
+                    "children1_hsrel5" : {
+                        "board": "HSREL5",
+                        "address": 62
+                    },
+                    "children2_hsrel5" : {
+                        "board": "HSREL5",
+                        "address": 63
+                    },
+                    "kitchen_hsrel5": {
+                        "board": "HSREL5",
+                        "address": 58
+                    },
+                    "kitchen_hspe8": {
+                        "board": "HSPE8-OUT",
+                        "address": 39
+                    },
+                    "livingRoom_hsrel8":{
+                        "board": "HSREL8",
+                        "address": 18
+                    },
+                    "livingRoom_hsrel5":{
+                        "board": "HSREL5",
+                        "address": 57
+                    }
+                }
+            }
+        }
+    },
+    {
+        "uid": {
+            "id": "wirehome.open_weather_map_importer",
+            "version": "1.0.0"
+        },
+        "isEnabled": true,
+        "variables": {
+            "config": {
+                "app_id": "<use_your_own>",
+                "city_name": "Kamp-Lintfort",
+                "latitude": 12.51893,
+                "longitude": 34.53095,
+                "query_mode": "city"
+            }
+        }
+    }
+]

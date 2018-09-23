@@ -1,0 +1,20 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.toggler",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "buttons": [
+                    "living_room.button_center",
+                    "kitchen.button_passage_upper"
+                ],
+                "targets": [
+                    "living_room.lamp.dining_table"
+                ]
+            }
+        }
+    }
+}
