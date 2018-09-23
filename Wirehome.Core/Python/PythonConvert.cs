@@ -9,7 +9,23 @@ namespace Wirehome.Core.Python
 {
     public static class PythonConvert
     {
-        public static object ConvertFromPython(object value)
+        public static List ToPythonList(IEnumerable items)
+        {
+            if (items == null)
+            {
+                return null;
+            }
+
+            var list = new List();
+            foreach (var item in items)
+            {
+                list.Add(ForPython(item));
+            }
+
+            return list;
+        }
+
+        public static object FromPython(object value)
         {
             if (value == null)
             {
@@ -18,7 +34,7 @@ namespace Wirehome.Core.Python
 
             if (value is PythonDictionary pythonDictionary)
             {
-                return ConvertFromPython(pythonDictionary);
+                return FromPython(pythonDictionary);
             }
 
             if (value is List pythonList)
@@ -26,7 +42,7 @@ namespace Wirehome.Core.Python
                 var list = new List<object>();
                 foreach (var item in pythonList)
                 {
-                    list.Add(ConvertFromPython(item));
+                    list.Add(FromPython(item));
                 }
 
                 return list;
@@ -35,7 +51,7 @@ namespace Wirehome.Core.Python
             return value;
         }
 
-        public static object ConvertForPython(object value)
+        public static object ForPython(object value)
         {
             if (value is null || value is string || value is bool || value is int || value is float || value is long || value is double)
             {
@@ -47,7 +63,7 @@ namespace Wirehome.Core.Python
                 var pythonDictionary = new PythonDictionary();
                 foreach (var entry in wirehomeDictionary)
                 {
-                    pythonDictionary.Add(entry.Key, ConvertForPython(entry.Value));
+                    pythonDictionary.Add(entry.Key, ForPython(entry.Value));
                 }
 
                 return pythonDictionary;
@@ -58,7 +74,7 @@ namespace Wirehome.Core.Python
                 var pythonDictionary = new PythonDictionary();
                 foreach (var entryKey in dictionary.Keys)
                 {
-                    pythonDictionary.Add(entryKey, ConvertForPython(dictionary[entryKey]));
+                    pythonDictionary.Add(entryKey, ForPython(dictionary[entryKey]));
                 }
 
                 return pythonDictionary;
@@ -69,7 +85,7 @@ namespace Wirehome.Core.Python
                 var result = new List(); // This is a python list.
                 foreach (var item in array)
                 {
-                    result.Add(ConvertForPython(item));
+                    result.Add(ForPython(item));
                 }
 
                 return result;
@@ -80,7 +96,7 @@ namespace Wirehome.Core.Python
                 var result = new PythonDictionary();
                 foreach (var property in @object.Properties())
                 {
-                    result.Add(property.Name, ConvertForPython(property.Value));
+                    result.Add(property.Name, ForPython(property.Value));
                 }
 
                 return result;
@@ -101,7 +117,7 @@ namespace Wirehome.Core.Python
                 var result = new List(); // This is a python list.
                 foreach (var item in items)
                 {
-                    result.Add(ConvertForPython(item));
+                    result.Add(ForPython(item));
                 }
 
                 return result;
@@ -110,7 +126,7 @@ namespace Wirehome.Core.Python
             return value;
         }
 
-        private static object ConvertFromPython(PythonDictionary pythonDictionary)
+        private static object FromPython(PythonDictionary pythonDictionary)
         {
             if (pythonDictionary == null) throw new ArgumentNullException(nameof(pythonDictionary));
 
@@ -118,7 +134,7 @@ namespace Wirehome.Core.Python
             foreach (var entry in pythonDictionary)
             {
                 var key = Convert.ToString(entry.Key);
-                wirehomeDictionary.TryAdd(key, ConvertFromPython(entry.Value));
+                wirehomeDictionary.TryAdd(key, FromPython(entry.Value));
             }
 
             return wirehomeDictionary;

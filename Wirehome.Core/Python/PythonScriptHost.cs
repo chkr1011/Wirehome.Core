@@ -48,7 +48,7 @@ namespace Wirehome.Core.Python
 
             lock (_scriptScope)
             {
-                _scriptScope.SetVariable(name, PythonConvert.ConvertForPython(value));
+                _scriptScope.SetVariable(name, PythonConvert.ForPython(value));
             }
         }
 
@@ -58,7 +58,7 @@ namespace Wirehome.Core.Python
 
             lock (_scriptScope)
             {
-                return PythonConvert.ConvertFromPython(_scriptScope.GetVariable(name));
+                return PythonConvert.FromPython(_scriptScope.GetVariable(name));
             }
         }
 
@@ -102,11 +102,11 @@ namespace Wirehome.Core.Python
                 {
                     for (var i = 0; i < parameters.Length; i++)
                     {
-                        parameters[i] = PythonConvert.ConvertForPython(parameters[i]);
+                        parameters[i] = PythonConvert.ForPython(parameters[i]);
                     }
 
                     object result = _scriptScope.Engine.Operations.Invoke(function, parameters);
-                    return PythonConvert.ConvertFromPython(result);
+                    return PythonConvert.FromPython(result);
                 }
                 catch (Exception exception)
                 {

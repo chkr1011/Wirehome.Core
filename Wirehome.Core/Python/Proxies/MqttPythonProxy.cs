@@ -108,7 +108,7 @@ namespace Wirehome.Core.Python.Proxies
                     ["retain"] = message.ApplicationMessage.Retain
                 };
 
-                callback(PythonConvert.ConvertForPython(properties));
+                callback(PythonConvert.ForPython(properties));
             });
 
             return uid;
