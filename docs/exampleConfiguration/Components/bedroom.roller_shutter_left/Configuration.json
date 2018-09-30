@@ -1,0 +1,57 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "wirehome.roller_shutter",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.cc_tools.roller_shutter",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "state_definitions": {
+            "off": [
+              {
+                "device_uid": "bedroom_hsrel8",
+                "port": 5,
+                "state": "open"
+              },
+              {
+                "device_uid": "bedroom_hsrel8",
+                "port": 6,
+                "state": "open"
+              }
+            ],
+            "moving_up": [
+              {
+                "device_uid": "bedroom_hsrel8",
+                "port": 5,
+                "state": "open"
+              },
+              {
+                "device_uid": "bedroom_hsrel8",
+                "port": 6,
+                "state": "closed"
+              }
+            ],
+            "moving_down": [
+              {
+                "device_uid": "bedroom_hsrel8",
+                "port": 5,
+                "state": "closed"
+              },
+              {
+                "device_uid": "bedroom_hsrel8",
+                "port": 6,
+                "state": "closed"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
