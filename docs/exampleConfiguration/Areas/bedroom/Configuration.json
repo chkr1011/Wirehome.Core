@@ -13,6 +13,8 @@
     "bedroom.button.bed_left_right",
     "bedroom.button.bed_right_left",
     "bedroom.button.bed_right_right",
-    "bedroom.fan"
+    "bedroom.fan",
+    "bedroom.roller_shutter_left",
+    "bedroom.roller_shutter_right"
   ]
 }

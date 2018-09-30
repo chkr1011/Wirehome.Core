@@ -2,7 +2,7 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "Wirehome.Lamp",
+      "id": "wirehome.lamp",
       "version": "1.0.0"
     },
     "adapter": {

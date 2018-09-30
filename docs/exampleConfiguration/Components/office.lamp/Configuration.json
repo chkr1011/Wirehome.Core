@@ -2,7 +2,7 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "Wirehome.StateMachine",
+      "id": "wirehome.state_machine",
       "version": "1.0.0"
     },
     "adapter": {

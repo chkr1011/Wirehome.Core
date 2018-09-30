@@ -2,7 +2,7 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "Wirehome.Socket",
+      "id": "wirehome.socket",
       "version": "1.0.0"
     },
     "adapter": {

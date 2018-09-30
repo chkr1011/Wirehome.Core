@@ -2,7 +2,7 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "Wirehome.Ventilation",
+      "id": "wirehome.ventilation",
       "version": "1.0.0"
     },
     "adapter": {
