@@ -67,8 +67,6 @@ namespace Wirehome.Core.Components
 
                 _componentInitializerFactory.Create(this).InitializeComponent(component, configuration);
 
-                component.Logic.ExecuteCommand(new WirehomeDictionary().WithType(ControlType.Initialize));
-
                 _logger.Log(LogLevel.Information, $"Component '{component.Uid}' initialized successfully.");
 
                 return true;
@@ -118,7 +116,7 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public void SetConfiguration(string componentUid, string configurationUid, object value)
+        public void SetComponentConfiguration(string componentUid, string configurationUid, object value)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (configurationUid == null) throw new ArgumentNullException(nameof(configurationUid));
@@ -241,9 +239,10 @@ namespace Wirehome.Core.Components
             _messageBusProxy.PublishSettingChangedBusMessage(component.Uid, settingUid, oldValue, value);
         }
 
-        public WirehomeDictionary ExecuteComponentCommand(string componentUid, WirehomeDictionary parameters)
+        public WirehomeDictionary ProcessComponentMessage(string componentUid, WirehomeDictionary message)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
+            if (message == null) throw new ArgumentNullException(nameof(message));
 
             Component component;
             lock (_components)
@@ -257,7 +256,7 @@ namespace Wirehome.Core.Components
                 }
             }
 
-            return component.Logic.ExecuteCommand(parameters);
+            return component.ProcessMessage(message);
         }
 
         private void Load()
@@ -297,7 +296,7 @@ namespace Wirehome.Core.Components
             var componentUid = (string)message["component_uid"];
             var parameters = (WirehomeDictionary)message["parameters"];
 
-            ExecuteComponentCommand(componentUid, parameters);
+            ProcessComponentMessage(componentUid, parameters);
         }
     }
 }

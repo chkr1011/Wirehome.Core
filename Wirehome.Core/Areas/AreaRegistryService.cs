@@ -5,7 +5,6 @@ using System.IO;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Areas.Exceptions;
 using Wirehome.Core.Components;
-using Wirehome.Core.Constants;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
@@ -102,29 +101,6 @@ namespace Wirehome.Core.Areas
             }
 
             return components;
-        }
-
-        public WirehomeDictionary ExecuteComponentCommand(string areaUid, WirehomeDictionary parameters)
-        {
-            if (areaUid == null) throw new ArgumentNullException(nameof(areaUid));
-
-            Area area;
-            lock (_areas)
-            {
-                if (!_areas.TryGetValue(areaUid, out area))
-                {
-                    return null;
-                }
-            }
-
-            var result = new WirehomeDictionary().WithType(ControlType.Initialize);
-
-            foreach (var assignedComponent in area.Components)
-            {
-                result[assignedComponent] = _componentRegistryService.ExecuteComponentCommand(assignedComponent, parameters);
-            }
-
-            return result;
         }
 
         public object GetAreaSetting(string areaUid, string settingUid)

@@ -36,7 +36,7 @@ namespace Wirehome.Core.Repositories
             }
 
             var path = GetEntityRootPath(type, uid);
-            var source = LoadFrom(path);
+            var source = LoadEntity(uid, path);
             
             return source;
         }
@@ -113,11 +113,11 @@ namespace Wirehome.Core.Repositories
             return versions.First();
         }
 
-        private static RepositoryEntity LoadFrom(string path)
+        private static RepositoryEntity LoadEntity(RepositoryEntityUid uid, string path)
         {
             if (!Directory.Exists(path))
             {
-                throw new WirehomeException($"Repository entity directory '{path}' not found.");
+                throw new WirehomeException($"Repository entity '{uid}' not found.");
             }
 
             var source = new RepositoryEntity();

@@ -16,60 +16,15 @@ namespace Wirehome.Core.Python.Proxies
     public class ConverterPythonProxy : IPythonProxy
     {
         public string ModuleName { get; } = "convert";
-
-        public string file_time_to_local_date_time(int seconds)
+        
+        public double to_double(object value)
         {
-            var buffer = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return buffer.AddSeconds(seconds).ToLocalTime().ToString("O");
+            return Convert.ToDouble(value);
         }
 
-        public string file_time_to_local_time(int seconds)
+        public int to_int(object value)
         {
-            var buffer = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return buffer.AddSeconds(seconds).ToLocalTime().TimeOfDay.ToString("c");
-        }
-
-        public string file_time_to_utc_date_time(int seconds)
-        {
-            var buffer = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return buffer.AddSeconds(seconds).ToUniversalTime().ToString("O");
-        }
-
-        public string file_time_to_utc_time(int seconds)
-        {
-            var buffer = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return buffer.AddSeconds(seconds).ToUniversalTime().TimeOfDay.ToString("c");
-        }
-
-        // TODO: Move to "DateTimeParserPythonProxy (date_time_parser.get_day(date)).
-        public int day_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Day;
-        }
-
-        public int month_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Month;
-        }
-
-        public int year_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Year;
-        }
-
-        public int hour_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Hour;
-        }
-
-        public int minute_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Minute;
-        }
-
-        public int second_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Second;
+            return Convert.ToInt32(value);
         }
 
         public string to_string(object value)
@@ -235,5 +190,3 @@ namespace Wirehome.Core.Python.Proxies
         }
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

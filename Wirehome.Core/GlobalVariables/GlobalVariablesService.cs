@@ -17,7 +17,11 @@ namespace Wirehome.Core.GlobalVariables
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
-        public GlobalVariablesService(StorageService storageService, PythonEngineService pythonEngineService, MessageBusService messageBusService, ILoggerFactory loggerFactory)
+        public GlobalVariablesService(
+            StorageService storageService, 
+            PythonEngineService pythonEngineService, 
+            MessageBusService messageBusService, 
+            ILoggerFactory loggerFactory)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));

@@ -4,6 +4,8 @@ namespace Wirehome.Core.Components.Logic
 {
     public interface IComponentLogic
     {
-        WirehomeDictionary ExecuteCommand(WirehomeDictionary parameters);
+        WirehomeDictionary ProcessMessage(WirehomeDictionary message);
+
+        // WirehomeDictionary ProcessAdapterMessage(WirehomeDictionary message);
     }
 }

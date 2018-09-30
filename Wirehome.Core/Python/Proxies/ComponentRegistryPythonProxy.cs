@@ -51,14 +51,17 @@ namespace Wirehome.Core.Python.Proxies
             _componentRegistryService.SetComponentSetting(componentUid, settingUid, value);
         }
 
-        public WirehomeDictionary execute_command(string componentUid, WirehomeDictionary command)
+        public WirehomeDictionary execute_command(string componentUid, WirehomeDictionary message)
+        {
+            return process_message(componentUid, message);
+        }
+
+        public WirehomeDictionary process_message(string componentUid, WirehomeDictionary message)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-            if (command == null) throw new ArgumentNullException(nameof(command));
+            if (message == null) throw new ArgumentNullException(nameof(message));
 
-            return _componentRegistryService.ExecuteComponentCommand(componentUid, command);
+            return _componentRegistryService.ProcessComponentMessage(componentUid, message);
         }
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

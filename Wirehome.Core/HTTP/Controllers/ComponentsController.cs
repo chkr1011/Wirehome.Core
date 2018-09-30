@@ -44,10 +44,10 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/components/{componentUid}/execute_command")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostComponentCommand(string componentUid, [FromBody] WirehomeDictionary properties)
+        public WirehomeDictionary PostComponentCommand(string componentUid, [FromBody] WirehomeDictionary message)
         {
             var oldComponent = JObject.FromObject(_componentRegistryService.GetComponent(componentUid));
-            var result = _componentRegistryService.ExecuteComponentCommand(componentUid, properties);
+            var result = _componentRegistryService.ProcessComponentMessage(componentUid, message);
             result["new_component"] = _componentRegistryService.GetComponent(componentUid);
             result["old_component"] = oldComponent;
             return result;

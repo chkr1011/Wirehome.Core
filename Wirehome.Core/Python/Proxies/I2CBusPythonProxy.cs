@@ -36,12 +36,11 @@ namespace Wirehome.Core.Python.Proxies
             _i2CBusService.Write(busId, deviceAddress, buffer2.AsArraySegment());
         }
 
-        // TODO: Use list as result!
-        public byte[] read(string busId, int deviceAddress, int count)
+        public List read(string busId, int deviceAddress, int count)
         {
             var buffer = new byte[count];
             _i2CBusService.Read(busId, deviceAddress, buffer.AsArraySegment());
-            return buffer;
+            return PythonConvert.ToPythonList(buffer);
         }
 
         public ulong read_as_ulong(string busId, int deviceAddress, int count)
@@ -51,8 +50,7 @@ namespace Wirehome.Core.Python.Proxies
             return ConverterPythonProxy.ArrayToULong(buffer);
         }
 
-        // TODO: Use list as result!
-        public byte[] write_read(string busId, int deviceAddress, List writeBuffer, int readBufferLength)
+        public List write_read(string busId, int deviceAddress, List writeBuffer, int readBufferLength)
         {
             var readBuffer = new byte[readBufferLength];
             _i2CBusService.WriteRead(
@@ -61,7 +59,7 @@ namespace Wirehome.Core.Python.Proxies
                 ConverterPythonProxy.ListToByteArray(writeBuffer).AsArraySegment(),
                 readBuffer.AsArraySegment());
 
-            return readBuffer;
+            return PythonConvert.ToPythonList(readBuffer);
         }
 
         public ulong write_read_as_ulong(string busId, int deviceAddress, ulong writeBuffer, int writeBufferLength, int readBufferLength)
@@ -77,9 +75,5 @@ namespace Wirehome.Core.Python.Proxies
 
             return ConverterPythonProxy.ArrayToULong(readBuffer);
         }
-
-       
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

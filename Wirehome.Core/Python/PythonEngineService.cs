@@ -59,9 +59,12 @@ namespace Wirehome.Core.Python
         {
             var scriptScope = _scriptEngine.CreateScope();
 
+            // Create a trace python proxy which collects traces for the current instance only.
             var defaultProxies = new List<IPythonProxy>
             {
                 new ConverterPythonProxy(),
+                new DateTimePythonProxy(),
+                new DateTimeParserPythonProxy(),
                 new LogPythonProxy(logger ?? _logger)
             };
 
