@@ -75,21 +75,23 @@ namespace Wirehome.Core.Areas
             return _areas.TryGetValue(uid, out area);
         }
 
-        public void UpdateArea(string uid, AreaConfiguration areaConfiguration)
+        public void InitializeArea(string uid, AreaConfiguration areaConfiguration)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (areaConfiguration == null) throw new ArgumentNullException(nameof(areaConfiguration));
 
-            _areas[uid] = InitializeArea(uid, areaConfiguration);
+            _areas[uid] = InitializeAreaInternal(uid, areaConfiguration);
 
             Save();
             
-            _logger.Log(LogLevel.Information, $"Updated area '{uid}'.");
+            _logger.Log(LogLevel.Information, $"Initialized area '{uid}'.");
         }
 
-        public List<Component> GetComponentsOfArea(string areaUid)
+        public List<Component> GetComponentsOfArea(string uid)
         {
-            var area = GetArea(areaUid);
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            var area = GetArea(uid);
             var components = new List<Component>();
 
             foreach (var componentUid in area.Components)
@@ -152,6 +154,23 @@ namespace Wirehome.Core.Areas
                 .WithValue("timestamp", DateTime.Now));
         }
 
+        public void Save()
+        {
+            var configurations = new Dictionary<string, AreaConfiguration>();
+
+            foreach (var area in _areas.Values)
+            {
+                var configuration = new AreaConfiguration();
+
+                foreach (var component in area.Components)
+                {
+                    configuration.Components.Add(component);
+                }
+            }
+
+            _storageService.Write(configurations, "Areas.json");
+        }
+
         private void Load()
         {
             _areas.Clear();
@@ -163,30 +182,13 @@ namespace Wirehome.Core.Areas
                 {
                     var uid = Path.GetDirectoryName(configurationFile);
 
-                    var area = InitializeArea(uid, configuration);
+                    var area = InitializeAreaInternal(uid, configuration);
                     _areas[area.Uid] = area;
                 }
             }
         }
-
-        private void Save()
-        {
-            var configurations = new Dictionary<string, AreaConfiguration>();
-
-            foreach (var area in _areas.Values)
-            {
-                var configuration = new AreaConfiguration();
-                
-                foreach (var component in area.Components)
-                {
-                    configuration.Components.Add(component);
-                }
-            }
-
-            _storageService.Write(configurations, "Areas.json");
-        }
-
-        private Area InitializeArea(string uid, AreaConfiguration configuration)
+        
+        private Area InitializeAreaInternal(string uid, AreaConfiguration configuration)
         {
             var area = new Area(uid);
 

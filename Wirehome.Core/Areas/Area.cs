@@ -18,6 +18,6 @@ namespace Wirehome.Core.Areas
 
         public HashSet<string> Components { get; } = new HashSet<string>();
 
-        public HashSet<string> Scenes { get; } = new HashSet<string>();
+        public HashSet<string> Macros { get; } = new HashSet<string>();
     }
 }
