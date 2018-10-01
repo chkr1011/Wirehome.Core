@@ -32,7 +32,6 @@ function createAppController($http, $scope, modalService, apiService, localizati
     }
 
     c.status = {};
-
     c.areas = [];
 
     c.notifications = [];

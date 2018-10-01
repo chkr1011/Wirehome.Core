@@ -1,12 +1,9 @@
 ﻿function createApiService($http) {
     var srv = this;
 
-    srv.statusHash = "";
-
     srv.apiStatus =
         {
-            isApiReachable: false,
-            activeCalls: 0,
+            isReachable: false,
             errorMessage: null
         };
 
@@ -22,11 +19,15 @@
 
         $http(parameters).then(function (response) {
             srv.pollStatus();
+        }, function () {
+            srv.pollStatus();
         })
     }
 
     srv.pollStatus = function () {
         var successHandler = function (status) {
+            srv.apiStatus.isReachable = true;
+
             if (srv.newStatusReceivedCallback != null) {
                 srv.newStatusReceivedCallback(status);
             }
@@ -35,38 +36,58 @@
         };
 
         var errorHandler = function () {
-            setTimeout(function () { srv.waitForStatus(); }, 5000);
+            // Always poll the status on errors. Otherwise the app
+            // will wait for the next change and ignores changes
+            // which happened already (while being offline)
+            srv.apiStatus.isReachable = false;
+            setTimeout(function () { srv.pollStatus(); }, 5000);
         };
 
         var status = {};
         var promises = [];
 
         promises.push(new Promise(function (resolve, reject) {
-            $http.get("/api/v1/areas").then(function (response) {
-                status.areas = response.data;
-                resolve();
-            });
+            $http.get("/api/v1/areas").then(
+                function (response) {
+                    status.areas = response.data;
+                    resolve();
+                },
+                function () {
+                    reject();
+                });
         }));
 
         promises.push(new Promise(function (resolve, reject) {
-            $http.get("/api/v1/components").then(function (response) {
-                status.components = response.data;
-                resolve();
-            });
+            $http.get("/api/v1/components").then(
+                function (response) {
+                    status.components = response.data;
+                    resolve();
+                },
+                function () {
+                    reject();
+                });
         }));
 
         promises.push(new Promise(function (resolve, reject) {
-            $http.get("/api/v1/global_variables").then(function (response) {
-                status.global_variables = response.data;
-                resolve();
-            });
+            $http.get("/api/v1/global_variables").then(
+                function (response) {
+                    status.global_variables = response.data;
+                    resolve();
+                },
+                function () {
+                    reject();
+                });
         }));
 
         promises.push(new Promise(function (resolve, reject) {
-            $http.get("/api/v1/notifications").then(function (response) {
-                status.notifications = response.data;
-                resolve();
-            });
+            $http.get("/api/v1/notifications").then(
+                function (response) {
+                    status.notifications = response.data;
+                    resolve();
+                },
+                function () {
+                    reject();
+                });
         }));
 
         Promise.all(promises).then(
@@ -80,8 +101,6 @@
                 successCallback(response.data);
             }
         });
-
-        // TODO: Check for failures and update connection status indicator.
     }
 
     srv.executeDelete = function (uri, data, successCallback) {
