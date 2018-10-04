@@ -26,8 +26,7 @@ namespace Wirehome.Core.Scheduler
 
         private readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
         private readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
-
-        private int _activeThreads;
+        private readonly Dictionary<string, CancellationTokenSource> _activeThreads = new Dictionary<string, CancellationTokenSource>();
 
         public SchedulerService(
             PythonEngineService pythonEngineService, 
@@ -61,7 +60,7 @@ namespace Wirehome.Core.Scheduler
         {
             _scheduler.Start().GetAwaiter().GetResult();
 
-            Task.Factory.StartNew(Worker, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(ScheduleTasks, _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public void StartTimer(string uid, TimeSpan interval, Action<string, TimeSpan> callback)
@@ -99,7 +98,15 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        public void StartCountdown(string uid, TimeSpan timeLeft, Action<string> callback)
+        public IList<string> GetActiveTimers()
+        {
+            lock (_activeThreads)
+            {
+                return _activeTimers.Keys.ToList();
+            }
+        }
+
+        public void StartCountdown(string uid, TimeSpan timeLeft, Action callback)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
@@ -130,6 +137,14 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
+        public IList<string> GetActiveCountdowns()
+        {
+            lock (_activeThreads)
+            {
+                return _activeCountdowns.Keys.ToList();
+            }
+        }
+
         public void StartThread(string uid, Action<string> action)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
@@ -137,11 +152,20 @@ namespace Wirehome.Core.Scheduler
 
             _logger.Log(LogLevel.Debug, $"Starting new thread '{uid}'.");
 
+            var threadCts = new CancellationTokenSource();
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                threadCts.Token,
+                _systemService.CancellationToken);
+
+            lock (_activeThreads)
+            {
+                _activeThreads[uid] = threadCts;
+            }
+
             Task.Factory.StartNew(() =>
             {
                 try
-                {
-                    Interlocked.Increment(ref _activeThreads);
+                {     
                     Thread.CurrentThread.Name = uid;
                     action(uid);
 
@@ -156,17 +180,43 @@ namespace Wirehome.Core.Scheduler
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref _activeThreads);
+                    lock (_activeThreads)
+                    {
+                        _activeThreads.Remove(uid);
+                    }
+
+                    threadCts.Dispose();
                 }
-            }, _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            }, linkedCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
-        public void StopThread()
+        public void StopThread(string uid)
         {
-            // TODO: Use CancellationToken in Dictionary to allow stopping thread.
+            try
+            {
+                lock (_activeThreads)
+                {
+                    if (_activeThreads.TryGetValue(uid, out var cts))
+                    {
+                        cts.Cancel(false);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                _logger.Log(LogLevel.Error, exception, $"Error while stopping thread '{uid}'.");
+            }
         }
 
-        private void Worker()
+        public IList<string> GetActiveThreads()
+        {
+            lock (_activeThreads)
+            {
+                return _activeThreads.Keys.ToList();
+            }
+        }
+
+        private void ScheduleTasks()
         {
             var stopwatch = Stopwatch.StartNew();
 
