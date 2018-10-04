@@ -11,6 +11,8 @@
     srv.newStatusReceivedCallback = null;
 
     srv.waitForStatus = function () {
+        // Only wait for status changes which should be applied very quickly.
+        // New notifications, weather etc. might have 5 seconds delay.
         var parameters = {
             method: "POST",
             url: "/api/v1/message_bus/wait_for?timeout=5",
@@ -47,9 +49,9 @@
         var promises = [];
 
         promises.push(new Promise(function (resolve, reject) {
-            $http.get("/api/v1/areas").then(
+            $http.get("/api/v1/component_groups").then(
                 function (response) {
-                    status.areas = response.data;
+                    status.componentGroups = response.data;
                     resolve();
                 },
                 function () {

@@ -23,26 +23,11 @@ function createAppController($http, $scope, modalService, apiService, localizati
         return id;
     }
 
-    c.appConfiguration = {
-        showWeatherStation: true,
-        showSensorsOverview: true,
-        showRollerShuttersOverview: true,
-        showMotionDetectorsOverview: true,
-        showWindowsOverview: true
-    }
-
+    c.version = "-";
     c.status = {};
-    c.areas = [];
-
+    c.componentGroups = [];
     c.notifications = [];
     c.weatherStation = {}
-
-    c.sensors = [];
-    c.rollerShutters = [];
-    c.motionDetectors = [];
-    c.windows = [];
-
-    c.version = "-";
 
     c.notificationService = notificationService;
     c.componentService = componentService;
@@ -104,47 +89,43 @@ function createAppController($http, $scope, modalService, apiService, localizati
 
             localizationService.load(status.global_variables["system.language_code"]);
 
-            $.each(status.areas, function (i, area) {
-                if (!area.settings["is_enabled"] === false) {
+            $.each(status.componentGroups, function (i, componentGroup) {
+                if (!componentGroup.settings["app.is_visible"] === false) {
                     return;
                 }
 
-                areaModel = {
-                    uid: area.uid,
+                componentGroupModel = {
+                    uid: componentGroup.uid,
                     components: []
                 };
 
-                $.each(area.components, function (i, componentUid) {
+                $.each(componentGroup.components, function (i, componentAssociation) {
                     componentModel = {
-                        uid: componentUid
+                        uid: i,
+                        settings: componentAssociation.settings
                     };
 
-                    areaModel.components.push(componentModel);
+                    componentGroupModel.components.push(componentModel);
                 });
 
-                c.areas.push(areaModel);
+                c.componentGroups.push(componentGroupModel);
             });
 
-            if (c.areas.length === 1) {
-                c.setActivePanel(c.areas[0].uid);
+            if (c.componentGroups.length === 1) {
+                c.setActivePanel(c.componentGroups[0].uid);
             }
 
             c.isConfigured = true;
         }
 
-        $.each(c.areas, (i, areaModel) => {
-            var updatedArea = status.areas.find(a => a.uid === areaModel.uid);
-            if (updatedArea === undefined) {
+        $.each(c.componentGroups, (i, componentGroupModel) => {
+            var updatedComponentGroup = status.componentGroups.find(g => g.uid === componentGroupModel.uid);
+            if (updatedComponentGroup === undefined) {
                 return;
             }
 
-            c.configureArea(areaModel, updatedArea, status, isFirstRun);
+            c.configureComponentGroup(componentGroupModel, updatedComponentGroup, status);
         });
-
-        c.appConfiguration.showSensorsOverview = c.sensors.length > 0;
-        c.appConfiguration.showRollerShuttersOverview = c.rollerShutters.length > 0;
-        c.appConfiguration.showMotionDetectorsOverview = c.motionDetectors.length > 0;
-        c.appConfiguration.showWindowsOverview = c.windows.length > 0;
 
         c.notifications = status.notifications;
 
@@ -158,21 +139,6 @@ function createAppController($http, $scope, modalService, apiService, localizati
         c.isInitialized = true;
     };
 
-    c.updateComponentState = function (componentId, updatedComponent) {
-        $.each(c.areas, function (i, area) {
-            $.each(area.components, function (j, component) {
-                if (component.Id === componentId) {
-                    component.Settings = updatedComponent.Settings;
-                    component.State = updatedComponent.State;
-
-                    if (component.onStateChangedCallback != undefined) {
-                        component.onStateChangedCallback(component);
-                    }
-                }
-            });
-        });
-    };
-
     c.toggleIsEnabled = function (component) {
         if (component.settings["is_enabled"] === true) {
             componentService.disable(component);
@@ -181,82 +147,65 @@ function createAppController($http, $scope, modalService, apiService, localizati
         }
     };
 
-    c.configureComponent = function (component, area, source, isFirstRun) {
-        component.status = source.status;
-        component.settings = source.settings;
-        component.configuration = source.configuration;
+    c.configureComponent = function (model, source, componentGroupModel) {
+        model.status = source.status;
+        model.settings = source.settings;
+        model.configuration = source.configuration;
+        model.source = source;
 
-        component.caption = getSetting(component.settings, "app.caption", "#" + component.uid)
-        component.overviewCaption = getSetting(component.settings, "app.overview_caption", area.Caption + " / " + component.Caption)
-        component.image = getSetting(component.settings, "app.image", "DefaultActuator")
-        component.sortValue = getSetting(component.settings, "app.position_index", 0);
+        var associationSettings = componentGroupModel.source.components[model.uid].settings;
 
-        if (component.template === undefined) {
-            if (component.status["motion_detection.state"] !== undefined) {
-                component.template = "views/motionDetectorTemplate.html";
+        model.caption = getEffectiveSetting([associationSettings, source.settings], "app.caption", "#" + model.uid)
+        model.image = getEffectiveSetting([associationSettings, source.settings], "app.image", "DefaultActuator")
+        model.sortValue = getEffectiveSetting([associationSettings, source.settings], "app.position_index", 0);
 
-                if (isFirstRun) {
-                    c.motionDetectors.push(component);
-                }
+        if (model.template === undefined) {
+            if (source.status["motion_detection.state"] !== undefined) {
+                model.template = "views/motionDetectorTemplate.html";
             }
-            else if (component.status["button.state"] !== undefined) {
-                component.template = "views/buttonTemplate.html";
+            else if (source.status["button.state"] !== undefined) {
+                model.template = "views/buttonTemplate.html";
+            }
+            else if (source.status["temperature.value"] !== undefined) {
+                model.template = "views/temperatureSensorTemplate.html";
+            }
+            else if (source.status["humidity.value"] !== undefined) {
+                model.template = "views/humiditySensorTemplate.html";
 
-                if (isFirstRun) {
-                    c.motionDetectors.push(component);
-                }
+                model.dangerValue = getSetting(source.settings, "app.humidity.danger_value", 75);
+                model.warningValue = getSetting(source.settings, "app.humidity.warning_value", 60);
             }
-            else if (component.status["temperature.value"] !== undefined) {
-                component.template = "views/temperatureSensorTemplate.html";
-
-                if (isFirstRun) {
-                    c.sensors.push(component);
-                }
+            else if (source.status["roller_shutter.state"] !== undefined) {
+                model.template = "views/rollerShutterTemplate.html";
             }
-            else if (component.status["humidity.value"] !== undefined) {
-                component.template = "views/humiditySensorTemplate.html";
-
-                component.dangerValue = getSetting(source.settings, "app.humidity.danger_value", 75);
-                component.warningValue = getSetting(source.settings, "app.humidity.warning_value", 60);
-
-                if (isFirstRun) {
-                    c.sensors.push(component);
-                }
+            else if (source.status["state_machine.state"] !== undefined) {
+                model.template = "views/stateMachineTemplate.html";
             }
-            else if (component.status["roller_shutter.state"] !== undefined) {
-                component.template = "views/rollerShutterTemplate.html";
-
-                if (isFirstRun) {
-                    c.rollerShutters.push(component);
-                }
+            else if (source.status["level.current"] !== undefined) {
+                model.template = "views/fanTemplate.html";
             }
-            else if (component.status["state_machine.state"] !== undefined) {
-                component.template = "views/stateMachineTemplate.html";
-            }
-            else if (component.status["level.current"] !== undefined) {
-                component.template = "views/fanTemplate.html";
-            }
-            else if (component.status["power.state"] !== undefined) {
-                component.template = "views/toggleTemplate.html";
+            else if (source.status["power.state"] !== undefined) {
+                model.template = "views/toggleTemplate.html";
             }
         }
     }
 
-    c.configureArea = function (area, areaStatus, status, isFirstRun) {
-        area.settings = areaStatus.settings;
-        area.status = areaStatus.status;
+    c.configureComponentGroup = function (model, source, status) {
+        model.settings = source.settings;
+        model.status = source.status;
+        model.source = source;
 
-        area.caption = getSetting(area.settings, "app.caption", "#" + area.uid);
-        area.sortValue = getSetting(area.settings, "app.position_index", 0);
-        area.isVisible = getSetting(area.settings, "app.is_visible", true);
+        model.caption = getSetting(source.settings, "app.caption", "#" + source.uid);
+        model.sortValue = getSetting(source.settings, "app.position_index", 0);
+        model.isVisible = getSetting(source.settings, "app.is_visible", true);
 
-        $.each(area.components, function (i, component) {
-            var componentStatus = status.components.find(x => x.uid == component.uid);
+        $.each(model.components, function (i, componentModel) {
+            var componentStatus = status.components.find(x => x.uid == componentModel.uid);
             if (componentStatus === undefined) {
                 return;
             }
 
-            c.configureComponent(component, area, componentStatus, isFirstRun);
+            c.configureComponent(componentModel, componentStatus, model);
         });
     }
 
@@ -270,6 +219,24 @@ function createAppController($http, $scope, modalService, apiService, localizati
     // Start the polling loop for new status.
     apiService.newStatusReceivedCallback = c.applyNewStatus;
     apiService.pollStatus();
+}
+
+function getEffectiveSetting(sourceList, name, defaultValue)
+{
+    var value = null;
+    $.each(sourceList, (i, source) => {
+        value = getSetting(source, name, null);
+        if (value != null) {
+            return false; // Break the loop.
+        }
+    });
+    
+    if (value != null) 
+    {
+        return value;
+    }
+
+    return defaultValue;
 }
 
 function getSetting(source, name, defaultValue) {

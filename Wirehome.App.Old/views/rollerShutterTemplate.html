@@ -1,13 +1,16 @@
 ﻿<span class="status-icon pull-left glyphicon glyphicon-save" ng-class="component.status['roller_shutter.position']===100 ? 'status-icon-ok' : 'status-icon-default'"></span>
 
 <div class="btn-group pull-right" role="group">
-    <a href="#" class="btn" ng-class="component.status['roller_shutter.state']==='moving_up' ? 'btn-danger' : 'btn-default'" ng-click="ctrl.componentService.moveUp(component)">
+    <a href="#" class="btn" ng-class="component.status['roller_shutter.state']==='moving_up' ? 'btn-danger' : 'btn-default'"
+        ng-click="ctrl.componentService.moveUp(component)">
         <span class="glyphicon glyphicon-arrow-up"></span>
     </a>
-    <a href="#" class="btn" ng-class="component.status['roller_shutter.state']==='off' ? 'btn-success' : 'btn-default'" ng-click="ctrl.componentService.turnOff(component)">
+    <a href="#" class="btn" ng-class="component.status['roller_shutter.state']==='off' ? 'btn-success' : 'btn-default'"
+        ng-click="ctrl.componentService.turnOff(component)">
         <span class="glyphicon glyphicon-stop"></span>
     </a>
-    <a href="#" class="btn btn-default" ng-class="component.status['roller_shutter.state']==='moving_down' ? 'btn-danger' : 'btn-default'" ng-click="ctrl.componentService.moveDown(component)">
+    <a href="#" class="btn btn-default" ng-class="component.status['roller_shutter.state']==='moving_down' ? 'btn-danger' : 'btn-default'"
+        ng-click="ctrl.componentService.moveDown(component)">
         <span class="glyphicon glyphicon-arrow-down"></span>
     </a>
 
