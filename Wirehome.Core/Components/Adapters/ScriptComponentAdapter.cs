@@ -31,6 +31,13 @@ namespace Wirehome.Core.Components.Adapters
             if (script == null) throw new ArgumentNullException(nameof(script));
 
             _scriptHost = _pythonEngineService.CreateScriptHost(_logger, new ComponentPythonProxy(componentUid, _componentRegistryService));
+
+            var scope = new WirehomeDictionary
+            {
+                ["component_uid"] = componentUid
+            };
+
+            _scriptHost.SetVariable("scope", scope);
             _scriptHost.SetVariable("publish_adapter_message", (Func<object, object>)OnMessageReceived);
 
             _scriptHost.Initialize(script);

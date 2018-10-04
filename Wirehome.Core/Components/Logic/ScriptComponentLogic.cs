@@ -32,9 +32,15 @@ namespace Wirehome.Core.Components.Logic
             if (script == null) throw new ArgumentNullException(nameof(script));
 
             _scriptHost = _pythonEngineService.CreateScriptHost(_logger, new ComponentPythonProxy(componentUid, _componentRegistryService));
-            ////_scriptHost.SetVariable("publish_logic_message", (Func<object, object>)OnLogicMessagePublished);
-            _scriptHost.SetVariable("publish_adapter_message", (Func<object, object>)OnAdapterMessagePublished);
 
+            var scope = new WirehomeDictionary
+            {
+                ["component_uid"] = componentUid
+            };
+
+            _scriptHost.SetVariable("scope", scope);
+            _scriptHost.SetVariable("publish_adapter_message", (Func<object, object>)OnAdapterMessagePublished);
+            
             _scriptHost.Initialize(script);
         }
 
