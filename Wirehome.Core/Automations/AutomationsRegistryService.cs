@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Automations.Configuration;
+using Wirehome.Core.Model;
 using Wirehome.Core.Python;
 using Wirehome.Core.Repositories;
 using Wirehome.Core.Storage;
@@ -54,6 +55,14 @@ namespace Wirehome.Core.Automations
             var scriptHost = _pythonEngineService.CreateScriptHost(_logger);
             scriptHost.Initialize(repositoryEntitySource.Script);
 
+            var scope = new WirehomeDictionary
+            {
+                ["automation_uid"] = uid,
+                ["logic_id"] = configuration.Logic.Uid.Id,
+                ["logic_version"] = configuration.Logic.Uid.Version
+            };
+
+            scriptHost.SetVariable("scope", scope);
             foreach (var variable in configuration.Logic.Variables)
             {
                 scriptHost.SetVariable(variable.Key, variable.Value);
