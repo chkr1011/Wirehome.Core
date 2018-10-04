@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using IronPython.Runtime;
-using Wirehome.Core.Constants;
 
 namespace Wirehome.Core.Model
 {
@@ -29,23 +28,6 @@ namespace Wirehome.Core.Model
 
             this[key] = value;
             return this;
-        }
-
-        public bool IsSuccess()
-        {
-            return IsOfType(ControlType.Success);
-        }
-
-        public bool IsOfType(string value)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            if (!TryGetValue("type", out var existingValue))
-            {
-                return false;
-            }
-
-            return value.Equals(existingValue as string);
         }
     }
 }

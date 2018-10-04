@@ -19,9 +19,9 @@ namespace Wirehome.Core.Python.Proxies
 
         public string ModuleName { get; } = "message_bus";
 
-        public void publish(WirehomeDictionary properties)
+        public void publish(WirehomeDictionary message)
         {
-            _messageBusService.Publish(properties);
+            _messageBusService.Publish(message);
         }
 
         public string subscribe(WirehomeDictionary filter, Action<WirehomeDictionary> callback)
@@ -29,9 +29,9 @@ namespace Wirehome.Core.Python.Proxies
             return _messageBusService.Subscribe(filter, callback);
         }
 
-        public void unsubscribe(string subscriptionUid)
+        public void unsubscribe(string subscription_uid)
         {
-            _messageBusService.Unsubscribe(subscriptionUid);
+            _messageBusService.Unsubscribe(subscription_uid);
         }
 
         public void register_interceptor(string uid, Func<WirehomeDictionary, WirehomeDictionary> interceptor)
@@ -40,5 +40,3 @@ namespace Wirehome.Core.Python.Proxies
         }
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

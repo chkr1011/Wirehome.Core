@@ -27,7 +27,7 @@ namespace Wirehome.Core.Components
 
             if (_logic == null)
             {
-                throw new InvalidOperationException("A component requires a logic to perform operations.");
+                throw new InvalidOperationException("A component requires a logic to process messages.");
             }
 
             return _logic.ProcessMessage(message);

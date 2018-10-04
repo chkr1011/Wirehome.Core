@@ -20,15 +20,15 @@ namespace Wirehome.Core.Python
             _logger = loggerFactory.CreateLogger<PythonScriptHost>();
         }
 
-        public void Initialize(string script)
+        public void Initialize(string scriptCode)
         {
-            if (script == null) throw new ArgumentNullException(nameof(script));
+            if (scriptCode == null) throw new ArgumentNullException(nameof(scriptCode));
 
             lock (_scriptScope)
             {
                 try
                 {
-                    var source = _scriptScope.Engine.CreateScriptSourceFromString(script, SourceCodeKind.File);
+                    var source = _scriptScope.Engine.CreateScriptSourceFromString(scriptCode, SourceCodeKind.File);
                     var compiledCode = source.Compile();
                     compiledCode.Execute(_scriptScope);
                 }

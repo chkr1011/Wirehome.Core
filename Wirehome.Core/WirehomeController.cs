@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Wirehome.Core.Areas;
 using Wirehome.Core.Automations;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
@@ -31,6 +29,7 @@ using Wirehome.Core.Scheduler;
 using Wirehome.Core.ServiceHost;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
+using Wirehome.Core.System.StartupScripts;
 
 namespace Wirehome.Core
 {
@@ -53,7 +52,7 @@ namespace Wirehome.Core
                 var timestamp = DateTime.Now;
 
                 _logger = _loggerFactory.CreateLogger<WirehomeController>();
-                _logger.Log(LogLevel.Information, "Starting Wirehome Core (c) Christian Kratky 2011 - 2018");
+                _logger.Log(LogLevel.Information, "Starting Wirehome.Core (c) Christian Kratky 2011 - 2018");
 
                 var serviceProvider = StartHttpServer();
                 _loggerFactory.AddProvider(new LogServiceLoggerProvider(serviceProvider.GetService<LogService>()));
@@ -69,7 +68,9 @@ namespace Wirehome.Core
 
                 PublishBootedNotification(serviceProvider);
 
-                _logger.Log(LogLevel.Information, "Starting Wirehome completed.");
+                _logger.Log(LogLevel.Information, "Startup completed.");
+
+                serviceProvider.GetRequiredService<StartupScriptsService>().OnStartupCompleted();
             }
             catch (Exception exception)
             {
@@ -143,6 +144,7 @@ namespace Wirehome.Core
 
             serviceCollection.AddSingleton(typeof(LogService));
             serviceCollection.AddSingleton(typeof(SystemService));
+            serviceCollection.AddSingleton(typeof(StartupScriptsService));
             serviceCollection.AddSingleton(typeof(SystemStatusService));
             serviceCollection.AddSingleton(typeof(GlobalVariablesService));
 
@@ -160,7 +162,7 @@ namespace Wirehome.Core
 
             serviceCollection.AddSingleton(typeof(NotificationsService));
 
-            serviceCollection.AddSingleton(typeof(AreaRegistryService));
+            serviceCollection.AddSingleton(typeof(ComponentGroupRegistryService));
 
             serviceCollection.AddSingleton(typeof(RepositoryService));
 
@@ -178,6 +180,7 @@ namespace Wirehome.Core
             _logger.Log(LogLevel.Debug, "Starting services...");
 
             serviceProvider.GetService<MessageBusService>().Start();
+
             serviceProvider.GetService<ResourcesService>().Start();
             serviceProvider.GetService<GlobalVariablesService>().Start();
 
@@ -187,6 +190,10 @@ namespace Wirehome.Core
             serviceProvider.GetService<HttpServerService>().Start();
 
             serviceProvider.GetService<PythonEngineService>().Start();
+
+            var startupScriptsService = serviceProvider.GetService<StartupScriptsService>();
+            startupScriptsService.Start();
+
             serviceProvider.GetService<FunctionPoolService>().Start();
             serviceProvider.GetService<ServiceHostService>().Start();
             
@@ -194,10 +201,15 @@ namespace Wirehome.Core
 
             serviceProvider.GetService<HistoryService>().Start();
 
-            serviceProvider.GetService<AreaRegistryService>().Start();
+            startupScriptsService.OnServicesInitialized();
+
+            // Start data related services.
+            serviceProvider.GetService<ComponentGroupRegistryService>().Start();
             serviceProvider.GetService<ComponentRegistryService>().Start();
             serviceProvider.GetService<AutomationsRegistryService>().Start();
             serviceProvider.GetService<MacroRegistryService>().Start();
+
+            startupScriptsService.OnConfigurationLoaded();
 
             _logger.Log(LogLevel.Debug, "Service startup completed.");
         }
@@ -263,7 +275,7 @@ namespace Wirehome.Core
 
             systemStatusService.Set("arguments", _arguments);
 
-            systemStatusService.Set("wirehome.core.version", "1.0-alpha1");
+            systemStatusService.Set("wirehome.core.version", "1.0-alpha3");
             
             _logger.Log(LogLevel.Debug, "System status initialized.");
         }
@@ -272,18 +284,11 @@ namespace Wirehome.Core
         {
             _logger.Log(LogLevel.Debug, "Starting HTTP server");
 
-            var webRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
-            if (!Directory.Exists(webRoot))
-            {
-                Directory.CreateDirectory(webRoot);
-            }
-
             WebStartup.OnServiceRegistration = RegisterServices;
             var host = WebHost.CreateDefaultBuilder()
                 .UseKestrel()
                 .UseStartup<WebStartup>()
                 .UseUrls("http://*:80")
-                .UseContentRoot(webRoot)
                 .Build();
 
             host.Start();

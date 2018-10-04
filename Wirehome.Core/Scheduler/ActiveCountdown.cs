@@ -6,9 +6,9 @@ namespace Wirehome.Core.Scheduler
     public class ActiveCountdown
     {
         private readonly ILogger _logger;
-        private readonly Action<string> _callback;
+        private readonly Action _callback;
 
-        public ActiveCountdown(string uid, Action<string> callback, ILoggerFactory loggerFactory)
+        public ActiveCountdown(string uid, Action callback, ILoggerFactory loggerFactory)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
@@ -25,7 +25,7 @@ namespace Wirehome.Core.Scheduler
         {
             try
             {
-                _callback(Uid);
+                _callback();
             }
             catch (OperationCanceledException)
             {

@@ -17,7 +17,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/automations/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostArea(string uid, [FromBody] AutomationConfiguration configuration)
+        public void Post(string uid, [FromBody] AutomationConfiguration configuration)
         {
             _automationsRegistryService.InitializeAutomation(uid, configuration);
         }

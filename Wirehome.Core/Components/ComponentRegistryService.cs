@@ -46,7 +46,7 @@ namespace Wirehome.Core.Components
             _logger = loggerFactory.CreateLogger<ComponentRegistryService>();
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
-            systemStatusService.Set("component_registry.components_count", () => _components.Count);
+            systemStatusService.Set("component_registry.count", () => _components.Count);
         }
 
         public void Start()
@@ -57,6 +57,9 @@ namespace Wirehome.Core.Components
 
         public bool TryInitializeComponent(string uid, ComponentConfiguration configuration, out Component component)
         {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+
             try
             {
                 component = new Component(uid);
@@ -87,6 +90,8 @@ namespace Wirehome.Core.Components
 
         public Component GetComponent(string uid)
         {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
             lock (_components)
             {
                 if (!_components.TryGetValue(uid, out var component))
@@ -237,6 +242,24 @@ namespace Wirehome.Core.Components
                 value ?? "<null>");
 
             _messageBusProxy.PublishSettingChangedBusMessage(component.Uid, settingUid, oldValue, value);
+        }
+
+        public object RemoveComponentSetting(string componentUid, string settingUid)
+        {
+            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
+            if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
+
+            lock (_components)
+            {
+                if (!_components.TryGetValue(componentUid, out var component))
+                {
+                    return null;
+                }
+
+                // TODO: Create bus message
+                component.Settings.Remove(settingUid, out var value);
+                return value;
+            }
         }
 
         public WirehomeDictionary ProcessComponentMessage(string componentUid, WirehomeDictionary message)

@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Wirehome.Core.Repositories;
 using Wirehome.Core.ServiceHost;
 using Wirehome.Core.ServiceHost.Configuration;
 
@@ -18,18 +18,15 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/services/{id}/initialize")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostInitialize(string id, string version)
+        public void PostInitialize(string id, string version, [FromBody] Dictionary<string, object> variables)
         {
             var configuration = new ServiceConfiguration
             {
-                Uid = new RepositoryEntityUid
-                {
-                    Id = id,
-                    Version = version
-                }
+                Version = version,
+                Variables = variables
             };
 
-            _serviceHostService.TryInitializeService(configuration);
+            _serviceHostService.TryInitializeService(id, configuration);
         }
 
         [HttpPost]

@@ -17,9 +17,6 @@ namespace Wirehome.Core.Storage
             Formatting = Formatting.Indented
         };
 
-        private readonly string _binPath;
-        private readonly string _dataPath;
-
         private readonly ILogger _logger;
 
         public StorageService(ILoggerFactory loggerFactory)
@@ -27,33 +24,33 @@ namespace Wirehome.Core.Storage
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<StorageService>();
 
-            _binPath = AppDomain.CurrentDomain.BaseDirectory;
+            BinPath = AppDomain.CurrentDomain.BaseDirectory;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                _dataPath = Path.Combine(Environment.ExpandEnvironmentVariables("%appData%"), "Wirehome");
+                DataPath = Path.Combine(Environment.ExpandEnvironmentVariables("%appData%"), "Wirehome");
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                _dataPath = Path.Combine("/etc/wirehome");
+                DataPath = Path.Combine("/etc/wirehome");
             }
             else
             {
                 throw new NotSupportedException();
             }
 
-            if (!Directory.Exists(_dataPath))
+            if (!Directory.Exists(DataPath))
             {
-                Directory.CreateDirectory(_dataPath);
+                Directory.CreateDirectory(DataPath);
             }
 
             _logger.Log(LogLevel.Information, $"Bin path  = {BinPath}");
             _logger.Log(LogLevel.Information, $"Data path = {DataPath}");
         }
 
-        public string BinPath => _binPath;
+        public string BinPath { get; }
 
-        public string DataPath => _dataPath;
+        public string DataPath { get; }
 
         public List<string> EnumeratureDirectories(string pattern, params string[] path)
         {
@@ -117,6 +114,36 @@ namespace Wirehome.Core.Storage
             return true;
         }
 
+        public bool TryReadText(out string content, params string[] path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            var filename = Path.Combine(DataPath, Path.Combine(path));
+            if (!File.Exists(filename))
+            {
+                content = null;
+                return false;
+            }
+
+            content = File.ReadAllText(filename, Encoding.UTF8);
+            return true;
+        }
+        
+        public bool TryReadRaw(out byte[] content, params string[] path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            var filename = Path.Combine(DataPath, Path.Combine(path));
+            if (!File.Exists(filename))
+            {
+                content = null;
+                return false;
+            }
+
+            content = File.ReadAllBytes(filename);
+            return true;
+        }
+
         public void Write(object content, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -144,19 +171,55 @@ namespace Wirehome.Core.Storage
             File.WriteAllText(filename, json, Encoding.UTF8);
         }
 
-        public void Delete(params string[] path)
+        public void WriteRaw(byte[] content, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var filename = Path.Combine(DataPath, Path.Combine(path));
-            if (!filename.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            var directory = Path.GetDirectoryName(filename);
+
+            if (!Directory.Exists(directory))
             {
-                filename += ".json";
+                Directory.CreateDirectory(directory);
             }
 
-            if (File.Exists(filename))
+            File.WriteAllBytes(filename, content ?? new byte[0]);
+        }
+
+        public void WriteText(string content, params string[] path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            var filename = Path.Combine(DataPath, Path.Combine(path));
+            var directory = Path.GetDirectoryName(filename);
+
+            if (!Directory.Exists(directory))
             {
-                File.Delete(filename);
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllText(filename, content ?? string.Empty, Encoding.UTF8);
+        }
+
+        public void DeleteFile(params string[] path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            var fullPath = Path.Combine(DataPath, Path.Combine(path));
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
+
+        public void DeleteDirectory(params string[] path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            var fullPath = Path.Combine(DataPath, Path.Combine(path));
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Delete(fullPath, true);
             }
         }
     }

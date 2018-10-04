@@ -65,6 +65,7 @@ namespace Wirehome.Core.Python
                 new ConverterPythonProxy(),
                 new DateTimePythonProxy(),
                 new DateTimeParserPythonProxy(),
+                new DataProviderPythonProxy(),
                 new LogPythonProxy(logger ?? _logger)
             };
 

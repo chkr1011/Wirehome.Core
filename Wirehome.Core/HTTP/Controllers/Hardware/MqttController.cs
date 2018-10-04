@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MQTTnet.Protocol;
@@ -56,6 +57,22 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             _mqttService.DisableTopicImport(uid);
+        }
+
+        [HttpGet]
+        [Route("api/v1/mqtt/subscriptions")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<string> GetSubscriptions()
+        {
+            return _mqttService.GetSubscriptions();
+        }
+
+        [HttpDelete]
+        [Route("api/v1/mqtt/retained_messages")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteRetainedMessages()
+        {
+            _mqttService.DeleteRetainedMessages();
         }
     }
 }

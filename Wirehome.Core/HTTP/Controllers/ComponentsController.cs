@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using Wirehome.Core.Areas;
 using Wirehome.Core.Components;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Model;
@@ -12,43 +12,36 @@ namespace Wirehome.Core.HTTP.Controllers
     public class ComponentsController : Controller
     {
         private readonly ComponentRegistryService _componentRegistryService;
-        private readonly AreaRegistryService _areaRegistryService;
 
-        public ComponentsController(ComponentRegistryService componentRegistryService, AreaRegistryService areaRegistryService)
+        public ComponentsController(ComponentRegistryService componentRegistryService)
         {
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
-            _areaRegistryService = areaRegistryService ?? throw new ArgumentNullException(nameof(areaRegistryService));
         }
 
         [HttpGet]
         [Route("api/v1/components")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<Component> GetComponents(string area_uid = null)
+        public List<Component> Get()
         {
-            if (area_uid == null)
-            {
-                return _componentRegistryService.GetComponents();
-            }
-
-            return _areaRegistryService.GetComponentsOfArea(area_uid);
+            return _componentRegistryService.GetComponents();
         }
 
         [HttpPost]
         [Route("api/v1/components/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostComponent(string uid, [FromBody] ComponentConfiguration configuration)
+        public void Post(string uid, [FromBody] ComponentConfiguration configuration)
         {
             _componentRegistryService.TryInitializeComponent(uid, configuration, out _);
         }
 
         [HttpPost]
-        [Route("/api/v1/components/{componentUid}/execute_command")]
+        [Route("/api/v1/components/{uid}/execute_command")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostComponentCommand(string componentUid, [FromBody] WirehomeDictionary message)
+        public WirehomeDictionary PostComponentCommand(string uid, [FromBody] WirehomeDictionary message)
         {
-            var oldComponent = JObject.FromObject(_componentRegistryService.GetComponent(componentUid));
-            var result = _componentRegistryService.ProcessComponentMessage(componentUid, message);
-            result["new_component"] = _componentRegistryService.GetComponent(componentUid);
+            var oldComponent = JObject.FromObject(_componentRegistryService.GetComponent(uid));
+            var result = _componentRegistryService.ProcessComponentMessage(uid, message);
+            result["new_component"] = _componentRegistryService.GetComponent(uid);
             result["old_component"] = oldComponent;
             return result;
         }
@@ -56,7 +49,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/components/{componentUid}/settings/{settingUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostComponentSetting(string componentUid, string settingUid, [FromBody] object value)
+        public void PostSetting(string componentUid, string settingUid, [FromBody] object value)
         {
             _componentRegistryService.SetComponentSetting(componentUid, settingUid, value);
         }
@@ -64,65 +57,73 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{componentUid}/settings/{settingUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object GetComponentSetting(string componentUid, string settingUid)
+        public object GetSetting(string componentUid, string settingUid)
         {
             return _componentRegistryService.GetComponentSetting(componentUid, settingUid);
         }
 
-        [HttpGet]
-        [Route("/api/v1/components/{componentUid}")]
+        [HttpDelete]
+        [Route("/api/v1/components/{componentUid}/settings/{settingUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Component GetComponent(string componentUid)
+        public object DeleteSetting(string componentUid, string settingUid)
         {
-            if (_componentRegistryService.TryGetComponent(componentUid, out var component))
-            {
-                return component;
-            }
-
-            // TODO: Change to 404 NotFound.
-            return null;
+            return _componentRegistryService.RemoveComponentSetting(componentUid, settingUid);
         }
 
         [HttpGet]
-        [Route("/api/v1/components/{componentUid}/status")]
+        [Route("/api/v1/components/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetComponentStatus(string componentUid)
+        public Component GetComponent(string uid)
         {
-            if (_componentRegistryService.TryGetComponent(componentUid, out var component))
+            if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {
-                return component.Status;
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
             }
 
-            // TODO: Change to 404 NotFound.
-            return null;
+            return component;
         }
 
         [HttpGet]
-        [Route("/api/v1/components/{componentUid}/settings")]
+        [Route("/api/v1/components/{uid}/status")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetComponentSettings(string componentUid)
+        public WirehomeDictionary GetComponentStatus(string uid)
         {
-            if (_componentRegistryService.TryGetComponent(componentUid, out var component))
+            if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {
-                return component.Settings;
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
             }
-            
-            // TODO: Change to 404 NotFound.
-            return null;
+
+            return component.Status;
         }
 
         [HttpGet]
-        [Route("/api/v1/components/{componentUid}/configuration")]
+        [Route("/api/v1/components/{uid}/settings")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetComponentConfiguration(string componentUid)
+        public WirehomeDictionary GetComponentSettings(string uid)
         {
-            if (_componentRegistryService.TryGetComponent(componentUid, out var component))
+            if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {
-                return component.Configuration;
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
             }
 
-            // TODO: Change to 404 NotFound.
-            return null;
+            return component.Settings;
+        }
+
+        [HttpGet]
+        [Route("/api/v1/components/{uid}/configuration")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public WirehomeDictionary GetComponentConfiguration(string uid)
+        {
+            if (!_componentRegistryService.TryGetComponent(uid, out var component))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
+
+            return component.Configuration;
         }
     }
 }
