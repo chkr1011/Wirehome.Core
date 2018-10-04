@@ -34,6 +34,8 @@ namespace Wirehome.Core.Python.Proxies
                 Server = parameters.GetValueOrDefault("server", null) as string,
                 Port = parameters.GetValueOrDefault("port", null) as int?,
                 Topic = parameters.GetValueOrDefault("topic", null) as string
+
+                // TODO: Add username, password etc.
             };
 
             _mqttService.EnableTopicImport(uid, topicImportParameters);
@@ -90,14 +92,17 @@ namespace Wirehome.Core.Python.Proxies
             });
         }
 
-        public string subscribe(string topicFilter, Action<object> callback)
+        public string subscribe(string subscription_uid, string topic_filter, Action<object> callback)
         {
-            if (topicFilter == null) throw new ArgumentNullException(nameof(topicFilter));
+            if (topic_filter == null) throw new ArgumentNullException(nameof(topic_filter));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
 
-            var uid = Guid.NewGuid().ToString("D");
-
-            _mqttService.Subscribe(uid, topicFilter, message =>
+            if (string.IsNullOrEmpty(subscription_uid))
+            {
+                subscription_uid = Guid.NewGuid().ToString("D");
+            }
+            
+            _mqttService.Subscribe(subscription_uid, topic_filter, message =>
             {
                 var properties = new WirehomeDictionary
                 {
@@ -111,7 +116,7 @@ namespace Wirehome.Core.Python.Proxies
                 callback(PythonConvert.ForPython(properties));
             });
 
-            return uid;
+            return subscription_uid;
         }
 
         public void unsubscribe(string uid)

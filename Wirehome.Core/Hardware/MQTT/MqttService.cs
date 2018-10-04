@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -99,6 +100,19 @@ namespace Wirehome.Core.Hardware.MQTT
                     _logger.Log(LogLevel.Information, "Stopped import client '{0}'.");
                 }
             }
+        }
+
+        public List<string> GetSubscriptions()
+        {
+            lock (_subscribers)
+            {
+                return _subscribers.Select(s => s.Key).ToList();
+            }
+        }
+
+        public void DeleteRetainedMessages()
+        {
+            _mqttServer.ClearRetainedMessagesAsync().GetAwaiter().GetResult();
         }
 
         public void Publish(MqttPublishParameters parameters)
