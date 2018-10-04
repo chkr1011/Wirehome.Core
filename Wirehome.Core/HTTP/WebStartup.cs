@@ -63,31 +63,13 @@ namespace Wirehome.Core.HTTP
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseSwagger(o => o.RouteTemplate = "/api/{documentName}/swagger.json");
-            app.UseSwaggerUI(o =>
-            {
-                o.SwaggerEndpoint("/api/v1/swagger.json", "Wirehome.Core API v1");
-            });
+            ConfigureSwagger(app);
+            ConfigureWebApps(app);
+            ConfigureMvc(app);
+        }
 
-            var appRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
-
-            if (Debugger.IsAttached)
-            {
-                appRootPath = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "Wirehome.App.Old");
-            }
-
-            app.UseFileServer(new FileServerOptions
-            {
-                RequestPath = "/app",
-                FileProvider = new PhysicalFileProvider(appRootPath)
-            });
-
+        private static void ConfigureMvc(IApplicationBuilder app)
+        {
             app.UseMvc(config =>
             {
                 var dataTokens = new RouteValueDictionary
@@ -109,6 +91,55 @@ namespace Wirehome.Core.HTTP
 
                 //app.Run(context =>
                 //    context.Response.WriteAsync("Hello, World!"));
+            });
+        }
+
+        private static void ConfigureWebApps(IApplicationBuilder app)
+        {
+            var webAppRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
+            var webConfiguratorRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebConfigurator");
+
+            if (Debugger.IsAttached)
+            {
+                webAppRootPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "..",
+                    "..",
+                    "..",
+                    "..",
+                    "Wirehome.App.Old");
+            }
+
+            if (!Directory.Exists(webAppRootPath))
+            {
+                Directory.CreateDirectory(webAppRootPath);
+            }
+
+            app.UseFileServer(new FileServerOptions
+            {
+                RequestPath = "/app",
+                FileProvider = new PhysicalFileProvider(webAppRootPath)
+            });
+
+            if (!Directory.Exists(webConfiguratorRootPath))
+            {
+                Directory.CreateDirectory(webConfiguratorRootPath);
+            }
+
+            app.UseFileServer(new FileServerOptions
+            {
+                RequestPath = "/configurator",
+                FileProvider = new PhysicalFileProvider(webConfiguratorRootPath)
+            });
+        }
+
+        private static void ConfigureSwagger(IApplicationBuilder app)
+        {
+            app.UseSwagger(o => o.RouteTemplate = "/api/{documentName}/swagger.json");
+
+            app.UseSwaggerUI(o =>
+            {
+                o.SwaggerEndpoint("/api/v1/swagger.json", "Wirehome.Core API v1");
             });
         }
     }
