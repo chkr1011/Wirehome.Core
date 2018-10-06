@@ -16,15 +16,38 @@ namespace Wirehome.Core.Python.Proxies
     public class ConverterPythonProxy : IPythonProxy
     {
         public string ModuleName { get; } = "convert";
-        
-        public double to_double(object value)
+
+        public object to_bool(object value)
         {
-            return Convert.ToDouble(value);
+            var text = to_string(value);
+            if (!bool.TryParse(text, out var result))
+            {
+                return null;
+            }
+
+            return result;
         }
 
-        public int to_int(object value)
+        public object to_double(object value)
         {
-            return Convert.ToInt32(value);
+            var text = to_string(value);
+            if (!double.TryParse(text, out var result))
+            {
+                return null;
+            }
+
+            return result;
+        }
+
+        public object to_int(object value)
+        {
+            var text = to_string(value);
+            if (!int.TryParse(text, out var result))
+            {
+                return null;
+            }
+
+            return result;
         }
 
         public string to_string(object value)

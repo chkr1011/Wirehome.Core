@@ -26,7 +26,8 @@ namespace Wirehome.Core.Python.Proxies
 
         public string subscribe(WirehomeDictionary filter, Action<WirehomeDictionary> callback)
         {
-            return _messageBusService.Subscribe(filter, callback);
+            // TODO: Use ID here like in all other areas.
+            return _messageBusService.Subscribe(null, filter, callback);
         }
 
         public void unsubscribe(string subscription_uid)

@@ -25,31 +25,19 @@ namespace Wirehome.Core.Python.Proxies
             return _componentUid;
         }
 
-        // TODO: Delete!
-        public object get_property(string statusUid)
+        public object get_status(string status_uid, object default_value = null)
         {
-            return _componentRegistryService.GetComponentStatus(_componentUid, statusUid);
+            return PythonConvert.ForPython(_componentRegistryService.GetComponentStatus(_componentUid, status_uid, default_value));
         }
 
-        // TODO: Delete!
-        public void set_property(string statusUid, object value)
+        public void set_status(string status_uid, object value)
         {
-            _componentRegistryService.SetComponentStatus(_componentUid, statusUid, value);
+            _componentRegistryService.SetComponentStatus(_componentUid, status_uid, PythonConvert.FromPython(value));
         }
 
-        public object get_status(string statusUid)
+        public object get_setting(string setting_uid, object default_value = null)
         {
-            return PythonConvert.ForPython(_componentRegistryService.GetComponentStatus(_componentUid, statusUid));
-        }
-
-        public void set_status(string statusUid, object value)
-        {
-            _componentRegistryService.SetComponentStatus(_componentUid, statusUid, PythonConvert.FromPython(value));
-        }
-
-        public object get_setting(string settingUid)
-        {
-            return PythonConvert.ForPython(_componentRegistryService.GetComponentSetting(_componentUid, settingUid));
+            return PythonConvert.ForPython(_componentRegistryService.GetComponentSetting(_componentUid, setting_uid, default_value));
         }
 
         public void set_setting(string settingUid, object value)
@@ -57,14 +45,14 @@ namespace Wirehome.Core.Python.Proxies
             _componentRegistryService.SetComponentSetting(_componentUid, settingUid, PythonConvert.FromPython(value));
         }
 
-        public object get_configuration(string configurationUid)
+        public object get_configuration(string configuration_uid, object default_value)
         {
-            return PythonConvert.ForPython(_componentRegistryService.GetComponentConfiguration(_componentUid, configurationUid));
+            return PythonConvert.ForPython(_componentRegistryService.GetComponentConfiguration(_componentUid, configuration_uid, default_value));
         }
 
-        public void set_configuration(string configurationUid, object value)
+        public void set_configuration(string configuration_uid, object value)
         {
-            _componentRegistryService.SetComponentConfiguration(_componentUid, configurationUid, PythonConvert.FromPython(value));
+            _componentRegistryService.SetComponentConfiguration(_componentUid, configuration_uid, PythonConvert.FromPython(value));
         }
     }
 }

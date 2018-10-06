@@ -3,7 +3,6 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.ServiceHost;
 
 namespace Wirehome.Core.Python.Proxies
@@ -11,8 +10,7 @@ namespace Wirehome.Core.Python.Proxies
     public class ServiceHostPythonProxy : IPythonProxy
     {
         private readonly ServiceHostService _serviceHostService;
-        private ILoggerFactory _loggerFactory;
-
+        
         public ServiceHostPythonProxy(ServiceHostService serviceHostService)
         {
             _serviceHostService = serviceHostService ?? throw new ArgumentNullException(nameof(serviceHostService));

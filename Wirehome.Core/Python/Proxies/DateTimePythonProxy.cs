@@ -1,9 +1,9 @@
-﻿using System;
-using System.Globalization;
-
-#pragma warning disable IDE1006 // Naming Styles
+﻿#pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
+
+using System;
+using System.Globalization;
 
 namespace Wirehome.Core.Python.Proxies
 {

@@ -11,9 +11,14 @@ namespace Wirehome.Core.Python.Proxies
     {
         public string ModuleName { get; } = "http_server";
 
-        public string register_route(string uri_template, Func<WirehomeDictionary, WirehomeDictionary> handler)
+        public string register_route(string uid, string uri_template, Func<WirehomeDictionary, WirehomeDictionary> handler)
         {
-            return Guid.NewGuid().ToString();
+            if (string.IsNullOrEmpty(uid))
+            {
+                uid = Guid.NewGuid().ToString("D");
+            }
+
+            return uid;
         }
 
         public void unregister_route(string uid)
