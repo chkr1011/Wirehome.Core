@@ -23,6 +23,15 @@ function createAppController($http, $scope, modalService, apiService, localizati
         return id;
     }
 
+    $scope.selectedColorChanged = function (component) {
+        if (component.appliedColor == component.selectedColor) {
+            return;
+        }
+
+        c.componentService.setColor(component, component.selectedColor);
+        component.appliedColor = component.selectedColor;
+    }
+
     c.version = "-";
     c.status = {};
     c.componentGroups = [];
@@ -46,18 +55,14 @@ function createAppController($http, $scope, modalService, apiService, localizati
     }
 
     c.showSetColorPopover = function (component) {
-        if (component.State.ColorState == undefined) {
-            return;
-        }
-
         if (component.showColorSelector === true) {
             component.showColorSelector = false;
             return;
         }
 
-        component.colorSelector.hue = component.State.ColorState.Hue;
-        component.colorSelector.saturation = component.State.ColorState.Saturation;
-        component.colorSelector.value = component.State.ColorState.Value;
+        component.colorSelector.hue = 0;
+        component.colorSelector.saturation = 0;
+        component.colorSelector.value = 0;
 
         component.showColorSelector = true;
     }
@@ -159,7 +164,16 @@ function createAppController($http, $scope, modalService, apiService, localizati
         model.image = getEffectiveSetting([associationSettings, source.settings], "app.image", "DefaultActuator")
         model.sortValue = getEffectiveSetting([associationSettings, source.settings], "app.position_index", 0);
 
-        if (model.template === undefined) {
+        if (model.template == "views/rgbTemplate.html") {
+            var r = model.status["color.red"];
+            var g = model.status["color.green"];
+            var b = model.status["color.blue"];
+            var hex = c.componentService.rgbToHex(r, g, b);
+            model.appliedColor = hex;
+            model.selectedColor = hex;
+        }
+
+        if (model.template == undefined) {
             if (source.status["motion_detection.state"] !== undefined) {
                 model.template = "views/motionDetectorTemplate.html";
             }
@@ -183,6 +197,11 @@ function createAppController($http, $scope, modalService, apiService, localizati
             }
             else if (source.status["level.current"] !== undefined) {
                 model.template = "views/fanTemplate.html";
+            }
+            else if (source.status["color.red"] !== undefined) {
+                model.template = "views/rgbTemplate.html";
+
+                model.selectedColor = "#FFFFFF";
             }
             else if (source.status["power.state"] !== undefined) {
                 model.template = "views/toggleTemplate.html";
@@ -221,8 +240,7 @@ function createAppController($http, $scope, modalService, apiService, localizati
     apiService.pollStatus();
 }
 
-function getEffectiveSetting(sourceList, name, defaultValue)
-{
+function getEffectiveSetting(sourceList, name, defaultValue) {
     var value = null;
     $.each(sourceList, (i, source) => {
         value = getSetting(source, name, null);
@@ -230,9 +248,8 @@ function getEffectiveSetting(sourceList, name, defaultValue)
             return false; // Break the loop.
         }
     });
-    
-    if (value != null) 
-    {
+
+    if (value != null) {
         return value;
     }
 

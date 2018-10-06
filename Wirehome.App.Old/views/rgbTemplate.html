@@ -15,5 +15,12 @@
                 <li><a href="#" ng-click="ctrl.componentService.enable(component)">{{ctrl.localizationService.get('UI.EnableComponent')}}</a></li>
             </ul>
         </div>
+
     </div>
+
+</div>
+
+<ngjs-color-picker selected-color="component.selectedColor" options="{size:30,horizontal:true,total:12}"></ngjs-color-picker>
+<input ng-show="false" type="text" ng-model="component.selectedColor" ng-change="{{selectedColorChanged(component)}}">
+
 </div>

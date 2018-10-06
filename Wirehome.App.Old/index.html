@@ -15,6 +15,7 @@
 
     <title>Wirehome.App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
 </head>
 
 <body style="background: #0D1940;" ng-app="app" ng-controller="AppController as ctrl">
@@ -39,17 +40,14 @@
         <div ng-include="'views/bottomBarTemplate.html'"></div>
     </div>
 
-    <link rel="stylesheet" href="Content/bootstrap.min.css" />
-    <link rel="stylesheet" href="Content/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="Content/CustomStyle.css">
+    <link rel="stylesheet" type="text/css" href="Content/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="Content/bootstrap-theme.min.css">
+    <link rel="stylesheet" type="text/css" href="Content/customStyle.css">
 
-    <script type="text/javascript" src="scripts/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="scripts/jquery-3.3.1.min.js"></script>
     <script type="text/javascript" src="scripts/bootstrap.min.js"></script>
     <script type="text/javascript" src="scripts/angular.min.js"></script>
-
-    <script type="text/javascript">
-        history.replaceState(null, null, window.location.pathname);
-    </script>
+    <script type="text/javascript" src="scripts/colorPicker/ngjs-color-picker.js"></script>
 
     <script type="text/javascript" src="services/apiService.js"></script>
     <script type="text/javascript" src="services/localizationService.js"></script>
@@ -59,6 +57,10 @@
 
     <script type="text/javascript" src="appController.js"></script>
     <script type="text/javascript" src="module.js"></script>
+
+    <script type="text/javascript">
+        history.replaceState(null, null, window.location.pathname);
+    </script>
 </body>
 
 </html>

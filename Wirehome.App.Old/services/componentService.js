@@ -56,12 +56,16 @@
         srv.sendCommand(component, parameters);
     }
 
-    srv.setColor = function (component, hue, saturation, value) {
+    srv.setColor = function (component, hexValue) {
+        var rgb = srv.hexToRgb(hexValue);
+
         var parameters = {}
-        parameters["type"] = "set_color";
-        parameters["hue"] = hue;
-        parameters["saturation"] = saturation;
-        parameters["value"] = value;
+        parameters.type = "set_color";
+        parameters.format = "rgb";
+        parameters.r = rgb.r;
+        parameters.g = rgb.g;
+        parameters.b = rgb.b;
+
         srv.sendCommand(component, parameters);
     }
 
@@ -79,12 +83,27 @@
         srv.sendCommand(component, parameters);
     }
 
-    srv.sendCommand = function(component, parameters){
-        var type = parameters["type"];
-        console.log("Sending command '" + type + "' for component " + component.uid);
+    srv.sendCommand = function(component, message){
+        apiService.executePost("/api/v1/components/" + component.uid + "/process_message", message);
+    }  
 
-        apiService.executePost("/api/v1/components/" + component.uid + "/execute_command", parameters);
+    srv.hexToRgb = function(hex) {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+   
+    srv.rgbToHex = function rgbToHex(r, g, b) {
+        return "#" + numberToHex(r) + numberToHex(g) + numberToHex(b);
     }
 
+    function numberToHex(number) {
+        var hex = number.toString(16);
+        return hex.length == 1 ? "0" + hex : hex;
+    }
+    
     return this;
 }

@@ -1,7 +1,7 @@
 var app;
 
 (function () {
-    app = angular.module("app", []);
+    app = angular.module("app", ["ngjsColorPicker"]);
 
     app.factory("localizationService", ["$http", createLocalizationService]);
     app.factory("apiService", ["$http", createApiService]);
