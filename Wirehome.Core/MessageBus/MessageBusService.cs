@@ -85,25 +85,19 @@ namespace Wirehome.Core.MessageBus
 
         public string Subscribe(string type, Action<WirehomeDictionary> callback)
         {
-            return Subscribe(new WirehomeDictionary().WithType(type), callback);
+            return Subscribe(null, new WirehomeDictionary().WithType(type), callback);
         }
 
-        public string Subscribe(WirehomeDictionary filter, Action<WirehomeDictionary> callback)
+        public string Subscribe(string uid, WirehomeDictionary filter, Action<WirehomeDictionary> callback)
         {
             if (filter == null) throw new ArgumentNullException(nameof(filter));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
 
-            var uid = Guid.NewGuid().ToString("D");
-            Subscribe(uid, filter, callback);
-            return uid;
-        }
+            if (string.IsNullOrEmpty(uid))
+            {
+                uid = Guid.NewGuid().ToString("D");
+            }
 
-        public void Subscribe(string uid, WirehomeDictionary filter, Action<WirehomeDictionary> callback)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (filter == null) throw new ArgumentNullException(nameof(filter));
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
-            
             var subscription = new MessageBusSubscriber(uid, filter, callback);
             lock (_subscribers)
             {
@@ -111,6 +105,7 @@ namespace Wirehome.Core.MessageBus
             }
 
             _logger.Log(LogLevel.Debug, $"Registered subscriber '{uid}' with filter '{filter.ToExtendedString()}'.");
+            return uid;
         }
 
         public void Unsubscribe(string subscriptionUid)

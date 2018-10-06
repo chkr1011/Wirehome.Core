@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Net;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
 using Wirehome.Core.Components;
 using Wirehome.Core.Components.Configuration;
+using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
@@ -35,15 +35,23 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpPost]
-        [Route("/api/v1/components/{uid}/execute_command")]
+        [Route("/api/v1/components/{uid}/process_message")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostComponentCommand(string uid, [FromBody] WirehomeDictionary message)
+        public WirehomeDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message)
         {
-            var oldComponent = JObject.FromObject(_componentRegistryService.GetComponent(uid));
-            var result = _componentRegistryService.ProcessComponentMessage(uid, message);
-            result["new_component"] = _componentRegistryService.GetComponent(uid);
-            result["old_component"] = oldComponent;
-            return result;
+            try
+            {
+                var component = _componentRegistryService.GetComponent(uid);
+
+                var result = _componentRegistryService.ProcessComponentMessage(uid, message);
+                result["component"] = component;
+                return result;
+            }
+            catch (ComponentNotFoundException)
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
         }
 
         [HttpPost]

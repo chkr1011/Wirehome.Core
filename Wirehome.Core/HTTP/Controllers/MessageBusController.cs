@@ -40,7 +40,8 @@ namespace Wirehome.Core.HTTP.Controllers
                 var tcs = new TaskCompletionSource<WirehomeDictionary>();
                 foreach (var filter in filters)
                 {
-                    subscriptions.Add(_messageBusService.Subscribe(filter, m => tcs.TrySetResult(m)));
+                    var subscriptionUid = "api_wait_for:" + Guid.NewGuid().ToString("D");
+                    subscriptions.Add(_messageBusService.Subscribe(subscriptionUid, filter, m => tcs.TrySetResult(m)));
                 }
 
                 var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));

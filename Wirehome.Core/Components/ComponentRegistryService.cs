@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Configuration;
+using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
@@ -96,7 +97,7 @@ namespace Wirehome.Core.Components
             {
                 if (!_components.TryGetValue(uid, out var component))
                 {
-                    return null;
+                    throw new ComponentNotFoundException(uid);
                 }
 
                 return component;
@@ -129,20 +130,38 @@ namespace Wirehome.Core.Components
             GetComponent(componentUid)?.Configuration?.SetValue(configurationUid, value);
         }
 
-        public object GetComponentConfiguration(string componentUid, string configurationUid)
+        public object GetComponentConfiguration(string componentUid, string configurationUid, object defaultValue = null)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (configurationUid == null) throw new ArgumentNullException(nameof(configurationUid));
 
-            return GetComponent(componentUid)?.Configuration?.GetValueOrDefault(configurationUid);
+            Component component;
+            lock (_components)
+            {
+                if (!_components.TryGetValue(componentUid, out component))
+                {
+                    return defaultValue;
+                }
+            }
+
+            return component.Configuration.GetValueOrDefault(componentUid, defaultValue);
         }
 
-        public object GetComponentStatus(string componentUid, string statusUid)
+        public object GetComponentStatus(string componentUid, string statusUid, object defaultValue = null)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
-            return GetComponent(componentUid)?.Status?.GetValueOrDefault(statusUid);
+            Component component;
+            lock (_components)
+            {
+                if (!_components.TryGetValue(componentUid, out component))
+                {
+                    return defaultValue;
+                }
+            }
+
+            return component.Status.GetValueOrDefault(statusUid, defaultValue);
         }
 
         public void SetComponentStatus(string componentUid, string statusUid, object value)
@@ -193,7 +212,7 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public object GetComponentSetting(string componentUid, string settingUid)
+        public object GetComponentSetting(string componentUid, string settingUid, object defaultValue = null)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
@@ -203,11 +222,11 @@ namespace Wirehome.Core.Components
             {
                 if (!_components.TryGetValue(componentUid, out component))
                 {
-                    return null;
+                    return defaultValue;
                 }
             }
 
-            return component.Settings.GetValueOrDefault(settingUid);
+            return component.Settings.GetValueOrDefault(settingUid, defaultValue);
         }
 
         public void SetComponentSetting(string componentUid, string settingUid, object value)
@@ -311,7 +330,7 @@ namespace Wirehome.Core.Components
                 ["type"] = "component_registry.execute_command"
             };
 
-            _messageBusService.Subscribe(filter, OnBusMessageExecuteCommand);
+            _messageBusService.Subscribe("component_registry.execute_command", filter, OnBusMessageExecuteCommand);
         }
 
         private void OnBusMessageExecuteCommand(IDictionary message)
