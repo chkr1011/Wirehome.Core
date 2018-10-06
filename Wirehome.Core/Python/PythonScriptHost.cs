@@ -14,9 +14,9 @@ namespace Wirehome.Core.Python
 
         public PythonScriptHost(ScriptScope scriptScope, ILoggerFactory loggerFactory)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _scriptScope = scriptScope ?? throw new ArgumentNullException(nameof(scriptScope));
 
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<PythonScriptHost>();
         }
 
@@ -35,7 +35,7 @@ namespace Wirehome.Core.Python
                 catch (Exception exception)
                 {
                     var details = _scriptScope.Engine.GetService<ExceptionOperations>().FormatException(exception);
-                    var message = "Error while initializing Python script host. " + Environment.NewLine + details;
+                    var message = "Error while initializing Python script host." + Environment.NewLine + details;
 
                     throw new PythonProxyException(message, exception);
                 }

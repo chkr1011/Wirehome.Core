@@ -57,18 +57,13 @@ namespace Wirehome.Core.Python
 
         public PythonScriptHost CreateScriptHost(ILogger logger, params IPythonProxy[] customProxies)
         {
+            if (customProxies == null) throw new ArgumentNullException(nameof(customProxies));
+
             var scriptScope = _scriptEngine.CreateScope();
 
-            // Create a trace python proxy which collects traces for the current instance only.
-            var defaultProxies = new List<IPythonProxy>
-            {
-                new ConverterPythonProxy(),
-                new DateTimePythonProxy(),
-                new DateTimeParserPythonProxy(),
-                new DataProviderPythonProxy(),
-                new LogPythonProxy(logger ?? _logger)
-            };
-
+            var defaultProxies = new PythonProxyFactory().CreateDefaultProxies();
+            defaultProxies.Add(new LogPythonProxy(logger ?? _logger));
+            
             foreach (var proxy in defaultProxies)
             {
                 scriptScope.SetVariable(proxy.ModuleName, proxy);
