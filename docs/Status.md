@@ -11,8 +11,10 @@ Based on the available status UIDs the app (Wirehome.App) will try to find the b
 | Property UID | Value | Description |
 |-|-|-|
 | **Light** |
-| `light.brightness` | `0 - 100` | The brightness in %. |
-| `light.color` | `#RRGGBB | #RRGGBBWW` | The color in HEX RGB format with optional white. |
+| `brightness.value` | `0 - 100` | The brightness in %. |
+| `color.red` | `0 - 100` | The red color in %. |
+| `color.green` | `0 - 100` | The green color in %. |
+| `color.blue` | `0 - 100` | The blue color in %. |
 | **Power** |
 | `power.state` | `"on" | "off"` | The overall power status. |
 | `power.consumption` | e.g `0.0` | The actual power consumption in W/h. |

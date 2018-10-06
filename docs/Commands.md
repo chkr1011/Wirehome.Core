@@ -34,8 +34,10 @@ The following table contains all predefined commands in Wirehome. Other adapters
 | `type` | `"set_previous_state"` ||
 | **Set color** || Sets the brightness of a component (e.g. lamps). |
 | `type` | `"set_color"`||
-| `color` | `"0xFFFFFF"`| The hex representation of the value. |
-| `color_format` | `"rgb" | "rgbw" | "hsv"` | The format of the value. |
+| `format` | `"rgb" | "rgbw" | "hsv"` | The format of color value. |
+| `r` | `0 - 100` | The value for red in % (only when format is "rgb"). |
+| `g` | `0 - 100` | The value for green in % (only when format is "rgb"). |
+| `b` | `0 - 100` | The value for blue in % (only when format is "rgb"). |
 | **Set level** || Sets the level of a component (e.g. ventilation). |
 | `type` | `"set_level"` ||
 | `level` | `0 - n` | Defines the index of the level where 0 means off. |
