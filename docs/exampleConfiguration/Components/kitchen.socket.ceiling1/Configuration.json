@@ -5,6 +5,11 @@
       "id": "wirehome.socket",
       "version": "1.0.0"
     },
+    "variables": {
+      "config": {
+        "initial_state": "on"
+      }
+    },
     "adapter": {
       "uid": {
         "id": "wirehome.cc_tools.relay",

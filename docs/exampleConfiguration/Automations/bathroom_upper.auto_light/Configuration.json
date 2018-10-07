@@ -7,7 +7,7 @@
         },
         "variables": {
             "config": {
-                "duration": 240000,
+                "duration": 480000,
                 "motion_detectors": [
                     "bathroom_upper.motion_detector"
                 ],

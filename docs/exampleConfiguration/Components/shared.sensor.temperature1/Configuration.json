@@ -1,0 +1,25 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "wirehome.sensor",
+      "version": "1.0.0"
+    },
+    "variables": {
+      "config": {
+        "sensor_type": "temperature"
+      }
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.mqtt.sensor",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "topic": "shared1-sensor/t"
+        }
+      }
+    }
+  }
+}

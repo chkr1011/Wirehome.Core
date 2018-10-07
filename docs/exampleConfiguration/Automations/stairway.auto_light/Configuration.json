@@ -1,0 +1,20 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.auto_light",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "duration": 30000,
+                "motion_detectors": [
+                    "stairway.motion_detector"
+                ],
+                "targets": [
+                    "stairway.lamp"
+                ]
+            }
+        }
+    }
+}

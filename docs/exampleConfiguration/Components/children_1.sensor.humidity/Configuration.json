@@ -17,7 +17,7 @@
       },
       "variables": {
         "config": {
-          "topic": "sensors-bridge/humidity/5"
+          "topic": "sensors-bridge/humidity/2"
         }
       }
     }

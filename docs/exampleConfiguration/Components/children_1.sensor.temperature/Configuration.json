@@ -17,7 +17,7 @@
       },
       "variables": {
         "config": {
-          "topic": "sensors-bridge/temperature/5"
+          "topic": "sensors-bridge/temperature/2"
         }
       }
     }
