@@ -25,8 +25,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.1" />
-    <PackageReference Include="MQTTnet" Version="2.8.3" />
-    <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="2.8.3" />
+    <PackageReference Include="MQTTnet" Version="2.8.4" />
+    <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="2.8.4" />
     <PackageReference Include="MySql.Data" Version="8.0.12" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Quartz" Version="3.0.6" />
