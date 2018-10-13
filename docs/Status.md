@@ -6,7 +6,7 @@ The following tables shows all predefined status UIDs in Wirehome. Other service
 ## General
 | Status UID | Value | Description |
 |-|-|-|
-| `is_outdated` | `true | false` | Defines whether the component is outdated and may be wrong. |
+| `is_outdated` | `true | false` | Defines whether the component is outdated and data may be wrong. |
 
 ## Actuators
 | Status UID | Value | Description |
