@@ -1,92 +1,71 @@
 ﻿using System;
-using System.Globalization;
+using System.Collections.Concurrent;
+using System.Threading;
 using Wirehome.Core.Model;
 
 namespace Wirehome.Core.MessageBus
 {
     public class MessageBusSubscriber
     {
-        private readonly WirehomeDictionary _filter;
+        private readonly ConcurrentQueue<WirehomeDictionary> _messageQueue = new ConcurrentQueue<WirehomeDictionary>();
         private readonly Action<WirehomeDictionary> _callback;
+
+        private int _processorGate;
 
         public MessageBusSubscriber(string uid, WirehomeDictionary filter, Action<WirehomeDictionary> callback)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
-            _filter = filter ?? throw new ArgumentNullException(nameof(filter));
+            Filter = filter ?? throw new ArgumentNullException(nameof(filter));
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
         }
 
         public string Uid { get; }
 
-        public bool IsFilterMatch(WirehomeDictionary message)
+        public WirehomeDictionary Filter { get; }
+
+        public int ProcessedMessagesCount { get; private set; }
+
+        public int PendingMessagesCount => _messageQueue.Count;
+
+        public void EnqueueMessage(WirehomeDictionary message)
         {
-            foreach (var filterEntry in _filter)
+            if (message == null) throw new ArgumentNullException(nameof(message));
+
+            if (!MessageBusFilterComparer.IsMatch(message, Filter))
             {
-                if (!message.TryGetValue(filterEntry.Key, out var propertyValue))
+                return;
+            }
+
+            _messageQueue.Enqueue(message);
+        }
+
+        public bool ProcessNextMessage()
+        {
+            var isFirstProcessor = Interlocked.Increment(ref _processorGate) == 1;
+            try
+            {
+                if (!isFirstProcessor)
+                {
+                    // Ensures that only one out of n threads will process messages for this
+                    // instance at a time. The thread will return here and continues with
+                    // the next subscriber.
+                    return false;
+                }
+
+                if (!_messageQueue.TryDequeue(out var message))
                 {
                     return false;
                 }
 
-                var pattern = ConvertValueToString(filterEntry.Value);
+                _callback.Invoke(message);
+                ProcessedMessagesCount++;
 
-                if (pattern.Equals("*", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                var value = ConvertValueToString(propertyValue);
-
-                if (pattern.EndsWith("*", StringComparison.Ordinal))
-                {
-                    if (!value.StartsWith(pattern.Substring(0, pattern.Length - 1), StringComparison.Ordinal))
-                    {
-                        return false;
-                    }
-                }
-                else if (pattern.StartsWith("*", StringComparison.Ordinal))
-                {
-                    if (!value.EndsWith(pattern.Substring(1), StringComparison.Ordinal))
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (!string.Equals(value, pattern, StringComparison.Ordinal))
-                    {
-                        return false;
-                    }
-                }
+                return true;
             }
-
-            // A filter without any properties is matching always.
-            return true;
-        }
-
-        public void Notify(WirehomeDictionary message)
-        {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-
-            _callback(message);
-        }
-
-        private static string ConvertValueToString(object value)
-        {
-            // This is required because some type checks are not supported
-            // like `(int)5 == (long)5` which will result in `False`.
-            // So a transformation over invariant strings is made.
-
-            if (value == null)
+            finally
             {
-                return string.Empty;
+                Interlocked.Decrement(ref _processorGate);
             }
-
-            if (value is string @string)
-            {
-                return @string;
-            }
-
-            return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
     }
 }

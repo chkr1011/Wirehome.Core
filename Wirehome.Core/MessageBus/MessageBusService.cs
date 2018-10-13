@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Extensions;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Proxies;
@@ -15,77 +14,95 @@ namespace Wirehome.Core.MessageBus
 {
     public class MessageBusService
     {
-        private readonly BlockingCollection<BusMessage> _messages = new BlockingCollection<BusMessage>();
-        private readonly Queue<BusMessage> _history = new Queue<BusMessage>();
+        private readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
+        private readonly LinkedList<MessageBusMessage> _history = new LinkedList<MessageBusMessage>();
+        private readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new ConcurrentDictionary<string, MessageBusSubscriber>();
 
         private readonly SystemService _systemService;
 
-        private readonly OperationsPerSecondCounter _inboundCounter = new OperationsPerSecondCounter();
-        private readonly OperationsPerSecondCounter _outboundCounter = new OperationsPerSecondCounter();
-
-        private readonly Dictionary<string, MessageBusInterceptor> _messageInterceptors = new Dictionary<string, MessageBusInterceptor>();
-        private readonly Dictionary<string, MessageBusSubscriber> _subscribers = new Dictionary<string, MessageBusSubscriber>();
-
+        private readonly OperationsPerSecondCounter _inboundCounter;
+        private readonly OperationsPerSecondCounter _processingRateCounter;
+        
         private readonly ILogger _logger;
 
-        public MessageBusService(PythonEngineService pythonEngineService, SystemStatusService systemStatusService, SystemService systemService, ILoggerFactory loggerFactory)
+        public MessageBusService(
+            PythonEngineService pythonEngineService, 
+            SystemStatusService systemStatusService, 
+            DiagnosticsService diagnosticsService,
+            SystemService systemService,
+            ILoggerFactory loggerFactory)
         {
-            if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _systemService = systemService;
+            _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
 
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<MessageBusService>();
 
+            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
             pythonEngineService.RegisterSingletonProxy(new MessageBusPythonProxy(this));
 
-            systemStatusService.Set("message_bus_service.queued_messages", () => _messages.Count);
-            systemStatusService.Set("message_bus_service.inbound_rate", () => _inboundCounter.Count);
-            systemStatusService.Set("message_bus_service.outbound_rate", () => _outboundCounter.Count);
-            systemStatusService.Set("message_bus_service.subscribers_count", () => _subscribers.Count);
+            if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
+            _inboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("message_bus.inbound_rate");
+            _processingRateCounter = diagnosticsService.CreateOperationsPerSecondCounter("message_bus.processing_rate");
+
+            if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
+            systemStatusService.Set("message_bus.queued_messages_count", () => _messageQueue.Count);
+            systemStatusService.Set("message_bus.subscribers_count", () => _subscribers.Count);
+            systemStatusService.Set("message_bus.inbound_rate", () => _inboundCounter.Count);
+            systemStatusService.Set("message_bus.processing_rate", () => _processingRateCounter.Count);
         }
 
         public void Start()
         {
-            Task.Factory.StartNew(() => TryDispatchMessages(_systemService.CancellationToken), _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(
+                () => TryDispatchMessages(_systemService.CancellationToken),
+                _systemService.CancellationToken,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+
+            for (var i = 0; i < 3; i++)
+            {
+                Task.Factory.StartNew(
+                    () => TryProcessMessages(_systemService.CancellationToken),
+                    _systemService.CancellationToken,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
+            }
         }
 
-        public void Publish(WirehomeDictionary properties)
+        public void Publish(WirehomeDictionary message)
         {
-            if (properties == null) throw new ArgumentNullException(nameof(properties));
+            if (message == null) throw new ArgumentNullException(nameof(message));
 
-            var busMessage = new BusMessage
+            var busMessage = new MessageBusMessage
             {
                 Uid = Guid.NewGuid(),
                 EnqueuedTimestamp = DateTime.UtcNow,
-                Properties = properties
+                CarriedMessage = message
             };
 
-            lock (_messages)
-            {
-                _messages.Add(busMessage);
-                _inboundCounter.Increment();
-
-                _history.Enqueue(busMessage);
-                if (_history.Count > 100)
-                {
-                    _history.Dequeue();
-                }
-            }
-
-            //_logger.Log(LogLevel.Debug, "Published message '{0}' as '{1}'.", message.ToExtendedString(), busMessage.Uid);
+            _messageQueue.Add(busMessage);
+            _inboundCounter.Increment();
         }
 
-        public List<BusMessage> GetHistory()
+        public void ClearHistory()
         {
-            lock (_messages)
+            lock (_history)
             {
-                return new List<BusMessage>(_history);
+                _history.Clear();
             }
         }
 
-        public string Subscribe(string type, Action<WirehomeDictionary> callback)
+        public List<MessageBusMessage> GetHistory()
         {
-            return Subscribe(null, new WirehomeDictionary().WithType(type), callback);
+            lock (_history)
+            {
+                return new List<MessageBusMessage>(_history);
+            }
+        }
+
+        public List<MessageBusSubscriber> GetSubscribers()
+        {
+            return new List<MessageBusSubscriber>(_subscribers.Values);
         }
 
         public string Subscribe(string uid, WirehomeDictionary filter, Action<WirehomeDictionary> callback)
@@ -98,120 +115,82 @@ namespace Wirehome.Core.MessageBus
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            var subscription = new MessageBusSubscriber(uid, filter, callback);
-            lock (_subscribers)
-            {
-                _subscribers.Add(uid, subscription);
-            }
+            var subscriber = new MessageBusSubscriber(uid, filter, callback);
+            _subscribers[uid] = subscriber;
 
-            _logger.Log(LogLevel.Debug, $"Registered subscriber '{uid}' with filter '{filter.ToExtendedString()}'.");
             return uid;
         }
 
-        public void Unsubscribe(string subscriptionUid)
-        {
-            lock (_subscribers)
-            {
-                _subscribers.Remove(subscriptionUid);
-            }
-
-            _logger.Log(LogLevel.Debug, $"Removed subscriber '{subscriptionUid}'.");
-        }
-
-        public void RegisterInterceptor(string uid, Func<WirehomeDictionary, WirehomeDictionary> interceptor)
+        public void Unsubscribe(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (interceptor == null) throw new ArgumentNullException(nameof(interceptor));
 
-            lock (_messageInterceptors)
-            {
-                _messageInterceptors[uid] = new MessageBusInterceptor(uid, interceptor);
-            }
-
-            _logger.Log(LogLevel.Information, $"Registered interceptor '{uid}'.");
+            _subscribers.TryRemove(uid, out _);
         }
 
         private void TryDispatchMessages(CancellationToken cancellationToken)
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
-                while (!cancellationToken.IsCancellationRequested)
+                try
                 {
-                    TryDispatchNextMessage(cancellationToken);
-                    _outboundCounter.Increment();
+                    var message = _messageQueue.Take(cancellationToken);
+                    if (message == null || cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    lock (_history)
+                    {
+                        _history.AddLast(message);
+                        if (_history.Count > 100)
+                        {
+                            _history.RemoveFirst();
+                        }
+                    }
+
+                    foreach (var subscriber in _subscribers.Values)
+                    {
+                        subscriber.EnqueueMessage(message.CarriedMessage);
+                    }
                 }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                _logger.Log(LogLevel.Error, exception, "Error while dispatching messages.");
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception exception)
+                {
+                    _logger.Log(LogLevel.Error, exception, "Error while dispatching messages.");
+                    Thread.Sleep(5000);
+                }
             }
         }
 
-        private void TryDispatchNextMessage(CancellationToken cancellationToken)
+        private void TryProcessMessages(CancellationToken cancellationToken)
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var message = _messages.Take(cancellationToken);
-                if (message == null || cancellationToken.IsCancellationRequested)
+                try
                 {
-                    return;
-                }
-
-                lock (_messageInterceptors)
-                {
-                    foreach (var interceptor in _messageInterceptors.Values)
+                    foreach (var subscriber in _subscribers.Values)
                     {
-                        message.Properties = interceptor.Intercept(message.Properties);
-                        if (message.Properties == null)
+                        if (subscriber.ProcessNextMessage())
                         {
-                            // The message was deleted by the interceptor.
-                            _logger.Log(LogLevel.Debug, "Message '{0}' was deleted by interceptor '{1}'.", message.Uid, interceptor.Uid);
-                            return;
+                            _processingRateCounter.Increment();
                         }
                     }
                 }
-
-                var affectedSubscribers = new List<MessageBusSubscriber>();
-                lock (_subscribers)
+                catch (OperationCanceledException)
                 {
-                    foreach (var subscription in _subscribers.Values)
-                    {
-                        if (subscription.IsFilterMatch(message.Properties))
-                        {
-                            affectedSubscribers.Add(subscription);
-                        }
-                    }
                 }
-
-                foreach (var subscriber in affectedSubscribers)
+                catch (Exception exception)
                 {
-                    TryNotifySubscriber(subscriber, message.Properties);
+                    _logger.Log(LogLevel.Error, exception, "Error while processing messages.");
+                    Thread.Sleep(5000);
                 }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                _logger.Log(LogLevel.Error, exception, "Error while dispatching message.");
-            }
-        }
-
-        private void TryNotifySubscriber(MessageBusSubscriber subscriber, WirehomeDictionary message)
-        {
-            try
-            {
-                subscriber.Notify(message);
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                _logger.Log(LogLevel.Error, exception, $"Error while notifying subscriber '{subscriber.Uid}'.");
+                finally
+                {
+                    Thread.Sleep(100);
+                }
             }
         }
     }
