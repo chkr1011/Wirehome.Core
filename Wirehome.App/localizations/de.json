@@ -1,0 +1,62 @@
+﻿{
+  "UI.Accept": "Anwenden",
+
+  "UI.DisableComponent": "Deaktivieren",
+  "UI.EnableComponent": "Aktivieren",
+
+  "UI.On": "AN",
+  "UI.Off": "AUS",
+
+  "UI.ButtonPress": "Drücken",
+  "UI.ButtonPressShort": "Kurz drücken",
+  "UI.ButtonPressLong": "Lange drücken",
+
+  "UI.LampColor": "Farbe",
+
+  "UI.Sensor": "Sensor",
+  "UI.Sensors": "Sensoren",
+
+  "UI.WindowClosed": "Geschlossen",
+  "UI.WindowOpen": "Offen",
+  "UI.WindowTilt": "Kipp",
+  "UI.Window": "Fenster",
+  "UI.Windows": "Fenster",
+
+  "UI.Temperature": "Temperatur",
+  "UI.Humidity": "Luftfeuchtigkeit",
+
+  "UI.MotionDetector": "Motion Detector",
+  "UI.MotionDetectors": "Bewegungsmelder",
+  "UI.MotionDetectorDisabled": "Aus",
+  "UI.MotionDetectorEnabled": "Aktiv",
+
+  "UI.RollerShutter": "Rollo",
+  "UI.RollerShutters": "Rolladen",
+
+  "UI.Sunrise": "Sonnenaufgang",
+  "UI.Sunset": "Sonnenuntergang",
+  "UI.Mold": "Schimmel",
+
+  "UI.MotionDetectorsOverview": "Bewegungsmelder",
+  "UI.RollerShuttersOverview": "Roller shutters",
+
+  "UI.WeatherStation": "Wetterstation",
+  "UI.WeatherStation.Sunrise": "Sonnenaufgang",
+  "UI.WeatherStation.Sunset": "Sonnenuntergang",
+  "UI.WeatherStation.Temperature": "Temperatur",
+  "UI.WeatherStation.Humidity": "Luftfeuchtigkeit",
+
+  "UI.WeatherStation.Condition.Unknown": "Unbekannt",
+  "UI.WeatherStation.Condition.ClearSky": "Klarer Himmel",
+  "UI.WeatherStation.Condition.FewClouds": "Wenige Wolken",
+  "UI.WeatherStation.Condition.ScatteredClouds": "Zerstreute Wolken",
+  "UI.WeatherStation.Condition.BrokenClouds": "Aufgerissene Wolken",
+  "UI.WeatherStation.Condition.ShowerRain": "Regenschauer",
+  "UI.WeatherStation.Condition.Rain": "Regen",
+  "UI.WeatherStation.Condition.Thunderstorm": "Gewitter",
+  "UI.WeatherStation.Condition.Snow": "Schnee",
+  "UI.WeatherStation.Condition.Mist": "Nebel",
+  "UI.WeatherStation.Condition.Hail": "Hagel",
+  "UI.WeatherStation.Condition.Storm": "Sturm",
+  "UI.WeatherStation.Condition.Clouds": "Bewölkt"
+}

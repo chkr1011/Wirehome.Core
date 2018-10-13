@@ -1,0 +1,26 @@
+﻿<span class="status-icon pull-left fas fa-square-full" ng-class="component.status['roller_shutter.position']===100 ? 'status-icon-ok' : 'status-icon-default'"></span>
+
+<div class="btn-group pull-right" role="group">
+    <a href="#" class="btn" ng-class="component.status['roller_shutter.state']==='moving_up' ? 'btn-danger' : 'btn-default'"
+        ng-click="ctrl.componentService.moveUp(component)">
+        <span class="fas fa-arrow-up"></span>
+    </a>
+    <a href="#" class="btn" ng-class="component.status['roller_shutter.state']==='off' ? 'btn-success' : 'btn-default'"
+        ng-click="ctrl.componentService.turnOff(component)">
+        <span class="fas fa-stop"></span>
+    </a>
+    <a href="#" class="btn btn-default" ng-class="component.status['roller_shutter.state']==='moving_down' ? 'btn-danger' : 'btn-default'"
+        ng-click="ctrl.componentService.moveDown(component)">
+        <span class="fas fa-arrow-down"></span>
+    </a>
+
+    <div class="btn-group" role="group">
+        <a href="#" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-right">
+            <li><a href="#" ng-click="ctrl.componentService.disable(component)">{{ctrl.localizationService.get('UI.DisableComponent')}}</a></li>
+            <li><a href="#" ng-click="ctrl.componentService.enable(component)">{{ctrl.localizationService.get('UI.EnableComponent')}}</a></li>
+        </ul>
+    </div>
+</div>

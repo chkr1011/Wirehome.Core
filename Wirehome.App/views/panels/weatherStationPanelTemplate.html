@@ -1,0 +1,38 @@
+﻿<div id="weatherStation" class="row panel panel-active" style="background: white;">
+    <div class="panel-heading panel-active pointer clearfix" ng-click="ctrl.setActivePanel('weatherStation')">
+        <span class="panel-title pull-left">{{ctrl.localizationService.get('UI.WeatherStation')}}</span>
+    </div>
+
+    <div class="container-fluid" style="margin: 10px;">
+        <div class="row">
+            <div class="col-xs-3 text-center">
+                <span class="weather-station-icon text-center fas fa-thermometer-half"></span>
+                <br />
+                <span class="text-center">{{(ctrl.weatherStation.temperature | number:1) + '°C' }}</span>
+            </div>
+            <div class="col-xs-3 text-center">
+                <span class="weather-station-icon text-center fas fa-tint"></span>
+                <br />
+                <span class="text-center">{{(ctrl.weatherStation.humidity | number:0) + '%'}}</span>
+            </div>
+            <div class="col-xs-3 text-center">
+                <span class="weather-station-icon text-center fas fa-sun"></span>
+                <br />
+                <span class="text-center">{{ctrl.weatherStation.sunrise.substring(0, 5)}}</span>
+            </div>
+            <div class="col-xs-3 text-center">
+                <span class="weather-station-icon text-center fas fa-moon"></span>
+                <br />
+                <span class="text-center">{{ctrl.weatherStation.sunset.substring(0, 5)}}</span>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+            <div class="col-xs-12 text-center">
+                <img class="weather-condition-image" ng-src="{{ctrl.weatherStation.conditionImage}}" />
+                <span class="weather-condition-text">{{ctrl.localizationService.get('UI.WeatherStation.Condition.' +
+                    ctrl.weatherStation.condition)}}</span>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,5 @@
+﻿<span ng-if="component.status['humidity.value']>=component.dangerValue" class="component-status-text label label-danger">Warning!</span>
+<span ng-if="component.status['humidity.value']>=component.warningValue && component.status['humidity.value']<component.dangerValue" class="component-status-text label label-warning">Warning!</span>
+<span ng-if="component.status['humidity.value']<component.warningValue" class="component-status-text label label-success">OK</span>
+
+<span class="sensor-value">{{(component.status['humidity.value'] | number:0) + ' % r.F.' }}</span>

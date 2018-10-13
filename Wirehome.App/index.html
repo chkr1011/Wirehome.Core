@@ -1,0 +1,62 @@
+﻿<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <link rel="apple-touch-icon" sizes="120x120" href="touch-icon-iphone-retina.png" />
+
+    <title>Wirehome.App</title>
+</head>
+
+<body ng-class="!ctrl.isInitialized ? 'loading-body' : 'initialized-body'" class="container" ng-app="app" ng-controller="AppController as ctrl">
+    <div ng-hide="ctrl.isInitialized">
+        <div class="loadingAnimation"></div>
+        <h3 class="loadingTitle">
+            Wirehome.App
+            <br />
+            <br />
+            <span class="loadingMessage">Home Automation</span>
+        </h3>
+    </div>
+
+    <div ng-include="'views/modalTemplate.html'"></div>
+
+    <div class="container-fluid" id="content" ng-show="ctrl.isInitialized">
+        <div ng-include="'views/panels/notificationsPanelTemplate.html'"></div>
+        <div ng-include="'views/panels/weatherStationPanelTemplate.html'"></div>
+        <div ng-include="'views/panels/componentGroupsPanelTemplate.html'"></div>
+        <div ng-include="'views/panels/footerPanelTemplate.html'"></div>
+    </div>
+
+    <link rel="stylesheet" type="text/css" href="contents/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="contents/bootstrap-theme.min.css">
+    <link rel="stylesheet" type="text/css" href="contents/customStyle.css">
+    <link rel="stylesheet" type="text/css" href="fonts/fontawesome/css/all.min.css">
+
+    <script type="text/javascript" src="scripts/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="scripts/bootstrap.min.js"></script>
+    <script type="text/javascript" src="scripts/angular.min.js"></script>
+    <script type="text/javascript" src="scripts/colorPicker/ngjs-color-picker.js"></script>
+
+    <script type="text/javascript" src="services/apiService.js"></script>
+    <script type="text/javascript" src="services/localizationService.js"></script>
+    <script type="text/javascript" src="services/modalService.js"></script>
+    <script type="text/javascript" src="services/componentService.js"></script>
+    <script type="text/javascript" src="services/notificationService.js"></script>
+
+    <script type="text/javascript" src="appController.js"></script>
+    <script type="text/javascript" src="module.js"></script>
+
+    <script type="text/javascript">
+        history.replaceState(null, null, window.location.pathname);
+    </script>
+</body>
+
+</html>

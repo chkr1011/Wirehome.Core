@@ -1,0 +1,223 @@
+/* Bootstrap overrides */
+
+.panel {
+    margin-bottom: 0;
+    border: 0;
+}
+
+.panel-active {
+    background: #427AB6;
+}
+
+.panel-heading {
+    background-image: none !important;
+    color: whitesmoke
+}
+
+.btn-default {
+    background: #F2F2F2;
+    background-image: none !important;
+}
+
+.btn-success {
+    background: #5CB85C;
+    background-image: none !important;
+}
+
+.btn-danger {
+    background: #D9534F;
+    background-image: none !important;
+}
+
+.alert {
+    background-image: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+}
+
+* {
+    border-radius: 0 !important;
+}
+
+body {
+    margin: 0;
+}
+
+/* Custom styles */
+
+.display {
+    padding: 10px; 
+    background: navy; 
+    color: white; 
+    font-family: 'Courier New', Courier, monospace
+}
+
+.component-status-text {
+    font-weight: lighter;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 11px;
+    vertical-align: text-bottom;
+}
+
+.component-status-text-large {
+    font-weight: lighter;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: small;
+    margin-top: 7px;
+}
+
+.slider-legend {
+    height: 16px;
+    width: 100%;
+}
+
+.action-button {
+    min-width: 60px;
+}
+
+.version-text {
+    font-size: 10pt;
+    margin-right: 5px;
+}
+
+.component-icon {
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+.component-group-icon {
+    font-size: 22px;
+    text-align: center;
+    width: 26px;
+    height: 26px;
+}
+
+.component-caption {
+    vertical-align: text-bottom;
+}
+
+.weather-station-icon {
+    font-size: 22px;
+    color: #427AB6;
+}
+
+.ui-content {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.status-icon {
+    font-size: 18px;
+    margin-top: 7px;
+}
+
+.status-icon-ok {
+    color: #5cb85c;
+}
+
+.status-icon-warning {
+    color: #f0ad4e;
+}
+
+.status-icon-danger {
+    color: #d9534f;
+}
+
+.status-icon-default {
+    color: lightgray;
+}
+
+.window-status {
+    font-size: 12px;
+    min-width: 125px;
+}
+
+.window-status-icon {
+    margin-right: 10px;
+}
+
+.loading-body{
+    background: #427AB6;
+}
+
+.initialized-body{
+    background: #838383;
+    padding: 0;
+}
+
+.loadingTitle {
+    color: white;
+    font: 300 24px/1 'Open sans condensed', sans-serif;
+    left: 0;
+    letter-spacing: 4px;
+    margin-top: 75px;
+    position: absolute;
+    text-align: center;
+    top: calc(50% - 50px);
+    width: 100%;
+}
+
+.footer-icon {
+    font-size: 20px;
+    color: #427AB6;
+}
+
+.connection-status-icon {
+    font-size: 20px;
+}
+
+.loadingMessage {
+    color: lightgray;
+    font-size: 10pt;
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.sensor-value {
+    font-size: 18px;
+    margin-left: 10px;
+    float: right
+}
+
+.weather-condition-text {
+    font-size: 12pt;
+    vertical-align: middle;
+}
+
+.weather-condition-image {
+    width: 50px;
+    height: 50px;
+}
+
+.loadingAnimation {
+    animation: rotate 1s infinite linear;
+    border-bottom: 7px solid white;
+    border-left: 7px solid white;
+    border-radius: 100% !important;
+    border-right: 7px solid gray;
+    border-top: 7px solid white;
+    box-sizing: border-box;
+    height: 85px;
+    left: calc(50% - 50px);
+    position: absolute;
+    top: calc(50% - 85px);
+    width: 85px;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg) translate3d(0, 0, 0);
+    }
+
+    to {
+        transform: rotate(359deg) translate3d(0, 0, 0);
+    }
+}

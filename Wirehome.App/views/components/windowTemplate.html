@@ -1,0 +1,12 @@
+﻿<span class="label label-danger pull-right window-status" ng-show="component.status['window.state']==='open'">
+    <span class="glyphicon glyphicon-alert window-status-icon"></span>
+    <span>{{ ctrl.localizationService.get('UI.WindowOpen') }}</span>
+</span>
+<span class="label label-success pull-right window-status" ng-show="component.status['window.state']==='closed'">
+    <span class="glyphicon glyphicon-ok window-status-icon"></span>
+    <span>{{ ctrl.localizationService.get('UI.WindowClosed') }}</span>
+</span>
+<span class="label label-warning pull-right window-status" ng-show="component.status['window.state']==='tilt'">
+    <span class="glyphicon glyphicon-warning-sign window-status-icon"></span>
+    <span>{{ ctrl.localizationService.get('UI.WindowTilt') }}</span>
+</span>

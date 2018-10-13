@@ -1,0 +1,6 @@
+﻿<div class="pull-right" ng-class="component.source.settings['app.display_vertical']===true ? 'btn-group-vertical' : 'btn-group'">
+    <a href="#" class="btn" ng-repeat="s in component.source.configuration['state_machine.states']" ng-class="component.status['state_machine.state']===s ? s==='Off' ? 'btn-success' : 'btn-danger' : 'btn-default'"
+        ng-click="ctrl.componentService.setState(component, s)">
+        {{getStateCaption(component, s)}}
+    </a>
+</div>
