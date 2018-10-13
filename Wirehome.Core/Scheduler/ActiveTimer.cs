@@ -6,19 +6,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Scheduler
 {
-    public class ActiveTimer
+    public sealed class ActiveTimer : IDisposable
     {
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-        private readonly string _uid;
-        private readonly TimeSpan _interval;
         private readonly Action<string, TimeSpan> _callback;
         private readonly ILogger _logger;
 
         public ActiveTimer(string uid, TimeSpan interval, Action<string, TimeSpan> callback, ILoggerFactory loggerFactory)
         {
-            _uid = uid ?? throw new ArgumentNullException(nameof(uid));
-            _interval = interval;
+            Uid = uid ?? throw new ArgumentNullException(nameof(uid));
+            Interval = interval;
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
@@ -28,6 +26,21 @@ namespace Wirehome.Core.Scheduler
         public void Start()
         {
             Task.Factory.StartNew(() => Run(_cancellationTokenSource.Token), _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }
+
+        public string Uid { get; }
+
+        public TimeSpan Interval { get; }
+
+        public void Stop()
+        {
+            _cancellationTokenSource.Cancel(false);
+            _logger.Log(LogLevel.Debug, "Stopped timer '{0}'.", Uid);
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource?.Dispose();
         }
 
         private void Run(CancellationToken cancellationToken)
@@ -41,7 +54,8 @@ namespace Wirehome.Core.Scheduler
                     TryTick(elapsed);
                     stopwatch.Restart();
 
-                    Thread.Sleep(_interval);
+                    // TODO: Consider adding a flag "HighPrecision=true". Then use Thread.Sleep or await.
+                    Thread.Sleep(Interval);
                 }
             }
             catch (OperationCanceledException)
@@ -57,7 +71,7 @@ namespace Wirehome.Core.Scheduler
         {
             try
             {
-                _callback(_uid, elapsed);
+                _callback(Uid, elapsed);
             }
             catch (OperationCanceledException)
             {
@@ -65,13 +79,8 @@ namespace Wirehome.Core.Scheduler
             catch (Exception exception)
             {
                 _logger.Log(LogLevel.Error, exception, "Error while executing timer callback.");
+                Thread.Sleep(5000); // Prevent flooding the log.
             }
-        }
-
-        public void Stop()
-        {
-            _cancellationTokenSource.Cancel(false);
-            _logger.Log(LogLevel.Debug, "Stopped timer '{0}'.", _uid);
         }
     }
 }

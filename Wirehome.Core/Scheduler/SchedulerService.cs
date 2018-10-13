@@ -26,12 +26,12 @@ namespace Wirehome.Core.Scheduler
 
         private readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
         private readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
-        private readonly Dictionary<string, CancellationTokenSource> _activeThreads = new Dictionary<string, CancellationTokenSource>();
+        private readonly Dictionary<string, ActiveThread> _activeThreads = new Dictionary<string, ActiveThread>();
 
         public SchedulerService(
-            PythonEngineService pythonEngineService, 
-            SystemStatusService systemStatusService, 
-            SystemService systemService, 
+            PythonEngineService pythonEngineService,
+            SystemStatusService systemStatusService,
+            SystemService systemService,
             ILoggerFactory loggerFactory)
         {
             _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
@@ -52,7 +52,8 @@ namespace Wirehome.Core.Scheduler
             if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
             pythonEngineService.RegisterSingletonProxy(new SchedulerPythonProxy(this));
 
-            systemStatusService.Set("scheduler.active_threads", () => _activeThreads);
+            systemStatusService.Set("scheduler.active_threads", () => _activeThreads.Count);
+            systemStatusService.Set("scheduler.active_timers", () => _activeTimers.Count);
             systemStatusService.Set("scheduler.active_countdowns", () => _activeCountdowns.Count);
         }
 
@@ -69,12 +70,12 @@ namespace Wirehome.Core.Scheduler
             if (callback == null) throw new ArgumentNullException(nameof(callback));
 
             var activeTimer = new ActiveTimer(uid, interval, callback, _loggerFactory);
-
             lock (_activeTimers)
             {
                 if (_activeTimers.TryGetValue(uid, out var existingTimer))
                 {
                     existingTimer.Stop();
+                    existingTimer.Dispose();
                 }
 
                 _activeTimers[uid] = activeTimer;
@@ -92,17 +93,18 @@ namespace Wirehome.Core.Scheduler
                 if (_activeTimers.TryGetValue(uid, out var activeTimer))
                 {
                     activeTimer.Stop();
+                    activeTimer.Dispose();
                 }
 
                 _activeTimers.Remove(uid);
             }
         }
 
-        public IList<string> GetActiveTimers()
+        public IList<ActiveTimer> GetActiveTimers()
         {
             lock (_activeThreads)
             {
-                return _activeTimers.Keys.ToList();
+                return _activeTimers.Values.ToList();
             }
         }
 
@@ -137,11 +139,11 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        public IList<string> GetActiveCountdowns()
+        public IList<ActiveCountdown> GetActiveCountdowns()
         {
-            lock (_activeThreads)
+            lock (_activeCountdowns)
             {
-                return _activeCountdowns.Keys.ToList();
+                return _activeCountdowns.Values.ToList();
             }
         }
 
@@ -152,53 +154,37 @@ namespace Wirehome.Core.Scheduler
 
             _logger.Log(LogLevel.Debug, $"Starting new thread '{uid}'.");
 
-            var threadCts = new CancellationTokenSource();
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                threadCts.Token,
-                _systemService.CancellationToken);
-
             lock (_activeThreads)
             {
-                _activeThreads[uid] = threadCts;
-            }
+                StopThread(uid);
 
-            Task.Factory.StartNew(() =>
-            {
-                try
-                {     
-                    Thread.CurrentThread.Name = uid;
-                    action(uid);
-
-                    _logger.Log(LogLevel.Information, $"Thread '{uid}' exited normally.");
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                catch (Exception exception)
-                {
-                    _logger.Log(LogLevel.Error, exception, $"Error while executing thread '{uid}'.");
-                }
-                finally
+                var activeThread = new ActiveThread(uid, action, _systemService.CancellationToken, _logger);
+                activeThread.StoppedCallback = () =>
                 {
                     lock (_activeThreads)
                     {
                         _activeThreads.Remove(uid);
+                        activeThread.Dispose();
                     }
+                };
 
-                    threadCts.Dispose();
-                }
-            }, linkedCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                _activeThreads[uid] = activeThread;
+                activeThread.Start();
+            }
         }
 
         public void StopThread(string uid)
         {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
             try
             {
                 lock (_activeThreads)
                 {
-                    if (_activeThreads.TryGetValue(uid, out var cts))
+                    if (_activeThreads.TryGetValue(uid, out var activeThread))
                     {
-                        cts.Cancel(false);
+                        activeThread.Stop();
+                        activeThread.Dispose();
                     }
                 }
             }
@@ -208,11 +194,11 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        public IList<string> GetActiveThreads()
+        public IList<ActiveThread> GetActiveThreads()
         {
             lock (_activeThreads)
             {
-                return _activeThreads.Keys.ToList();
+                return _activeThreads.Values.ToList();
             }
         }
 
