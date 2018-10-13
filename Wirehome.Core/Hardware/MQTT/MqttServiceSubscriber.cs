@@ -18,11 +18,11 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public string Uid { get; }
 
-        public bool IsFilterMatch(MqttApplicationMessage message)
+        public bool IsFilterMatch(string topic)
         {
-            if (message == null) throw new ArgumentNullException(nameof(message));
+            if (topic == null) throw new ArgumentNullException(nameof(topic));
 
-            return MqttTopicFilterComparer.IsMatch(message.Topic, _topicFilter);
+            return MqttTopicFilterComparer.IsMatch(topic, _topicFilter);
         }
 
         public void Notify(MqttApplicationMessageReceivedEventArgs eventArgs)
