@@ -23,4 +23,10 @@ The following table shows all types of exceptions which are defined by Wirehome.
 | `exception.invalid_operation` | The requested operation is not performed because it is not allowed by design. |
 | `exception.timeout` | The requested operation timed out. |
 
-All exception can contain an optional property with a developer friendly message (`message`). Also different properties may be added to extend the exception.
+All exception can contain several more parameters with exception details. The following tables shows these parameters.
+
+| Parameter | Description |
+|-|-|
+| `exception_type` | The type of the exception. |
+| `message` | The original message of the exception. |
+| `stack_trace` | The stack trace of the exception. |

@@ -41,5 +41,8 @@ The following table contains all predefined commands in Wirehome. Other adapters
 | **Set level** || Sets the level of a component (e.g. ventilation). |
 | `type` | `"set_level"` ||
 | `level` | `0 - n` | Defines the index of the level where 0 means off. |
+| **Set position** || Sets the position of a component (e.g. roller shutter). |
+| `type` | `"set_position"` ||
+| `position` | `0 - n` |Defines the absolute position.|
 | **Refresh** || Forces a sensor to refresh its value (e.g. temperature sensors). |
 | `type` | `"refresh"` ||
