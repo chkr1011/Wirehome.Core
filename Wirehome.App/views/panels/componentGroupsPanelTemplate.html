@@ -21,6 +21,10 @@
                 <span ng-if="component.powerConsumption > 0" class="component-status-text label label-warning">
                     <span class="fas fa-bolt"></span> <span>{{component.powerConsumption}} Wh</span>
                 </span>
+
+                <span ng-if="component.isOutdated" class="component-status-text label label-warning">
+                    <span class="fas fa-stopwatch"></span> <span>Outdated!</span>
+                </span>
             </div>
         </li>
     </ul>

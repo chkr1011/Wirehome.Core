@@ -154,6 +154,7 @@ function createAppController($http, $scope, modalService, apiService, localizati
         var associationSettings = componentGroupModel.source.components[model.uid].settings;
 
         model.powerConsumption = getValue(source.status, "power.consumption", 0)
+        model.isOutdated = getValue(source.status, "status.is_outdated", false)
 
         model.caption = getEffectiveValue([associationSettings, source.settings], "app.caption", "#" + model.uid)
         model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", 0);
