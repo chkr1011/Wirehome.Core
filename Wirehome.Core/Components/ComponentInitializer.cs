@@ -63,7 +63,9 @@ namespace Wirehome.Core.Components
                 ["adapter_id"] = configuration.Adapter.Uid.Id,
                 ["adapter_version"] = configuration.Adapter.Uid.Version,
                 ["logic_id"] = configuration.Uid.Id,
-                ["logic_version"] = configuration.Uid.Version
+                ["logic_version"] = configuration.Uid.Version,
+                ["logic_root_path"] = _repositoryService.GetEntityRootPath(RepositoryType.ComponentLogics, configuration.Uid),
+                ["adapter_root_path"] = _repositoryService.GetEntityRootPath(RepositoryType.ComponentAdapters, configuration.Adapter.Uid)
             };
 
             var adapter = InitializeAdapter(component, configuration.Adapter);
