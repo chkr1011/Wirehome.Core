@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
 
-namespace Wirehome.Core.Diagnostics
+namespace Wirehome.Core.Diagnostics.Log
 {
     public class LogServiceLogger : ILogger
     {

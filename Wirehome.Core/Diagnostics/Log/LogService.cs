@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 
-namespace Wirehome.Core.Diagnostics
+namespace Wirehome.Core.Diagnostics.Log
 {
     public class LogService
     {

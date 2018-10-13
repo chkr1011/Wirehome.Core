@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace Wirehome.Core.Diagnostics
+namespace Wirehome.Core.Diagnostics.Log
 {
     public class LogEntry
     {
