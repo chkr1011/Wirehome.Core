@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Diagnostics.Log;
 
 namespace Wirehome.Core.HTTP.Controllers.Diagnostics
 {

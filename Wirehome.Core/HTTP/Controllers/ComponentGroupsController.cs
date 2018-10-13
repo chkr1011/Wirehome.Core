@@ -4,6 +4,7 @@ using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Components;
 using Wirehome.Core.Components.Exceptions;
+using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -166,6 +167,34 @@ namespace Wirehome.Core.HTTP.Controllers
         //    componentGroup.Macros.Remove(macroUid);
         //    _componentGroupRegistryService.Save();
         //}
+
+        [HttpGet]
+        [Route("/api/v1/component_groups/{uid}/status")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public WirehomeDictionary GetStatus(string uid)
+        {
+            if (!_componentGroupRegistryService.TryGetComponentGroup(uid, out var componentGroup))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
+
+            return componentGroup.Status;
+        }
+
+        [HttpGet]
+        [Route("/api/v1/component_groups/{uid}/settings")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public WirehomeDictionary GetSettings(string uid)
+        {
+            if (!_componentGroupRegistryService.TryGetComponentGroup(uid, out var componentGroup))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
+
+            return componentGroup.Settings;
+        }
 
         [HttpPost]
         [Route("/api/v1/component_groups/{componentGroupUid}/settings/{settingUid}")]

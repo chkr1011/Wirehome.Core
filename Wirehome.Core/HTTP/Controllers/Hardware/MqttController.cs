@@ -46,7 +46,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            _mqttService.EnableTopicImport(uid, parameters);
+            _mqttService.StartTopicImport(uid, parameters);
         }
 
         [HttpDelete]
@@ -56,7 +56,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _mqttService.DisableTopicImport(uid);
+            _mqttService.StopTopicImport(uid);
         }
 
         [HttpGet]
