@@ -14,7 +14,7 @@ namespace Wirehome.Core.Python.Proxies
         {
             var jsonText = new ConverterPythonProxy().to_string(source);
             var json = JToken.Parse(jsonText);
-            return PythonConvert.ForPython(json);
+            return PythonConvert.ToPython(json);
         }
     }
 }

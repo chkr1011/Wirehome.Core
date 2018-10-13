@@ -59,7 +59,7 @@ namespace Wirehome.Core.Python.Proxies
                         try
                         {
                             var json = JObject.Parse(content);
-                            var convertedJson = PythonConvert.ForPython(json);
+                            var convertedJson = PythonConvert.ToPython(json);
                             result["content"] = convertedJson;
                         }
                         catch

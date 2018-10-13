@@ -27,7 +27,7 @@ namespace Wirehome.Core.Python.Proxies
 
         public object get_status(string status_uid, object default_value = null)
         {
-            return PythonConvert.ForPython(_componentRegistryService.GetComponentStatus(_componentUid, status_uid, default_value));
+            return PythonConvert.ToPython(_componentRegistryService.GetComponentStatus(_componentUid, status_uid, default_value));
         }
 
         public void set_status(string status_uid, object value)
@@ -37,7 +37,7 @@ namespace Wirehome.Core.Python.Proxies
 
         public object get_setting(string setting_uid, object default_value = null)
         {
-            return PythonConvert.ForPython(_componentRegistryService.GetComponentSetting(_componentUid, setting_uid, default_value));
+            return PythonConvert.ToPython(_componentRegistryService.GetComponentSetting(_componentUid, setting_uid, default_value));
         }
 
         public void set_setting(string settingUid, object value)
@@ -45,9 +45,9 @@ namespace Wirehome.Core.Python.Proxies
             _componentRegistryService.SetComponentSetting(_componentUid, settingUid, PythonConvert.FromPython(value));
         }
 
-        public object get_configuration(string configuration_uid, object default_value)
+        public object get_configuration(string configuration_uid, object default_value = null)
         {
-            return PythonConvert.ForPython(_componentRegistryService.GetComponentConfiguration(_componentUid, configuration_uid, default_value));
+            return PythonConvert.ToPython(_componentRegistryService.GetComponentConfiguration(_componentUid, configuration_uid, default_value));
         }
 
         public void set_configuration(string configuration_uid, object value)

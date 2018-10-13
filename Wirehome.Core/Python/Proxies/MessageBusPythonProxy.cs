@@ -34,10 +34,5 @@ namespace Wirehome.Core.Python.Proxies
         {
             _messageBusService.Unsubscribe(subscription_uid);
         }
-
-        public void register_interceptor(string uid, Func<WirehomeDictionary, WirehomeDictionary> interceptor)
-        {
-            _messageBusService.RegisterInterceptor(uid, interceptor);
-        }
     }
 }

@@ -38,14 +38,14 @@ namespace Wirehome.Core.Python.Proxies
             _schedulerService.StopThread(uid);
         }
 
-        public string start_timer(string uid, int interval, Action<object> callback, object state = null)
+        public string start_timer(string uid, int interval, Action<int, object> callback, object state = null)
         {
             if (string.IsNullOrEmpty(uid))
             {
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), (s, span) => callback(state));
+            _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), (s, t) => callback((int)t.TotalMilliseconds, state));
             return uid;
         }
 

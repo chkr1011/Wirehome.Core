@@ -62,9 +62,14 @@ namespace Wirehome.Core.Python.Proxies
                 return s;
             }
 
+            if (value is byte[] bytes)
+            {
+                return Encoding.UTF8.GetString(bytes);
+            }
+
             if (value is IEnumerable<object> o)
             {
-                return Encoding.UTF8.GetString(o.Select(Convert.ToByte).ToArray());
+                return Encoding.UTF8.GetString(o.Select(b => Convert.ToByte(b, CultureInfo.InvariantCulture)).ToArray());
             }
 
             return string.Empty;
@@ -77,7 +82,7 @@ namespace Wirehome.Core.Python.Proxies
                 PythonConvert.ToPythonList(enumerable);
             }
 
-            return new List { PythonConvert.ForPython(value) };
+            return new List { PythonConvert.ToPython(value) };
         }
 
         // TODO: Move to "JsonPythonProxy (deserialize(json), serialize(source))
@@ -85,7 +90,7 @@ namespace Wirehome.Core.Python.Proxies
         {
             var jsonText = to_string(source);
             var json = JToken.Parse(jsonText);
-            return PythonConvert.ForPython(json);
+            return PythonConvert.ToPython(json);
         }
 
         public List ulong_to_list(ulong buffer, int length)
