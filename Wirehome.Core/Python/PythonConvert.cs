@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 using IronPython.Runtime;
 using Newtonsoft.Json.Linq;
 using Wirehome.Core.Model;
@@ -9,22 +11,6 @@ namespace Wirehome.Core.Python
 {
     public static class PythonConvert
     {
-        public static List ToPythonList(IEnumerable items)
-        {
-            if (items == null)
-            {
-                return null;
-            }
-
-            var list = new List();
-            foreach (var item in items)
-            {
-                list.Add(ForPython(item));
-            }
-
-            return list;
-        }
-
         public static object FromPython(object value)
         {
             if (value == null)
@@ -34,7 +20,7 @@ namespace Wirehome.Core.Python
 
             if (value is PythonDictionary pythonDictionary)
             {
-                return FromPython(pythonDictionary);
+                return ToWirehomeDictionary(pythonDictionary);
             }
 
             if (value is List pythonList)
@@ -51,22 +37,21 @@ namespace Wirehome.Core.Python
             return value;
         }
 
-        public static object ForPython(object value)
+        public static object ToPython(object value)
         {
             if (value is null || value is string || value is bool || value is int || value is float || value is long || value is double)
             {
                 return value;
             }
 
+            if (value is IPythonConvertible pythonConvertible)
+            {
+                return pythonConvertible.ConvertToPython();
+            }
+
             if (value is WirehomeDictionary wirehomeDictionary)
             {
-                var pythonDictionary = new PythonDictionary();
-                foreach (var entry in wirehomeDictionary)
-                {
-                    pythonDictionary.Add(entry.Key, ForPython(entry.Value));
-                }
-
-                return pythonDictionary;
+                return ToPythonDictionary(wirehomeDictionary);
             }
 
             if (value is IDictionary dictionary)
@@ -74,7 +59,7 @@ namespace Wirehome.Core.Python
                 var pythonDictionary = new PythonDictionary();
                 foreach (var entryKey in dictionary.Keys)
                 {
-                    pythonDictionary.Add(entryKey, ForPython(dictionary[entryKey]));
+                    pythonDictionary.Add(entryKey, ToPython(dictionary[entryKey]));
                 }
 
                 return pythonDictionary;
@@ -85,7 +70,7 @@ namespace Wirehome.Core.Python
                 var result = new List(); // This is a python list.
                 foreach (var item in array)
                 {
-                    result.Add(ForPython(item));
+                    result.Add(ToPython(item));
                 }
 
                 return result;
@@ -96,7 +81,7 @@ namespace Wirehome.Core.Python
                 var result = new PythonDictionary();
                 foreach (var property in @object.Properties())
                 {
-                    result.Add(property.Name, ForPython(property.Value));
+                    result.Add(property.Name, ToPython(property.Value));
                 }
 
                 return result;
@@ -117,7 +102,7 @@ namespace Wirehome.Core.Python
                 var result = new List(); // This is a python list.
                 foreach (var item in items)
                 {
-                    result.Add(ForPython(item));
+                    result.Add(ToPython(item));
                 }
 
                 return result;
@@ -126,9 +111,28 @@ namespace Wirehome.Core.Python
             return value;
         }
 
-        private static object FromPython(PythonDictionary pythonDictionary)
+        public static PythonDictionary ToPythonDictionary(WirehomeDictionary wirehomeDictionary)
         {
-            if (pythonDictionary == null) throw new ArgumentNullException(nameof(pythonDictionary));
+            if (wirehomeDictionary == null)
+            {
+                return null;
+            }
+
+            var pythonDictionary = new PythonDictionary();
+            foreach (var entryKey in wirehomeDictionary.Keys)
+            {
+                pythonDictionary.Add(entryKey, ToPython(wirehomeDictionary[entryKey]));
+            }
+
+            return pythonDictionary;
+        }
+
+        public static WirehomeDictionary ToWirehomeDictionary(PythonDictionary pythonDictionary)
+        {
+            if (pythonDictionary == null)
+            {
+                return null;
+            }
 
             var wirehomeDictionary = new WirehomeDictionary();
             foreach (var entry in pythonDictionary)
@@ -138,6 +142,67 @@ namespace Wirehome.Core.Python
             }
 
             return wirehomeDictionary;
+        }
+
+        public static List ToPythonList(IEnumerable items)
+        {
+            if (items == null)
+            {
+                return null;
+            }
+
+            var list = new List();
+            foreach (var item in items)
+            {
+                list.Add(ToPython(item));
+            }
+
+            return list;
+        }
+
+        public static PythonDictionary ToPythonDictionary(object source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            if (source is WirehomeDictionary wirehomeDictionary)
+            {
+                return ToPythonDictionary(wirehomeDictionary);
+            }
+
+            var result = new PythonDictionary();
+
+            var properties = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var property in properties)
+            {
+                var key = PythonfyPropertyName(property.Name);
+                var value = ToPython(property.GetValue(source));
+                result[key] = value;
+            }
+
+            return result;
+        }
+
+        public static string PythonfyPropertyName(string name)
+        {
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
+            var output = new StringBuilder();
+            for (var i = 0; i < name.Length; i++)
+            {
+                var @char = name[i];
+
+                if (i > 0 && (char.IsUpper(@char) || char.IsNumber(@char)))
+                {
+                    output.Append('_');
+                }
+
+                output.Append(char.ToLowerInvariant(@char));
+            }
+
+            return output.ToString();
         }
     }
 }

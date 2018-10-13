@@ -60,7 +60,7 @@ namespace Wirehome.Core.Components.Adapters
         {
             // TODO: Throw exceptions if the data type is not expected.
             var result = MessagePublishedCallback?.Invoke((WirehomeDictionary)PythonConvert.FromPython(message));
-            return PythonConvert.ForPython(result);
+            return PythonConvert.ToPython(result);
         }
     }
 }

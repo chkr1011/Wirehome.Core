@@ -48,7 +48,7 @@ namespace Wirehome.Core.Python
 
             lock (_scriptScope)
             {
-                _scriptScope.SetVariable(name, PythonConvert.ForPython(value));
+                _scriptScope.SetVariable(name, PythonConvert.ToPython(value));
             }
         }
 
@@ -102,7 +102,7 @@ namespace Wirehome.Core.Python
                 {
                     for (var i = 0; i < parameters.Length; i++)
                     {
-                        parameters[i] = PythonConvert.ForPython(parameters[i]);
+                        parameters[i] = PythonConvert.ToPython(parameters[i]);
                     }
 
                     object result = _scriptScope.Engine.Operations.Invoke(function, parameters);
