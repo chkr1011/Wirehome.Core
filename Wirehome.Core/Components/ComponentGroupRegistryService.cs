@@ -57,6 +57,16 @@ namespace Wirehome.Core.Components
             }
         }
 
+        public bool TryGetComponentGroup(string uid, out ComponentGroup componentGroup)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            lock (_componentGroups)
+            {
+                return _componentGroups.TryGetValue(uid, out componentGroup);
+            }
+        }
+
         public ComponentGroup GetComponentGroup(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
@@ -211,51 +221,18 @@ namespace Wirehome.Core.Components
             }
         }
 
-        //public bool TryGetComponentGroup(string uid, out ComponentGroup componentGroup)
-        //{
-        //    if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-        //    return _componentGroups.TryGetValue(uid, out componentGroup);
-        //}
-
-        ////public void InitializeComponentGroup(string uid, ComponentGroupConfigurationOld configuration)
-        ////{
-        ////    if (uid == null) throw new ArgumentNullException(nameof(uid));
-        ////    if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-
-        ////    _componentGroups[uid] = InitializeComponentGroupInternal(uid, configuration);
-
-        ////    Save();
-
-        ////    _logger.Log(LogLevel.Information, $"Initialized component group '{uid}'.");
-        ////}
-
-        ////public List<Component> GetAssignedComponents(string uid)
-        ////{
-        ////    if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-        ////    var componentGroup = GetComponentGroup(uid);
-        ////    var components = new List<Component>();
-
-        ////    foreach (var componentUid in componentGroup.Components)
-        ////    {
-        ////        if (_componentRegistryService.TryGetComponent(componentUid, out var component))
-        ////        {
-        ////            components.Add(component);
-        ////        }
-        ////    }
-
-        ////    return components;
-        ////}
-
         public object GetComponentGroupSetting(string uid, string settingUid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
-            if (!_componentGroups.TryGetValue(uid, out var componentGroup))
+            ComponentGroup componentGroup;
+            lock (_componentGroups)
             {
-                return null;
+                if (!_componentGroups.TryGetValue(uid, out componentGroup))
+                {
+                    return null;
+                }
             }
 
             return componentGroup.Settings.GetValueOrDefault(settingUid);
@@ -266,9 +243,13 @@ namespace Wirehome.Core.Components
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
-            if (!_componentGroups.TryGetValue(uid, out var componentGroup))
+            ComponentGroup componentGroup;
+            lock (_componentGroups)
             {
-                return;
+                if (!_componentGroups.TryGetValue(uid, out componentGroup))
+                {
+                    return;
+                }
             }
 
             componentGroup.Settings.TryGetValue(settingUid, out var oldValue);
@@ -324,18 +305,26 @@ namespace Wirehome.Core.Components
             {
                 if (_storageService.TryRead(out ComponentGroupConfiguration _, "ComponentGroups", configurationFile))
                 {
-                    var componentGroupUid = Path.GetDirectoryName(configurationFile);
-                    var componentGroup = new ComponentGroup(componentGroupUid);
+                    var uid = Path.GetDirectoryName(configurationFile);
+                    var componentGroup = new ComponentGroup(uid);
 
-                    var componentSettingsFiles = _storageService.EnumerateFiles("Settings.json", "ComponentGroups", componentGroupUid, "Components");
+                    if (_storageService.TryRead(out Dictionary<string, object> settings, "ComponentGroups", uid, "Settings.json"))
+                    {
+                        foreach (var setting in settings)
+                        {
+                            componentGroup.Settings[setting.Key] = setting.Value;
+                        }
+                    }
+
+                    var componentSettingsFiles = _storageService.EnumerateFiles("Settings.json", "ComponentGroups", uid, "Components");
                     foreach (var componentSettingsFile in componentSettingsFiles)
                     {
-                        if (_storageService.TryRead(out WirehomeDictionary settings, "ComponentGroups", componentGroupUid, "Components", componentSettingsFile))
+                        if (_storageService.TryRead(out WirehomeDictionary componentSettings, "ComponentGroups", uid, "Components", componentSettingsFile))
                         {
                             var componentUid = Path.GetDirectoryName(componentSettingsFile);
                             var association = new ComponentGroupAssociation
                             {
-                                Settings = settings ?? new WirehomeDictionary()
+                                Settings = componentSettings ?? new WirehomeDictionary()
                             };
 
                             componentGroup.Components[componentUid] = association;

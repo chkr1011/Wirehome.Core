@@ -1,5 +1,5 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
 
 namespace Wirehome.Core.Diagnostics
 {
@@ -7,10 +7,12 @@ namespace Wirehome.Core.Diagnostics
     {
         private int _current;
 
-        public OperationsPerSecondCounter()
+        public OperationsPerSecondCounter(string uid)
         {
-            Task.Run(MeasureAsync);
+            Uid = uid ?? throw new ArgumentNullException(nameof(uid));
         }
+
+        public string Uid { get; }
 
         public int Count { get; private set; }
 
@@ -18,13 +20,10 @@ namespace Wirehome.Core.Diagnostics
         {
             Interlocked.Increment(ref _current);
         }
-        
-        private async Task MeasureAsync()
-        {
-            await Task.Delay(1000).ConfigureAwait(false);
-            var current = Interlocked.Exchange(ref _current, 0);
 
-            Count = current;
+        public void Reset()
+        {
+            Count = Interlocked.Exchange(ref _current, 0);
         }
     }
 }

@@ -81,7 +81,7 @@ namespace Wirehome.Core.HTTP
 
                 config.MapRoute(
                     name: "default",
-                    template: "api/{controller=Home}/{action=Index}/{id?}",
+                    template: "api/{controller}/{action}/{id?}",
                     defaults: null,
                     constraints: null,
                     dataTokens: dataTokens
@@ -98,7 +98,7 @@ namespace Wirehome.Core.HTTP
         {
             var webAppRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
             var webConfiguratorRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebConfigurator");
-
+            
             if (Debugger.IsAttached)
             {
                 webAppRootPath = Path.Combine(
@@ -107,7 +107,15 @@ namespace Wirehome.Core.HTTP
                     "..",
                     "..",
                     "..",
-                    "Wirehome.App.Old");
+                    "Wirehome.App");
+
+                webConfiguratorRootPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "..",
+                    "..",
+                    "..",
+                    "..",
+                    "Wirehome.Configurator");
             }
 
             if (!Directory.Exists(webAppRootPath))

@@ -103,6 +103,34 @@ namespace Wirehome.Core.Repositories
             throw new NotSupportedException();
         }
 
+        public string GetEntityRootPath(RepositoryType type, RepositoryEntityUid uid)
+        {
+            if (!_storageService.TryRead(out RepositoryServiceSettings settings, "RepositoryService.json"))
+            {
+                settings = new RepositoryServiceSettings();
+            }
+
+            var rootPath = settings.RootPath;
+            if (string.IsNullOrEmpty(rootPath))
+            {
+                rootPath = Path.Combine(_storageService.DataPath, "Repositories");
+            }
+
+            var typePath = GetPathForType(type);
+            var path = Path.Combine(rootPath, typePath);
+
+            if (string.IsNullOrEmpty(uid.Version))
+            {
+                path = GetLatestVersionPath(path, uid.Id);
+            }
+            else
+            {
+                path = Path.Combine(path, uid.Id, uid.Version);
+            }
+
+            return path;
+        }
+
         private static string GetLatestVersionPath(string rootPath, string id)
         {
             rootPath = Path.Combine(rootPath, id);
@@ -159,34 +187,6 @@ namespace Wirehome.Core.Repositories
             }
 
             return File.ReadAllText(descriptionFile, Encoding.UTF8);
-        }
-
-        private string GetEntityRootPath(RepositoryType type, RepositoryEntityUid uid)
-        {
-            if (!_storageService.TryRead(out RepositoryServiceSettings settings, "RepositoryService.json"))
-            {
-                settings = new RepositoryServiceSettings();
-            }
-
-            var rootPath = settings.RootPath;
-            if (string.IsNullOrEmpty(rootPath))
-            {
-                rootPath = Path.Combine(_storageService.DataPath, "Repositories");
-            }
-
-            var typePath = GetPathForType(type);
-            var path = Path.Combine(rootPath, typePath);
-
-            if (string.IsNullOrEmpty(uid.Version))
-            {
-                path = GetLatestVersionPath(path, uid.Id);
-            }
-            else
-            {
-                path = Path.Combine(path, uid.Id, uid.Version);
-            }
-
-            return path;
         }
     }
 }

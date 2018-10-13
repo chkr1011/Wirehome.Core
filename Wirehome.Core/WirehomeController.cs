@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -9,6 +8,7 @@ using Wirehome.Core.Automations;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Diagnostics.Log;
 using Wirehome.Core.FunctionPool;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Hardware.GPIO;
@@ -57,7 +57,6 @@ namespace Wirehome.Core
                 var serviceProvider = StartHttpServer();
                 _loggerFactory.AddProvider(new LogServiceLoggerProvider(serviceProvider.GetService<LogService>()));
 
-                SetupSystemStatusService(timestamp, serviceProvider);
                 SetupHardwareAdapters(serviceProvider); // TODO: From config!
 
                 StartServices(serviceProvider);
@@ -70,6 +69,7 @@ namespace Wirehome.Core
 
                 _logger.Log(LogLevel.Information, "Startup completed.");
 
+                serviceProvider.GetService<SystemService>().Start(timestamp, string.Join(" ", _arguments));
                 serviceProvider.GetRequiredService<StartupScriptsService>().OnStartupCompleted();
             }
             catch (Exception exception)
@@ -140,45 +140,47 @@ namespace Wirehome.Core
         {
             serviceCollection.AddSingleton(_loggerFactory);
 
-            serviceCollection.AddSingleton(typeof(HttpServerService));
+            serviceCollection.AddSingleton<HttpServerService>();
 
-            serviceCollection.AddSingleton(typeof(LogService));
-            serviceCollection.AddSingleton(typeof(SystemService));
-            serviceCollection.AddSingleton(typeof(StartupScriptsService));
-            serviceCollection.AddSingleton(typeof(SystemStatusService));
-            serviceCollection.AddSingleton(typeof(GlobalVariablesService));
+            serviceCollection.AddSingleton<LogService>();
+            serviceCollection.AddSingleton<SystemService>();
+            serviceCollection.AddSingleton<DiagnosticsService>();
+            serviceCollection.AddSingleton<StartupScriptsService>();
+            serviceCollection.AddSingleton<SystemStatusService>();
+            serviceCollection.AddSingleton<GlobalVariablesService>();
 
-            serviceCollection.AddSingleton(typeof(StorageService));
-            serviceCollection.AddSingleton(typeof(ResourcesService));
-            serviceCollection.AddSingleton(typeof(FunctionPoolService));
+            serviceCollection.AddSingleton<StorageService>();
+            serviceCollection.AddSingleton<ResourcesService>();
+            serviceCollection.AddSingleton<FunctionPoolService>();
 
-            serviceCollection.AddSingleton(typeof(MessageBusService));
-            serviceCollection.AddSingleton(typeof(SchedulerService));
-            serviceCollection.AddSingleton(typeof(PythonEngineService));
+            serviceCollection.AddSingleton<MessageBusService>();
+            serviceCollection.AddSingleton<SchedulerService>();
+            serviceCollection.AddSingleton<PythonEngineService>();
 
-            serviceCollection.AddSingleton(typeof(MqttService));
-            serviceCollection.AddSingleton(typeof(I2CBusService));
-            serviceCollection.AddSingleton(typeof(GpioRegistryService));
+            serviceCollection.AddSingleton<MqttService>();
+            serviceCollection.AddSingleton<I2CBusService>();
+            serviceCollection.AddSingleton<GpioRegistryService>();
 
-            serviceCollection.AddSingleton(typeof(NotificationsService));
+            serviceCollection.AddSingleton<NotificationsService>();
 
-            serviceCollection.AddSingleton(typeof(ComponentGroupRegistryService));
+            serviceCollection.AddSingleton<ComponentGroupRegistryService>();
 
-            serviceCollection.AddSingleton(typeof(RepositoryService));
+            serviceCollection.AddSingleton<RepositoryService>();
 
-            serviceCollection.AddSingleton(typeof(HistoryService));
+            serviceCollection.AddSingleton<HistoryService>();
 
-            serviceCollection.AddSingleton(typeof(ServiceHostService));
-            serviceCollection.AddSingleton(typeof(ComponentRegistryService));
-            serviceCollection.AddSingleton(typeof(ComponentInitializerFactory));
-            serviceCollection.AddSingleton(typeof(AutomationsRegistryService));
-            serviceCollection.AddSingleton(typeof(MacroRegistryService));
+            serviceCollection.AddSingleton<ServiceHostService>();
+            serviceCollection.AddSingleton<ComponentRegistryService>();
+            serviceCollection.AddSingleton<ComponentInitializerFactory>();
+            serviceCollection.AddSingleton<AutomationsRegistryService>();
+            serviceCollection.AddSingleton<MacroRegistryService>();
         }
 
         private void StartServices(IServiceProvider serviceProvider)
         {
             _logger.Log(LogLevel.Debug, "Starting services...");
 
+            serviceProvider.GetService<DiagnosticsService>().Start();
             serviceProvider.GetService<MessageBusService>().Start();
 
             serviceProvider.GetService<ResourcesService>().Start();
@@ -239,45 +241,6 @@ namespace Wirehome.Core
                 var gpioAdapter = new TestGpioAdapter(loggerFactory);
                 gpioService.RegisterAdapter(string.Empty, gpioAdapter);
             }
-        }
-
-        private void SetupSystemStatusService(DateTime startupTimestamp, IServiceProvider serviceProvider)
-        {
-            var systemStatusService = serviceProvider.GetService<SystemStatusService>();
-
-            systemStatusService.Set("startup.timestamp", startupTimestamp);
-            systemStatusService.Set("startup.duration", DateTime.Now - startupTimestamp);
-
-            systemStatusService.Set("os.description", RuntimeInformation.OSDescription);
-            systemStatusService.Set("os.architecture", RuntimeInformation.OSArchitecture);
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                systemStatusService.Set("os.platform", "linux");
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                systemStatusService.Set("os.platform", "windows");
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                systemStatusService.Set("os.platform", "osx");
-            }
-
-            systemStatusService.Set("framework.description", RuntimeInformation.FrameworkDescription);
-
-            systemStatusService.Set("process.architecture", RuntimeInformation.ProcessArchitecture);
-            systemStatusService.Set("process.id", Process.GetCurrentProcess().Id);
-
-            systemStatusService.Set("system.date_time", () => DateTime.Now);
-
-            systemStatusService.Set("up_time", () => DateTime.Now - startupTimestamp);
-
-            systemStatusService.Set("arguments", _arguments);
-
-            systemStatusService.Set("wirehome.core.version", "1.0-alpha3");
-            
-            _logger.Log(LogLevel.Debug, "System status initialized.");
         }
 
         private IServiceProvider StartHttpServer()

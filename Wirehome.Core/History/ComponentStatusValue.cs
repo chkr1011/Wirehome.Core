@@ -2,11 +2,11 @@
 
 namespace Wirehome.Core.History
 {
-    public class ComponentStatusValueMessage
+    public class ComponentStatusValue
     {
         public string ComponentUid { get; set; }
         public string StatusUid { get; set; }
-        public object Value { get; set; }
-        public DateTime Timestamp { get; set; }
+        public string Value { get; set; }
+        public DateTimeOffset Timestamp { get; set; }
     }
 }

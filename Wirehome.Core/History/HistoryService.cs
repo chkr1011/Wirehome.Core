@@ -17,8 +17,8 @@ namespace Wirehome.Core.History
 {
     public class HistoryService
     {
-        private readonly BlockingCollection<ComponentStatusValueMessage> _pendingComponentStatusChangedMessages = new BlockingCollection<ComponentStatusValueMessage>();
-        
+        private readonly BlockingCollection<ComponentStatusValue> _pendingComponentStatusValues = new BlockingCollection<ComponentStatusValue>();
+
         private readonly ComponentRegistryService _componentRegistryService;
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
@@ -29,8 +29,8 @@ namespace Wirehome.Core.History
 
         public HistoryService(
             ComponentRegistryService componentRegistryService,
-            StorageService storageService, 
-            MessageBusService messageBusService, 
+            StorageService storageService,
+            MessageBusService messageBusService,
             SystemStatusService systemStatusService,
             SystemService systemService,
             ILoggerFactory loggerFactory)
@@ -44,7 +44,7 @@ namespace Wirehome.Core.History
             _logger = loggerFactory.CreateLogger<HistoryService>();
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
-            systemStatusService.Set("history.pending_component_status_changed_messages", _pendingComponentStatusChangedMessages.Count);
+            systemStatusService.Set("history.pending_component_status_values_count", _pendingComponentStatusValues.Count);
         }
 
         public void Start()
@@ -56,44 +56,51 @@ namespace Wirehome.Core.History
 
             AttachToMessageBus();
 
-            Task.Factory.StartNew(() => TryProcessMessages(_systemService.CancellationToken), _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(
+                () => TryProcessMessages(_systemService.CancellationToken), 
+                _systemService.CancellationToken, 
+                TaskCreationOptions.LongRunning, 
+                TaskScheduler.Default);
+
+            Task.Run(
+                () => TryUpdateComponentPropertyValuesAsync(_systemService.CancellationToken),
+                _systemService.CancellationToken);
         }
 
         private void AttachToMessageBus()
         {
-            _messageBusService.Subscribe(Guid.NewGuid().ToString("D"), new WirehomeDictionary().WithType("component_registry.event.component_status_reported"), OnComponentPropertyReported);
+            var filter = new WirehomeDictionary().WithType("component_registry.event.status_reported");
+            _messageBusService.Subscribe("history_receiver", filter, OnComponentPropertyReported);
         }
 
         private void OnComponentPropertyReported(WirehomeDictionary properties)
         {
-            var message = new ComponentStatusValueMessage
+            var componentStatusValue = new ComponentStatusValue
             {
-                ComponentUid = properties.GetValueOrDefault("component_uid") as string,
-                StatusUid = properties.GetValueOrDefault("status_uid") as string,
-                Value = properties.GetValueOrDefault("new_value"),
-                Timestamp = (DateTime)properties.GetValueOrDefault("timestamp")
+                ComponentUid = Convert.ToString(properties["component_uid"], CultureInfo.InvariantCulture),
+                StatusUid = Convert.ToString(properties["status_uid"], CultureInfo.InvariantCulture),
+                Value = Convert.ToString(properties.GetValueOrDefault("new_value", null), CultureInfo.InvariantCulture),
+                Timestamp = (DateTime)properties.GetValueOrDefault("timestamp", DateTime.UtcNow)
             };
 
-            _pendingComponentStatusChangedMessages.Add(message, _systemService.CancellationToken);
+            _pendingComponentStatusValues.Add(componentStatusValue, _systemService.CancellationToken);
         }
 
         private bool TryInitializeRepository()
         {
             try
             {
-                _repository = new HistoryRepository(_storageService);
-                _repository.Initialize();
+                var repository = new HistoryRepository();
+                repository.Initialize();
+                _repository = repository;
 
                 return true;
             }
             catch (Exception exception)
             {
                 _logger.Log(LogLevel.Warning, exception, "Error while initializing history repository.");
-
-                _repository = null;
+                return false;
             }
-
-            return false;
         }
 
         private void TryProcessMessages(CancellationToken cancellationToken)
@@ -118,32 +125,13 @@ namespace Wirehome.Core.History
         {
             try
             {
-                var message = _pendingComponentStatusChangedMessages.Take(cancellationToken);
-                if (message == null)
+                var componentStatusValue = _pendingComponentStatusValues.Take(cancellationToken);
+                if (componentStatusValue == null || cancellationToken.IsCancellationRequested)
                 {
                     return;
                 }
 
-                var now = DateTime.Now;
-                
-                var existingRow = _repository.GetComponentStatusRow(message.ComponentUid, message.StatusUid);
-                if (existingRow?.Timestamp > message.Timestamp)
-                {
-                    return;
-                }
-
-                var newValueText = Convert.ToString(message.Value, CultureInfo.InvariantCulture);
-                var valueHasChanged = !string.Equals(existingRow?.Value, newValueText, StringComparison.Ordinal);
-
-                if (existingRow != null)
-                {
-                    _repository.UpdateComponentStatusRow(existingRow.ID, now);
-                }
-                
-                if (valueHasChanged)
-                {
-                    _repository.InsertComponentStatusRow(message.ComponentUid, message.StatusUid, newValueText, now);    
-                }
+                _repository.UpdateComponentStatusValue(componentStatusValue);
             }
             catch (OperationCanceledException)
             {
@@ -154,23 +142,39 @@ namespace Wirehome.Core.History
             }
         }
 
-        private void TryUpdateComponentPropertyValues(CancellationToken cancellationToken)
+        private async Task TryUpdateComponentPropertyValuesAsync(CancellationToken cancellationToken)
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
-                while (!cancellationToken.IsCancellationRequested)
+                try
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(10));
-                        
-                    //_repository.
+                    foreach (var component in _componentRegistryService.GetComponents())
+                    {
+                        foreach (var status in component.Status)
+                        {
+                            var componentStatusValue = new ComponentStatusValue
+                            {
+                                ComponentUid = component.Uid,
+                                StatusUid = status.Key,
+                                Timestamp = DateTimeOffset.UtcNow,
+                                Value = Convert.ToString(status.Value, CultureInfo.InvariantCulture)
+                            };
+
+                            _pendingComponentStatusValues.Add(componentStatusValue, cancellationToken);
+                        }
+                    }
                 }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                _logger.Log(LogLevel.Error, exception, "Error while updating component property values.");
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception exception)
+                {
+                    _logger.Log(LogLevel.Error, exception, "Error while updating component property values.");
+                }
+                finally
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
+                }
             }
         }
     }

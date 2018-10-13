@@ -66,9 +66,14 @@ namespace Wirehome.Core.Components
                 component = new Component(uid);
                 lock (_components)
                 {
+                    if (_components.TryGetValue(uid, out var existingComponent))
+                    {
+                        existingComponent.ProcessMessage(new WirehomeDictionary().WithType("destroy"));
+                    }
+
                     _components[uid] = component;
                 }
-
+                
                 _componentInitializerFactory.Create(this).InitializeComponent(component, configuration);
 
                 _logger.Log(LogLevel.Information, $"Component '{component.Uid}' initialized successfully.");
@@ -83,10 +88,10 @@ namespace Wirehome.Core.Components
                 {
                     _components.Remove(uid, out _);
                 }
-            }
 
-            component = null;
-            return false;
+                component = null;
+                return false;
+            }
         }
 
         public Component GetComponent(string uid)
@@ -144,7 +149,7 @@ namespace Wirehome.Core.Components
                 }
             }
 
-            return component.Configuration.GetValueOrDefault(componentUid, defaultValue);
+            return component.Configuration.GetValueOrDefault(configurationUid, defaultValue);
         }
 
         public object GetComponentStatus(string componentUid, string statusUid, object defaultValue = null)
