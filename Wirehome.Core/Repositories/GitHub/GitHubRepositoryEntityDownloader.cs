@@ -8,6 +8,8 @@ using Newtonsoft.Json;
 
 namespace Wirehome.Core.Repositories.GitHub
 {
+    // TODO: Do not write to repo directly. Get "Temp" path from StorageService
+    // TODO: Or load all files into memory and return the result and the repo service will store all.
     public class GitHubRepositoryEntityDownloader
     {
         private readonly RepositoryServiceSettings _settings;
