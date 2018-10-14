@@ -11,20 +11,22 @@
                 <span class="component-icon" ng-style="{color: component.imageColor}" ng-class="component.imageId"></span>
                 <span class="component-caption">{{component.caption}}</span>
             </div>
-            <div class="clearfix" style="padding: 0; padding-top: 5px;" ng-include="component.template"></div>
-            <div class="clearfix" style="padding: 0; padding-top: 5px;">
+            <div class="clearfix" style="padding-top: 10px;" ng-include="component.template"></div>
+
+            <div class="clearfix">
 
                 <span ng-if="component.source.settings['is_enabled']===false" class="component-status-text label label-danger">
                     <span class="fas fa-toggle-off"></span> Disabled
+                </span>
+
+                <span ng-if="component.isOutdated" class="component-status-text label label-warning">
+                    <span class="fas fa-stopwatch"></span> <span>Outdated</span>
                 </span>
 
                 <span ng-if="component.powerConsumption > 0" class="component-status-text label label-warning">
                     <span class="fas fa-bolt"></span> <span>{{component.powerConsumption}} Wh</span>
                 </span>
 
-                <span ng-if="component.isOutdated" class="component-status-text label label-warning">
-                    <span class="fas fa-stopwatch"></span> <span>Outdated!</span>
-                </span>
             </div>
         </li>
     </ul>
