@@ -50,12 +50,12 @@ namespace Wirehome.Core.Scheduler
                 var stopwatch = Stopwatch.StartNew();
                 while (!cancellationToken.IsCancellationRequested)
                 {
+                    // TODO: Consider adding a flag "HighPrecision=true|false". Then use Thread.Sleep or await to safe threads.
+                    Thread.Sleep(Interval);
+
                     var elapsed = stopwatch.Elapsed;
                     TryTick(elapsed);
                     stopwatch.Restart();
-
-                    // TODO: Consider adding a flag "HighPrecision=true". Then use Thread.Sleep or await.
-                    Thread.Sleep(Interval);
                 }
             }
             catch (OperationCanceledException)
