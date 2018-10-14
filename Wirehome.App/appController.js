@@ -157,7 +157,7 @@ function createAppController($http, $scope, modalService, apiService, localizati
         model.isOutdated = getValue(source.status, "status.is_outdated", false)
 
         model.caption = getEffectiveValue([associationSettings, source.settings], "app.caption", "#" + model.uid)
-        model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", 0);
+        model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", model.uid);
         model.imageColor = getEffectiveValue([associationSettings, source.settings], "app.image_color", "#427AB6");
 
         if (model.template == undefined) {
