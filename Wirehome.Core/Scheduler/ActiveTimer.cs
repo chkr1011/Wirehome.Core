@@ -53,9 +53,15 @@ namespace Wirehome.Core.Scheduler
                     // TODO: Consider adding a flag "HighPrecision=true|false". Then use Thread.Sleep or await to safe threads.
                     Thread.Sleep(Interval);
 
+                    // Ensure that the tick is not called when the task was cancelled during the sleep time.
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
                     var elapsed = stopwatch.Elapsed;
-                    TryTick(elapsed);
                     stopwatch.Restart();
+                    TryTick(elapsed);
                 }
             }
             catch (OperationCanceledException)
