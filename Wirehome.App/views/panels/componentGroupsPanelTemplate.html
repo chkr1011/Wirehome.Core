@@ -1,7 +1,8 @@
 ﻿<div id="{{componentGroup.uid}}" class="row panel" ng-class="ctrl.activePanel===componentGroup.uid ? 'panel-active' : 'panel-default'"
     ng-repeat="componentGroup in ctrl.componentGroups | orderBy:['sortValue']">
     <div class="panel-heading pointer clearfix" ng-click="ctrl.setActivePanel(componentGroup.uid)">
-        <span class="component-group-icon pull-right" ng-style="{color: componentGroup.imageColor}" ng-class="componentGroup.imageId"></span>
+        <span class="component-group-icon pull-right" ng-style="{color: ctrl.activePanel===componentGroup.uid ? 'white' : componentGroup.imageColor}"
+            ng-class="componentGroup.imageId"></span>
         <span class="panel-title pull-left">{{componentGroup.caption}}</span>
     </div>
 

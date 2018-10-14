@@ -44,7 +44,7 @@ namespace Wirehome.Core.Python.Proxies
             {
                 uid = Guid.NewGuid().ToString("D");
             }
-
+            // TODO: Move UID generation to service.
             _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), (s, t) => callback((int)t.TotalMilliseconds, state));
             return uid;
         }

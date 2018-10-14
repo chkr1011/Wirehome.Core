@@ -62,7 +62,14 @@ namespace Wirehome.Core.Scheduler
             _scheduler.Start().GetAwaiter().GetResult();
 
             Task.Factory.StartNew(ScheduleTasks, _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+            StartTimer("default", TimeSpan.FromMilliseconds(100), DefaultTimerCallback);
         }
+
+        //public string AttachToDefaultTimer()
+        //{
+
+        //}
 
         public void StartTimer(string uid, TimeSpan interval, Action<string, TimeSpan> callback)
         {
@@ -240,6 +247,11 @@ namespace Wirehome.Core.Scheduler
 
                 Thread.Sleep(100);
             }
+        }
+
+        private void DefaultTimerCallback(string arg1, TimeSpan arg2)
+        {
+
         }
     }
 }

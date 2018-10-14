@@ -225,10 +225,10 @@ function createAppController($http, $scope, modalService, apiService, localizati
         model.source = source;
 
         model.caption = getValue(source.settings, "app.caption", "#" + source.uid);
-        model.sortValue = getValue(source.settings, "app.position_index", 0);
+        model.sortValue = getValue(source.settings, "app.position_index", model.uid);
         model.isVisible = getValue(source.settings, "app.is_visible", true);
         model.imageId = getValue(source.settings, "app.image_id", null);
-        model.imageColor = getValue(source.settings, "app.image_color", null);
+        model.imageColor = getValue(source.settings, "app.image_color", "#427AB6");
 
         $.each(model.components, function (i, componentModel) {
             var componentStatus = status.components.find(x => x.uid == componentModel.uid);
