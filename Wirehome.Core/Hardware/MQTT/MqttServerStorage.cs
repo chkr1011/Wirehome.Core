@@ -7,32 +7,38 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public partial class MqttService
+    public class MqttServerStorage : IMqttServerStorage
     {
-        public class MqttServerStorage : IMqttServerStorage
+        private readonly List<MqttApplicationMessage> _messages = new List<MqttApplicationMessage>();
+        private readonly StorageService _storageService;
+        
+        public MqttServerStorage(StorageService storageService)
         {
-            private readonly StorageService _storageService;
+            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+        }
 
-            public MqttServerStorage(StorageService storageService)
+        public Task SaveRetainedMessagesAsync(IList<MqttApplicationMessage> messages)
+        {
+            lock (_messages)
             {
-                _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+                _messages.Clear();
+                _messages.AddRange(messages);
             }
 
-            public Task SaveRetainedMessagesAsync(IList<MqttApplicationMessage> messages)
-            {
-                _storageService.Write(messages, "RetainedMqttMessages.json");
-                return Task.CompletedTask;
-            }
+            // TODO: Consider starting a async task which stores the messages (from field) all 30 Seconds.
+            //_storageService.Write(messages ?? new List<MqttApplicationMessage>(), "RetainedMqttMessages.json");
+            return Task.CompletedTask;
+        }
 
-            public Task<IList<MqttApplicationMessage>> LoadRetainedMessagesAsync()
+        public Task<IList<MqttApplicationMessage>> LoadRetainedMessagesAsync()
+        {
+            _storageService.TryRead(out List<MqttApplicationMessage> messages, "RetainedMqttMessages.json");
+            if (messages == null)
             {
-                if (!_storageService.TryRead(out List<MqttApplicationMessage> messages, "RetainedMqttMessages.json"))
-                {
-                    messages = new List<MqttApplicationMessage>();
-                }
-
-                return Task.FromResult<IList<MqttApplicationMessage>>(messages);
+                messages = new List<MqttApplicationMessage>();
             }
+            
+            return Task.FromResult<IList<MqttApplicationMessage>>(messages);
         }
     }
 }
