@@ -21,5 +21,21 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             _automationsRegistryService.InitializeAutomation(uid, configuration);
         }
+
+        [HttpPost]
+        [Route("api/v1/automations/{uid}/deactivate")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostDeactivate(string uid)
+        {
+            _automationsRegistryService.DeactivateAutomation(uid);
+        }
+
+        [HttpPost]
+        [Route("api/v1/automations/{uid}/activate")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostActivate(string uid)
+        {
+            _automationsRegistryService.ActivateAutomation(uid);
+        }
     }
 }

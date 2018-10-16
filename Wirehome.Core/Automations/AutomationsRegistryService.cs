@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Automations.Configuration;
+using Wirehome.Core.Automations.Exceptions;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
 using Wirehome.Core.Repositories;
@@ -12,7 +13,7 @@ namespace Wirehome.Core.Automations
 {
     public class AutomationsRegistryService
     {
-        private readonly Dictionary<string, AutomationInstance> _automations = new Dictionary<string, AutomationInstance>();
+        private readonly Dictionary<string, Automation> _automations = new Dictionary<string, Automation>();
 
         private readonly RepositoryService _repositoryService;
         private readonly PythonEngineService _pythonEngineService;
@@ -37,6 +38,35 @@ namespace Wirehome.Core.Automations
             {
                 Load();
             }
+        }
+
+        public Automation GetAutomation(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            lock (_automations)
+            {
+                if (!_automations.TryGetValue(uid, out var automation))
+                {
+                    throw new AutomationNotFoundException(uid);
+                }
+
+                return automation;
+            }
+        }
+
+        public void ActivateAutomation(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            GetAutomation(uid).Activate();
+        }
+
+        public void DeactivateAutomation(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            GetAutomation(uid).Deactivate();
         }
 
         public void InitializeAutomation(string uid, AutomationConfiguration configuration)
@@ -68,17 +98,17 @@ namespace Wirehome.Core.Automations
                 scriptHost.SetVariable(variable.Key, variable.Value);
             }
 
-            var automationInstance = new AutomationInstance(scriptHost);
-            automationInstance.ScriptHost.InvokeFunction("initialize");
+            var automationInstance = new Automation(scriptHost);
+            automationInstance.Initialize();
 
             lock (_automations)
             {
                 if (_automations.TryGetValue(uid, out var existingAutomationInstance))
                 {
-                    existingAutomationInstance.ScriptHost.InvokeFunction("deactivate");
+                    existingAutomationInstance.Deactivate();
                 }
 
-                automationInstance.ScriptHost.InvokeFunction("activate");
+                automationInstance.Activate();
 
                 _automations[uid] = automationInstance;
             }
