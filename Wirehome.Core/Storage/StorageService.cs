@@ -23,7 +23,14 @@ namespace Wirehome.Core.Storage
         {
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<StorageService>();
+        }
 
+        public string BinPath { get; private set; }
+
+        public string DataPath { get; private set; }
+
+        public void Start()
+        {
             BinPath = AppDomain.CurrentDomain.BaseDirectory;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -47,10 +54,6 @@ namespace Wirehome.Core.Storage
             _logger.Log(LogLevel.Information, $"Bin path  = {BinPath}");
             _logger.Log(LogLevel.Information, $"Data path = {DataPath}");
         }
-
-        public string BinPath { get; }
-
-        public string DataPath { get; }
 
         public List<string> EnumeratureDirectories(string pattern, params string[] path)
         {
@@ -139,7 +142,7 @@ namespace Wirehome.Core.Storage
             value = File.ReadAllText(filename, Encoding.UTF8);
             return true;
         }
-        
+
         public bool TryReadRaw(out byte[] content, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));

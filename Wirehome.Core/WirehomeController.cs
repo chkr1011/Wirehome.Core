@@ -54,7 +54,10 @@ namespace Wirehome.Core
                 _logger = _loggerFactory.CreateLogger<WirehomeController>();
                 _logger.Log(LogLevel.Information, "Starting Wirehome.Core (c) Christian Kratky 2011 - 2018");
 
-                var serviceProvider = StartHttpServer();
+                var storageService = new StorageService(_loggerFactory);
+                storageService.Start();
+                
+                var serviceProvider = StartHttpServer(storageService);
                 _loggerFactory.AddProvider(new LogServiceLoggerProvider(serviceProvider.GetService<LogService>()));
 
                 SetupHardwareAdapters(serviceProvider); // TODO: From config!
@@ -149,7 +152,6 @@ namespace Wirehome.Core
             serviceCollection.AddSingleton<SystemStatusService>();
             serviceCollection.AddSingleton<GlobalVariablesService>();
 
-            serviceCollection.AddSingleton<StorageService>();
             serviceCollection.AddSingleton<ResourcesService>();
             serviceCollection.AddSingleton<FunctionPoolService>();
 
@@ -243,11 +245,13 @@ namespace Wirehome.Core
             }
         }
 
-        private IServiceProvider StartHttpServer()
+        private IServiceProvider StartHttpServer(StorageService storageService)
         {
             _logger.Log(LogLevel.Debug, "Starting HTTP server");
 
             WebStartup.OnServiceRegistration = RegisterServices;
+            WebStartup.StorageService = storageService;
+
             var host = WebHost.CreateDefaultBuilder()
                 .UseKestrel()
                 .UseStartup<WebStartup>()

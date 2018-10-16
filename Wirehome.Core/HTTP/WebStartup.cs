@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.Swagger;
 using Wirehome.Core.HTTP.Controllers.Diagnostics;
+using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
 {
@@ -20,8 +21,9 @@ namespace Wirehome.Core.HTTP
         {
         }
 
-        public static Action<IServiceCollection> OnServiceRegistration;
-        public static IServiceProvider ServiceProvider;
+        public static Action<IServiceCollection> OnServiceRegistration { get; set; }
+        public static IServiceProvider ServiceProvider { get; set; }
+        public static StorageService StorageService { get; set; }
 
         // ReSharper disable once UnusedMember.Global
         public IServiceProvider ConfigureServices(IServiceCollection services)
@@ -50,6 +52,7 @@ namespace Wirehome.Core.HTTP
             });
 
             OnServiceRegistration(services);
+            services.AddSingleton(StorageService);
 
             ServiceProvider = services.BuildServiceProvider();
             return ServiceProvider;
@@ -98,7 +101,9 @@ namespace Wirehome.Core.HTTP
         {
             var webAppRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
             var webConfiguratorRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebConfigurator");
-            
+            var customContentRootPath = Path.Combine(StorageService.DataPath, "CustomContent");
+            var repositoriesRootPath = Path.Combine(StorageService.DataPath, "Repositories");
+
             if (Debugger.IsAttached)
             {
                 webAppRootPath = Path.Combine(
@@ -118,26 +123,23 @@ namespace Wirehome.Core.HTTP
                     "Wirehome.Configurator");
             }
 
-            if (!Directory.Exists(webAppRootPath))
+            ExposeDirectory(app, "/app", webAppRootPath);
+            ExposeDirectory(app, "/configurator", webConfiguratorRootPath);
+            ExposeDirectory(app, "/customContent", customContentRootPath);
+            ExposeDirectory(app, "/repositories", repositoriesRootPath);
+        }
+
+        private static void ExposeDirectory(IApplicationBuilder app, string uri, string path)
+        {
+            if (!Directory.Exists(path))
             {
-                Directory.CreateDirectory(webAppRootPath);
+                Directory.CreateDirectory(path);
             }
 
             app.UseFileServer(new FileServerOptions
             {
-                RequestPath = "/app",
-                FileProvider = new PhysicalFileProvider(webAppRootPath)
-            });
-
-            if (!Directory.Exists(webConfiguratorRootPath))
-            {
-                Directory.CreateDirectory(webConfiguratorRootPath);
-            }
-
-            app.UseFileServer(new FileServerOptions
-            {
-                RequestPath = "/configurator",
-                FileProvider = new PhysicalFileProvider(webConfiguratorRootPath)
+                RequestPath = uri,
+                FileProvider = new PhysicalFileProvider(path)
             });
         }
 
