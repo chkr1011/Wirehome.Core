@@ -10,22 +10,24 @@ namespace Wirehome.Core.Scheduler
     {
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-        private readonly Action<string, TimeSpan> _callback;
+        private readonly Action<TimerTickCallbackParameters> _callback;
+        private readonly object _state;
         private readonly ILogger _logger;
 
-        public ActiveTimer(string uid, TimeSpan interval, Action<string, TimeSpan> callback, ILoggerFactory loggerFactory)
+        public ActiveTimer(string uid, TimeSpan interval, Action<TimerTickCallbackParameters> callback, object state, ILogger logger)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
-            Interval = interval;
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+            _state = state;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ActiveTimer>();
+            Interval = interval;
         }
 
         public void Start()
         {
-            Task.Factory.StartNew(() => Run(_cancellationTokenSource.Token), _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(() => RunAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token).ConfigureAwait(false);
+            //Task.Factory.StartNew(() => Run(_cancellationTokenSource.Token), _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public string Uid { get; }
@@ -43,7 +45,7 @@ namespace Wirehome.Core.Scheduler
             _cancellationTokenSource?.Dispose();
         }
 
-        private void Run(CancellationToken cancellationToken)
+        private async Task RunAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -51,7 +53,8 @@ namespace Wirehome.Core.Scheduler
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     // TODO: Consider adding a flag "HighPrecision=true|false". Then use Thread.Sleep or await to safe threads.
-                    Thread.Sleep(Interval);
+                    //Thread.Sleep(Interval);
+                    await Task.Delay(Interval, cancellationToken).ConfigureAwait(false);
 
                     // Ensure that the tick is not called when the task was cancelled during the sleep time.
                     if (cancellationToken.IsCancellationRequested)
@@ -77,7 +80,7 @@ namespace Wirehome.Core.Scheduler
         {
             try
             {
-                _callback(Uid, elapsed);
+                _callback(new TimerTickCallbackParameters(Uid, (int)elapsed.TotalMilliseconds, _state));
             }
             catch (OperationCanceledException)
             {

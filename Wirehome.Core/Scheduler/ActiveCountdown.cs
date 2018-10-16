@@ -6,15 +6,16 @@ namespace Wirehome.Core.Scheduler
     public class ActiveCountdown
     {
         private readonly ILogger _logger;
-        private readonly Action _callback;
+        private readonly Action<CountdownElapsedParameters> _callback;
+        private readonly object _state;
 
-        public ActiveCountdown(string uid, Action callback, ILoggerFactory loggerFactory)
+        public ActiveCountdown(string uid, Action<CountdownElapsedParameters> callback, object state, ILogger logger)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ActiveCountdown>();
+            _state = state;
         }
 
         public string Uid { get; }
@@ -25,7 +26,7 @@ namespace Wirehome.Core.Scheduler
         {
             try
             {
-                _callback();
+                _callback(new CountdownElapsedParameters(Uid, _state));
             }
             catch (OperationCanceledException)
             {

@@ -22,11 +22,11 @@ namespace Wirehome.Core.Scheduler
         private readonly ILogger _logger;
         private readonly IScheduler _scheduler;
         private readonly SystemService _systemService;
-        private readonly ILoggerFactory _loggerFactory;
 
         private readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
         private readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
         private readonly Dictionary<string, ActiveThread> _activeThreads = new Dictionary<string, ActiveThread>();
+        private readonly Dictionary<string, DefaultTimerSubscriber> _defaultTimerSubscribers = new Dictionary<string, DefaultTimerSubscriber>();
 
         public SchedulerService(
             PythonEngineService pythonEngineService,
@@ -35,8 +35,8 @@ namespace Wirehome.Core.Scheduler
             ILoggerFactory loggerFactory)
         {
             _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<SchedulerService>();
 
             LogProvider.SetCurrentLogProvider(new QuartzLogBridge(_logger));
@@ -62,21 +62,53 @@ namespace Wirehome.Core.Scheduler
             _scheduler.Start().GetAwaiter().GetResult();
 
             Task.Factory.StartNew(ScheduleTasks, _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-
-            StartTimer("default", TimeSpan.FromMilliseconds(100), DefaultTimerCallback);
         }
 
-        //public string AttachToDefaultTimer()
-        //{
-
-        //}
-
-        public void StartTimer(string uid, TimeSpan interval, Action<string, TimeSpan> callback)
+        public string AttachToDefaultTimer(string uid, Action<TimerTickCallbackParameters> callback, object state = null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
 
-            var activeTimer = new ActiveTimer(uid, interval, callback, _loggerFactory);
+            if (string.IsNullOrEmpty(uid))
+            {
+                uid = Guid.NewGuid().ToString("D");
+            }
+
+            lock (_defaultTimerSubscribers)
+            {
+                _defaultTimerSubscribers[uid] = new DefaultTimerSubscriber(uid, callback, state, _logger);
+            }
+
+            return uid;
+        }
+
+        public void DetachFromDefaultTimer(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            lock (_defaultTimerSubscribers)
+            {
+                _defaultTimerSubscribers.Remove(uid);
+            }
+        }
+
+        public List<DefaultTimerSubscriber> GetDefaultTimerSubscribers()
+        {
+            lock (_defaultTimerSubscribers)
+            {
+                return _defaultTimerSubscribers.Values.ToList();
+            }
+        }
+
+        public string StartTimer(string uid, TimeSpan interval, Action<TimerTickCallbackParameters> callback, object state = null)
+        {
+            if (callback == null) throw new ArgumentNullException(nameof(callback));
+
+            if (string.IsNullOrEmpty(uid))
+            {
+                uid = Guid.NewGuid().ToString("D");
+            }
+
+            var activeTimer = new ActiveTimer(uid, interval, callback, state, _logger);
             lock (_activeTimers)
             {
                 if (_activeTimers.TryGetValue(uid, out var existingTimer))
@@ -89,6 +121,8 @@ namespace Wirehome.Core.Scheduler
             }
 
             activeTimer.Start();
+
+            return uid;
         }
 
         public void StopTimer(string uid)
@@ -107,7 +141,7 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        public IList<ActiveTimer> GetActiveTimers()
+        public List<ActiveTimer> GetActiveTimers()
         {
             lock (_activeThreads)
             {
@@ -115,25 +149,24 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        public void StartCountdown(string uid, TimeSpan timeLeft, Action callback)
+        public string StartCountdown(string uid, TimeSpan timeLeft, Action<CountdownElapsedParameters> callback, object state = null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
+
+            if (string.IsNullOrEmpty(uid))
+            {
+                uid = Guid.NewGuid().ToString("D");
+            }
 
             lock (_activeCountdowns)
             {
-                if (_activeCountdowns.TryGetValue(uid, out var activeCountdown))
+                _activeCountdowns[uid] = new ActiveCountdown(uid, callback, state, _logger)
                 {
-                    activeCountdown.TimeLeft = timeLeft;
-                }
-                else
-                {
-                    _activeCountdowns.Add(uid, new ActiveCountdown(uid, callback, _loggerFactory)
-                    {
-                        TimeLeft = timeLeft
-                    });
-                }
+                    TimeLeft = timeLeft
+                };
             }
+
+            return uid;
         }
 
         public void StopCountdown(string uid)
@@ -146,7 +179,7 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        public IList<ActiveCountdown> GetActiveCountdowns()
+        public List<ActiveCountdown> GetActiveCountdowns()
         {
             lock (_activeCountdowns)
             {
@@ -154,10 +187,14 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        public void StartThread(string uid, Action<string> action)
+        public string StartThread(string uid, Action<StartThreadCallbackParameters> action, object state = null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (action == null) throw new ArgumentNullException(nameof(action));
+
+            if (string.IsNullOrEmpty(uid))
+            {
+                uid = Guid.NewGuid().ToString("D");
+            }
 
             _logger.Log(LogLevel.Debug, $"Starting new thread '{uid}'.");
 
@@ -165,7 +202,7 @@ namespace Wirehome.Core.Scheduler
             {
                 StopThread(uid);
 
-                var activeThread = new ActiveThread(uid, action, _systemService.CancellationToken, _logger);
+                var activeThread = new ActiveThread(uid, action, state, _systemService.CancellationToken, _logger);
                 activeThread.StoppedCallback = () =>
                 {
                     lock (_activeThreads)
@@ -178,6 +215,8 @@ namespace Wirehome.Core.Scheduler
                 _activeThreads[uid] = activeThread;
                 activeThread.Start();
             }
+
+            return uid;
         }
 
         public void StopThread(string uid)
@@ -218,40 +257,45 @@ namespace Wirehome.Core.Scheduler
                 var elapsed = stopwatch.Elapsed;
                 stopwatch.Restart();
 
-                var finishedCountdowns = new List<ActiveCountdown>();
-
-                lock (_activeCountdowns)
-                {
-                    var keys = _activeCountdowns.Keys.ToList();
-                    foreach (var key in keys)
-                    {
-                        var activeCountdown = _activeCountdowns[key];
-
-                        activeCountdown.TimeLeft -= elapsed;
-
-                        if (activeCountdown.TimeLeft <= TimeSpan.Zero)
-                        {
-                            finishedCountdowns.Add(activeCountdown);
-                            _activeCountdowns.Remove(key);
-                        }
-                    }
-                }
-
-                foreach (var finishedCountdown in finishedCountdowns)
-                {
-                    Task.Run(() =>
-                    {
-                        finishedCountdown.TryInvokeCallback();
-                    });
-                }
+                UpdateActiveCountdowns(elapsed);
+                InvokeDefaultTimerSubscribers();
 
                 Thread.Sleep(100);
             }
         }
 
-        private void DefaultTimerCallback(string arg1, TimeSpan arg2)
+        private void InvokeDefaultTimerSubscribers()
         {
+            lock (_defaultTimerSubscribers)
+            {
+                foreach (var defaultTimerSubscriber in _defaultTimerSubscribers)
+                {
+                    defaultTimerSubscriber.Value.TryInvokeCallback();
+                }
+            }
+        }
 
+        private void UpdateActiveCountdowns(TimeSpan elapsed)
+        {
+            lock (_activeCountdowns)
+            {
+                foreach (var key in _activeCountdowns.Keys.ToList())
+                {
+                    var activeCountdown = _activeCountdowns[key];
+
+                    activeCountdown.TimeLeft -= elapsed;
+
+                    if (activeCountdown.TimeLeft <= TimeSpan.Zero)
+                    {
+                        _activeCountdowns.Remove(key);
+
+                        Task.Run(() =>
+                        {
+                            activeCountdown.TryInvokeCallback();
+                        });
+                    }
+                }
+            }
         }
     }
 }

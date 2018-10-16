@@ -10,14 +10,17 @@ namespace Wirehome.Core.Scheduler
         private readonly CancellationTokenSource _ownCancellationTokenSource = new CancellationTokenSource();
         private readonly CancellationToken _externalCancellationToken;
         private readonly ILogger _logger;
-        private readonly Action<string> _action;
+        private readonly Action<StartThreadCallbackParameters> _action;
+        private readonly object _state;
 
-        public ActiveThread(string uid, Action<string> action, CancellationToken cancellationToken, ILogger logger)
+        public ActiveThread(string uid, Action<StartThreadCallbackParameters> action, object state, CancellationToken cancellationToken, ILogger logger)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             _action = action ?? throw new ArgumentNullException(nameof(action));
-            _externalCancellationToken = cancellationToken;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            _state = state;
+            _externalCancellationToken = cancellationToken;
 
             CreatedTimestamp = DateTime.UtcNow;
         }
@@ -53,7 +56,7 @@ namespace Wirehome.Core.Scheduler
                     Thread.CurrentThread.Name = Uid;
                     ManagedThreadId = Thread.CurrentThread.ManagedThreadId;
 
-                    _action(Uid);
+                    _action(new StartThreadCallbackParameters(Uid, _state));
 
                     _logger.Log(LogLevel.Information, $"Thread '{Uid}' exited normally.");
                 }
