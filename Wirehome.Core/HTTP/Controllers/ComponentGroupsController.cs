@@ -171,7 +171,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/component_groups/{uid}/status")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetStatus(string uid)
+        public ConcurrentWirehomeDictionary GetStatus(string uid)
         {
             if (!_componentGroupRegistryService.TryGetComponentGroup(uid, out var componentGroup))
             {
@@ -185,7 +185,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/component_groups/{uid}/settings")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetSettings(string uid)
+        public ConcurrentWirehomeDictionary GetSettings(string uid)
         {
             if (!_componentGroupRegistryService.TryGetComponentGroup(uid, out var componentGroup))
             {

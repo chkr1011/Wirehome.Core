@@ -140,15 +140,7 @@ namespace Wirehome.Core.Components
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (configurationUid == null) throw new ArgumentNullException(nameof(configurationUid));
 
-            Component component;
-            lock (_components)
-            {
-                if (!_components.TryGetValue(componentUid, out component))
-                {
-                    return defaultValue;
-                }
-            }
-
+            var component = GetComponent(componentUid);
             return component.Configuration.GetValueOrDefault(configurationUid, defaultValue);
         }
 
@@ -157,15 +149,7 @@ namespace Wirehome.Core.Components
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
-            Component component;
-            lock (_components)
-            {
-                if (!_components.TryGetValue(componentUid, out component))
-                {
-                    return defaultValue;
-                }
-            }
-
+            var component = GetComponent(componentUid);
             return component.Status.GetValueOrDefault(statusUid, defaultValue);
         }
 
@@ -175,11 +159,7 @@ namespace Wirehome.Core.Components
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
             var component = GetComponent(componentUid);
-            if (component == null)
-            {
-                return;
-            }
-
+            
             var isAdd = true;
             object oldValue = null;
 
@@ -194,8 +174,6 @@ namespace Wirehome.Core.Components
             var newValueString = Convert.ToString(value, CultureInfo.InvariantCulture);
             var hasChanged = isAdd || !string.Equals(oldValueString, newValueString, StringComparison.Ordinal);
 
-            _messageBusProxy.PublishStatusReportedBusMessage(component.Uid, statusUid, oldValue, value, hasChanged);
-
             if (hasChanged)
             {
                 _messageBusProxy.PublishStatusChangedBusMessage(component.Uid, statusUid, oldValue, value);
@@ -205,14 +183,6 @@ namespace Wirehome.Core.Components
                     statusUid,
                     component.Uid,
                     oldValueString,
-                    newValueString);
-            }
-            else
-            {
-                _logger.LogDebug(
-                    "Status '{0}' of component '{1}' reported to be still '{2}'.",
-                    statusUid,
-                    component.Uid,
                     newValueString);
             }
         }
@@ -257,14 +227,6 @@ namespace Wirehome.Core.Components
             component.Settings[settingUid] = value;
             _storageService.Write(component.Settings, "Components", component.Uid, "Settings.json");
             
-            _logger.Log(
-                LogLevel.Debug,
-                "Component '{0}' setting '{1}' changed from '{2}' to '{3}'.",
-                component.Uid,
-                settingUid,
-                oldValue ?? "<null>",
-                value ?? "<null>");
-
             _messageBusProxy.PublishSettingChangedBusMessage(component.Uid, settingUid, oldValue, value);
         }
 
@@ -273,17 +235,21 @@ namespace Wirehome.Core.Components
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
+            Component component;
             lock (_components)
             {
-                if (!_components.TryGetValue(componentUid, out var component))
+                if (!_components.TryGetValue(componentUid, out component))
                 {
                     return null;
                 }
-
-                // TODO: Create bus message
-                component.Settings.Remove(settingUid, out var value);
-                return value;
             }
+
+            component.Settings.Remove(settingUid, out var value);
+            _storageService.Write(component.Settings, "Components", component.Uid, "Settings.json");
+
+            _messageBusProxy.PublishSettingRemovedBusMessage(component.Uid, settingUid, value);
+
+            return value;
         }
 
         public WirehomeDictionary ProcessComponentMessage(string componentUid, WirehomeDictionary message)
@@ -297,7 +263,7 @@ namespace Wirehome.Core.Components
                 if (!_components.TryGetValue(componentUid, out component))
                 {
                     return new WirehomeDictionary()
-                        .WithType(ControlType.ParameterInvalidException)
+                        .WithValue("type", ControlType.ParameterInvalidException)
                         .WithValue("parameter_name", nameof(componentUid))
                         .WithValue("parameter_value", componentUid);
                 }

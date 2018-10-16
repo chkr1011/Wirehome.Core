@@ -71,7 +71,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{uid}/settings")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetComponentSettings(string uid)
+        public ConcurrentWirehomeDictionary GetComponentSettings(string uid)
         {
             if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {
@@ -109,7 +109,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{uid}/status")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetComponentStatus(string uid)
+        public ConcurrentWirehomeDictionary GetComponentStatus(string uid)
         {
             if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {
@@ -157,7 +157,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{uid}/configuration")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetComponentConfiguration(string uid)
+        public ConcurrentWirehomeDictionary GetComponentConfiguration(string uid)
         {
             if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {

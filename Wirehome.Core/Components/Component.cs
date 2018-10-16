@@ -15,11 +15,11 @@ namespace Wirehome.Core.Components
 
         public string Uid { get; }
 
-        public WirehomeDictionary Configuration { get; } = new WirehomeDictionary();
+        public ConcurrentWirehomeDictionary Configuration { get; } = new ConcurrentWirehomeDictionary();
 
-        public WirehomeDictionary Settings { get; } = new WirehomeDictionary();
+        public ConcurrentWirehomeDictionary Settings { get; } = new ConcurrentWirehomeDictionary();
 
-        public WirehomeDictionary Status { get; } = new WirehomeDictionary();
+        public ConcurrentWirehomeDictionary Status { get; } = new ConcurrentWirehomeDictionary();
 
         public WirehomeDictionary ProcessMessage(WirehomeDictionary message)
         {

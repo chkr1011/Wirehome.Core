@@ -13,9 +13,9 @@ namespace Wirehome.Core.Components
 
         public string Uid { get; }
 
-        public WirehomeDictionary Settings { get; } = new WirehomeDictionary();
+        public ConcurrentWirehomeDictionary Settings { get; } = new ConcurrentWirehomeDictionary();
 
-        public WirehomeDictionary Status { get; } = new WirehomeDictionary();
+        public ConcurrentWirehomeDictionary Status { get; } = new ConcurrentWirehomeDictionary();
 
         public ConcurrentDictionary<string, ComponentGroupAssociation> Components { get; } = new ConcurrentDictionary<string, ComponentGroupAssociation>();
 

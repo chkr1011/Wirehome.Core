@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
 using IronPython.Runtime;
@@ -39,7 +41,12 @@ namespace Wirehome.Core.Python
 
         public static object ToPython(object value)
         {
-            if (value is null || value is string || value is bool || value is int || value is float || value is long || value is double)
+            if (value is null || value is string || value is bool)
+            {
+                return value;
+            }
+
+            if (value is int || value is float || value is long || value is double || value is Complex)
             {
                 return value;
             }
@@ -111,20 +118,26 @@ namespace Wirehome.Core.Python
             return value;
         }
 
-        public static PythonDictionary ToPythonDictionary(WirehomeDictionary wirehomeDictionary)
+        public static PythonDictionary ToPythonDictionary(IDictionary dictionary)
         {
-            if (wirehomeDictionary == null)
+            if (dictionary == null)
             {
                 return null;
             }
 
-            var pythonDictionary = new PythonDictionary();
-            foreach (var entryKey in wirehomeDictionary.Keys)
+            if (dictionary is PythonDictionary pythonDictionary)
             {
-                pythonDictionary.Add(entryKey, ToPython(wirehomeDictionary[entryKey]));
+                return pythonDictionary;
             }
 
-            return pythonDictionary;
+            var newPythonDictionary = new PythonDictionary();
+            foreach (var entry in dictionary.Keys)
+            {
+                var key = Convert.ToString(entry, CultureInfo.InvariantCulture);
+                newPythonDictionary.Add(key, ToPython(dictionary[entry]));
+            }
+
+            return newPythonDictionary;
         }
 
         public static WirehomeDictionary ToWirehomeDictionary(PythonDictionary pythonDictionary)
@@ -137,7 +150,24 @@ namespace Wirehome.Core.Python
             var wirehomeDictionary = new WirehomeDictionary();
             foreach (var entry in pythonDictionary)
             {
-                var key = Convert.ToString(entry.Key);
+                var key = Convert.ToString(entry.Key, CultureInfo.InvariantCulture);
+                wirehomeDictionary.TryAdd(key, FromPython(entry.Value));
+            }
+
+            return wirehomeDictionary;
+        }
+
+        public static ConcurrentWirehomeDictionary ToConcurrentWirehomeDictionary(PythonDictionary pythonDictionary)
+        {
+            if (pythonDictionary == null)
+            {
+                return null;
+            }
+
+            var wirehomeDictionary = new ConcurrentWirehomeDictionary();
+            foreach (var entry in pythonDictionary)
+            {
+                var key = Convert.ToString(entry.Key, CultureInfo.InvariantCulture);
                 wirehomeDictionary.TryAdd(key, FromPython(entry.Value));
             }
 

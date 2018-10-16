@@ -9,7 +9,7 @@ namespace Wirehome.Tests.Model
         [TestMethod]
         public void Set_Type()
         {
-            var dictionary = new WirehomeDictionary().WithType("myTestType");
+            var dictionary = new WirehomeDictionary().WithValue("type", "myTestType");
             
             Assert.AreEqual(1, dictionary.Keys.Count);
             Assert.AreEqual("myTestType", dictionary["type"]);
@@ -19,7 +19,7 @@ namespace Wirehome.Tests.Model
         public void Set_Values()
         {
             var dictionary = new WirehomeDictionary()
-                .WithType("myTestType")
+                .WithValue("type", "myTestType")
                 .WithValue("a", "b")
                 .WithValue("c", 1)
                 .WithValue("d", true);
