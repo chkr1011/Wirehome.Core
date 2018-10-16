@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using IronPython.Runtime;
 using MQTTnet;
 using MQTTnet.Adapter;
 using MQTTnet.Client;
@@ -28,14 +29,14 @@ namespace Wirehome.Core.Python.Proxies
 
         public string ModuleName { get; } = "mqtt";
 
-        public void publish(WirehomeDictionary parameters)
+        public void publish(PythonDictionary parameters)
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var topic = Convert.ToString(parameters.GetValueOrDefault("topic"));
-            var payload = parameters.GetValueOrDefault("payload", new byte[0]);
-            var qos = Convert.ToInt32(parameters.GetValueOrDefault("qos", 0));
-            var retain = Convert.ToBoolean(parameters.GetValueOrDefault("retain", false));
+            var topic = Convert.ToString(parameters.get("topic"));
+            var payload = parameters.get("payload", new byte[0]);
+            var qos = Convert.ToInt32(parameters.get("qos", 0));
+            var retain = Convert.ToBoolean(parameters.get("retain", false));
 
             _mqttService.Publish(new MqttPublishParameters
             {
@@ -46,19 +47,19 @@ namespace Wirehome.Core.Python.Proxies
             });
         }
 
-        public WirehomeDictionary publish_external(WirehomeDictionary parameters)
+        public WirehomeDictionary publish_external(PythonDictionary parameters)
         {
-            var server = Convert.ToString(parameters.GetValueOrDefault("server"));
-            var port = Convert.ToInt32(parameters.GetValueOrDefault("port", 1883));
-            var username = Convert.ToString(parameters.GetValueOrDefault("username"));
-            var password = Convert.ToString(parameters.GetValueOrDefault("password"));
-            var clientId = Convert.ToString(parameters.GetValueOrDefault("client_id", Guid.NewGuid().ToString("N")));
-            var topic = Convert.ToString(parameters.GetValueOrDefault("topic"));
-            var qos = Convert.ToInt32(parameters.GetValueOrDefault("qos", 0));
-            var retain = Convert.ToBoolean(parameters.GetValueOrDefault("retain", false));
-            var tls = Convert.ToBoolean(parameters.GetValueOrDefault("tls", false));
-            var timeout = Convert.ToInt32(parameters.GetValueOrDefault("timeout", 5000));
-            var payload = parameters.GetValueOrDefault("payload", null);
+            var server = Convert.ToString(parameters.get("server"));
+            var port = Convert.ToInt32(parameters.get("port", 1883));
+            var username = Convert.ToString(parameters.get("username"));
+            var password = Convert.ToString(parameters.get("password"));
+            var clientId = Convert.ToString(parameters.get("client_id", Guid.NewGuid().ToString("N")));
+            var topic = Convert.ToString(parameters.get("topic"));
+            var qos = Convert.ToInt32(parameters.get("qos", 0));
+            var retain = Convert.ToBoolean(parameters.get("retain", false));
+            var tls = Convert.ToBoolean(parameters.get("tls", false));
+            var timeout = Convert.ToInt32(parameters.get("timeout", 5000));
+            var payload = parameters.get("payload", null);
 
             var mqttClient = new MqttFactory().CreateMqttClient();
             try
@@ -102,29 +103,24 @@ namespace Wirehome.Core.Python.Proxies
             }
         }
 
-        public string subscribe(string subscription_uid, string topic_filter, Action<object> callback)
+        public string subscribe(string uid, string topic_filter, Action<PythonDictionary> callback)
         {
             if (topic_filter == null) throw new ArgumentNullException(nameof(topic_filter));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
-
-            if (string.IsNullOrEmpty(subscription_uid))
+            
+            return _mqttService.Subscribe(uid, topic_filter, message =>
             {
-                subscription_uid = Guid.NewGuid().ToString("D");
-            }
+                var pythonMessage = new PythonDictionary
+                {
+                    ["client_id"] = message.ClientId,
+                    ["topic"] = message.ApplicationMessage.Topic,
+                    ["payload"] = message.ApplicationMessage.Payload,
+                    ["qos"] = (int)message.ApplicationMessage.QualityOfServiceLevel,
+                    ["retain"] = message.ApplicationMessage.Retain
+                };
 
-            _mqttService.Subscribe(subscription_uid, topic_filter, message =>
-            {
-                var properties = new WirehomeDictionary()
-                    .WithValue("client_id", message.ClientId)
-                    .WithValue("topic", message.ApplicationMessage.Topic)
-                    .WithValue("payload", message.ApplicationMessage.Payload)
-                    .WithValue("qos", message.ApplicationMessage.QualityOfServiceLevel)
-                    .WithValue("retain", message.ApplicationMessage.Retain);
-
-                callback(PythonConvert.ToPython(properties));
+                callback(pythonMessage);
             });
-
-            return subscription_uid;
         }
 
         public void unsubscribe(string uid)
@@ -134,20 +130,20 @@ namespace Wirehome.Core.Python.Proxies
             _mqttService.Unsubscribe(uid);
         }
 
-        public string start_topic_import(string uid, WirehomeDictionary parameters)
+        public string start_topic_import(string uid, PythonDictionary parameters)
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
             var topicImportParameters = new MqttImportTopicParameters
             {
-                Server = Convert.ToString(parameters.GetValueOrDefault("server")),
-                Port = Convert.ToInt32(parameters.GetValueOrDefault("port")),
-                UseTls = Convert.ToBoolean(parameters.GetValueOrDefault("tls")),
-                Username = Convert.ToString(parameters.GetValueOrDefault("username")),
-                Password = Convert.ToString(parameters.GetValueOrDefault("password")),
-                ClientId = Convert.ToString(parameters.GetValueOrDefault("client_id", Guid.NewGuid().ToString("N"))),
-                Topic = Convert.ToString(parameters.GetValueOrDefault("topic")),
-                QualityOfServiceLevel = (MqttQualityOfServiceLevel)Convert.ToInt32(parameters.GetValueOrDefault("qos"))
+                Server = Convert.ToString(parameters.get("server")),
+                Port = Convert.ToInt32(parameters.get("port", 1883)),
+                UseTls = Convert.ToBoolean(parameters.get("tls", false)),
+                Username = Convert.ToString(parameters.get("username")),
+                Password = Convert.ToString(parameters.get("password")),
+                ClientId = Convert.ToString(parameters.get("client_id", Guid.NewGuid().ToString("N"))),
+                Topic = Convert.ToString(parameters.get("topic")),
+                QualityOfServiceLevel = (MqttQualityOfServiceLevel)Convert.ToInt32(parameters.get("qos"))
             };
 
             return _mqttService.StartTopicImport(uid, topicImportParameters);

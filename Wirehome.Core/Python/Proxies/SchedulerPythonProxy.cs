@@ -3,6 +3,7 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
+using IronPython.Runtime;
 using Wirehome.Core.Scheduler;
 
 namespace Wirehome.Core.Python.Proxies
@@ -18,61 +19,44 @@ namespace Wirehome.Core.Python.Proxies
 
         public string ModuleName { get; } = "scheduler";
 
-        public string start_thread(string uid, Action callback)
+        public string start_thread(string uid, Action callback, object state = null)
         {
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
-
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("D");
-            }
-
-            _schedulerService.StartThread(uid, _ => callback());
-            return uid;
+            // TODO: Migrate to callback with dictionary.
+            return _schedulerService.StartThread(uid, _ => callback(), state);
         }
 
         public void stop_thread(string uid)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
             _schedulerService.StopThread(uid);
         }
 
-        public string start_timer(string uid, int interval, Action<int, object> callback, object state = null)
+        public string start_timer(string uid, int interval, Action<PythonDictionary> callback, object state = null)
         {
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("D");
-            }
-            // TODO: Move UID generation to service.
-            _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), (s, t) => callback((int)t.TotalMilliseconds, state));
-            return uid;
+            return _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
         public void stop_timer(string uid)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
             _schedulerService.StopTimer(uid);
         }
 
-        public string start_countdown(string uid, long duration, Action<object> callback, object state = null)
+        public string attach_to_default_timer(string uid, Action<PythonDictionary> callback, object state = null)
         {
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
+            return _schedulerService.AttachToDefaultTimer(uid, p => callback(PythonConvert.ToPythonDictionary(p)), state);
+        }
 
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("D");
-            }
-
-            _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), () =>  callback(state));
-            return uid;
+        public void detach_from_default_timer(string uid)
+        {
+            _schedulerService.DetachFromDefaultTimer(uid);
+        }
+        
+        public string start_countdown(string uid, long duration, Action<PythonDictionary> callback, object state = null)
+        {
+            return _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
         public void stop_countdown(string uid)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
             _schedulerService.StopCountdown(uid);
         }
     }

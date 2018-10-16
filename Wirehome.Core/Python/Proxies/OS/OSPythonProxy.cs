@@ -69,7 +69,7 @@ namespace Wirehome.Core.Python.Proxies.OS
             }
         }
 
-        private Process StartProcess(LaunchParamters parameters)
+        private static Process StartProcess(LaunchParamters parameters)
         {
             var startInfo = new ProcessStartInfo(parameters.FileName)
             {
@@ -101,7 +101,7 @@ namespace Wirehome.Core.Python.Proxies.OS
             return process;
         }
 
-        private LaunchParamters ParseLaunchParameters(PythonDictionary pythonDictionary)
+        private static LaunchParamters ParseLaunchParameters(PythonDictionary pythonDictionary)
         {
             var launchParameters = new LaunchParamters
             {

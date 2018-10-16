@@ -19,6 +19,11 @@ namespace Wirehome.Core.Python.Proxies
 
         public object to_bool(object value)
         {
+            if (value is bool b)
+            {
+                return b;
+            }
+
             var text = to_string(value);
             if (!bool.TryParse(text, out var result))
             {
@@ -30,6 +35,11 @@ namespace Wirehome.Core.Python.Proxies
 
         public object to_double(object value)
         {
+            if (value is double d)
+            {
+                return d;
+            }
+
             var text = to_string(value);
             if (!double.TryParse(text, out var result))
             {
@@ -41,6 +51,11 @@ namespace Wirehome.Core.Python.Proxies
 
         public object to_int(object value)
         {
+            if (value is int i)
+            {
+                return i;
+            }
+
             var text = to_string(value);
             if (!int.TryParse(text, out var result))
             {
@@ -62,17 +77,17 @@ namespace Wirehome.Core.Python.Proxies
                 return s;
             }
 
-            if (value is byte[] bytes)
+            if (value is byte[] b)
             {
-                return Encoding.UTF8.GetString(bytes);
+                return Encoding.UTF8.GetString(b);
             }
 
             if (value is IEnumerable<object> o)
             {
-                return Encoding.UTF8.GetString(o.Select(b => Convert.ToByte(b, CultureInfo.InvariantCulture)).ToArray());
+                return Encoding.UTF8.GetString(o.Select(i => Convert.ToByte(i, CultureInfo.InvariantCulture)).ToArray());
             }
 
-            return string.Empty;
+            return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
         public List to_list(object value)

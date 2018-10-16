@@ -3,8 +3,8 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
+using IronPython.Runtime;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Model;
 
 namespace Wirehome.Core.Python.Proxies
 {
@@ -19,20 +19,19 @@ namespace Wirehome.Core.Python.Proxies
 
         public string ModuleName { get; } = "message_bus";
 
-        public void publish(WirehomeDictionary message)
+        public void publish(PythonDictionary message)
         {
             _messageBusService.Publish(message);
         }
 
-        public string subscribe(WirehomeDictionary filter, Action<WirehomeDictionary> callback)
+        public string subscribe(string uid, PythonDictionary filter, Action<PythonDictionary> callback)
         {
-            // TODO: Use ID here like in all other areas.
-            return _messageBusService.Subscribe(null, filter, callback);
+            return _messageBusService.Subscribe(uid, filter, m => callback(PythonConvert.ToPythonDictionary(m)));
         }
 
-        public void unsubscribe(string subscription_uid)
+        public void unsubscribe(string uid)
         {
-            _messageBusService.Unsubscribe(subscription_uid);
+            _messageBusService.Unsubscribe(uid);
         }
     }
 }
