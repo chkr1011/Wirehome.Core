@@ -15,7 +15,7 @@ namespace Wirehome.Core.Extensions
 
             return dictionary[key];
         }
-
+        
         public static void SetValue(this IDictionary dictionary, string key, object value)
         {
             if (dictionary == null) throw new ArgumentNullException(nameof(dictionary));
@@ -55,6 +55,19 @@ namespace Wirehome.Core.Extensions
             result.Append(" }");
 
             return result.ToString();
+        }
+
+        public static IDictionary WithType(this IDictionary d, string type)
+        {
+            return WithValue(d, "type", type);
+        }
+
+        public static IDictionary WithValue(this IDictionary d, string key, object value)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
+            d[key] = value;
+            return d;
         }
     }
 }
