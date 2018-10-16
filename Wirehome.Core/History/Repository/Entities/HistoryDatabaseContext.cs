@@ -14,6 +14,16 @@ namespace Wirehome.Core.History.Repository.Entities
         {
             modelBuilder.Entity<ComponentStatusEntity>()
                 .HasIndex(b => new { b.RangeStart, b.RangeEnd, b.ComponentUid, b.StatusUid });
+
+            ////modelBuilder.Entity<ComponentStatusEntity>()
+            ////    .HasOne(b => b.PreviousEntity)
+            ////    .WithOne(a => a.NextEntity)
+            ////    .OnDelete(DeleteBehavior.Cascade);
+
+            ////modelBuilder.Entity<ComponentStatusEntity>()
+            ////    .HasOne(b => b.NextEntity)
+            ////    .WithOne(a => a.PreviousEntity)
+            ////    .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

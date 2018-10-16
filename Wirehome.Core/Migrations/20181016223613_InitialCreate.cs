@@ -17,26 +17,38 @@ namespace Wirehome.Core.Migrations
                     ComponentUid = table.Column<string>(maxLength: 256, nullable: true),
                     StatusUid = table.Column<string>(maxLength: 256, nullable: true),
                     Value = table.Column<string>(maxLength: 1024, nullable: true),
-                    RangeStart = table.Column<DateTimeOffset>(nullable: false),
-                    RangeEnd = table.Column<DateTimeOffset>(nullable: false),
-                    IsLatest = table.Column<bool>(nullable: false),
-                    PredecessorID = table.Column<uint>(nullable: true)
+                    RangeStart = table.Column<DateTime>(nullable: false),
+                    RangeEnd = table.Column<DateTime>(nullable: false),
+                    PreviousEntityID = table.Column<uint>(nullable: true),
+                    NextEntityID = table.Column<uint>(nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ComponentStatus", x => x.ID);
                     table.ForeignKey(
-                        name: "FK_ComponentStatus_ComponentStatus_PredecessorID",
-                        column: x => x.PredecessorID,
+                        name: "FK_ComponentStatus_ComponentStatus_NextEntityID",
+                        column: x => x.NextEntityID,
+                        principalTable: "ComponentStatus",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ComponentStatus_ComponentStatus_PreviousEntityID",
+                        column: x => x.PreviousEntityID,
                         principalTable: "ComponentStatus",
                         principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ComponentStatus_PredecessorID",
+                name: "IX_ComponentStatus_NextEntityID",
                 table: "ComponentStatus",
-                column: "PredecessorID");
+                column: "NextEntityID",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ComponentStatus_PreviousEntityID",
+                table: "ComponentStatus",
+                column: "PreviousEntityID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ComponentStatus_RangeStart_RangeEnd_ComponentUid_StatusUid",

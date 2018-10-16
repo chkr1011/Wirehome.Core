@@ -13,11 +13,7 @@ namespace Wirehome.Core.History.Repository
         // TODO: Consider caching the latest entries for fast comparison.
         //private readonly Dictionary<string, ComponentStatusValue> _latestComponentStatusValues = new Dictionary<string, ComponentStatusValue>();
 
-        private TimeSpan _autoRefreshInterval = TimeSpan.FromMinutes(1);
-
-        public HistoryRepository()
-        {
-        }
+        public TimeSpan ComponentStatusPullInterval { get; set; } = TimeSpan.FromMinutes(5);
 
         public void Initialize()
         {
@@ -27,11 +23,6 @@ namespace Wirehome.Core.History.Repository
             _dbContextOptions = dbContextOptionsBuilder.Options;
 
             Initialize(_dbContextOptions);
-        }
-
-        private HistoryDatabaseContext CreateDatabaseContext()
-        {
-            return new HistoryDatabaseContext(_dbContextOptions);
         }
 
         public void Delete()
@@ -56,47 +47,56 @@ namespace Wirehome.Core.History.Repository
 
             using (var databaseContext = CreateDatabaseContext())
             {
+                // TODO: Check next entity instead of ordering.
+
                 var latestEntity = databaseContext.ComponentStatus
                     .OrderByDescending(s => s.RangeEnd)
+                    .ThenByDescending(s => s.RangeStart)
                     .FirstOrDefault(s =>
                         s.ComponentUid == componentStatusValue.ComponentUid &&
                         s.StatusUid == componentStatusValue.StatusUid);
 
                 if (latestEntity == null)
                 {
-                    var newEntry = CreateNewComponentStatusEntity(componentStatusValue);
+                    var newEntry = CreateComponentStatusEntity(componentStatusValue, null);
                     databaseContext.ComponentStatus.Add(newEntry);
                 }
                 else
                 {
-                    var isOutdated = componentStatusValue.Timestamp - latestEntity.RangeEnd > _autoRefreshInterval;
-
-                    if (!isOutdated && string.CompareOrdinal(latestEntity.Value, componentStatusValue.Value) == 0)
+                    var newestIsObsolete = latestEntity.RangeEnd > componentStatusValue.Timestamp;
+                    if (newestIsObsolete)
                     {
-                        latestEntity.RangeEnd = componentStatusValue.Timestamp;
+                        return;
+                    }
+
+                    var latestIsOutdated = componentStatusValue.Timestamp - latestEntity.RangeEnd > ComponentStatusPullInterval;
+                    var valueHasChanged = string.CompareOrdinal(latestEntity.Value, componentStatusValue.Value) != 0;
+
+                    if (valueHasChanged)
+                    {
+                        var newEntity = CreateComponentStatusEntity(componentStatusValue, latestEntity);
+                        databaseContext.ComponentStatus.Add(newEntity);
+
+                        if (!latestIsOutdated)
+                        {
+                            latestEntity.RangeEnd = componentStatusValue.Timestamp;
+                        }
                     }
                     else
                     {
-                        latestEntity.IsLatest = false;
-
-                        var newEntry = CreateNewComponentStatusEntity(componentStatusValue);
-                        newEntry.PredecessorID = latestEntity.ID;
-
-                        databaseContext.ComponentStatus.Add(newEntry);
+                        if (!latestIsOutdated)
+                        {
+                            latestEntity.RangeEnd = componentStatusValue.Timestamp;
+                        }
+                        else
+                        {
+                            var newEntity = CreateComponentStatusEntity(componentStatusValue, latestEntity);
+                            databaseContext.ComponentStatus.Add(newEntity);
+                        }
                     }
                 }
 
                 databaseContext.SaveChanges();
-            }
-        }
-
-        public ComponentStatusEntity GetLatestComponentStatusValue(string componentUid, string statusUid)
-        {
-            using (var databaseContext = CreateDatabaseContext())
-            {
-                return databaseContext.ComponentStatus
-                    .AsNoTracking()
-                    .FirstOrDefault(s => s.ComponentUid == componentUid && s.StatusUid == statusUid && s.IsLatest);
             }
         }
 
@@ -124,23 +124,37 @@ namespace Wirehome.Core.History.Repository
                 return databaseContext.ComponentStatus
                     .AsNoTracking()
                     .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
-                    .Where(s => (s.RangeStart < rangeEnd && s.RangeEnd > rangeStart))
-                    .OrderByDescending(s => s.RangeEnd)
+                    .Where(s => (s.RangeStart <= rangeEnd && s.RangeEnd >= rangeStart))
+                    .OrderBy(s => s.RangeStart)
                     .ToList();
             }
         }
 
-        private static ComponentStatusEntity CreateNewComponentStatusEntity(ComponentStatusValue message)
+        private HistoryDatabaseContext CreateDatabaseContext()
         {
-            return new ComponentStatusEntity
+            return new HistoryDatabaseContext(_dbContextOptions);
+        }
+
+        private static ComponentStatusEntity CreateComponentStatusEntity(
+            ComponentStatusValue componentStatusValue, 
+            ComponentStatusEntity latestEntity)
+        {
+            var newEntity = new ComponentStatusEntity
             {
-                ComponentUid = message.ComponentUid,
-                StatusUid = message.StatusUid,
-                Value = message.Value,
-                RangeStart = message.Timestamp,
-                RangeEnd = message.Timestamp,
-                IsLatest = true
+                ComponentUid = componentStatusValue.ComponentUid,
+                StatusUid = componentStatusValue.StatusUid,
+                Value = componentStatusValue.Value,
+                RangeStart = componentStatusValue.Timestamp,
+                RangeEnd = componentStatusValue.Timestamp,
+                PreviousEntityID = latestEntity?.ID
             };
+
+            if (latestEntity != null)
+            {
+                latestEntity.NextEntity = newEntity;
+            }
+
+            return newEntity;
         }
     }
 }

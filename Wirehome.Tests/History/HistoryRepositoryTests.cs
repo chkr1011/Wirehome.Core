@@ -17,7 +17,7 @@ namespace Wirehome.Tests.History
             var repo = CreateRepository();
             try
             {
-                var componentStatusValue = CreateComponentStatusValue("0", DateTimeOffset.UtcNow);
+                var componentStatusValue = CreateComponentStatusValue("0", DateTime.UtcNow);
 
                 repo.UpdateComponentStatusValue(componentStatusValue);
                 var entities = repo.GetComponentStatusValues("c1", "s1");
@@ -44,7 +44,7 @@ namespace Wirehome.Tests.History
             var repo = CreateRepository();
             try
             {
-                var startDateTime = DateTimeOffset.UtcNow;
+                var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
                 repo.UpdateComponentStatusValue(componentStatusValue);
@@ -71,9 +71,10 @@ namespace Wirehome.Tests.History
         public void ComponentStatusValue_Create_New_Due_To_Outdated_Existing()
         {
             var repo = CreateRepository();
+            repo.ComponentStatusPullInterval = TimeSpan.FromMinutes(1);
             try
             {
-                var startDateTime = DateTimeOffset.UtcNow;
+                var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
                 repo.UpdateComponentStatusValue(componentStatusValue);
@@ -103,7 +104,7 @@ namespace Wirehome.Tests.History
             var repo = CreateRepository();
             try
             {
-                var startDateTime = DateTimeOffset.UtcNow;
+                var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
                 repo.UpdateComponentStatusValue(componentStatusValue);
@@ -128,12 +129,12 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Assign_Predecessor()
+        public void ComponentStatusValue_Assign_Previous_And_Next()
         {
             var repo = CreateRepository();
             try
             {
-                var startDateTime = DateTimeOffset.UtcNow;
+                var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
                 repo.UpdateComponentStatusValue(componentStatusValue);
@@ -144,8 +145,11 @@ namespace Wirehome.Tests.History
                 var entities = repo.GetComponentStatusValues("c1", "s1").OrderBy(e => e.RangeStart).ToList();
                 Assert.AreEqual(2, entities.Count);
 
-                Assert.IsNull(entities[0].PredecessorID);
-                Assert.AreEqual(entities[1].PredecessorID, entities[0].ID);
+                Assert.IsNull(entities[0].PreviousEntityID);
+                Assert.AreEqual(entities[0].NextEntityID, entities[1].ID);
+
+                Assert.IsNull(entities[1].NextEntityID);
+                Assert.AreEqual(entities[1].PreviousEntityID, entities[0].ID);
             }
             finally
             {
@@ -154,12 +158,12 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Load_Range()
+        public void ComponentStatusValue_Load_Full_Range()
         {
             var repo = CreateRepository();
             try
             {
-                var startDateTime = DateTimeOffset.UtcNow;
+                var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
                 repo.UpdateComponentStatusValue(componentStatusValue);
@@ -177,11 +181,20 @@ namespace Wirehome.Tests.History
                 var entities = repo.GetComponentStatusValues("c1", "s1");
                 Assert.AreEqual(6, entities.Count);
 
-                entities = repo.GetComponentStatusValues("c1", "s1", startDateTime.AddMinutes(61), startDateTime.AddHours(2.99));
-                Assert.AreEqual(3, entities.Count);
+                entities = repo.GetComponentStatusValues(
+                    "c1",
+                    "s1",
+                    startDateTime, 
+                    startDateTime.AddHours(5));
 
-                Assert.AreEqual("1", entities[0].Value);
-                Assert.AreEqual("3", entities[2].Value);
+                Assert.AreEqual(6, entities.Count);
+
+                Assert.AreEqual("0", entities[0].Value);
+                Assert.AreEqual("1", entities[1].Value);
+                Assert.AreEqual("2", entities[2].Value);
+                Assert.AreEqual("3", entities[3].Value);
+                Assert.AreEqual("4", entities[4].Value);
+                Assert.AreEqual("5", entities[5].Value);
             }
             finally
             {
@@ -189,15 +202,131 @@ namespace Wirehome.Tests.History
             }
         }
 
-        private static ComponentStatusValue CreateComponentStatusValue(string value, DateTimeOffset timestamp, string statusUid = "s1", string componentUid = "c1")
+        [TestMethod]
+        public void ComponentStatusValue_Load_Middle_Range()
+        {
+            var repo = CreateRepository();
+            try
+            {
+                var startDateTime = DateTime.UtcNow;
+
+                var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddHours(1));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("2", startDateTime.AddHours(2));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("3", startDateTime.AddHours(3));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("4", startDateTime.AddHours(4));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("5", startDateTime.AddHours(5));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+
+                var entities = repo.GetComponentStatusValues("c1", "s1");
+                Assert.AreEqual(6, entities.Count);
+
+                entities = repo.GetComponentStatusValues(
+                    "c1",
+                    "s1",
+                    startDateTime.AddHours(2),
+                    startDateTime.AddHours(4));
+
+                Assert.AreEqual(3, entities.Count);
+
+                Assert.AreEqual("2", entities[0].Value);
+                Assert.AreEqual("3", entities[1].Value);
+                Assert.AreEqual("4", entities[2].Value);
+            }
+            finally
+            {
+                repo.Delete();
+            }
+        }
+
+        [TestMethod]
+        public void ComponentStatusValue_Build_Ranges()
+        {
+            var repo = CreateRepository();
+            repo.ComponentStatusPullInterval = TimeSpan.FromHours(2);
+            try
+            {
+                var startDateTime = DateTime.UtcNow;
+
+                var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("0", startDateTime.AddHours(0.99));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+
+                componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddHours(1));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddHours(1.99));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+
+                componentStatusValue = CreateComponentStatusValue("2", startDateTime.AddHours(2));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("2", startDateTime.AddHours(2.99));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+
+                componentStatusValue = CreateComponentStatusValue("3", startDateTime.AddHours(3));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("3", startDateTime.AddHours(3.99));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+
+                componentStatusValue = CreateComponentStatusValue("4", startDateTime.AddHours(4));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("4", startDateTime.AddHours(4.99));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+
+                componentStatusValue = CreateComponentStatusValue("5", startDateTime.AddHours(5));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+                componentStatusValue = CreateComponentStatusValue("5", startDateTime.AddHours(5.99));
+                repo.UpdateComponentStatusValue(componentStatusValue);
+
+                var entities = repo.GetComponentStatusValues("c1", "s1");
+                Assert.AreEqual(6, entities.Count);
+
+                entities = repo.GetComponentStatusValues(
+                    "c1",
+                    "s1",
+                    startDateTime,
+                    startDateTime.AddHours(5));
+
+                Assert.AreEqual(6, entities.Count);
+
+                Assert.AreEqual("0", entities[0].Value);
+                Assert.AreEqual("1", entities[1].Value);
+                Assert.AreEqual("2", entities[2].Value);
+                Assert.AreEqual("3", entities[3].Value);
+                Assert.AreEqual("4", entities[4].Value);
+                Assert.AreEqual("5", entities[5].Value);
+            }
+            finally
+            {
+                repo.Delete();
+            }
+        }
+
+        public static ComponentStatusValue CreateComponentStatusValue(string value, DateTime timestamp, string statusUid = "s1", string componentUid = "c1")
         {
             return new ComponentStatusValue
             {
                 ComponentUid = componentUid,
                 StatusUid = statusUid,
-                Timestamp = timestamp,
-                Value = value
+                Value = value,
+                Timestamp = timestamp
             };
+        }
+
+        public static HistoryRepository CreateRepository()
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<HistoryDatabaseContext>();
+            optionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString());
+
+            var componentHistoryRepository = new HistoryRepository();
+            componentHistoryRepository.Initialize();
+
+            return componentHistoryRepository;
         }
 
         private static void AssertDateTimesAreEqual(DateTimeOffset expected, DateTimeOffset actual)
@@ -207,17 +336,6 @@ namespace Wirehome.Tests.History
             {
                 throw new AssertFailedException("Datetimes do not match.");
             }
-        }
-
-        private static HistoryRepository CreateRepository()
-        {
-            var optionsBuilder = new DbContextOptionsBuilder<HistoryDatabaseContext>();
-            optionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString());
-
-            var componentHistoryRepository = new HistoryRepository();
-            componentHistoryRepository.Initialize();
-
-            return componentHistoryRepository;
         }
     }
 }

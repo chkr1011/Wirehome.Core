@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.History.Extract;
 using Wirehome.Core.History.Repository;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
@@ -24,8 +25,10 @@ namespace Wirehome.Core.History
         private readonly MessageBusService _messageBusService;
         private readonly SystemService _systemService;
         private readonly ILogger _logger;
+        private readonly OperationsPerSecondCounter _updateRateCounter;
 
         private HistoryRepository _repository;
+        private HistorySettings _settings;
 
         public HistoryService(
             ComponentRegistryService componentRegistryService,
@@ -33,6 +36,7 @@ namespace Wirehome.Core.History
             MessageBusService messageBusService,
             SystemStatusService systemStatusService,
             SystemService systemService,
+            DiagnosticsService diagnosticsService,
             ILoggerFactory loggerFactory)
         {
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
@@ -45,45 +49,76 @@ namespace Wirehome.Core.History
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("history.pending_component_status_values_count", _pendingComponentStatusValues.Count);
+
+            if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
+            _updateRateCounter = diagnosticsService.CreateOperationsPerSecondCounter("history.update_rate");
+            systemStatusService.Set("history.update_rate", () => _updateRateCounter.Count);
         }
 
         public void Start()
         {
+            if (!_storageService.TryRead(out _settings, "HistorySettings.json"))
+            {
+                _settings = new HistorySettings();
+            }
+
+            if (!_settings.IsEnabled)
+            {
+                _logger.LogInformation("History is disabled.");
+                return;
+            }
+
             if (!TryInitializeRepository())
             {
                 return;
             }
 
+            _repository.ComponentStatusPullInterval = _settings.ComponentStatusPullInterval;
+
             AttachToMessageBus();
 
             Task.Factory.StartNew(
-                () => TryProcessMessages(_systemService.CancellationToken), 
-                _systemService.CancellationToken, 
-                TaskCreationOptions.LongRunning, 
+                () => TryProcessMessages(_systemService.CancellationToken),
+                _systemService.CancellationToken,
+                TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
 
             Task.Run(
-                () => TryUpdateComponentPropertyValuesAsync(_systemService.CancellationToken),
+                () => TryUpdateComponentStatusValuesAsync(_systemService.CancellationToken),
                 _systemService.CancellationToken);
+        }
+
+        public HistoryExtract BuildHistoryExtract(string componentUid, string statusUid, DateTimeOffset rangeStart, DateTimeOffset rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
+        {
+            return new HistoryExtractBuilder(_repository).Build(componentUid, statusUid, rangeStart, rangeEnd, interval, dataType);
         }
 
         private void AttachToMessageBus()
         {
-            var filter = new WirehomeDictionary().WithType("component_registry.event.status_reported");
-            _messageBusService.Subscribe("history_receiver", filter, OnComponentPropertyReported);
+            var filter = new WirehomeDictionary()
+                .WithValue("type", "component_registry.event.status_changed");
+
+            _messageBusService.Subscribe("history_receiver", filter, OnComponentStatusChanged);
         }
 
-        private void OnComponentPropertyReported(WirehomeDictionary properties)
+        private void OnComponentStatusChanged(WirehomeDictionary message)
         {
-            var componentStatusValue = new ComponentStatusValue
+            try
             {
-                ComponentUid = Convert.ToString(properties["component_uid"], CultureInfo.InvariantCulture),
-                StatusUid = Convert.ToString(properties["status_uid"], CultureInfo.InvariantCulture),
-                Value = Convert.ToString(properties.GetValueOrDefault("new_value", null), CultureInfo.InvariantCulture),
-                Timestamp = (DateTime)properties.GetValueOrDefault("timestamp", DateTime.UtcNow)
-            };
+                var componentStatusValue = new ComponentStatusValue
+                {
+                    ComponentUid = Convert.ToString(message["component_uid"], CultureInfo.InvariantCulture),
+                    StatusUid = Convert.ToString(message["status_uid"], CultureInfo.InvariantCulture),
+                    Value = Convert.ToString(message.GetValueOrDefault("new_value", null), CultureInfo.InvariantCulture),
+                    Timestamp = DateTime.UtcNow
+                };
 
-            _pendingComponentStatusValues.Add(componentStatusValue, _systemService.CancellationToken);
+                _pendingComponentStatusValues.Add(componentStatusValue, _systemService.CancellationToken);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Error while processing changed component status.");
+            }
         }
 
         private bool TryInitializeRepository()
@@ -132,6 +167,7 @@ namespace Wirehome.Core.History
                 }
 
                 _repository.UpdateComponentStatusValue(componentStatusValue);
+                _updateRateCounter.Increment();
             }
             catch (OperationCanceledException)
             {
@@ -142,12 +178,14 @@ namespace Wirehome.Core.History
             }
         }
 
-        private async Task TryUpdateComponentPropertyValuesAsync(CancellationToken cancellationToken)
+        private async Task TryUpdateComponentStatusValuesAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
+                    await Task.Delay(_settings.ComponentStatusPullInterval, cancellationToken);
+
                     foreach (var component in _componentRegistryService.GetComponents())
                     {
                         foreach (var status in component.Status)
@@ -156,8 +194,8 @@ namespace Wirehome.Core.History
                             {
                                 ComponentUid = component.Uid,
                                 StatusUid = status.Key,
-                                Timestamp = DateTimeOffset.UtcNow,
-                                Value = Convert.ToString(status.Value, CultureInfo.InvariantCulture)
+                                Value = Convert.ToString(status.Value, CultureInfo.InvariantCulture),
+                                Timestamp = DateTime.UtcNow
                             };
 
                             _pendingComponentStatusValues.Add(componentStatusValue, cancellationToken);
@@ -170,10 +208,6 @@ namespace Wirehome.Core.History
                 catch (Exception exception)
                 {
                     _logger.Log(LogLevel.Error, exception, "Error while updating component property values.");
-                }
-                finally
-                {
-                    await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
                 }
             }
         }

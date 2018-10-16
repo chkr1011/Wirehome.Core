@@ -9,7 +9,7 @@ using Wirehome.Core.History.Repository.Entities;
 namespace Wirehome.Core.Migrations
 {
     [DbContext(typeof(HistoryDatabaseContext))]
-    [Migration("20181011184257_InitialCreate")]
+    [Migration("20181016223613_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,13 +27,13 @@ namespace Wirehome.Core.Migrations
                     b.Property<string>("ComponentUid")
                         .HasMaxLength(256);
 
-                    b.Property<bool>("IsLatest");
+                    b.Property<uint?>("NextEntityID");
 
-                    b.Property<uint?>("PredecessorID");
+                    b.Property<uint?>("PreviousEntityID");
 
-                    b.Property<DateTimeOffset>("RangeEnd");
+                    b.Property<DateTime>("RangeEnd");
 
-                    b.Property<DateTimeOffset>("RangeStart");
+                    b.Property<DateTime>("RangeStart");
 
                     b.Property<string>("StatusUid")
                         .HasMaxLength(256);
@@ -43,7 +43,10 @@ namespace Wirehome.Core.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("PredecessorID");
+                    b.HasIndex("NextEntityID")
+                        .IsUnique();
+
+                    b.HasIndex("PreviousEntityID");
 
                     b.HasIndex("RangeStart", "RangeEnd", "ComponentUid", "StatusUid");
 
@@ -52,9 +55,13 @@ namespace Wirehome.Core.Migrations
 
             modelBuilder.Entity("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", b =>
                 {
-                    b.HasOne("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "Predecessor")
+                    b.HasOne("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "NextEntity")
+                        .WithOne()
+                        .HasForeignKey("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "NextEntityID");
+
+                    b.HasOne("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "PreviousEntity")
                         .WithMany()
-                        .HasForeignKey("PredecessorID");
+                        .HasForeignKey("PreviousEntityID");
                 });
 #pragma warning restore 612, 618
         }

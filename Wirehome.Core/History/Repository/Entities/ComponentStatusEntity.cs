@@ -20,15 +20,18 @@ namespace Wirehome.Core.History.Repository.Entities
         [StringLength(1024)]
         public string Value { get; set; }
 
-        public DateTimeOffset RangeStart { get; set; }
+        public DateTime RangeStart { get; set; }
 
-        public DateTimeOffset RangeEnd { get; set; }
+        public DateTime RangeEnd { get; set; }
 
-        public bool IsLatest { get; set; }
+        public uint? PreviousEntityID { get; set; }
 
-        public uint? PredecessorID { get; set; }
+        [ForeignKey("PreviousEntityID")]
+        public ComponentStatusEntity PreviousEntity { get; set; }
 
-        [ForeignKey("PredecessorID")]
-        public ComponentStatusEntity Predecessor { get; set; }
+        public uint? NextEntityID { get; set; }
+
+        [ForeignKey("NextEntityID")]
+        public ComponentStatusEntity NextEntity { get; set; }
     }
 }
