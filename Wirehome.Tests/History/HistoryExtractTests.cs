@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Wirehome.Core.History.Extract;
-using Wirehome.Core.History.Repository.Entities;
 
 namespace Wirehome.Tests.History
 {

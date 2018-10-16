@@ -7,7 +7,7 @@ namespace Wirehome.Core.History.Extract
     [DebuggerDisplay("{" + nameof(DebuggerDisplay) + "}")]
     public class HistoryExtractDataPoint
     {
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTime Timestamp { get; set; }
 
         public object Value { get; set; }
 

@@ -329,7 +329,7 @@ namespace Wirehome.Tests.History
             return componentHistoryRepository;
         }
 
-        private static void AssertDateTimesAreEqual(DateTimeOffset expected, DateTimeOffset actual)
+        private static void AssertDateTimesAreEqual(DateTime expected, DateTime actual)
         {
             var diff = (expected - actual).TotalMilliseconds;
             if (diff > 0.001)

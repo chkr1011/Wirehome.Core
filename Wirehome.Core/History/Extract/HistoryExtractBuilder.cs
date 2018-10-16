@@ -14,7 +14,7 @@ namespace Wirehome.Core.History.Extract
             _repository = historyRepository ?? throw new ArgumentNullException(nameof(historyRepository));
         }
 
-        public HistoryExtract Build(string componentUid, string statusUid, DateTimeOffset rangeStart, DateTimeOffset rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
+        public HistoryExtract Build(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));

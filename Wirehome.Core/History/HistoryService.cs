@@ -88,7 +88,7 @@ namespace Wirehome.Core.History
                 _systemService.CancellationToken);
         }
 
-        public HistoryExtract BuildHistoryExtract(string componentUid, string statusUid, DateTimeOffset rangeStart, DateTimeOffset rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
+        public HistoryExtract BuildHistoryExtract(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
         {
             return new HistoryExtractBuilder(_repository).Build(componentUid, statusUid, rangeStart, rangeEnd, interval, dataType);
         }
