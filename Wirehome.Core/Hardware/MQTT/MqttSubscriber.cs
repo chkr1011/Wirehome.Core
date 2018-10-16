@@ -4,25 +4,26 @@ using MQTTnet.Server;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttServiceSubscriber
+    public class MqttSubscriber
     {
-        private readonly string _topicFilter;
         private readonly Action<MqttApplicationMessageReceivedEventArgs> _callback;
 
-        public MqttServiceSubscriber(string uid, string topicFilter, Action<MqttApplicationMessageReceivedEventArgs> callback)
+        public MqttSubscriber(string uid, string topicFilter, Action<MqttApplicationMessageReceivedEventArgs> callback)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
-            _topicFilter = topicFilter ?? throw new ArgumentNullException(nameof(topicFilter));
+            TopicFilter = topicFilter ?? throw new ArgumentNullException(nameof(topicFilter));
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
         }
 
         public string Uid { get; }
 
+        public string TopicFilter { get; }
+
         public bool IsFilterMatch(string topic)
         {
             if (topic == null) throw new ArgumentNullException(nameof(topic));
 
-            return MqttTopicFilterComparer.IsMatch(topic, _topicFilter);
+            return MqttTopicFilterComparer.IsMatch(topic, TopicFilter);
         }
 
         public void Notify(MqttApplicationMessageReceivedEventArgs eventArgs)

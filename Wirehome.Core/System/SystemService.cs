@@ -30,7 +30,42 @@ namespace Wirehome.Core.System
         {
             _systemStatusService.Set("startup.timestamp", startupTimestamp);
             _systemStatusService.Set("startup.duration", DateTime.Now - startupTimestamp);
+            
+            _systemStatusService.Set("framework.description", RuntimeInformation.FrameworkDescription);
 
+            _systemStatusService.Set("process.architecture", RuntimeInformation.ProcessArchitecture);
+            _systemStatusService.Set("process.id", Process.GetCurrentProcess().Id);
+
+            _systemStatusService.Set("system.date_time", () => DateTime.Now);
+            _systemStatusService.Set("system.processor_count", Environment.ProcessorCount);
+            _systemStatusService.Set("system.working_set", () => Environment.WorkingSet);
+
+            _systemStatusService.Set("up_time", () => DateTime.Now - startupTimestamp);
+
+            _systemStatusService.Set("arguments", _arguments);
+
+            _systemStatusService.Set("wirehome.core.version", "1.0-alpha4");
+
+            AddOSInformation();
+            AddThreadPoolInformation();
+        }
+
+        public void Reboot(int waitTime)
+        {
+            _logger.Log(LogLevel.Information, "Reboot initiated.");
+            RebootInitiated?.Invoke(this, EventArgs.Empty);
+
+            _cancellationTokenSource.Cancel(false);
+
+            Task.Run(() =>
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(waitTime));
+                Process.Start("shutdown", " -r now");
+            }, CancellationToken);
+        }
+
+        private void AddOSInformation()
+        {
             _systemStatusService.Set("os.description", RuntimeInformation.OSDescription);
             _systemStatusService.Set("os.architecture", RuntimeInformation.OSArchitecture);
 
@@ -46,35 +81,45 @@ namespace Wirehome.Core.System
             {
                 _systemStatusService.Set("os.platform", "osx");
             }
-
-            _systemStatusService.Set("framework.description", RuntimeInformation.FrameworkDescription);
-
-            _systemStatusService.Set("process.architecture", RuntimeInformation.ProcessArchitecture);
-            _systemStatusService.Set("process.id", Process.GetCurrentProcess().Id);
-
-            _systemStatusService.Set("system.date_time", () => DateTime.Now);
-            _systemStatusService.Set("system.processor_count", Environment.ProcessorCount);
-            _systemStatusService.Set("system.working_set", () => Environment.WorkingSet);
-
-            _systemStatusService.Set("up_time", () => DateTime.Now - startupTimestamp);
-
-            _systemStatusService.Set("arguments", _arguments);
-
-            _systemStatusService.Set("wirehome.core.version", "1.0-alpha4");
         }
 
-        public void Reboot(int waitTime)
+        private void AddThreadPoolInformation()
         {
-            _logger.Log(LogLevel.Information, "Reboot initiated.");
-            RebootInitiated?.Invoke(this, EventArgs.Empty);
-
-            _cancellationTokenSource.Cancel(false);
-            
-            Task.Run(() =>
+            _systemStatusService.Set("thread_pool.max_worker_threads", () =>
             {
-                Thread.Sleep(TimeSpan.FromSeconds(waitTime));
-                Process.Start("shutdown", " -r now");
-            }, CancellationToken);
+                ThreadPool.GetMaxThreads(out var x, out _);
+                return x;
+            });
+
+            _systemStatusService.Set("thread_pool.max_completion_port_threads", () =>
+            {
+                ThreadPool.GetMaxThreads(out _, out var x);
+                return x;
+            });
+
+            _systemStatusService.Set("thread_pool.min_worker_threads", () =>
+            {
+                ThreadPool.GetMinThreads(out var x, out _);
+                return x;
+            });
+
+            _systemStatusService.Set("thread_pool.min_completion_port_threads", () =>
+            {
+                ThreadPool.GetMinThreads(out _, out var x);
+                return x;
+            });
+
+            _systemStatusService.Set("thread_pool.available_worker_threads", () =>
+            {
+                ThreadPool.GetAvailableThreads(out var x, out _);
+                return x;
+            });
+
+            _systemStatusService.Set("thread_pool.available_completion_port_threads", () =>
+            {
+                ThreadPool.GetAvailableThreads(out _, out var x);
+                return x;
+            });
         }
     }
 }

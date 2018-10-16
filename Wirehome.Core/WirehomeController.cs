@@ -216,7 +216,7 @@ namespace Wirehome.Core
             _logger.Log(LogLevel.Debug, "Service startup completed.");
         }
 
-        private void SetupHardwareAdapters(IServiceProvider serviceProvider)
+        private static void SetupHardwareAdapters(IServiceProvider serviceProvider)
         {
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
 

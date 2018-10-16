@@ -93,7 +93,12 @@ namespace Wirehome.Core.Storage
             return files;
         }
 
-        public bool TryRead<TContent>(out TContent content, params string[] path)
+        public string Serialize(object value)
+        {
+            return JsonConvert.SerializeObject(value, _jsonSerializerSettings);
+        }
+
+        public bool TryRead<TValue>(out TValue value, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
@@ -105,27 +110,33 @@ namespace Wirehome.Core.Storage
 
             if (!File.Exists(filename))
             {
-                content = default(TContent);
+                value = default(TValue);
                 return false;
             }
 
             var json = File.ReadAllText(filename, Encoding.UTF8);
-            content = JsonConvert.DeserializeObject<TContent>(json, _jsonSerializerSettings);
+            if (string.IsNullOrEmpty(json))
+            {
+                value = default(TValue);
+                return true;
+            }
+
+            value = JsonConvert.DeserializeObject<TValue>(json, _jsonSerializerSettings);
             return true;
         }
 
-        public bool TryReadText(out string content, params string[] path)
+        public bool TryReadText(out string value, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var filename = Path.Combine(DataPath, Path.Combine(path));
             if (!File.Exists(filename))
             {
-                content = null;
+                value = null;
                 return false;
             }
 
-            content = File.ReadAllText(filename, Encoding.UTF8);
+            value = File.ReadAllText(filename, Encoding.UTF8);
             return true;
         }
         
@@ -144,7 +155,7 @@ namespace Wirehome.Core.Storage
             return true;
         }
 
-        public void Write(object content, params string[] path)
+        public void Write(object value, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
@@ -161,13 +172,13 @@ namespace Wirehome.Core.Storage
                 Directory.CreateDirectory(directory);
             }
 
-            if (content == null)
+            if (value == null)
             {
                 File.WriteAllBytes(filename, new byte[0]);
                 return;
             }
 
-            var json = JsonConvert.SerializeObject(content, _jsonSerializerSettings);
+            var json = Serialize(value);
             File.WriteAllText(filename, json, Encoding.UTF8);
         }
 
@@ -186,7 +197,7 @@ namespace Wirehome.Core.Storage
             File.WriteAllBytes(filename, content ?? new byte[0]);
         }
 
-        public void WriteText(string content, params string[] path)
+        public void WriteText(string value, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
@@ -198,7 +209,7 @@ namespace Wirehome.Core.Storage
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllText(filename, content ?? string.Empty, Encoding.UTF8);
+            File.WriteAllText(filename, value ?? string.Empty, Encoding.UTF8);
         }
 
         public void DeleteFile(params string[] path)
