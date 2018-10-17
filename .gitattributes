@@ -1,4 +1,2 @@
-Wirehome.App/* linguist-vendored
-*/node_modules/* linguist-vendored
-*/e2e/* linguist-vendored
+Wirehome.App/scripts/* linguist-vendored
 docs/* linguist-documentation
