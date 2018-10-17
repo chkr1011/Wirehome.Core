@@ -13,7 +13,7 @@ namespace Wirehome.Core.History.Repository
         // TODO: Consider caching the latest entries for fast comparison.
         //private readonly Dictionary<string, ComponentStatusValue> _latestComponentStatusValues = new Dictionary<string, ComponentStatusValue>();
 
-        public TimeSpan ComponentStatusPullInterval { get; set; } = TimeSpan.FromMinutes(5);
+        public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
 
         public void Initialize()
         {
@@ -69,7 +69,7 @@ namespace Wirehome.Core.History.Repository
                         return;
                     }
 
-                    var latestIsOutdated = componentStatusValue.Timestamp - latestEntity.RangeEnd > ComponentStatusPullInterval;
+                    var latestIsOutdated = componentStatusValue.Timestamp - latestEntity.RangeEnd > ComponentStatusOutdatedTimeout;
                     var valueHasChanged = string.CompareOrdinal(latestEntity.Value, componentStatusValue.Value) != 0;
 
                     if (valueHasChanged)

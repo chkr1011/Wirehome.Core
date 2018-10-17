@@ -71,7 +71,7 @@ namespace Wirehome.Tests.History
         public void ComponentStatusValue_Create_New_Due_To_Outdated_Existing()
         {
             var repo = CreateRepository();
-            repo.ComponentStatusPullInterval = TimeSpan.FromMinutes(1);
+            repo.ComponentStatusOutdatedTimeout = TimeSpan.FromMinutes(1);
             try
             {
                 var startDateTime = DateTime.UtcNow;
@@ -248,7 +248,7 @@ namespace Wirehome.Tests.History
         public void ComponentStatusValue_Build_Ranges()
         {
             var repo = CreateRepository();
-            repo.ComponentStatusPullInterval = TimeSpan.FromHours(2);
+            repo.ComponentStatusOutdatedTimeout = TimeSpan.FromHours(2);
             try
             {
                 var startDateTime = DateTime.UtcNow;

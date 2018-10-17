@@ -11,7 +11,7 @@ namespace Wirehome.Tests.History
         public void HistoryExtract_Build_Simple()
         {
             var repo = HistoryRepositoryTests.CreateRepository();
-            repo.ComponentStatusPullInterval = TimeSpan.FromHours(2);
+            repo.ComponentStatusOutdatedTimeout = TimeSpan.FromHours(2);
             try
             {
                 var startDateTime = DateTime.UtcNow;

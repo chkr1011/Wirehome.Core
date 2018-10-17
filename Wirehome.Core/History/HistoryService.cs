@@ -73,7 +73,9 @@ namespace Wirehome.Core.History
                 return;
             }
 
-            _repository.ComponentStatusPullInterval = _settings.ComponentStatusPullInterval;
+            // Give the pulling code some time to complete before declaring an entity 
+            // as outdated. 1.25 might be enough additional time.
+            _repository.ComponentStatusOutdatedTimeout = _settings.ComponentStatusPullInterval * 1.25;
 
             AttachToMessageBus();
 
@@ -90,35 +92,13 @@ namespace Wirehome.Core.History
 
         public HistoryExtract BuildHistoryExtract(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
         {
-            return new HistoryExtractBuilder(_repository).Build(componentUid, statusUid, rangeStart, rangeEnd, interval, dataType);
-        }
-
-        private void AttachToMessageBus()
-        {
-            var filter = new WirehomeDictionary()
-                .WithValue("type", "component_registry.event.status_changed");
-
-            _messageBusService.Subscribe("history_receiver", filter, OnComponentStatusChanged);
-        }
-
-        private void OnComponentStatusChanged(WirehomeDictionary message)
-        {
-            try
+            var historyExtract = new HistoryExtractBuilder(_repository).Build(componentUid, statusUid, rangeStart, rangeEnd, interval, dataType);
+            for (var i = historyExtract.DataPoints.Count - 1; i > 0; i--)
             {
-                var componentStatusValue = new ComponentStatusValue
-                {
-                    ComponentUid = Convert.ToString(message["component_uid"], CultureInfo.InvariantCulture),
-                    StatusUid = Convert.ToString(message["status_uid"], CultureInfo.InvariantCulture),
-                    Value = Convert.ToString(message.GetValueOrDefault("new_value", null), CultureInfo.InvariantCulture),
-                    Timestamp = DateTime.UtcNow
-                };
 
-                _pendingComponentStatusValues.Add(componentStatusValue, _systemService.CancellationToken);
             }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "Error while processing changed component status.");
-            }
+
+            return historyExtract;
         }
 
         private bool TryInitializeRepository()
@@ -135,6 +115,30 @@ namespace Wirehome.Core.History
             {
                 _logger.Log(LogLevel.Warning, exception, "Error while initializing history repository.");
                 return false;
+            }
+        }
+
+        private void AttachToMessageBus()
+        {
+            var filter = new WirehomeDictionary()
+                .WithValue("type", "component_registry.event.status_changed");
+
+            _messageBusService.Subscribe("history_receiver", filter, OnComponentStatusChanged);
+        }
+
+        private void OnComponentStatusChanged(WirehomeDictionary message)
+        {
+            try
+            {
+                TryEnqueueComponentStatusValue(
+                    Convert.ToString(message["component_uid"], CultureInfo.InvariantCulture),
+                    Convert.ToString(message["status_uid"], CultureInfo.InvariantCulture),
+                    message.GetValueOrDefault("new_value", null),
+                    DateTime.UtcNow);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Error while processing changed component status.");
             }
         }
 
@@ -184,21 +188,17 @@ namespace Wirehome.Core.History
             {
                 try
                 {
-                    await Task.Delay(_settings.ComponentStatusPullInterval, cancellationToken);
+                    await Task.Delay(_settings.ComponentStatusPullInterval, cancellationToken).ConfigureAwait(false);
 
                     foreach (var component in _componentRegistryService.GetComponents())
                     {
                         foreach (var status in component.Status)
                         {
-                            var componentStatusValue = new ComponentStatusValue
-                            {
-                                ComponentUid = component.Uid,
-                                StatusUid = status.Key,
-                                Value = Convert.ToString(status.Value, CultureInfo.InvariantCulture),
-                                Timestamp = DateTime.UtcNow
-                            };
-
-                            _pendingComponentStatusValues.Add(componentStatusValue, cancellationToken);
+                            TryEnqueueComponentStatusValue(
+                                component.Uid,
+                                status.Key,
+                                status.Value,
+                                DateTime.UtcNow);
                         }
                     }
                 }
@@ -209,6 +209,43 @@ namespace Wirehome.Core.History
                 {
                     _logger.Log(LogLevel.Error, exception, "Error while updating component property values.");
                 }
+            }
+        }
+
+        private void TryEnqueueComponentStatusValue(
+            string componentUid,
+            string statusUid,
+            object value,
+            DateTime timestamp)
+        {
+            try
+            {
+                var stringValue = Convert.ToString(value, CultureInfo.InvariantCulture);
+
+                var roundSetting = _componentRegistryService.GetComponentSetting(componentUid, "history.round_digits");
+                if (roundSetting != null)
+                {
+                    var roundDigitsCount = Convert.ToInt32(roundSetting);
+                    if (decimal.TryParse(stringValue, out var @decimal))
+                    {
+                        @decimal = Math.Round(@decimal, roundDigitsCount);
+                        stringValue = Convert.ToString(@decimal, CultureInfo.InvariantCulture);
+                    }
+                }
+
+                var componentStatusValue = new ComponentStatusValue
+                {
+                    ComponentUid = componentUid,
+                    StatusUid = statusUid,
+                    Value = stringValue,
+                    Timestamp = timestamp
+                };
+
+                _pendingComponentStatusValues.Add(componentStatusValue);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, $"Error while enque component status value '{componentUid}.{statusUid}'.");
             }
         }
     }
