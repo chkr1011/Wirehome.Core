@@ -27,11 +27,9 @@
             </div>
         </div>
 
-        <div class="row" style="margin-top: 10px;">
+        <div ng-show="ctrl.weatherStation.conditionImage!=null" class="row" style="margin-top: 10px;">
             <div class="col-xs-12 text-center">
                 <img class="weather-condition-image" ng-src="{{ctrl.weatherStation.conditionImage}}" />
-                <span class="weather-condition-text">{{ctrl.localizationService.get('UI.WeatherStation.Condition.' +
-                    ctrl.weatherStation.condition)}}</span>
             </div>
         </div>
     </div>
