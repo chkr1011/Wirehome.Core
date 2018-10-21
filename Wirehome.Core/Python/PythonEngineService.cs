@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -11,11 +10,11 @@ namespace Wirehome.Core.Python
 {
     public class PythonEngineService
     {
-        private readonly List<Func<IPythonProxy>> _proxyCreators = new List<Func<IPythonProxy>>();
+        private readonly PythonProxyFactory _pythonProxyFactory = new PythonProxyFactory();
         private readonly StorageService _storageService;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
-
+        
         private ScriptEngine _scriptEngine;
 
         public PythonEngineService(StorageService storageService, ILoggerFactory loggerFactory)
@@ -49,18 +48,11 @@ namespace Wirehome.Core.Python
             _logger.Log(LogLevel.Information, "Python engine started.");
         }
 
-        public void RegisterTransientProxy(Func<IPythonProxy> proxyCreator)
-        {
-            if (proxyCreator == null) throw new ArgumentNullException(nameof(proxyCreator));
-
-            _proxyCreators.Add(proxyCreator);
-        }
-
         public void RegisterSingletonProxy(IPythonProxy proxy)
         {
             if (proxy == null) throw new ArgumentNullException(nameof(proxy));
 
-            _proxyCreators.Add(() => proxy);
+            _pythonProxyFactory.RegisterProxy(proxy);
         }
 
         public PythonScriptHost CreateScriptHost(params IPythonProxy[] customProxies)
@@ -74,18 +66,12 @@ namespace Wirehome.Core.Python
 
             var scriptScope = _scriptEngine.CreateScope();
 
-            var defaultProxies = new PythonProxyFactory().CreateDefaultProxies();
-            defaultProxies.Add(new LogPythonProxy(logger ?? _logger));
-            
-            foreach (var proxy in defaultProxies)
-            {
-                scriptScope.SetVariable(proxy.ModuleName, proxy);
-            }
+            var pythonProxies = _pythonProxyFactory.CreateProxies();
+            pythonProxies.Add(new LogPythonProxy(logger ?? _logger));
 
-            foreach (var proxyCreator in _proxyCreators)
+            foreach (var pythonProxy in pythonProxies)
             {
-                var proxy = proxyCreator();
-                scriptScope.SetVariable(proxy.ModuleName, proxy);
+                scriptScope.SetVariable(pythonProxy.ModuleName, pythonProxy);
             }
 
             foreach (var proxy in customProxies)
