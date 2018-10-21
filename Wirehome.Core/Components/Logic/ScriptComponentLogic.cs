@@ -1,4 +1,5 @@
 ﻿using System;
+using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Model;
@@ -32,14 +33,7 @@ namespace Wirehome.Core.Components.Logic
             if (script == null) throw new ArgumentNullException(nameof(script));
 
             _scriptHost = _pythonEngineService.CreateScriptHost(_logger, new ComponentPythonProxy(componentUid, _componentRegistryService));
-
-            var scope = new WirehomeDictionary
-            {
-                ["component_uid"] = componentUid
-            };
-
-            _scriptHost.SetVariable("scope", scope);
-            _scriptHost.SetVariable("publish_adapter_message", (Func<object, object>)OnAdapterMessagePublished);
+            _scriptHost.SetVariable("publish_adapter_message", (Func<PythonDictionary, PythonDictionary>)OnAdapterMessagePublished);
             
             _scriptHost.Initialize(script);
         }
@@ -70,11 +64,10 @@ namespace Wirehome.Core.Components.Logic
         ////    return eventArgs.Result;
         ////}
 
-        private object OnAdapterMessagePublished(object message)
+        private PythonDictionary OnAdapterMessagePublished(PythonDictionary message)
         {
-            // TODO: Throw exceptions if the data type is not expected.
-            var result = AdapterMessagePublishedCallback?.Invoke((WirehomeDictionary)PythonConvert.FromPython(message));
-            return PythonConvert.ToPython(result);
+            var result = AdapterMessagePublishedCallback?.Invoke(message);
+            return result ?? new PythonDictionary();
         }
     }
 }
