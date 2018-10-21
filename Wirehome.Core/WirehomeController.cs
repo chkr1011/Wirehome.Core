@@ -23,7 +23,7 @@ using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
 using Wirehome.Core.Notifications;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Repository;
 using Wirehome.Core.Resources;
 using Wirehome.Core.Scheduler;
 using Wirehome.Core.ServiceHost;

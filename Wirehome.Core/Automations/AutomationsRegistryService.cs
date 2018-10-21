@@ -6,7 +6,7 @@ using Wirehome.Core.Automations.Configuration;
 using Wirehome.Core.Automations.Exceptions;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Automations
@@ -80,7 +80,7 @@ namespace Wirehome.Core.Automations
                 return;
             }
 
-            var repositoryEntitySource = _repositoryService.LoadEntity(RepositoryType.Automations, configuration.Logic.Uid);
+            var repositoryEntitySource = _repositoryService.LoadEntity(configuration.Logic.Uid);
 
             var scriptHost = _pythonEngineService.CreateScriptHost(_logger);
             scriptHost.Initialize(repositoryEntitySource.Script);
