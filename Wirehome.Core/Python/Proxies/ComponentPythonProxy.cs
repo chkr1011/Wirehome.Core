@@ -40,6 +40,11 @@ namespace Wirehome.Core.Python.Proxies
             return PythonConvert.ToPython(_componentRegistryService.GetComponentSetting(_componentUid, setting_uid, default_value));
         }
 
+        public void register_setting(string settingUid, object value)
+        {
+            _componentRegistryService.RegisterComponentSetting(_componentUid, settingUid, PythonConvert.FromPython(value));
+        }
+
         public void set_setting(string settingUid, object value)
         {
             _componentRegistryService.SetComponentSetting(_componentUid, settingUid, PythonConvert.FromPython(value));
