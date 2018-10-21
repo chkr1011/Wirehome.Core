@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.Swagger;
 using Wirehome.Core.HTTP.Controllers.Diagnostics;
+using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
@@ -99,11 +100,13 @@ namespace Wirehome.Core.HTTP
 
         private static void ConfigureWebApps(IApplicationBuilder app)
         {
+            StorageService.TryReadOrCreate(out RepositoryServiceOptions repositoryServiceOptions, RepositoryServiceOptions.Filename);
+            var repositoryRootPath = string.IsNullOrEmpty(repositoryServiceOptions.RootPath) ? Path.Combine(StorageService.DataPath, "Repository") : repositoryServiceOptions.RootPath;
+
             var webAppRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
             var webConfiguratorRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebConfigurator");
             var customContentRootPath = Path.Combine(StorageService.DataPath, "CustomContent");
-            var repositoriesRootPath = Path.Combine(StorageService.DataPath, "Repositories");
-
+            
             if (Debugger.IsAttached)
             {
                 webAppRootPath = Path.Combine(
@@ -126,7 +129,7 @@ namespace Wirehome.Core.HTTP
             ExposeDirectory(app, "/app", webAppRootPath);
             ExposeDirectory(app, "/configurator", webConfiguratorRootPath);
             ExposeDirectory(app, "/customContent", customContentRootPath);
-            ExposeDirectory(app, "/repositories", repositoriesRootPath);
+            ExposeDirectory(app, "/repository", repositoryRootPath);
         }
 
         private static void ExposeDirectory(IApplicationBuilder app, string uri, string path)
