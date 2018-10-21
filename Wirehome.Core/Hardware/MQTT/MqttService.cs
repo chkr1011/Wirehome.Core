@@ -22,8 +22,7 @@ namespace Wirehome.Core.Hardware.MQTT
         private readonly Dictionary<string, MqttSubscriber> _subscribers = new Dictionary<string, MqttSubscriber>();
         private readonly OperationsPerSecondCounter _inboundCounter;
         private readonly OperationsPerSecondCounter _outboundCounter;
-        private readonly MqttServerStorage _storage;
-
+        
         private readonly SystemService _systemService;
         private readonly StorageService _storageService;
 
@@ -41,8 +40,7 @@ namespace Wirehome.Core.Hardware.MQTT
         {
             _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _storage = new MqttServerStorage(storageService);
-
+            
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<MqttService>();
 
@@ -61,22 +59,24 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public void Start()
         {
-            if (!_storageService.TryRead(out MqttServiceSettings settings, "MqttServiceSettings.json"))
-            {
-                settings = new MqttServiceSettings();
-            }
+            _storageService.TryReadOrCreate(out MqttServiceOptions options, "MqttServiceConfiguration.json");
 
             var mqttFactory = new MqttFactory();
-            _mqttServer = settings.EnableLogging ? mqttFactory.CreateMqttServer(new LoggerAdapter(_logger)) : mqttFactory.CreateMqttServer();
+            _mqttServer = options.EnableLogging ? mqttFactory.CreateMqttServer(new LoggerAdapter(_logger)) : mqttFactory.CreateMqttServer();
             _mqttServer.ApplicationMessageReceived += OnApplicationMessageReceived;
 
-            var options = new MqttServerOptionsBuilder()
-                //.WithStorage(_storage)
-                .WithDefaultEndpointPort(settings.ServerPort)
-                .WithPersistentSessions()
-                .Build();
+            var serverOptions = new MqttServerOptionsBuilder()
+                .WithDefaultEndpointPort(options.ServerPort)
+                .WithPersistentSessions();
 
-            _mqttServer.StartAsync(options).GetAwaiter().GetResult();
+            if (options.PersistRetainedMessages)
+            {
+                var storage = new MqttServerStorage(_storageService, _logger);
+                storage.Start();
+                serverOptions.WithStorage(storage);
+            }
+
+            _mqttServer.StartAsync(serverOptions.Build()).GetAwaiter().GetResult();
 
             Task.Factory.StartNew(() => TryProcessIncomingMessages(_systemService.CancellationToken), _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
@@ -133,8 +133,9 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public List<MqttApplicationMessage> GetRetainedMessages()
         {
-            // TODO: Expose Get method at MQTTnet (load from memory instead of storage).
-            return _storage.LoadRetainedMessagesAsync().GetAwaiter().GetResult().ToList();
+            // TODO: Update to new MQTTnet lib to expose this.
+            //return _mqttServer.GetRetainedMessages();
+            throw new NotImplementedException();
         }
 
         public void DeleteRetainedMessages()

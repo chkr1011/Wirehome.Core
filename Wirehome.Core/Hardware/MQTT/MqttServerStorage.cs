@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Server;
 using Wirehome.Core.Storage;
@@ -11,10 +12,42 @@ namespace Wirehome.Core.Hardware.MQTT
     {
         private readonly List<MqttApplicationMessage> _messages = new List<MqttApplicationMessage>();
         private readonly StorageService _storageService;
-        
-        public MqttServerStorage(StorageService storageService)
+        private readonly ILogger _logger;
+
+        public MqttServerStorage(StorageService storageService, ILogger logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public void Start()
+        {
+            Task.Factory.StartNew(SaveRetainedMessagesInternalAsync);
+        }
+
+        private async Task SaveRetainedMessagesInternalAsync()
+        {
+            while (true)
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(60)).ConfigureAwait(false);
+
+                    List<MqttApplicationMessage> messages;
+                    lock (_messages)
+                    {
+                        messages = new List<MqttApplicationMessage>(_messages);
+                    }
+
+                    _storageService.Write(messages, "RetainedMqttMessages.json");
+
+                    _logger.LogInformation($"{messages.Count} retained MQTT messages written to storage.");
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Error while writing retained MQTT messages to storage.");
+                }
+            }
         }
 
         public Task SaveRetainedMessagesAsync(IList<MqttApplicationMessage> messages)
@@ -25,8 +58,6 @@ namespace Wirehome.Core.Hardware.MQTT
                 _messages.AddRange(messages);
             }
 
-            // TODO: Consider starting a async task which stores the messages (from field) all 30 Seconds.
-            //_storageService.Write(messages ?? new List<MqttApplicationMessage>(), "RetainedMqttMessages.json");
             return Task.CompletedTask;
         }
 
@@ -37,7 +68,7 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 messages = new List<MqttApplicationMessage>();
             }
-            
+
             return Task.FromResult<IList<MqttApplicationMessage>>(messages);
         }
     }
