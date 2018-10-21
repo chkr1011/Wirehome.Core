@@ -158,6 +158,20 @@ namespace Wirehome.Core.Storage
             return true;
         }
 
+        public bool TryReadOrCreate<TValue>(out TValue value, params string[] path) where TValue : class, new()
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            if (!TryRead(out value, path))
+            {
+                value = new TValue();
+                Write(value, path);
+                return false;
+            }
+
+            return true;
+        }
+
         public void Write(object value, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
