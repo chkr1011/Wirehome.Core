@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Repository;
 
 namespace Wirehome.Core.ServiceHost
 {
@@ -36,7 +36,7 @@ namespace Wirehome.Core.ServiceHost
         {
             RepositoryEntityUid = repositoryEntityUid ?? throw new ArgumentNullException(nameof(repositoryEntityUid));
 
-            var repositoryEntitySource = _repositoryService.LoadEntity(RepositoryType.Services, RepositoryEntityUid);
+            var repositoryEntitySource = _repositoryService.LoadEntity(RepositoryEntityUid);
 
             lock (_syncRoot)
             {

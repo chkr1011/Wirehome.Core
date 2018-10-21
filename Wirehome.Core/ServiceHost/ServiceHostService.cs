@@ -7,7 +7,7 @@ using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Exceptions;
 using Wirehome.Core.Python.Proxies;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.ServiceHost
