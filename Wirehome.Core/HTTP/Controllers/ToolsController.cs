@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.IO;
+using System.Net;
 using IronPython.Runtime;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Python.Exceptions;
+using Wirehome.Core.Python.Models;
+using Wirehome.Core.Repository;
+using Wirehome.Core.Repository.Exceptions;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -31,11 +35,27 @@ namespace Wirehome.Core.HTTP.Controllers
                 parameters = new PythonDictionary();
             }
 
-            var repositoryEntity = _repositoryService.LoadEntity(RepositoryType.Tools, RepositoryEntityUid.Parse(uid));
+            RepositoryEntity repositoryEntity;
+            try
+            {
+                repositoryEntity = _repositoryService.LoadEntity(RepositoryEntityUid.Parse(uid));
+            }
+            catch (WirehomeRepositoryEntityNotFoundException)
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
 
-            var scriptHost = _pythonEngineService.CreateScriptHost();
-            scriptHost.Initialize(repositoryEntity.Script);
-            return scriptHost.InvokeFunction("main", parameters);
+            try
+            {
+                var scriptHost = _pythonEngineService.CreateScriptHost();
+                scriptHost.Initialize(repositoryEntity.Script);
+                return scriptHost.InvokeFunction("main", parameters);
+            }
+            catch (Exception exception)
+            {
+                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+            }
         }
 
         [HttpPost]
