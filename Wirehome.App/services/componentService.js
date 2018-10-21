@@ -15,6 +15,12 @@
         srv.sendCommand(component, parameters);
     }
 
+    srv.turnOn = function (component) {
+        var parameters = {}
+        parameters["type"] = "turn_on";
+        srv.sendCommand(component, parameters);
+    }
+
     srv.turnOff = function (component) {
         var parameters = {}
         parameters["type"] = "turn_off";

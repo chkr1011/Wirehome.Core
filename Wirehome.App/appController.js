@@ -79,29 +79,59 @@ function createAppController($http, $scope, modalService, apiService, localizati
     }
 
     c.applyNewStatus = function (status) {
-        console.log("Updating UI");
-        var isFirstRun = false;
-
         if (c.isConfigured !== true) {
-            isFirstRun = true;
-
+            console.log("Building UI...");
             localizationService.load(status.global_variables["system.language_code"]);
 
             $.each(status.componentGroups, function (i, componentGroup) {
-                if (!componentGroup.settings["app.is_visible"] === false) {
+                if (componentGroup.settings["app.is_visible"] === false) {
                     return;
                 }
 
-                componentGroupModel = {
+                var componentGroupModel = {
                     uid: componentGroup.uid,
                     components: []
                 };
 
-                $.each(componentGroup.components, function (i, componentAssociation) {
-                    componentModel = {
+                componentGroupModel.getSetting = function (uid, defaultValue) {
+                    return getValue(componentGroupModel.source.settings, uid, defaultValue);
+                };
+
+                componentGroupModel.hasSetting = function (uid) {
+                    return componentGroupModel.source.settings.hasOwnProperty(uid);
+                }
+
+                $.each(componentGroup.components, function (i) {
+                    var componentModel = {
                         uid: i,
-                        settings: componentAssociation.settings
+                        source: {}
                     };
+
+                    componentModel.hasStatus = function (uid) {
+                        return componentModel.source.status.hasOwnProperty(uid);
+                    }
+
+                    componentModel.getStatus = function (uid, defaultValue) {
+                        return getValue(componentModel.source.status, uid, defaultValue);
+                    }
+
+                    componentModel.hasSetting = function (uid) {
+                        var associationSettings = componentGroupModel.source.components[componentModel.uid].settings;
+                        return associationSettings.hasOwnProperty(uid) || componentModel.source.settings.hasOwnProperty(uid);
+                    }
+
+                    componentModel.getSetting = function (uid, defaultValue) {
+                        var associationSettings = componentGroupModel.source.components[componentModel.uid].settings;
+                        return getEffectiveValue([associationSettings, componentModel.source.settings], uid, defaultValue);
+                    }
+
+                    componentModel.hasConfiguration = function (uid) {
+                        return componentModel.source.configuration.hasOwnProperty(uid);
+                    }
+
+                    componentModel.getConfiguration = function (uid, defaultValue) {
+                        return getValue(componentModel.source.configuration, uid, defaultValue);
+                    }
 
                     componentGroupModel.components.push(componentModel);
                 });
@@ -116,6 +146,7 @@ function createAppController($http, $scope, modalService, apiService, localizati
             c.isConfigured = true;
         }
 
+        console.log("Updating UI...");
         $.each(c.componentGroups, (i, componentGroupModel) => {
             var updatedComponentGroup = status.componentGroups.find(g => g.uid === componentGroupModel.uid);
             if (updatedComponentGroup === undefined) {
@@ -126,6 +157,7 @@ function createAppController($http, $scope, modalService, apiService, localizati
         });
 
         c.notifications = status.notifications;
+        c.globalVariables = status.global_variables;
 
         c.weatherStation.sunrise = status.global_variables["outdoor.sunrise"];
         c.weatherStation.sunset = status.global_variables["outdoor.sunset"];
@@ -146,21 +178,21 @@ function createAppController($http, $scope, modalService, apiService, localizati
     };
 
     c.configureComponent = function (model, source, componentGroupModel) {
-        model.status = source.status;
-        model.settings = source.settings;
-        model.configuration = source.configuration;
         model.source = source;
 
         var associationSettings = componentGroupModel.source.components[model.uid].settings;
+        model.template = getValue(source.configuration, "app.view_source", null);
 
-        model.powerConsumption = getValue(source.status, "power.consumption", 0)
-        model.isOutdated = getValue(source.status, "status.is_outdated", false)
-
-        model.caption = getEffectiveValue([associationSettings, source.settings], "app.caption", "#" + model.uid)
         model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", model.uid);
         model.imageColor = getEffectiveValue([associationSettings, source.settings], "app.image_color", "#427AB6");
 
-        if (model.template == undefined) {
+
+        // TODO: Remove as soon as migrated.
+        model.status = source.status;
+        model.settings = source.settings;
+        model.configuration = source.configuration;
+
+        if (model.template == undefined || model.template == null) {
             if (source.status["motion_detection.state"] !== undefined) {
                 model.template = "views/components/motionDetectorTemplate.html";
                 model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-walking");
@@ -168,20 +200,6 @@ function createAppController($http, $scope, modalService, apiService, localizati
             else if (source.status["button.state"] !== undefined) {
                 model.template = "views/components/buttonTemplate.html";
                 model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-hand-point-right");
-            }
-            else if (source.status["temperature.value"] !== undefined) {
-                model.template = "views/components/temperatureSensorTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-thermometer-half");
-            }
-            else if (source.status["humidity.value"] !== undefined) {
-                model.template = "views/components/humiditySensorTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-tint");
-
-                model.dangerValue = getValue(source.settings, "app.humidity.danger_value", 75);
-                model.warningValue = getValue(source.settings, "app.humidity.warning_value", 60);
-            }
-            else if (source.status["roller_shutter.state"] !== undefined) {
-                model.template = "views/components/rollerShutterTemplate.html";
             }
             else if (source.status["state_machine.state"] !== undefined) {
                 model.template = "views/components/stateMachineTemplate.html";
@@ -201,9 +219,12 @@ function createAppController($http, $scope, modalService, apiService, localizati
                 model.template = "views/components/displayTemplate.html";
                 model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-desktop");
             }
-            else if (source.status["power.state"] !== undefined) {
-                model.template = "views/components/toggleTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-power-off");
+            // else if (source.status["power.state"] !== undefined) {
+            //     model.template = "views/components/toggleTemplate.html";
+            //     model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-power-off");
+            // }
+            else {
+                model.template = "views/components/componentViewMissing.html";
             }
         }
 
@@ -224,11 +245,7 @@ function createAppController($http, $scope, modalService, apiService, localizati
     c.configureComponentGroup = function (model, source, status) {
         model.source = source;
 
-        model.caption = getValue(source.settings, "app.caption", "#" + source.uid);
         model.sortValue = getValue(source.settings, "app.position_index", model.uid);
-        model.isVisible = getValue(source.settings, "app.is_visible", true);
-        model.imageId = getValue(source.settings, "app.image_id", null);
-        model.imageColor = getValue(source.settings, "app.image_color", "#427AB6");
 
         $.each(model.components, function (i, componentModel) {
             var componentStatus = status.components.find(x => x.uid == componentModel.uid);

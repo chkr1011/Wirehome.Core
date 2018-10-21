@@ -45,6 +45,11 @@ body {
 
 /* Custom styles */
 
+.no-component-view-found {
+    font-size: 12pt;
+    text-align: center;
+}
+
 .display {
     padding: 10px; 
     background: navy; 
