@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,8 @@ namespace Wirehome.Core.History
         private readonly OperationsPerSecondCounter _updateRateCounter;
 
         private HistoryRepository _repository;
-        private HistorySettings _settings;
+        private HistoryServiceOptions _options;
+        private long _componentStatusUpateDuration;
 
         public HistoryService(
             ComponentRegistryService componentRegistryService,
@@ -47,22 +49,20 @@ namespace Wirehome.Core.History
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<HistoryService>();
 
-            if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
-            systemStatusService.Set("history.pending_component_status_values_count", _pendingComponentStatusValues.Count);
-
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _updateRateCounter = diagnosticsService.CreateOperationsPerSecondCounter("history.update_rate");
-            systemStatusService.Set("history.update_rate", () => _updateRateCounter.Count);
+
+            if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
+            systemStatusService.Set("history.component_status.pending_updates_count", _pendingComponentStatusValues.Count);
+            systemStatusService.Set("history.component_status.update_rate", () => _updateRateCounter.Count);
+            systemStatusService.Set("history.component_status.update_duration", () => _componentStatusUpateDuration);
         }
 
         public void Start()
         {
-            if (!_storageService.TryRead(out _settings, "HistorySettings.json"))
-            {
-                _settings = new HistorySettings();
-            }
+            _storageService.TryReadOrCreate(out _options, "HistoryServiceConfiguration.json");
 
-            if (!_settings.IsEnabled)
+            if (!_options.IsEnabled)
             {
                 _logger.LogInformation("History is disabled.");
                 return;
@@ -75,7 +75,7 @@ namespace Wirehome.Core.History
 
             // Give the pulling code some time to complete before declaring an entity 
             // as outdated. 1.25 might be enough additional time.
-            _repository.ComponentStatusOutdatedTimeout = _settings.ComponentStatusPullInterval * 1.25;
+            _repository.ComponentStatusOutdatedTimeout = _options.ComponentStatusPullInterval * 1.25;
 
             AttachToMessageBus();
 
@@ -170,7 +170,10 @@ namespace Wirehome.Core.History
                     return;
                 }
 
+                var stopwatch = Stopwatch.StartNew();
                 _repository.UpdateComponentStatusValue(componentStatusValue);
+                _componentStatusUpateDuration = stopwatch.ElapsedMilliseconds;
+
                 _updateRateCounter.Increment();
             }
             catch (OperationCanceledException)
@@ -188,7 +191,7 @@ namespace Wirehome.Core.History
             {
                 try
                 {
-                    await Task.Delay(_settings.ComponentStatusPullInterval, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(_options.ComponentStatusPullInterval, cancellationToken).ConfigureAwait(false);
 
                     foreach (var component in _componentRegistryService.GetComponents())
                     {
@@ -220,6 +223,11 @@ namespace Wirehome.Core.History
         {
             try
             {
+                if (IsComponentStatusBlacklisted(componentUid, statusUid))
+                {
+                    return;
+                }
+
                 var stringValue = Convert.ToString(value, CultureInfo.InvariantCulture);
 
                 var roundSetting = _componentRegistryService.GetComponentSetting(componentUid, "history.round_digits");
@@ -247,6 +255,26 @@ namespace Wirehome.Core.History
             {
                 _logger.LogError(exception, $"Error while enque component status value '{componentUid}.{statusUid}'.");
             }
+        }
+
+        private bool IsComponentStatusBlacklisted(string componentUid, string statusUid)
+        {
+            if (_options.ComponentBlacklist?.Contains(componentUid) == true)
+            {
+                return true;
+            }
+
+            if (_options.ComponentStatusBlacklist?.Contains(statusUid) == true)
+            {
+                return true;
+            }
+
+            if (_options.ComponentWithStatusBlacklist?.Contains(componentUid + "." + statusUid) == true)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

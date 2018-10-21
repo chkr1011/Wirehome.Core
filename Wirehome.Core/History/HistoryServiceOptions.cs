@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Wirehome.Core.History
 {
-    public class HistorySettings
+    public class HistoryServiceOptions
     {
         public bool IsEnabled { get; set; } = true;
 
@@ -12,5 +12,7 @@ namespace Wirehome.Core.History
         public HashSet<string> ComponentBlacklist { get; set; } = new HashSet<string>();
 
         public HashSet<string> ComponentStatusBlacklist { get; set; } = new HashSet<string>();
+
+        public HashSet<string> ComponentWithStatusBlacklist { get; set; } = new HashSet<string>();
     }
 }
