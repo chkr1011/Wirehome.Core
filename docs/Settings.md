@@ -13,3 +13,4 @@ The following table shows all predefined settings in Wirehome. Other services, l
 | `app.image_id` | e.g. `"fas fa-bath"` | Defines the ID of the icon (from Font Awesome). |
 | `app.is_visible` | `true | false` | Indicates whether the component is shown in the App. |
 | `app.position_index` | e.g. `0` | Defines the index of the position within a component group in the App. |
+| `app.view_source` | e.g. `"/repositories/component_logics/myLogic/1.0.0/appView.html` | Defines the URI for the App view template. |
