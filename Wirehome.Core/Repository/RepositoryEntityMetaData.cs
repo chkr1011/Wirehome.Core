@@ -1,4 +1,4 @@
-﻿namespace Wirehome.Core.Repositories
+﻿namespace Wirehome.Core.Repository
 {
     public class RepositoryEntityMetaData
     {

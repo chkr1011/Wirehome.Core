@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Wirehome.Core.Repositories.GitHub
+namespace Wirehome.Core.Repository.GitHub
 {
     public class GitHubFileEntry
     {

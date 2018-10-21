@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Wirehome.Core.Repositories
+namespace Wirehome.Core.Repository
 {
     public class RepositoryEntityUid
     {

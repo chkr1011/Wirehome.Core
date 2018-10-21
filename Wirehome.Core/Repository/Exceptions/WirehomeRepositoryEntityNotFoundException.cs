@@ -1,4 +1,4 @@
-﻿namespace Wirehome.Core.Repositories.Exceptions
+﻿namespace Wirehome.Core.Repository.Exceptions
 {
     public class WirehomeRepositoryEntityNotFoundException : WirehomeRepositoryException
     {

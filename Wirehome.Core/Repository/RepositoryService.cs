@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Wirehome.Core.Exceptions;
-using Wirehome.Core.Repositories.Exceptions;
-using Wirehome.Core.Repositories.GitHub;
+using Wirehome.Core.Repository.Exceptions;
+using Wirehome.Core.Repository.GitHub;
 using Wirehome.Core.Storage;
 
-namespace Wirehome.Core.Repositories
+namespace Wirehome.Core.Repository
 {
     public class RepositoryService
     {
         private readonly StorageService _storageService;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
-        
+
         public RepositoryService(StorageService storageService, ILoggerFactory loggerFactory)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
@@ -26,7 +26,7 @@ namespace Wirehome.Core.Repositories
             _logger = _loggerFactory.CreateLogger<RepositoryService>();
         }
 
-        public RepositoryEntity LoadEntity(RepositoryType type, RepositoryEntityUid uid)
+        public RepositoryEntity LoadEntity(RepositoryEntityUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
@@ -35,89 +35,47 @@ namespace Wirehome.Core.Repositories
                 throw new ArgumentException("The ID of the RepositoryEntityUid is not set.");
             }
 
-            var path = GetEntityRootPath(type, uid);
+            var path = GetEntityRootPath(uid);
             var source = LoadEntity(uid, path);
-            
+
             return source;
         }
-        
-        public async Task DownloadEntityAsync(RepositoryType type, RepositoryEntityUid uid)
+
+        public async Task DownloadEntityAsync(RepositoryEntityUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out RepositoryServiceSettings settings, "RepositoryService.json"))
-            {
-                settings = new RepositoryServiceSettings();
-            }
+            _storageService.TryReadOrCreate(out RepositoryServiceOptions options, "RepositoryServiceConfiguration.json");
 
-            var downloader = new GitHubRepositoryEntityDownloader(settings, _loggerFactory);
-            await downloader.DownloadAsync(type, uid, GetEntityRootPath(type, uid)).ConfigureAwait(false);
+            var downloader = new GitHubRepositoryEntityDownloader(options, _loggerFactory);
+            await downloader.DownloadAsync(uid, GetEntityRootPath(uid)).ConfigureAwait(false);
         }
-        
-        public void DeleteEntity(RepositoryType type, RepositoryEntityUid uid)
+
+        public void DeleteEntity(RepositoryEntityUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var rootPath = GetEntityRootPath(type, uid);
+            var rootPath = GetEntityRootPath(uid);
             if (!Directory.Exists(rootPath))
             {
                 return;
             }
 
             Directory.Delete(rootPath, true);
-            _logger.Log(LogLevel.Information, $"Deleted entity '{uid}' of type '{type}'.");
+            _logger.Log(LogLevel.Information, $"Deleted entity '{uid}'.");
         }
 
-        public static string GetPathForType(RepositoryType type)
+        public string GetEntityRootPath(RepositoryEntityUid uid)
         {
-            if (type == RepositoryType.Automations)
-            {
-                return "automations";
-            }
+            _storageService.TryRead(out RepositoryServiceOptions options, "RepositoryServiceConfiguration.json");
 
-            if (type == RepositoryType.ComponentAdapters)
-            {
-                return "component_adapters";
-            }
-
-            if (type == RepositoryType.ComponentLogics)
-            {
-                return "component_logics";
-            }
-
-            if (type == RepositoryType.Macros)
-            {
-                return "macros";
-            }
-
-            if (type == RepositoryType.Services)
-            {
-                return "services";
-            }
-
-            if (type == RepositoryType.Tools)
-            {
-                return "tools";
-            }
-
-            throw new NotSupportedException();
-        }
-
-        public string GetEntityRootPath(RepositoryType type, RepositoryEntityUid uid)
-        {
-            if (!_storageService.TryRead(out RepositoryServiceSettings settings, "RepositoryService.json"))
-            {
-                settings = new RepositoryServiceSettings();
-            }
-
-            var rootPath = settings.RootPath;
+            var rootPath = options.RootPath;
             if (string.IsNullOrEmpty(rootPath))
             {
-                rootPath = Path.Combine(_storageService.DataPath, "Repositories");
+                rootPath = Path.Combine(_storageService.DataPath, "Repository");
             }
 
-            var typePath = GetPathForType(type);
-            var path = Path.Combine(rootPath, typePath);
+            var path = rootPath;
 
             if (string.IsNullOrEmpty(uid.Version))
             {
@@ -145,7 +103,7 @@ namespace Wirehome.Core.Repositories
         {
             if (!Directory.Exists(path))
             {
-                throw new WirehomeException($"Repository entity '{uid}' not found.");
+                throw new WirehomeRepositoryEntityNotFoundException(uid);
             }
 
             var source = new RepositoryEntity();
@@ -174,7 +132,7 @@ namespace Wirehome.Core.Repositories
             source.Description = ReadFileContent(path, "description.md");
             source.ReleaseNotes = ReadFileContent(path, "releaseNotes.md");
             source.Script = ReadFileContent(path, "script.py");
-            
+
             return source;
         }
 
