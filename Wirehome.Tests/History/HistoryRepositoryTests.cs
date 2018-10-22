@@ -324,7 +324,7 @@ namespace Wirehome.Tests.History
             optionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString());
 
             var componentHistoryRepository = new HistoryRepository();
-            componentHistoryRepository.Initialize();
+            componentHistoryRepository.Initialize(optionsBuilder.Options);
 
             return componentHistoryRepository;
         }

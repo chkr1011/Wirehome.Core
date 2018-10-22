@@ -10,9 +10,6 @@ namespace Wirehome.Core.History.Repository
     {
         private DbContextOptions _dbContextOptions;
 
-        // TODO: Consider caching the latest entries for fast comparison.
-        //private readonly Dictionary<string, ComponentStatusValue> _latestComponentStatusValues = new Dictionary<string, ComponentStatusValue>();
-
         public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
 
         public void Initialize()
@@ -20,9 +17,17 @@ namespace Wirehome.Core.History.Repository
             var dbContextOptionsBuilder = new DbContextOptionsBuilder<HistoryDatabaseContext>();
             dbContextOptionsBuilder.UseMySql("Server=localhost;Uid=wirehome;Pwd=w1r3h0m3;SslMode=None;Database=WirehomeHistory");
 
-            _dbContextOptions = dbContextOptionsBuilder.Options;
+            Initialize(dbContextOptionsBuilder.Options);
+        }
 
-            Initialize(_dbContextOptions);
+        public void Initialize(DbContextOptions options)
+        {
+            _dbContextOptions = options ?? throw new ArgumentNullException(nameof(options));
+
+            using (var databaseContext = new HistoryDatabaseContext(_dbContextOptions))
+            {
+                databaseContext.Database.EnsureCreated();
+            }
         }
 
         public void Delete()
@@ -30,14 +35,6 @@ namespace Wirehome.Core.History.Repository
             using (var databaseContext = CreateDatabaseContext())
             {
                 databaseContext.Database.EnsureDeleted();
-            }
-        }
-
-        public void Initialize(DbContextOptions options)
-        {
-            using (var databaseContext = new HistoryDatabaseContext(options))
-            {
-                databaseContext.Database.EnsureCreated();
             }
         }
 

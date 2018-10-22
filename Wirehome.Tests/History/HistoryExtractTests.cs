@@ -18,32 +18,32 @@ namespace Wirehome.Tests.History
 
                 var componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("0", startDateTime);
                 repo.UpdateComponentStatusValue(componentStatusValue);
-                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("0", startDateTime.AddHours(0.99));
+                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("0", startDateTime.AddMinutes(59));
                 repo.UpdateComponentStatusValue(componentStatusValue);
 
                 componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("1", startDateTime.AddHours(1));
                 repo.UpdateComponentStatusValue(componentStatusValue);
-                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("1", startDateTime.AddHours(1.99));
+                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("1", startDateTime.AddHours(1).AddMinutes(59));
                 repo.UpdateComponentStatusValue(componentStatusValue);
 
                 componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("2", startDateTime.AddHours(2));
                 repo.UpdateComponentStatusValue(componentStatusValue);
-                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("2", startDateTime.AddHours(2.99));
+                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("2", startDateTime.AddHours(2).AddMinutes(59));
                 repo.UpdateComponentStatusValue(componentStatusValue);
 
                 componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("3", startDateTime.AddHours(3));
                 repo.UpdateComponentStatusValue(componentStatusValue);
-                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("3", startDateTime.AddHours(3.99));
+                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("3", startDateTime.AddHours(3).AddMinutes(59));
                 repo.UpdateComponentStatusValue(componentStatusValue);
 
                 componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("4", startDateTime.AddHours(4));
                 repo.UpdateComponentStatusValue(componentStatusValue);
-                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("4", startDateTime.AddHours(4.99));
+                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("4", startDateTime.AddHours(4).AddMinutes(59));
                 repo.UpdateComponentStatusValue(componentStatusValue);
 
                 componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("5", startDateTime.AddHours(5));
                 repo.UpdateComponentStatusValue(componentStatusValue);
-                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("5", startDateTime.AddHours(5.99));
+                componentStatusValue = HistoryRepositoryTests.CreateComponentStatusValue("5", startDateTime.AddHours(5).AddMinutes(59));
                 repo.UpdateComponentStatusValue(componentStatusValue);
 
                 var entities = repo.GetComponentStatusValues("c1", "s1");
@@ -68,23 +68,19 @@ namespace Wirehome.Tests.History
 
                     counter++;
 
-                    if (counter >= 60)
-                    {
-                        expectedValue = "5";
-                    }
-                    else if (counter >= 48)
+                    if (counter >= 49)
                     {
                         expectedValue = "4";
                     }
-                    else if (counter >= 36)
+                    else if (counter >= 37)
                     {
                         expectedValue = "3";
                     }
-                    else if (counter >= 24)
+                    else if (counter >= 25)
                     {
                         expectedValue = "2";
                     }
-                    else if (counter >= 12)
+                    else if (counter >= 13)
                     {
                         expectedValue = "1";
                     }
