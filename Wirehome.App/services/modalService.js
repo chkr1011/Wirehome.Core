@@ -7,5 +7,16 @@
         $("#modal").modal("show");
     }
 
+    srv.showInfoPopover = function () {
+        $("#infoIcon").popover({
+            html: true,
+            title: "Wirehome.App",
+            placement: "top",
+            content: function () {
+                return $('#infoPopoverContent').html();
+            }
+        });
+    }
+
     return this;
 }

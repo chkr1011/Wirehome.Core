@@ -1,27 +1,7 @@
 function createAppController($http, $scope, modalService, apiService, localizationService, componentService, notificationService) {
     var c = this;
 
-    $scope.getNumbers = function (num) {
-        var a = new Array(num + 1);
-        for (var i = 0; i < num + 1; i++) {
-            a[i] = i;
-        }
-
-        return a;
-    }
-
-    $scope.getStateCaption = function (component, id) {
-        if (component == undefined) {
-            return id;
-        }
-
-        var caption = component.settings["app.caption.states." + id];
-        if (caption !== undefined) {
-            return caption;
-        }
-
-        return id;
-    }
+    extendAngularScope($scope);
 
     $scope.selectedColorChanged = function (component) {
         if (component.appliedColor == undefined || component.appliedColor == component.selectedColor) {
@@ -33,37 +13,33 @@ function createAppController($http, $scope, modalService, apiService, localizati
     }
 
     c.version = "-";
-    c.status = {};
-    c.componentGroups = [];
     c.notifications = [];
-    c.weatherStation = {}
+    c.componentGroups = [];
+    c.globalVariables = {}
 
     c.notificationService = notificationService;
     c.componentService = componentService;
     c.localizationService = localizationService;
     c.apiService = apiService;
 
-    c.showInfoPopover = function () {
-        $("#infoIcon").popover({
-            html: true,
-            title: "Wirehome.App",
-            placement: "top",
-            content: function () {
-                return $('#infoPopoverContent').html();
-            }
-        });
-    }
+    c.hasGlobalVariable = function (uid) {
+        c.globalVariables.hasOwnProperty(uid);
+    };
 
-    c.setActivePanel = function (id) {
-        if (c.activePanel === id) {
+    c.getGlobalVariable = function (uid, defaultValue) {
+        return getValue(c.globalVariables, uid, defaultValue);
+    };
+
+    c.setActivePanel = function (uid) {
+        if (c.activePanel === uid) {
             c.activePanel = "";
         } else {
-            c.activePanel = id;
+            c.activePanel = uid;
         }
 
         setTimeout(function () {
             $("html, body").animate({
-                scrollTop: $("#" + id).offset().top
+                scrollTop: $("#" + uid).offset().top
             }, 250);
         }, 100);
     }
@@ -159,77 +135,27 @@ function createAppController($http, $scope, modalService, apiService, localizati
         c.notifications = status.notifications;
         c.globalVariables = status.global_variables;
 
-        c.weatherStation.sunrise = status.global_variables["outdoor.sunrise"];
-        c.weatherStation.sunset = status.global_variables["outdoor.sunset"];
-        c.weatherStation.temperature = status.global_variables["outdoor.temperature"];
-        c.weatherStation.humidity = status.global_variables["outdoor.humidity"];
-        c.weatherStation.condition = status.global_variables["outdoor.condition"];
-        c.weatherStation.conditionImage = status.global_variables["outdoor.condition.image_url"];
-
         c.isInitialized = true;
-    };
-
-    c.toggleIsEnabled = function (component) {
-        if (component.settings["is_enabled"] === true) {
-            componentService.disable(component);
-        } else {
-            componentService.enable(component);
-        }
     };
 
     c.configureComponent = function (model, source, componentGroupModel) {
         model.source = source;
 
-        var associationSettings = componentGroupModel.source.components[model.uid].settings;
         model.template = getValue(source.configuration, "app.view_source", null);
-
-        model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", model.uid);
-        model.imageColor = getEffectiveValue([associationSettings, source.settings], "app.image_color", "#427AB6");
-
-
-        // TODO: Remove as soon as migrated.
-        model.status = source.status;
-        model.settings = source.settings;
-        model.configuration = source.configuration;
-
         if (model.template == undefined || model.template == null) {
-            if (source.status["motion_detection.state"] !== undefined) {
-                model.template = "views/components/motionDetectorTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-walking");
-            }
-            else if (source.status["button.state"] !== undefined) {
-                model.template = "views/components/buttonTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-hand-point-right");
-            }
-            else if (source.status["state_machine.state"] !== undefined) {
-                model.template = "views/components/stateMachineTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-check-double");
-            }
-            else if (source.status["level.current"] !== undefined) {
-                model.template = "views/components/ventilationTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-wind");
-            }
-            else if (source.status["color.red"] !== undefined) {
+            model.template = "views/components/componentViewMissing.html";
+        }
+
+        var associationSettings = componentGroupModel.source.components[model.uid].settings;
+        model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", model.uid);
+        
+        if (model.template == undefined || model.template == null) {
+            if (source.status["color.red"] !== undefined) {
                 model.template = "views/components/rgbTemplate.html";
                 model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-palette");
 
                 model.selectedColor = "#FFFFFF";
             }
-            else if (source.status["display.text"] !== undefined) {
-                model.template = "views/components/displayTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-desktop");
-            }
-            // else if (source.status["power.state"] !== undefined) {
-            //     model.template = "views/components/toggleTemplate.html";
-            //     model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-power-off");
-            // }
-            else {
-                model.template = "views/components/componentViewMissing.html";
-            }
-        }
-
-        if (model.imageId === undefined) {
-            model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-square");
         }
 
         if (model.template == "views/rgbTemplate.html") {
@@ -285,15 +211,13 @@ function getEffectiveValue(sourceList, name, defaultValue) {
 }
 
 function getValue(source, name, defaultValue) {
-    if (source === undefined) {
+    if (source === undefined || source == null) {
         return defaultValue;
     }
 
-    var value = source[name];
-
-    if (value === undefined || value === null) {
+    if (!source.hasOwnProperty(name)) {
         return defaultValue;
     }
 
-    return value;
+    return source[name];
 }

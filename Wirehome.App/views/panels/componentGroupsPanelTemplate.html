@@ -9,14 +9,14 @@
     <ul class="list-group" ng-show="ctrl.activePanel===componentGroup.uid">
         <li class="list-group-item" ng-repeat="component in componentGroup.components | orderBy:['sortValue']">
             <div class="clearfix">
-                <span class="component-icon" ng-style="{color: component.imageColor}" ng-class="component.imageId"></span>
+                <span class="component-icon" ng-style="{color: component.getSetting('app.image_color', '#427AB6')}" ng-class="component.getSetting('app.image_id', 'fas fa-square')"></span>
                 <span class="component-caption">{{component.getSetting("app.caption", "#" + component.uid)}}</span>
             </div>
             <div class="clearfix" style="padding-top: 10px;" ng-include="component.template"></div>
 
             <div class="clearfix">
 
-                <span ng-if="component.getSetting('is_enabled', true)===false" class="component-status-text label label-danger">
+                <span ng-if="component.getSetting('is_enabled', true)==false" class="component-status-text label label-danger">
                     <span class="fas fa-toggle-off"></span> Disabled
                 </span>
 
@@ -25,7 +25,8 @@
                 </span>
 
                 <span ng-if="component.getStatus('power.consumption', 0) > 0" class="component-status-text label label-warning">
-                    <span class="fas fa-bolt"></span> <span>{{component.powerConsumption}} Wh</span>
+                    <span class="fas fa-bolt"></span> <span>{{(component.getStatus('power.consumption') | number:0) + '
+                        Wh'}}</span>
                 </span>
 
             </div>

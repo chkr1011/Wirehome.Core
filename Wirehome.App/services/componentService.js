@@ -9,6 +9,14 @@
         apiService.executePost("/api/v1/components/" + component.uid + "/settings/is_enabled", false);
     }
 
+    srv.toggleIsEnabled = function (component) {
+        if (component.getSetting("is_enabled", true) === true) {
+            srv.disable(component);
+        } else {
+            srv.enable(component);
+        }
+    };
+
     srv.togglePowerState = function (component) {
         var parameters = {}
         parameters["type"] = "toggle";
