@@ -12,15 +12,15 @@ namespace Wirehome.Core.Migrations
                 name: "ComponentStatus",
                 columns: table => new
                 {
-                    ID = table.Column<uint>(nullable: false)
+                    ID = table.Column<ulong>(nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     ComponentUid = table.Column<string>(maxLength: 256, nullable: true),
                     StatusUid = table.Column<string>(maxLength: 256, nullable: true),
-                    Value = table.Column<string>(maxLength: 1024, nullable: true),
+                    Value = table.Column<string>(maxLength: 512, nullable: true),
                     RangeStart = table.Column<DateTime>(nullable: false),
                     RangeEnd = table.Column<DateTime>(nullable: false),
-                    PreviousEntityID = table.Column<uint>(nullable: true),
-                    NextEntityID = table.Column<uint>(nullable: true)
+                    PreviousEntityID = table.Column<ulong>(nullable: true),
+                    NextEntityID = table.Column<ulong>(nullable: true)
                 },
                 constraints: table =>
                 {

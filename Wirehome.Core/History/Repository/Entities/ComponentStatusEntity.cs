@@ -9,7 +9,7 @@ namespace Wirehome.Core.History.Repository.Entities
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public uint ID { get; set; } 
+        public ulong ID { get; set; } 
 
         [StringLength(256)]
         public string ComponentUid { get; set; }
@@ -17,19 +17,19 @@ namespace Wirehome.Core.History.Repository.Entities
         [StringLength(256)]
         public string StatusUid { get; set; }
 
-        [StringLength(1024)]
+        [StringLength(512)]
         public string Value { get; set; }
 
         public DateTime RangeStart { get; set; }
 
         public DateTime RangeEnd { get; set; }
 
-        public uint? PreviousEntityID { get; set; }
+        public ulong? PreviousEntityID { get; set; }
 
         [ForeignKey("PreviousEntityID")]
         public ComponentStatusEntity PreviousEntity { get; set; }
 
-        public uint? NextEntityID { get; set; }
+        public ulong? NextEntityID { get; set; }
 
         [ForeignKey("NextEntityID")]
         public ComponentStatusEntity NextEntity { get; set; }

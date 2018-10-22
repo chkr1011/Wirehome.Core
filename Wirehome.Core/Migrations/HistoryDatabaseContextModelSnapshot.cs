@@ -19,15 +19,15 @@ namespace Wirehome.Core.Migrations
 
             modelBuilder.Entity("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", b =>
                 {
-                    b.Property<uint>("ID")
+                    b.Property<ulong>("ID")
                         .ValueGeneratedOnAdd();
 
                     b.Property<string>("ComponentUid")
                         .HasMaxLength(256);
 
-                    b.Property<uint?>("NextEntityID");
+                    b.Property<ulong?>("NextEntityID");
 
-                    b.Property<uint?>("PreviousEntityID");
+                    b.Property<ulong?>("PreviousEntityID");
 
                     b.Property<DateTime>("RangeEnd");
 
@@ -37,7 +37,7 @@ namespace Wirehome.Core.Migrations
                         .HasMaxLength(256);
 
                     b.Property<string>("Value")
-                        .HasMaxLength(1024);
+                        .HasMaxLength(512);
 
                     b.HasKey("ID");
 
