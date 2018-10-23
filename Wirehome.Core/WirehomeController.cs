@@ -103,11 +103,8 @@ namespace Wirehome.Core
         private static void PublishBootedNotification(IServiceProvider serviceProvider)
         {
             var messageBusService = serviceProvider.GetService<MessageBusService>();
-            messageBusService.Publish(new WirehomeDictionary
-            {
-                ["type"] = MessageBusMessageTypes.Booted
-            });
-
+            messageBusService.Publish(new WirehomeDictionary().WithType(MessageBusMessageTypes.Booted));
+    
             var notificationService = serviceProvider.GetService<NotificationsService>();
             notificationService.PublishFromResource(new PublishFromResourceParameters()
             {

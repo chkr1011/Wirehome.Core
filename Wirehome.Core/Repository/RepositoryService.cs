@@ -67,8 +67,8 @@ namespace Wirehome.Core.Repository
 
         public string GetEntityRootPath(RepositoryEntityUid uid)
         {
-            _storageService.TryRead(out RepositoryServiceOptions options, "RepositoryServiceConfiguration.json");
-
+            _storageService.TryRead(out RepositoryServiceOptions options, RepositoryServiceOptions.Filename);
+            
             var rootPath = options.RootPath;
             if (string.IsNullOrEmpty(rootPath))
             {

@@ -52,7 +52,7 @@ namespace Wirehome.Core.Macros
             _messageBusService.Subscribe("macros.execute", new WirehomeDictionary().WithType("macros.execute"), OnExecuteMacroBusMessage);
         }
 
-        private void OnExecuteMacroBusMessage(WirehomeDictionary properties)
+        private void OnExecuteMacroBusMessage(MessageBusMessage busMessage)
         {
 
         }

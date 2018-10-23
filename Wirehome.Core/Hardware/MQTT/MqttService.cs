@@ -59,7 +59,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public void Start()
         {
-            _storageService.TryReadOrCreate(out MqttServiceOptions options, "MqttServiceConfiguration.json");
+            _storageService.TryReadOrCreate(out MqttServiceOptions options, MqttServiceOptions.Filename);
 
             var mqttFactory = new MqttFactory();
             _mqttServer = options.EnableLogging ? mqttFactory.CreateMqttServer(new LoggerAdapter(_logger)) : mqttFactory.CreateMqttServer();

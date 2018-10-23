@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -73,7 +72,7 @@ namespace Wirehome.Core.Components
 
                     _components[uid] = component;
                 }
-                
+
                 _componentInitializerFactory.Create(this).InitializeComponent(component, configuration);
 
                 _logger.Log(LogLevel.Information, $"Component '{component.Uid}' initialized successfully.");
@@ -159,7 +158,7 @@ namespace Wirehome.Core.Components
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
             var component = GetComponent(componentUid);
-            
+
             var isAdd = true;
             object oldValue = null;
 
@@ -191,17 +190,23 @@ namespace Wirehome.Core.Components
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
-            
-            Component component;
-            lock (_components)
+
+            var component = GetComponent(componentUid);
+            return component.Settings.GetValueOrDefault(settingUid, defaultValue);
+        }
+
+        public void RegisterComponentSetting(string componentUid, string settingUid, object value)
+        {
+            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
+            if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
+
+            var component = GetComponent(componentUid);
+            if (component.Settings.TryGetValue(settingUid, out _))
             {
-                if (!_components.TryGetValue(componentUid, out component))
-                {
-                    return defaultValue;
-                }
+                return;
             }
 
-            return component.Settings.GetValueOrDefault(settingUid, defaultValue);
+            SetComponentSetting(componentUid, settingUid, value);
         }
 
         public void SetComponentSetting(string componentUid, string settingUid, object value)
@@ -209,24 +214,17 @@ namespace Wirehome.Core.Components
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
-            Component component;
-            lock (_components)
-            {
-                if (!_components.TryGetValue(componentUid, out component))
-                {
-                    return;
-                }
-            }
-
+            var component = GetComponent(componentUid);
             component.Settings.TryGetValue(settingUid, out var oldValue);
+
             if (Equals(oldValue, value))
             {
                 return;
             }
 
             component.Settings[settingUid] = value;
+
             _storageService.Write(component.Settings, "Components", component.Uid, "Settings.json");
-            
             _messageBusProxy.PublishSettingChangedBusMessage(component.Uid, settingUid, oldValue, value);
         }
 
@@ -235,18 +233,10 @@ namespace Wirehome.Core.Components
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
-            Component component;
-            lock (_components)
-            {
-                if (!_components.TryGetValue(componentUid, out component))
-                {
-                    return null;
-                }
-            }
-
+            var component = GetComponent(componentUid);
             component.Settings.Remove(settingUid, out var value);
-            _storageService.Write(component.Settings, "Components", component.Uid, "Settings.json");
 
+            _storageService.Write(component.Settings, "Components", component.Uid, "Settings.json");
             _messageBusProxy.PublishSettingRemovedBusMessage(component.Uid, settingUid, value);
 
             return value;
@@ -296,20 +286,19 @@ namespace Wirehome.Core.Components
 
         private void AttachToMessageBus()
         {
-            var filter = new WirehomeDictionary
-            {
-                ["type"] = "component_registry.execute_command"
-            };
-
+            var filter = new WirehomeDictionary().WithType("component_registry.process_message");
             _messageBusService.Subscribe("component_registry.execute_command", filter, OnBusMessageExecuteCommand);
         }
 
-        private void OnBusMessageExecuteCommand(IDictionary message)
+        private void OnBusMessageExecuteCommand(MessageBusMessage busMessage)
         {
-            var componentUid = (string)message["component_uid"];
-            var parameters = (WirehomeDictionary)message["parameters"];
+            var message = busMessage.Message;
+            var componentUid = Convert.ToString(message["component_uid"], CultureInfo.InvariantCulture);
 
-            ProcessComponentMessage(componentUid, parameters);
+            // TODO: Refactor this conversion!
+            var innerMessage = (WirehomeDictionary)message["message"];
+
+            _messageBusService.PublishResponse(busMessage, ProcessComponentMessage(componentUid, innerMessage));
         }
     }
 }

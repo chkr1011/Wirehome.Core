@@ -13,6 +13,31 @@ namespace Wirehome.Core.Python
 {
     public static class PythonConvert
     {
+        public static JToken FromPythonToJson(object value)
+        {
+            if (value is PythonDictionary d)
+            {
+                var @object = new JObject();
+                foreach (var item in d)
+                {
+                    @object[Convert.ToString(item.Key, CultureInfo.InvariantCulture)] = FromPythonToJson(item.Value);
+                }
+
+                return @object;
+            }
+
+            if (value is List l) // Python list
+            {
+                var array = new JArray();
+                foreach (var item in l)
+                {
+                    array.Add(FromPythonToJson(item));
+                }
+            }
+
+            return JToken.FromObject(value);
+        }
+
         public static object FromPython(object value)
         {
             if (value == null)

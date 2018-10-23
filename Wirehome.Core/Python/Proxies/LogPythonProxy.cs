@@ -3,6 +3,7 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Python.Proxies
@@ -20,27 +21,27 @@ namespace Wirehome.Core.Python.Proxies
         
         public void debug(object message)
         {
-            _logger.Log(LogLevel.Debug, Convert.ToString(message));
+            _logger.Log(LogLevel.Debug, Convert.ToString(message, CultureInfo.InvariantCulture));
         }
 
         public void info(object message)
         {
-            _logger.Log(LogLevel.Information, Convert.ToString(message));
+            _logger.Log(LogLevel.Information, Convert.ToString(message, CultureInfo.InvariantCulture));
         }
 
         public void information(object message)
         {
-            _logger.Log(LogLevel.Information, Convert.ToString(message));
+            _logger.Log(LogLevel.Information, Convert.ToString(message, CultureInfo.InvariantCulture));
         }
 
         public void warning(object message)
         {
-            _logger.Log(LogLevel.Warning, Convert.ToString(message));
+            _logger.Log(LogLevel.Warning, Convert.ToString(message, CultureInfo.InvariantCulture));
         }
 
         public void error(object message)
         {
-            _logger.Log(LogLevel.Error, Convert.ToString(message));
+            _logger.Log(LogLevel.Error, Convert.ToString(message, CultureInfo.InvariantCulture));
         }
     }
 }

@@ -6,7 +6,7 @@ using Wirehome.Core.Components.Logic;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Components
@@ -59,31 +59,39 @@ namespace Wirehome.Core.Components
         {
             var scope = new WirehomeDictionary
             {
-                ["component_uid"] = component.Uid,
-                ["adapter_id"] = configuration.Adapter.Uid.Id,
-                ["adapter_version"] = configuration.Adapter.Uid.Version,
-                ["logic_id"] = configuration.Uid.Id,
-                ["logic_version"] = configuration.Uid.Version,
-                ["logic_root_path"] = _repositoryService.GetEntityRootPath(RepositoryType.ComponentLogics, configuration.Uid),
-                ["adapter_root_path"] = _repositoryService.GetEntityRootPath(RepositoryType.ComponentAdapters, configuration.Adapter.Uid)
+                ["component_uid"] = component.Uid
             };
 
-            var adapter = InitializeAdapter(component, configuration.Adapter);
-            adapter.SetVariable("scope", scope);
+            var adapterEntity = _repositoryService.LoadEntity(configuration.Adapter.Uid);
 
-            if (string.IsNullOrEmpty(configuration.Adapter?.Uid?.Id))
+            var adapter = new ScriptComponentAdapter(_pythonEngineService, _componentRegistryService, _loggerFactory);
+            adapter.Initialize(component.Uid, adapterEntity.Script);
+
+            if (configuration.Adapter.Variables != null)
+            {
+                foreach (var parameter in configuration.Adapter.Variables)
+                {
+                    adapter.SetVariable(parameter.Key, parameter.Value);
+                }
+            }
+
+            scope["adapter_uid"] = adapterEntity.Uid.ToString();
+            scope["adapter_id"] = adapterEntity.Uid.Id;
+            scope["adapter_version"] = adapterEntity.Uid.Version;
+            
+            if (string.IsNullOrEmpty(configuration.Uid?.Id))
             {
                 component.SetLogic(new EmptyLogic(adapter));
             }
             else
             {
-                var repositoryEntity = _repositoryService.LoadEntity(RepositoryType.ComponentLogics, configuration.Uid);
+                var logicEntity = _repositoryService.LoadEntity(configuration.Uid);
 
                 var logic = new ScriptComponentLogic(_pythonEngineService, _componentRegistryService, _loggerFactory);
                 adapter.MessagePublishedCallback = message => logic.ProcessAdapterMessage(message);
                 logic.AdapterMessagePublishedCallback = message => adapter.ProcessMessage(message);
 
-                logic.Initialize(component.Uid, repositoryEntity.Script);
+                logic.Initialize(component.Uid, logicEntity.Script);
 
                 if (configuration.Variables != null)
                 {
@@ -93,27 +101,15 @@ namespace Wirehome.Core.Components
                     }
                 }
 
+                scope["logic_uid"] = logicEntity.Uid.ToString();
+                scope["logic_id"] = logicEntity.Uid.Id;
+                scope["logic_version"] = logicEntity.Uid.Version;
+
                 logic.SetVariable("scope", scope);
                 component.SetLogic(logic);
-            }            
-        }
-
-        private ScriptComponentAdapter InitializeAdapter(Component component, ComponentAdapterConfiguration configuration)
-        {
-            var repositoryEntity = _repositoryService.LoadEntity(RepositoryType.ComponentAdapters, configuration.Uid);
-
-            var adapter = new ScriptComponentAdapter(_pythonEngineService, _componentRegistryService, _loggerFactory);
-            adapter.Initialize(component.Uid, repositoryEntity.Script);
-
-            if (configuration.Variables != null)
-            {
-                foreach (var parameter in configuration.Variables)
-                {
-                    adapter.SetVariable(parameter.Key, parameter.Value);
-                }
             }
-
-            return adapter;
+            
+            adapter.SetVariable("scope", scope);
         }
     }
 }
