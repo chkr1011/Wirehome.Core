@@ -28,6 +28,14 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpPost]
+        [Route("/api/v1/message_bus/message_with_reply")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public WirehomeDictionary PostMessageWithReply([FromBody] WirehomeDictionary messsage)
+        {
+            throw new NotImplementedException();
+        }
+
+        [HttpPost]
         [Route("/api/v1/message_bus/wait_for")]
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<WirehomeDictionary> PostWaitForAsync([FromBody] IEnumerable<WirehomeDictionary> filters, int timeout = 60)
@@ -37,7 +45,7 @@ namespace Wirehome.Core.HTTP.Controllers
             var subscriptions = new List<string>();
             try
             {
-                var tcs = new TaskCompletionSource<WirehomeDictionary>();
+                var tcs = new TaskCompletionSource<MessageBusMessage>();
                 foreach (var filter in filters)
                 {
                     var subscriptionUid = "api_wait_for:" + Guid.NewGuid().ToString("D");
@@ -54,7 +62,7 @@ namespace Wirehome.Core.HTTP.Controllers
                     return new WirehomeDictionary().WithType("exception.timeout");
                 }
 
-                return tcs.Task.Result;
+                return tcs.Task.Result.Message;
             }
             catch (OperationCanceledException)
             {

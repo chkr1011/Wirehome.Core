@@ -19,10 +19,9 @@ namespace Wirehome.Core.Python.Proxies
 
         public string ModuleName { get; } = "scheduler";
 
-        public string start_thread(string uid, Action callback, object state = null)
+        public string start_thread(string uid, Action<PythonDictionary> callback, object state = null)
         {
-            // TODO: Migrate to callback with dictionary.
-            return _schedulerService.StartThread(uid, _ => callback(), state);
+            return _schedulerService.StartThread(uid, p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
         public void stop_thread(string uid)

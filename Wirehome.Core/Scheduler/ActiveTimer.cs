@@ -88,7 +88,7 @@ namespace Wirehome.Core.Scheduler
             catch (Exception exception)
             {
                 _logger.Log(LogLevel.Error, exception, "Error while executing timer callback.");
-                Thread.Sleep(5000); // Prevent flooding the log.
+                Thread.Sleep(TimeSpan.FromSeconds(1)); // Prevent flooding the log.
             }
         }
     }

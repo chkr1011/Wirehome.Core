@@ -138,7 +138,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                 catch (Exception exception)
                 {
                     _logger.Log(LogLevel.Error, exception, "Unhandled exception while polling interrupt inputs.");
-                    Thread.Sleep(5000);
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
                 }
             }
         }

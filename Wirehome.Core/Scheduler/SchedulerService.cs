@@ -260,7 +260,7 @@ namespace Wirehome.Core.Scheduler
                 UpdateActiveCountdowns(elapsed);
                 InvokeDefaultTimerSubscribers();
 
-                Thread.Sleep(100);
+                Thread.Sleep(10);
             }
         }
 
