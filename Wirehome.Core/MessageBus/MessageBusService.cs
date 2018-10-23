@@ -17,17 +17,18 @@ namespace Wirehome.Core.MessageBus
         private readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
         private readonly LinkedList<MessageBusMessage> _history = new LinkedList<MessageBusMessage>();
         private readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new ConcurrentDictionary<string, MessageBusSubscriber>();
+        private readonly ConcurrentDictionary<Guid, MessageBusResponseSubscriber> _responseSubscribers = new ConcurrentDictionary<Guid, MessageBusResponseSubscriber>();
 
         private readonly SystemService _systemService;
 
         private readonly OperationsPerSecondCounter _inboundCounter;
         private readonly OperationsPerSecondCounter _processingRateCounter;
-        
+
         private readonly ILogger _logger;
 
         public MessageBusService(
-            PythonEngineService pythonEngineService, 
-            SystemStatusService systemStatusService, 
+            PythonEngineService pythonEngineService,
+            SystemStatusService systemStatusService,
             DiagnosticsService diagnosticsService,
             SystemService systemService,
             ILoggerFactory loggerFactory)
@@ -69,18 +70,67 @@ namespace Wirehome.Core.MessageBus
             }
         }
 
+        public async Task<WirehomeDictionary> PublishRequestAsync(WirehomeDictionary message, TimeSpan timeout)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+
+            var request = new MessageBusMessage
+            {
+                Message = message
+            };
+
+            var responseSubscriber = new MessageBusResponseSubscriber();
+            try
+            {
+                _responseSubscribers.TryAdd(request.Uid, responseSubscriber);
+
+                Publish(request);
+
+                using (var timeoutCts = new CancellationTokenSource(timeout))
+                {
+                    await Task.Run(() => responseSubscriber.Task, timeoutCts.Token).ConfigureAwait(false);
+                    return responseSubscriber.Task.Result.Message;
+                }
+            }
+            finally
+            {
+                _responseSubscribers.TryRemove(request.Uid, out _);
+            }
+        }
+
+        public void PublishResponse(MessageBusMessage request, WirehomeDictionary responseMessage)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (responseMessage == null) throw new ArgumentNullException(nameof(responseMessage));
+
+            var response = new MessageBusMessage
+            {
+                RequestUid = request.Uid,
+                Message = responseMessage
+            };
+
+            Publish(response);
+        }
+
         public void Publish(WirehomeDictionary message)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
             var busMessage = new MessageBusMessage
             {
-                Uid = Guid.NewGuid(),
-                EnqueuedTimestamp = DateTime.UtcNow,
-                CarriedMessage = message
+                Message = message
             };
 
-            _messageQueue.Add(busMessage);
+            Publish(busMessage);
+        }
+
+        public void Publish(MessageBusMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+
+            message.EnqueuedTimestamp = DateTime.UtcNow;
+            _messageQueue.Add(message);
+
             _inboundCounter.Increment();
         }
 
@@ -105,7 +155,7 @@ namespace Wirehome.Core.MessageBus
             return new List<MessageBusSubscriber>(_subscribers.Values);
         }
 
-        public string Subscribe(string uid, WirehomeDictionary filter, Action<WirehomeDictionary> callback)
+        public string Subscribe(string uid, WirehomeDictionary filter, Action<MessageBusMessage> callback)
         {
             if (filter == null) throw new ArgumentNullException(nameof(filter));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
@@ -142,16 +192,30 @@ namespace Wirehome.Core.MessageBus
 
                     lock (_history)
                     {
-                        _history.AddLast(message);
+                        _history.AddFirst(message);
                         if (_history.Count > 100)
                         {
-                            _history.RemoveFirst();
+                            _history.RemoveLast();
                         }
                     }
 
-                    foreach (var subscriber in _subscribers.Values)
+                    if (message.RequestUid != null)
                     {
-                        subscriber.EnqueueMessage(message.CarriedMessage);
+                        foreach (var responseSubscriber in _responseSubscribers)
+                        {
+                            if (responseSubscriber.Key.Equals(message.RequestUid.Value))
+                            {
+                                responseSubscriber.Value.SetResponse(message);
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var subscriber in _subscribers.Values)
+                        {
+                            subscriber.EnqueueMessage(message);
+                        }
                     }
                 }
                 catch (OperationCanceledException)
@@ -160,7 +224,7 @@ namespace Wirehome.Core.MessageBus
                 catch (Exception exception)
                 {
                     _logger.Log(LogLevel.Error, exception, "Error while dispatching messages.");
-                    Thread.Sleep(5000);
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
                 }
             }
         }
@@ -185,11 +249,11 @@ namespace Wirehome.Core.MessageBus
                 catch (Exception exception)
                 {
                     _logger.Log(LogLevel.Error, exception, "Error while processing messages.");
-                    Thread.Sleep(5000);
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
                 }
                 finally
                 {
-                    Thread.Sleep(100);
+                    Thread.Sleep(10);
                 }
             }
         }

@@ -7,12 +7,12 @@ namespace Wirehome.Core.MessageBus
 {
     public class MessageBusSubscriber
     {
-        private readonly ConcurrentQueue<WirehomeDictionary> _messageQueue = new ConcurrentQueue<WirehomeDictionary>();
-        private readonly Action<WirehomeDictionary> _callback;
+        private readonly ConcurrentQueue<MessageBusMessage> _messageQueue = new ConcurrentQueue<MessageBusMessage>();
+        private readonly Action<MessageBusMessage> _callback;
 
         private int _processorGate;
 
-        public MessageBusSubscriber(string uid, WirehomeDictionary filter, Action<WirehomeDictionary> callback)
+        public MessageBusSubscriber(string uid, WirehomeDictionary filter, Action<MessageBusMessage> callback)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             Filter = filter ?? throw new ArgumentNullException(nameof(filter));
@@ -27,11 +27,11 @@ namespace Wirehome.Core.MessageBus
 
         public int PendingMessagesCount => _messageQueue.Count;
 
-        public void EnqueueMessage(WirehomeDictionary message)
+        public void EnqueueMessage(MessageBusMessage message)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
-            if (!MessageBusFilterComparer.IsMatch(message, Filter))
+            if (!MessageBusFilterComparer.IsMatch(message.Message, Filter))
             {
                 return;
             }
