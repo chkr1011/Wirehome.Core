@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Wirehome.Core.History.Repository;
 
 namespace Wirehome.Core.History
 {
@@ -13,6 +14,14 @@ namespace Wirehome.Core.History
 
         public HashSet<string> ComponentStatusBlacklist { get; set; } = new HashSet<string>();
 
-        public HashSet<string> ComponentWithStatusBlacklist { get; set; } = new HashSet<string>();
+        public HashSet<string> FullComponentStatusBlacklist { get; set; } = new HashSet<string>();
+
+        public Dictionary<string, Dictionary<string, object>> ComponentStatusDefaultSettings { get; set; } = new Dictionary<string, Dictionary<string, object>>
+        {
+            ["temperature.value"] = new Dictionary<string, object>
+            {
+                [HistorySettingName.RoundDigits] = 0
+            }
+        };
     }
 }

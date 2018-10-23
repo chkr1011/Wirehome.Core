@@ -44,14 +44,20 @@ namespace Wirehome.Core.History.Repository
 
             using (var databaseContext = CreateDatabaseContext())
             {
-                // TODO: Check next entity instead of ordering.
-
-                var latestEntity = databaseContext.ComponentStatus
+                var latestEntities = databaseContext.ComponentStatus
+                    .Where(s => s.ComponentUid == componentStatusValue.ComponentUid &&
+                           s.StatusUid == componentStatusValue.StatusUid &&
+                           s.NextEntityID == null)
                     .OrderByDescending(s => s.RangeEnd)
                     .ThenByDescending(s => s.RangeStart)
-                    .FirstOrDefault(s =>
-                        s.ComponentUid == componentStatusValue.ComponentUid &&
-                        s.StatusUid == componentStatusValue.StatusUid);
+                    .ToList();
+
+                var latestEntity = latestEntities.FirstOrDefault();
+
+                if (latestEntities.Count > 1)
+                {
+                    // TODO: Log broken data.
+                }
 
                 if (latestEntity == null)
                 {
@@ -106,11 +112,14 @@ namespace Wirehome.Core.History.Repository
             {
                 return databaseContext.ComponentStatus
                     .AsNoTracking()
-                    .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid).ToList();
+                    .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
+                    .OrderBy(s => s.RangeStart)
+                    .ThenBy(s => s.RangeEnd)
+                    .ToList();
             }
         }
 
-        public List<ComponentStatusEntity> GetComponentStatusValues(string componentUid, string statusUid, DateTimeOffset rangeStart, DateTimeOffset rangeEnd)
+        public List<ComponentStatusEntity> GetComponentStatusValues(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
@@ -123,6 +132,7 @@ namespace Wirehome.Core.History.Repository
                     .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
                     .Where(s => (s.RangeStart <= rangeEnd && s.RangeEnd >= rangeStart))
                     .OrderBy(s => s.RangeStart)
+                    .ThenBy(s => s.RangeEnd)
                     .ToList();
             }
         }
@@ -133,7 +143,7 @@ namespace Wirehome.Core.History.Repository
         }
 
         private static ComponentStatusEntity CreateComponentStatusEntity(
-            ComponentStatusValue componentStatusValue, 
+            ComponentStatusValue componentStatusValue,
             ComponentStatusEntity latestEntity)
         {
             var newEntity = new ComponentStatusEntity

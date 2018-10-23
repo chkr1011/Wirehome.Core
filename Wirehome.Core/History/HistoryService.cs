@@ -126,15 +126,20 @@ namespace Wirehome.Core.History
             _messageBusService.Subscribe("history_receiver", filter, OnComponentStatusChanged);
         }
 
-        private void OnComponentStatusChanged(WirehomeDictionary message)
+        private void OnComponentStatusChanged(MessageBusMessage busMessage)
         {
             try
             {
+                var message = busMessage.Message;
+
                 TryEnqueueComponentStatusValue(
                     Convert.ToString(message["component_uid"], CultureInfo.InvariantCulture),
                     Convert.ToString(message["status_uid"], CultureInfo.InvariantCulture),
                     message.GetValueOrDefault("new_value", null),
                     DateTime.UtcNow);
+            }
+            catch (OperationCanceledException)
+            {
             }
             catch (Exception exception)
             {
@@ -171,7 +176,21 @@ namespace Wirehome.Core.History
                 }
 
                 var stopwatch = Stopwatch.StartNew();
+
+                var roundSetting = GetComponentStatusHistorySetting(componentStatusValue.ComponentUid, componentStatusValue.StatusUid, HistorySettingName.RoundDigits);
+                if (roundSetting != null)
+                {
+                    var roundDigitsCount = Convert.ToInt32(roundSetting);
+                    if (decimal.TryParse(componentStatusValue.Value, out var @decimal))
+                    {
+                        @decimal = Math.Round(@decimal, roundDigitsCount);
+                        componentStatusValue.Value = Convert.ToString(@decimal, CultureInfo.InvariantCulture);
+                    }
+                }
+
                 _repository.UpdateComponentStatusValue(componentStatusValue);
+
+                stopwatch.Stop();
                 _componentStatusUpateDuration = stopwatch.ElapsedMilliseconds;
 
                 _updateRateCounter.Increment();
@@ -228,28 +247,18 @@ namespace Wirehome.Core.History
                     return;
                 }
 
-                var stringValue = Convert.ToString(value, CultureInfo.InvariantCulture);
-
-                var roundSetting = _componentRegistryService.GetComponentSetting(componentUid, "history.round_digits");
-                if (roundSetting != null)
-                {
-                    var roundDigitsCount = Convert.ToInt32(roundSetting);
-                    if (decimal.TryParse(stringValue, out var @decimal))
-                    {
-                        @decimal = Math.Round(@decimal, roundDigitsCount);
-                        stringValue = Convert.ToString(@decimal, CultureInfo.InvariantCulture);
-                    }
-                }
-
                 var componentStatusValue = new ComponentStatusValue
                 {
                     ComponentUid = componentUid,
                     StatusUid = statusUid,
-                    Value = stringValue,
+                    Value = Convert.ToString(value, CultureInfo.InvariantCulture),
                     Timestamp = timestamp
                 };
 
                 _pendingComponentStatusValues.Add(componentStatusValue);
+            }
+            catch (OperationCanceledException)
+            {
             }
             catch (Exception exception)
             {
@@ -269,12 +278,33 @@ namespace Wirehome.Core.History
                 return true;
             }
 
-            if (_options.ComponentWithStatusBlacklist?.Contains(componentUid + "." + statusUid) == true)
+            if (_options.FullComponentStatusBlacklist?.Contains(componentUid + "." + statusUid) == true)
             {
                 return true;
             }
 
             return false;
+        }
+
+        private object GetComponentStatusHistorySetting(string componentUid, string statusUid, string settingUid)
+        {
+            if (_componentRegistryService.TryGetComponent(componentUid, out var component))
+            {
+                if (component.Settings.TryGetValue(settingUid, out var value))
+                {
+                    return value;
+                }
+            }
+
+            if (_options.ComponentStatusDefaultSettings.TryGetValue(statusUid, out var defaultSettings))
+            {
+                if (defaultSettings.TryGetValue(settingUid, out var value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
         }
     }
 }
