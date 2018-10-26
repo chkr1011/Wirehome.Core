@@ -65,7 +65,28 @@ namespace Wirehome.Core.Repository
             _logger.Log(LogLevel.Information, $"Deleted entity '{uid}'.");
         }
 
-        public string GetEntityRootPath(RepositoryEntityUid uid)
+        public RepositoryEntityMetaData GetMetaData(RepositoryEntityUid uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            return LoadEntity(uid).MetaData;
+        }
+
+        public string GetDescription(RepositoryEntityUid uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            return LoadEntity(uid).Description;
+        }
+
+        public string GetReleaseNotes(RepositoryEntityUid uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            return LoadEntity(uid).ReleaseNotes;
+        }
+
+        private string GetEntityRootPath(RepositoryEntityUid uid)
         {
             _storageService.TryRead(out RepositoryServiceOptions options, RepositoryServiceOptions.Filename);
             
@@ -116,7 +137,8 @@ namespace Wirehome.Core.Repository
 
             try
             {
-                source.MetaData = JsonConvert.DeserializeObject<RepositoryEntityMetaData>(File.ReadAllText(metaFile, Encoding.UTF8));
+                var metaData = File.ReadAllText(metaFile, Encoding.UTF8);
+                source.MetaData = JsonConvert.DeserializeObject<RepositoryEntityMetaData>(metaData);
             }
             catch (Exception exception)
             {

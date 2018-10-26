@@ -86,8 +86,9 @@ namespace Wirehome.Core.HTTP
 
                 config.MapRoute("default", "api/{controller}/{action}/{id?}", null, null, dataTokens);
 
-                app.Run(context => app.ApplicationServices.GetRequiredService<HttpServerService>().HandleRequestAsync(context));
             });
+
+            app.Run(context => app.ApplicationServices.GetRequiredService<HttpServerService>().HandleRequestAsync(context));
         }
 
         private static void ConfigureWebApps(IApplicationBuilder app)
