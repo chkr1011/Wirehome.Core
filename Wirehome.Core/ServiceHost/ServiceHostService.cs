@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.ServiceHost.Configuration;
-using Wirehome.Core.Areas;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Exceptions;
 using Wirehome.Core.Python.Proxies;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.ServiceHost
@@ -34,37 +34,41 @@ namespace Wirehome.Core.ServiceHost
             _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-        
-            _logger = loggerFactory.CreateLogger<AreaRegistryService>();
+
+            _logger = loggerFactory.CreateLogger<ServiceHostService>();
 
             pythonEngineService.RegisterSingletonProxy(new ServiceHostPythonProxy(this));
 
-            systemStatusService.Set("running_services", () => _serviceInstances.Count);
+            systemStatusService.Set("service_host.service_count", () => _serviceInstances.Count);
         }
 
         public void Start()
         {
-            if (_storageService.TryRead(out List<ServiceConfiguration> configurations, "Services.json"))
+            var configurationFiles = _storageService.EnumerateFiles("Configuration.json", "Services");
+            foreach (var configurationFile in configurationFiles)
             {
-                foreach (var configuration in configurations)
+                if (_storageService.TryRead(out ServiceConfiguration configuration, "Services", configurationFile))
                 {
-                    TryInitializeService(configuration);
+                    var id = Path.GetDirectoryName(configurationFile);
+                    TryInitializeService(id, configuration);
                 }
             }
         }
 
-        public void TryInitializeService(ServiceConfiguration configuration)
+        public void TryInitializeService(string id, ServiceConfiguration configuration)
         {
             if (!configuration.IsEnabled)
             {
-                _logger.Log(LogLevel.Information, $"Service '{configuration.Uid}' not initialized because it is disabled.");
+                _logger.Log(LogLevel.Information, $"Service '{id}' not initialized because it is disabled.");
                 return;
             }
 
             try
             {
+                var repositoryEntityUid = new RepositoryEntityUid { Id = id, Version = configuration.Version };
+
                 var serviceInstance = new ServiceInstance(_repositoryService, _pythonEngineService, _loggerFactory);
-                serviceInstance.Initialize(configuration.Uid);
+                serviceInstance.Initialize(repositoryEntityUid);
 
                 if (configuration.Variables != null)
                 {
@@ -74,28 +78,28 @@ namespace Wirehome.Core.ServiceHost
                     }
                 }
 
-                _logger.Log(LogLevel.Information, "Initializing service '{0}'.", configuration.Uid);
+                _logger.Log(LogLevel.Information, "Initializing service '{0}'.", id);
                 serviceInstance.ExecuteFunction("initialize");
 
                 lock (_serviceInstances)
                 {
-                    if (_serviceInstances.TryGetValue(configuration.Uid.Id, out var existingServiceInstance))
+                    if (_serviceInstances.TryGetValue(id, out var existingServiceInstance))
                     {
-                        _logger.Log(LogLevel.Information, "Stopping service '{0}'.", configuration.Uid);
+                        _logger.Log(LogLevel.Information, "Stopping service '{0}'.", id);
                         existingServiceInstance.ExecuteFunction("stop");
                     }
 
-                    _serviceInstances[configuration.Uid.Id] = serviceInstance;
+                    _serviceInstances[id] = serviceInstance;
 
-                    _logger.Log(LogLevel.Information, "Starting service '{0}'.", configuration.Uid);
+                    _logger.Log(LogLevel.Information, "Starting service '{0}'.", id);
                     serviceInstance.ExecuteFunction("start");
                 }
-                
-                _logger.Log(LogLevel.Information, $"Service '{configuration.Uid}' started.");
+
+                _logger.Log(LogLevel.Information, $"Service '{id}' started.");
             }
             catch (Exception exception)
             {
-                _logger.Log(LogLevel.Error, exception, $"Error while initializing service '{configuration.Uid}'.");
+                _logger.Log(LogLevel.Error, exception, $"Error while initializing service '{id}'.");
             }
         }
 

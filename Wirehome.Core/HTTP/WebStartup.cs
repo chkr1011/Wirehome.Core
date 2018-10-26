@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.Swagger;
 using Wirehome.Core.HTTP.Controllers.Diagnostics;
+using Wirehome.Core.Repository;
+using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
 {
@@ -20,13 +22,15 @@ namespace Wirehome.Core.HTTP
         {
         }
 
-        public static Action<IServiceCollection> OnServiceRegistration;
-        public static IServiceProvider ServiceProvider;
+        public static Action<IServiceCollection> OnServiceRegistration { get; set; }
+        public static IServiceProvider ServiceProvider { get; set; }
+        public static StorageService StorageService { get; set; }
 
         // ReSharper disable once UnusedMember.Global
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.AddSignalRCore();
 
             services.AddSwaggerGen(c =>
             {
@@ -35,7 +39,7 @@ namespace Wirehome.Core.HTTP
                     Title = "Wirehome.Core API",
                     Version = "v1",
                     Description = "This is the public API for the Wirehome.Core backend.",
-                    License = new License()
+                    License = new License
                     {
                         Name = "Apache-2.0",
                         Url = "https://github.com/chkr1011/Wirehome.Core/blob/master/LICENSE"
@@ -50,6 +54,7 @@ namespace Wirehome.Core.HTTP
             });
 
             OnServiceRegistration(services);
+            services.AddSingleton(StorageService);
 
             ServiceProvider = services.BuildServiceProvider();
             return ServiceProvider;
@@ -63,31 +68,13 @@ namespace Wirehome.Core.HTTP
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseSwagger(o => o.RouteTemplate = "/api/{documentName}/swagger.json");
-            app.UseSwaggerUI(o =>
-            {
-                o.SwaggerEndpoint("/api/v1/swagger.json", "Wirehome.Core API v1");
-            });
+            ConfigureSwagger(app);
+            ConfigureWebApps(app);
+            ConfigureMvc(app);
+        }
 
-            var appRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
-
-            if (Debugger.IsAttached)
-            {
-                appRootPath = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "Wirehome.App.Old");
-            }
-
-            app.UseFileServer(new FileServerOptions
-            {
-                RequestPath = "/app",
-                FileProvider = new PhysicalFileProvider(appRootPath)
-            });
-
+        private static void ConfigureMvc(IApplicationBuilder app)
+        {
             app.UseMvc(config =>
             {
                 var dataTokens = new RouteValueDictionary
@@ -97,18 +84,68 @@ namespace Wirehome.Core.HTTP
                     }
                 };
 
-                config.MapRoute(
-                    name: "default",
-                    template: "api/{controller=Home}/{action=Index}/{id?}",
-                    defaults: null,
-                    constraints: null,
-                    dataTokens: dataTokens
-                );
+                config.MapRoute("default", "api/{controller}/{action}/{id?}", null, null, dataTokens);
 
-                // TODO: Forward to htto listener from scripts.
+            });
 
-                //app.Run(context =>
-                //    context.Response.WriteAsync("Hello, World!"));
+            app.Run(context => app.ApplicationServices.GetRequiredService<HttpServerService>().HandleRequestAsync(context));
+        }
+
+        private static void ConfigureWebApps(IApplicationBuilder app)
+        {
+            StorageService.TryReadOrCreate(out RepositoryServiceOptions repositoryServiceOptions, RepositoryServiceOptions.Filename);
+            var repositoryRootPath = string.IsNullOrEmpty(repositoryServiceOptions.RootPath) ? Path.Combine(StorageService.DataPath, "Repository") : repositoryServiceOptions.RootPath;
+
+            var webAppRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
+            var webConfiguratorRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebConfigurator");
+            var customContentRootPath = Path.Combine(StorageService.DataPath, "CustomContent");
+
+            if (Debugger.IsAttached)
+            {
+                webAppRootPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "..",
+                    "..",
+                    "..",
+                    "..",
+                    "Wirehome.App");
+
+                webConfiguratorRootPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "..",
+                    "..",
+                    "..",
+                    "..",
+                    "Wirehome.Configurator");
+            }
+
+            ExposeDirectory(app, "/app", webAppRootPath);
+            ExposeDirectory(app, "/configurator", webConfiguratorRootPath);
+            ExposeDirectory(app, "/customContent", customContentRootPath);
+            ExposeDirectory(app, "/repository", repositoryRootPath);
+        }
+
+        private static void ExposeDirectory(IApplicationBuilder app, string uri, string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            app.UseFileServer(new FileServerOptions
+            {
+                RequestPath = uri,
+                FileProvider = new PhysicalFileProvider(path)
+            });
+        }
+
+        private static void ConfigureSwagger(IApplicationBuilder app)
+        {
+            app.UseSwagger(o => o.RouteTemplate = "/api/{documentName}/swagger.json");
+
+            app.UseSwaggerUI(o =>
+            {
+                o.SwaggerEndpoint("/api/v1/swagger.json", "Wirehome.Core API v1");
             });
         }
     }

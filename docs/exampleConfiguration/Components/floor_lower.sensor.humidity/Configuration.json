@@ -2,8 +2,13 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "Wirehome.HumiditySensor",
+      "id": "wirehome.sensor",
       "version": "1.0.0"
+    },
+    "variables": {
+      "config": {
+        "sensor_type": "humidity"
+      }
     },
     "adapter": {
       "uid": {
@@ -12,7 +17,7 @@
       },
       "variables": {
         "config": {
-          "topic": "sensors-bridge/humidity/2"
+          "topic": "sensors-bridge/humidity/3"
         }
       }
     }

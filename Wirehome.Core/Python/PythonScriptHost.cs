@@ -14,28 +14,28 @@ namespace Wirehome.Core.Python
 
         public PythonScriptHost(ScriptScope scriptScope, ILoggerFactory loggerFactory)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _scriptScope = scriptScope ?? throw new ArgumentNullException(nameof(scriptScope));
 
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<PythonScriptHost>();
         }
 
-        public void Initialize(string script)
+        public void Initialize(string scriptCode)
         {
-            if (script == null) throw new ArgumentNullException(nameof(script));
+            if (scriptCode == null) throw new ArgumentNullException(nameof(scriptCode));
 
             lock (_scriptScope)
             {
                 try
                 {
-                    var source = _scriptScope.Engine.CreateScriptSourceFromString(script, SourceCodeKind.File);
+                    var source = _scriptScope.Engine.CreateScriptSourceFromString(scriptCode, SourceCodeKind.File);
                     var compiledCode = source.Compile();
                     compiledCode.Execute(_scriptScope);
                 }
                 catch (Exception exception)
                 {
                     var details = _scriptScope.Engine.GetService<ExceptionOperations>().FormatException(exception);
-                    var message = "Error while initializing Python script host. " + Environment.NewLine + details;
+                    var message = "Error while initializing Python script host." + Environment.NewLine + details;
 
                     throw new PythonProxyException(message, exception);
                 }
@@ -48,7 +48,7 @@ namespace Wirehome.Core.Python
 
             lock (_scriptScope)
             {
-                _scriptScope.SetVariable(name, PythonConvert.ForPython(value));
+                _scriptScope.SetVariable(name, PythonConvert.ToPython(value));
             }
         }
 
@@ -102,7 +102,7 @@ namespace Wirehome.Core.Python
                 {
                     for (var i = 0; i < parameters.Length; i++)
                     {
-                        parameters[i] = PythonConvert.ForPython(parameters[i]);
+                        parameters[i] = PythonConvert.ToPython(parameters[i]);
                     }
 
                     object result = _scriptScope.Engine.Operations.Invoke(function, parameters);

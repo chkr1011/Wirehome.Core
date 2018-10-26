@@ -13,50 +13,48 @@ namespace Wirehome.Core.Components
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
         }
 
-        public void PublishStatusChangedBusMessage(string componentUid, string propertyUid, object oldValue, object newValue)
+        public void PublishStatusChangedBusMessage(string componentUid, string statusUid, object oldValue, object newValue)
         {
-            var properties = new WirehomeDictionary
+            var message = new WirehomeDictionary
             {
                 ["type"] = "component_registry.event.status_changed",
                 ["component_uid"] = componentUid,
-                ["status_uid"] = propertyUid,
+                ["status_uid"] = statusUid,
                 ["old_value"] = oldValue,
                 ["new_value"] = newValue,
-                ["timestamp"] = DateTime.Now
+                ["timestamp"] = DateTimeOffset.UtcNow
             };
 
-            _messageBusService.Publish(properties);
-        }
-
-        public void PublishStatusReportedBusMessage(string componentUid, string propertyUid, object oldValue, object newValue, bool valueHasChanged)
-        {
-            var properties = new WirehomeDictionary
-            {
-                ["type"] = "component_registry.event.status_reported",
-                ["component_uid"] = componentUid,
-                ["status_uid"] = propertyUid,
-                ["old_value"] = oldValue,
-                ["new_value"] = newValue,
-                ["value_has_changed"] = valueHasChanged,
-                ["timestamp"] = DateTime.Now
-            };
-
-            _messageBusService.Publish(properties);
+            _messageBusService.Publish(message);
         }
 
         public void PublishSettingChangedBusMessage(string componentUid, string settingUid, object oldValue, object newValue)
         {
-            var properties = new WirehomeDictionary
+            var message = new WirehomeDictionary
             {
                 ["type"] = "component_registry.event.setting_changed",
                 ["component_uid"] = componentUid,
                 ["setting_uid"] = settingUid,
                 ["old_value"] = oldValue,
                 ["new_value"] = newValue,
-                ["timestamp"] = DateTime.Now
+                ["timestamp"] = DateTimeOffset.UtcNow
             };
 
-            _messageBusService.Publish(properties);
+            _messageBusService.Publish(message);
+        }
+
+        public void PublishSettingRemovedBusMessage(string componentUid, string settingUid, object value)
+        {
+            var message = new WirehomeDictionary
+            {
+                ["type"] = "component_registry.event.setting_removed",
+                ["component_uid"] = componentUid,
+                ["setting_uid"] = settingUid,
+                ["value"] = value,
+                ["timestamp"] = DateTimeOffset.UtcNow
+            };
+
+            _messageBusService.Publish(message);
         }
     }
 }

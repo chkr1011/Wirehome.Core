@@ -1,4 +1,5 @@
 ﻿using System;
+using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
@@ -23,18 +24,15 @@ namespace Wirehome.Core.Components.Adapters
             _logger = loggerFactory.CreateLogger<ScriptComponentAdapter>();
         }
 
-        public event EventHandler<ComponentAdapterMessageReceivedEventArgs> MessageReceived;
+        public Func<WirehomeDictionary, WirehomeDictionary> MessagePublishedCallback { get; set; }
 
-        public void Initialize(Component component, string script)
+        public void Initialize(string componentUid, string script)
         {
-            if (component == null) throw new ArgumentNullException(nameof(component));
+            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (script == null) throw new ArgumentNullException(nameof(script));
 
-            _scriptHost = _pythonEngineService.CreateScriptHost(_logger, new ComponentPythonProxy(component.Uid, _componentRegistryService));
-
-            var proxy = new LogicPythonProxy(OnMessageReceived);
-            _scriptHost.SetVariable(proxy.ModuleName, proxy);
-            _scriptHost.SetVariable("publish_adapter_message", (Func<WirehomeDictionary, WirehomeDictionary>)OnMessageReceived);
+            _scriptHost = _pythonEngineService.CreateScriptHost(_logger, new ComponentPythonProxy(componentUid, _componentRegistryService));
+            _scriptHost.SetVariable("publish_adapter_message", (Func<PythonDictionary, PythonDictionary>)OnMessageReceived);
 
             _scriptHost.Initialize(script);
         }
@@ -46,17 +44,16 @@ namespace Wirehome.Core.Components.Adapters
             _scriptHost.SetVariable(name, value);
         }
 
-        public WirehomeDictionary SendMessage(WirehomeDictionary properties)
+        public WirehomeDictionary ProcessMessage(WirehomeDictionary message)
         {
-            var result = _scriptHost.InvokeFunction("process_adapter_message", properties);
+            var result = _scriptHost.InvokeFunction("process_adapter_message", message);
             return result as WirehomeDictionary ?? new WirehomeDictionary();
         }
 
-        private WirehomeDictionary OnMessageReceived(WirehomeDictionary properties)
+        private PythonDictionary OnMessageReceived(PythonDictionary message)
         {
-            var eventArgs = new ComponentAdapterMessageReceivedEventArgs(properties);
-            MessageReceived?.Invoke(this, eventArgs);
-            return eventArgs.Result;
+            var result = MessagePublishedCallback?.Invoke(message);
+            return result ?? new PythonDictionary();
         }
     }
 }

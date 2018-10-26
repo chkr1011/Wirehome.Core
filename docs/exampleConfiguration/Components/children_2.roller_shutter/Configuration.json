@@ -2,7 +2,7 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "Wirehome.RollerShutter",
+      "id": "wirehome.roller_shutter",
       "version": "1.0.0"
     },
     "adapter": {

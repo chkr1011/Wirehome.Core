@@ -1,0 +1,20 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.one_level_auto_ventilation",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "duration": 120000,
+                "motion_detectors": [
+                    "storeroom.motion_detector_cat_litter_box"
+                ],
+                "fans": [
+                    "storeroom.fan.cat_litter_box"
+                ]
+            }
+        }
+    }
+}

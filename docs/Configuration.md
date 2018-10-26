@@ -1,9 +1,7 @@
 # Configuration
-
 The whole configuration of the Wirehome system is stored in JSON files. 
 
 ## Component configuration
-
 Sometimes it is required that a adapter or logic exposes some additional parameters to the app, automations or other components. 
 
 Example:

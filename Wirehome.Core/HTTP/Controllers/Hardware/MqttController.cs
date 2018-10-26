@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using MQTTnet;
 using MQTTnet.Protocol;
 using Wirehome.Core.Hardware.MQTT;
+using Wirehome.Core.HTTP.Controllers.Models;
 
 namespace Wirehome.Core.HTTP.Controllers.Hardware
 {
@@ -45,7 +49,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            _mqttService.EnableTopicImport(uid, parameters);
+            _mqttService.StartTopicImport(uid, parameters);
         }
 
         [HttpDelete]
@@ -55,7 +59,56 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _mqttService.DisableTopicImport(uid);
+            _mqttService.StopTopicImport(uid);
+        }
+
+        [HttpGet]
+        [Route("api/v1/mqtt/subscribers")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public Dictionary<string, MqttSubscriberModel> GetSubscriptions()
+        {
+            return _mqttService.GetSubscribers().ToDictionary(s => s.Uid, s => new MqttSubscriberModel
+            {
+                TopicFilter = s.TopicFilter
+            });
+        }
+
+        [HttpDelete]
+        [Route("api/v1/mqtt/subscribers/{uid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteSubscriber(string uid)
+        {
+            _mqttService.Unsubscribe(uid);
+        }
+
+        [HttpGet]
+        [Route("api/v1/mqtt/retained_messages")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<MqttApplicationMessage> GetRetainedMessages()
+        {
+            return _mqttService.GetRetainedMessages();
+        }
+
+        [HttpDelete]
+        [Route("api/v1/mqtt/retained_messages/{topic}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteRetainedMessage(string topic)
+        {
+            _mqttService.Publish(new MqttPublishParameters
+            {
+                Topic = topic,
+                Payload = new byte[0],
+                QualityOfServiceLevel = MqttQualityOfServiceLevel.AtMostOnce,
+                Retain = true
+            });
+        }
+
+        [HttpDelete]
+        [Route("api/v1/mqtt/retained_messages")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteRetainedMessages()
+        {
+            _mqttService.DeleteRetainedMessages();
         }
     }
 }

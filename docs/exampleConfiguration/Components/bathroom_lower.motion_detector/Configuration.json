@@ -2,7 +2,7 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "Wirehome.MotionDetector",
+      "id": "wirehome.motion_detector",
       "version": "1.0.0"
     },
     "adapter": {

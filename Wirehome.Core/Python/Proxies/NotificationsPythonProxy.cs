@@ -54,5 +54,3 @@ namespace Wirehome.Core.Python.Proxies
         }
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

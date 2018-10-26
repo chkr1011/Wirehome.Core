@@ -1,115 +1,168 @@
 ﻿using System;
-using System.IO;
-using System.Text;
-using MySql.Data.MySqlClient;
-using Wirehome.Core.Storage;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Wirehome.Core.History.Repository.Entities;
 
 namespace Wirehome.Core.History.Repository
 {
     public class HistoryRepository
     {
-        private readonly StorageService _storageService;
-        private MySqlConnection _databaseConnection;
+        private DbContextOptions _dbContextOptions;
 
-        public HistoryRepository(StorageService storageService)
-        {
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-        }
+        public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
 
         public void Initialize()
         {
-            _databaseConnection = new MySqlConnection("Server=localhost;Uid=wirehome;Pwd=w1r3h0m3;SslMode=none");
-            _databaseConnection.Open();
+            var dbContextOptionsBuilder = new DbContextOptionsBuilder<HistoryDatabaseContext>();
+            dbContextOptionsBuilder.UseMySql("Server=localhost;Uid=wirehome;Pwd=w1r3h0m3;SslMode=None;Database=WirehomeHistory");
 
-            var scriptFile = Path.Combine(_storageService.BinPath, "History", "Scripts", "Initialize.V1.sql");
-            var script = File.ReadAllText(scriptFile, Encoding.UTF8);
+            Initialize(dbContextOptionsBuilder.Options);
+        }
 
-            using (var command = _databaseConnection.CreateCommand())
+        public void Initialize(DbContextOptions options)
+        {
+            _dbContextOptions = options ?? throw new ArgumentNullException(nameof(options));
+
+            using (var databaseContext = new HistoryDatabaseContext(_dbContextOptions))
             {
-                command.CommandText = script;
-                command.ExecuteNonQuery();
+                databaseContext.Database.EnsureCreated();
             }
         }
 
-        public ComponentStatusRow GetComponentStatusRow(string componentUid, string statusUid)
+        public void Delete()
         {
-            using (var command = _databaseConnection.CreateCommand())
+            using (var databaseContext = CreateDatabaseContext())
             {
-                command.CommandText = @"
-                    SELECT ID,Value,EndTimestamp
-                    FROM History.ComponentStatus
-                    WHERE ComponentUid=@C_UID AND StatusUid=@P_UID AND IsLatest=1";
+                databaseContext.Database.EnsureDeleted();
+            }
+        }
 
-                command.Parameters.AddWithValue("@C_UID", componentUid);
-                command.Parameters.AddWithValue("@P_UID", statusUid);
+        public void UpdateComponentStatusValue(ComponentStatusValue componentStatusValue)
+        {
+            if (componentStatusValue == null) throw new ArgumentNullException(nameof(componentStatusValue));
 
-                using (var reader = command.ExecuteReader())
+            using (var databaseContext = CreateDatabaseContext())
+            {
+                var latestEntities = databaseContext.ComponentStatus
+                    .Where(s => 
+                        s.ComponentUid == componentStatusValue.ComponentUid &&
+                        s.StatusUid == componentStatusValue.StatusUid &&
+                        s.NextEntityID == null)
+                    .OrderByDescending(s => s.RangeEnd)
+                    .ThenByDescending(s => s.RangeStart)
+                    .ToList();
+
+                var latestEntity = latestEntities.FirstOrDefault();
+
+                if (latestEntities.Count > 1)
                 {
-                    if (!reader.Read())
+                    // TODO: Log broken data.
+                }
+
+                if (latestEntity == null)
+                {
+                    var newEntry = CreateComponentStatusEntity(componentStatusValue, null);
+                    databaseContext.ComponentStatus.Add(newEntry);
+                }
+                else
+                {
+                    var newestIsObsolete = latestEntity.RangeEnd > componentStatusValue.Timestamp;
+                    if (newestIsObsolete)
                     {
-                        return null;
+                        return;
                     }
 
-                    var result = new ComponentStatusRow
+                    var latestIsOutdated = componentStatusValue.Timestamp - latestEntity.RangeEnd > ComponentStatusOutdatedTimeout;
+                    var valueHasChanged = !string.Equals(latestEntity.Value, componentStatusValue.Value, StringComparison.Ordinal);
+
+                    if (valueHasChanged)
                     {
-                        ID = (uint)reader["ID"],
-                        Value = (string)reader["Value"],
-                        Timestamp = (DateTime)reader["EndTimestamp"]
-                    };
+                        var newEntity = CreateComponentStatusEntity(componentStatusValue, latestEntity);
+                        databaseContext.ComponentStatus.Add(newEntity);
 
-                    return result;
+                        if (!latestIsOutdated)
+                        {
+                            latestEntity.RangeEnd = componentStatusValue.Timestamp;
+                        }
+                    }
+                    else
+                    {
+                        if (!latestIsOutdated)
+                        {
+                            latestEntity.RangeEnd = componentStatusValue.Timestamp;
+                        }
+                        else
+                        {
+                            var newEntity = CreateComponentStatusEntity(componentStatusValue, latestEntity);
+                            databaseContext.ComponentStatus.Add(newEntity);
+                        }
+                    }
                 }
+
+                databaseContext.SaveChanges();
             }
         }
 
-        public void UpdateComponentStatusRow(uint id, DateTime timestamp)
+        public List<ComponentStatusEntity> GetComponentStatusValues(string componentUid, string statusUid)
         {
-            using (var command = _databaseConnection.CreateCommand())
+            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
+            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
+
+            using (var databaseContext = CreateDatabaseContext())
             {
-                command.CommandText = @"
-                    UPDATE ComponentPropertyHistory
-                    SET EndTimestamp=@ETS
-                    WHERE ID=@ID";
-
-                command.Parameters.AddWithValue("@ID", id);
-                command.Parameters.AddWithValue("@ETS", timestamp);
-
-                command.ExecuteNonQuery();
+                return databaseContext.ComponentStatus
+                    .AsNoTracking()
+                    .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
+                    .OrderBy(s => s.RangeStart)
+                    .ThenBy(s => s.RangeEnd)
+                    .ToList();
             }
         }
 
-        public void InsertComponentStatusRow(string componentUid, string propertyUid, string value, DateTime timestamp)
+        public List<ComponentStatusEntity> GetComponentStatusValues(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd)
         {
-            using (var command = _databaseConnection.CreateCommand())
+            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
+            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
+            if (rangeStart > rangeEnd) throw new ArgumentException($"{nameof(rangeStart)} is greater than {nameof(rangeEnd)}");
+
+            using (var databaseContext = CreateDatabaseContext())
             {
-                command.CommandText = @"
-                    UPDATE ComponentPropertyHistory 
-                    SET IsLatest=0
-                    WHERE ComponentUid=@C_UID AND PropertyUid=@P_UID";
+                return databaseContext.ComponentStatus
+                    .AsNoTracking()
+                    .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
+                    .Where(s => (s.RangeStart <= rangeEnd && s.RangeEnd >= rangeStart))
+                    .OrderBy(s => s.RangeStart)
+                    .ThenBy(s => s.RangeEnd)
+                    .ToList();
+            }
+        }
 
-                command.Parameters.AddWithValue("@C_UID", componentUid);
-                command.Parameters.AddWithValue("@P_UID", propertyUid);
+        private HistoryDatabaseContext CreateDatabaseContext()
+        {
+            return new HistoryDatabaseContext(_dbContextOptions);
+        }
 
-                command.ExecuteNonQuery();
+        private static ComponentStatusEntity CreateComponentStatusEntity(
+            ComponentStatusValue componentStatusValue,
+            ComponentStatusEntity latestEntity)
+        {
+            var newEntity = new ComponentStatusEntity
+            {
+                ComponentUid = componentStatusValue.ComponentUid,
+                StatusUid = componentStatusValue.StatusUid,
+                Value = componentStatusValue.Value,
+                RangeStart = componentStatusValue.Timestamp,
+                RangeEnd = componentStatusValue.Timestamp,
+                PreviousEntityID = latestEntity?.ID
+            };
+
+            if (latestEntity != null)
+            {
+                latestEntity.NextEntity = newEntity;
             }
 
-            using (var command = _databaseConnection.CreateCommand())
-            {
-                command.CommandText = @"
-                    INSERT INTO ComponentPropertyHistory 
-                    (ComponentUid, PropertyUid, Value, IsLatest, BeginTimestamp, EndTimestamp)
-                    VALUES
-                    (@C_UID, @P_UID, @VALUE, 1, @BTS, @ETS)";
-
-                command.Parameters.AddWithValue("@C_UID", componentUid);
-                command.Parameters.AddWithValue("@P_UID", propertyUid);
-                command.Parameters.AddWithValue("@VALUE", value);
-
-                command.Parameters.AddWithValue("@BTS", timestamp);
-                command.Parameters.AddWithValue("@ETS", timestamp);
-
-                command.ExecuteNonQuery();
-            }
+            return newEntity;
         }
     }
 }

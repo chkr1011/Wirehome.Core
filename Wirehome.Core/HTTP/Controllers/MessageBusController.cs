@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Wirehome.Core.HTTP.Controllers.Models;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
 
@@ -11,7 +13,7 @@ namespace Wirehome.Core.HTTP.Controllers
     public class MessageBusController : Controller
     {
         private readonly MessageBusService _messageBusService;
-        
+
         public MessageBusController(MessageBusService messageBusService)
         {
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
@@ -22,11 +24,17 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostMessage([FromBody] WirehomeDictionary messsage)
         {
-            if (messsage == null) throw new ArgumentNullException(nameof(messsage));
-
             _messageBusService.Publish(messsage);
         }
-        
+
+        [HttpPost]
+        [Route("/api/v1/message_bus/message_with_reply")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public async Task<WirehomeDictionary> PostMessageWithReply(TimeSpan timeout, [FromBody] WirehomeDictionary messsage)
+        {
+            return await _messageBusService.PublishRequestAsync(messsage, timeout);
+        }
+
         [HttpPost]
         [Route("/api/v1/message_bus/wait_for")]
         [ApiExplorerSettings(GroupName = "v1")]
@@ -37,10 +45,11 @@ namespace Wirehome.Core.HTTP.Controllers
             var subscriptions = new List<string>();
             try
             {
-                var tcs = new TaskCompletionSource<WirehomeDictionary>();
+                var tcs = new TaskCompletionSource<MessageBusMessage>();
                 foreach (var filter in filters)
                 {
-                    subscriptions.Add(_messageBusService.Subscribe(filter, m => tcs.TrySetResult(m)));
+                    var subscriptionUid = "api_wait_for:" + Guid.NewGuid().ToString("D");
+                    subscriptions.Add(_messageBusService.Subscribe(subscriptionUid, filter, m => tcs.TrySetResult(m)));
                 }
 
                 var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
@@ -53,7 +62,7 @@ namespace Wirehome.Core.HTTP.Controllers
                     return new WirehomeDictionary().WithType("exception.timeout");
                 }
 
-                return tcs.Task.Result;
+                return tcs.Task.Result.Message;
             }
             catch (OperationCanceledException)
             {
@@ -71,11 +80,40 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/message_bus/history")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<BusMessage> GetHistory()
+        public IList<MessageBusMessage> GetHistory()
         {
             var history = _messageBusService.GetHistory();
             history.Reverse();
             return history;
+        }
+
+        [HttpDelete]
+        [Route("/api/v1/message_bus/history")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteHistory()
+        {
+            _messageBusService.ClearHistory();
+        }
+
+        [HttpGet]
+        [Route("/api/v1/message_bus/subscribers")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public IDictionary<string, MessageBusSubscriberModel> GetSubscribers()
+        {
+            return _messageBusService.GetSubscribers().ToDictionary(s => s.Uid, s => new MessageBusSubscriberModel
+            {
+                ProcessedMessagesCount = s.ProcessedMessagesCount,
+                PendingMessagesCount = s.PendingMessagesCount,
+                Filter = s.Filter
+            });
+        }
+
+        [HttpDelete]
+        [Route("/api/v1/message_bus/subscribers/{uid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteSubscriber(string uid)
+        {
+            _messageBusService.Unsubscribe(uid);
         }
     }
 }

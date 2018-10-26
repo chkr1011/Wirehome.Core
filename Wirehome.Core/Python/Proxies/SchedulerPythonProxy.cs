@@ -3,6 +3,7 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
+using IronPython.Runtime;
 using Wirehome.Core.Scheduler;
 
 namespace Wirehome.Core.Python.Proxies
@@ -18,42 +19,39 @@ namespace Wirehome.Core.Python.Proxies
 
         public string ModuleName { get; } = "scheduler";
 
-        public string start_thread(string uid, Action action)
+        public string start_thread(string uid, Action<PythonDictionary> callback, object state = null)
         {
-            if (action == null) throw new ArgumentNullException(nameof(action));
-
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("N");
-            }
-
-            _schedulerService.StartThread(uid, _ => action());
-            return uid;
+            return _schedulerService.StartThread(uid, p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
         public void stop_thread(string uid)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            _schedulerService.StopThread();
+            _schedulerService.StopThread(uid);
         }
 
-        public void start_timer(string uid, int interval, Action action)
+        public string start_timer(string uid, int interval, Action<PythonDictionary> callback, object state = null)
         {
-            _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), (s, span) =>  action());
+            return _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
-        public string start_countdown(string uid, long millies, Action<string> callback)
+        public void stop_timer(string uid)
         {
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
+            _schedulerService.StopTimer(uid);
+        }
 
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("N");
-            }
+        public string attach_to_default_timer(string uid, Action<PythonDictionary> callback, object state = null)
+        {
+            return _schedulerService.AttachToDefaultTimer(uid, p => callback(PythonConvert.ToPythonDictionary(p)), state);
+        }
 
-            _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(millies), callback);
-            return uid;
+        public void detach_from_default_timer(string uid)
+        {
+            _schedulerService.DetachFromDefaultTimer(uid);
+        }
+        
+        public string start_countdown(string uid, long duration, Action<PythonDictionary> callback, object state = null)
+        {
+            return _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
         public void stop_countdown(string uid)
@@ -62,5 +60,3 @@ namespace Wirehome.Core.Python.Proxies
         }
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

@@ -17,7 +17,11 @@ namespace Wirehome.Core.GlobalVariables
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
-        public GlobalVariablesService(StorageService storageService, PythonEngineService pythonEngineService, MessageBusService messageBusService, ILoggerFactory loggerFactory)
+        public GlobalVariablesService(
+            StorageService storageService, 
+            PythonEngineService pythonEngineService, 
+            MessageBusService messageBusService, 
+            ILoggerFactory loggerFactory)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
@@ -46,11 +50,12 @@ namespace Wirehome.Core.GlobalVariables
                 if (!_variables.ContainsKey(uid))
                 {
                     _variables.Add(uid, value);
+                    Save();
                 }
             }
         }
 
-        public IDictionary<string, object> GetValues()
+        public Dictionary<string, object> GetValues()
         {
             var result = new Dictionary<string, object>();
             lock (_variables)
@@ -72,37 +77,11 @@ namespace Wirehome.Core.GlobalVariables
             {
                 if (!_variables.TryGetValue(uid, out var value))
                 {
-                    _logger.Log(LogLevel.Warning, $"Requested global variable '{uid}' not set.");
                     return null;
                 }
 
                 return value;
             }
-        }
-
-        public bool TryGetValue<TValue>(string uid, TValue defaultValue, out TValue value)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            value = defaultValue;
-
-            object existingValue;
-            lock (_variables)
-            {
-                if (!_variables.TryGetValue(uid, out existingValue))
-                {
-                    _logger.Log(LogLevel.Warning, $"Requested global variable '{uid}' not set.");
-                    return false;
-                }
-            }
-
-            if (existingValue is TValue valueBuffer)
-            {
-                value = valueBuffer;
-                return true;
-            }
-
-            return false;
         }
 
         public bool ValueExists(string uid)
@@ -119,21 +98,15 @@ namespace Wirehome.Core.GlobalVariables
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var busMessage = new WirehomeDictionary()
-                .WithType("global_variables.event.value_set")
-                .WithValue("uid", uid)
-                .WithValue("new_value", value);
-            
+            object oldValue;
             lock (_variables)
             {
-                if (_variables.TryGetValue(uid, out var oldValue))
+                if (_variables.TryGetValue(uid, out oldValue))
                 {
                     if (Equals(oldValue, value))
                     {
                         return;
                     }
-
-                    busMessage.WithValue("old_value", oldValue);
                 }
                 
                 _variables[uid] = value;
@@ -141,6 +114,13 @@ namespace Wirehome.Core.GlobalVariables
                 Save();
             }
 
+            var busMessage = new WirehomeDictionary()
+                .WithValue("type", "global_variables.event.value_set")
+                .WithValue("uid", uid)
+                .WithValue("old_value", oldValue)
+                .WithValue("new_value", value);
+
+            _logger.LogInformation("Global variable '{0}' changed to '{1}'.", uid, value);
             _messageBusService.Publish(busMessage);
         }
 
@@ -150,13 +130,17 @@ namespace Wirehome.Core.GlobalVariables
 
             lock (_variables)
             {
-                _variables.Remove(uid);
+                if (!_variables.Remove(uid))
+                {
+                    return;
+                }
             }
 
             var busMessage = new WirehomeDictionary()
-                .WithType("global_variables.event.value_deleted")
+                .WithValue("type", "global_variables.event.value_deleted")
                 .WithValue("uid", uid);
 
+            _logger.LogInformation("Global variable '{0}' removed.", uid);
             _messageBusService.Publish(busMessage);
         }
 
@@ -164,6 +148,11 @@ namespace Wirehome.Core.GlobalVariables
         {
             if (_storageService.TryRead(out Dictionary<string, object> globalVariables, "GlobalVariables.json"))
             {
+                if (globalVariables == null)
+                {
+                    return;
+                }
+                
                 foreach (var variable in globalVariables)
                 {
                     _variables[variable.Key] = variable.Value;

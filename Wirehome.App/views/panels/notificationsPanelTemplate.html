@@ -1,0 +1,7 @@
+﻿<div class="row">
+    <div ng-repeat="notification in ctrl.notifications" class="alert" ng-class="{'alert-success' : notification.type==='Information', 'alert-warning': notification.type==='Warning', 'alert-danger' : notification.type==='Error' }">
+        <a href="#" ng-click="ctrl.notificationService.delete(notification.uid)" class="close" data-dismiss="alert">&times;</a>
+        <strong>{{notification.timestamp | date : "fullDate"}} {{notification.timestamp | date : "mediumTime"}}</strong>
+        <br />{{notification.message}}
+    </div>
+</div>

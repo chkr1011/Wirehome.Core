@@ -1,4 +1,5 @@
-﻿using Wirehome.Core.Repositories;
+﻿using System.Collections.Generic;
+using Wirehome.Core.Repository;
 
 namespace Wirehome.Core.Components.Configuration
 {
@@ -6,6 +7,8 @@ namespace Wirehome.Core.Components.Configuration
     {
         public RepositoryEntityUid Uid { get; set; }
 
-        public ComponentAdapterConfiguration Adapter { get; set; }
+        public Dictionary<string, object> Variables { get; set; } = new Dictionary<string, object>();
+
+        public ComponentAdapterConfiguration Adapter { get; set; }        
     }
 }

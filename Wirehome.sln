@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wirehome.Core", "Wirehome.C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wirehome.Tests", "Wirehome.Tests\Wirehome.Tests.csproj", "{53ABC74A-6B1B-4069-AD4A-54FA2B7A113F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wirehome.App", "Wirehome.App\Wirehome.App.csproj", "{EB512B38-DC8A-4BCB-BFEB-63F09ADFF623}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wirehome.Configurator", "Wirehome.Configurator\Wirehome.Configurator.csproj", "{EB512B38-DC8A-4BCB-BFEB-63F09ADFF623}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wirehome.Cloud", "Wirehome.Cloud\Wirehome.Cloud.csproj", "{9BAD8503-651D-4634-A724-DEBB2462BA4C}"
 EndProject

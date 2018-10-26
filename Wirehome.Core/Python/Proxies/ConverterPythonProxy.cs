@@ -17,59 +17,52 @@ namespace Wirehome.Core.Python.Proxies
     {
         public string ModuleName { get; } = "convert";
 
-        public string file_time_to_local_date_time(int seconds)
+        public object to_bool(object value)
         {
-            var buffer = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return buffer.AddSeconds(seconds).ToLocalTime().ToString("O");
+            if (value is bool b)
+            {
+                return b;
+            }
+
+            var text = to_string(value);
+            if (!bool.TryParse(text, out var result))
+            {
+                return null;
+            }
+
+            return result;
         }
 
-        public string file_time_to_local_time(int seconds)
+        public object to_double(object value)
         {
-            var buffer = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return buffer.AddSeconds(seconds).ToLocalTime().TimeOfDay.ToString("c");
+            if (value is double d)
+            {
+                return d;
+            }
+
+            var text = to_string(value);
+            if (!double.TryParse(text, out var result))
+            {
+                return null;
+            }
+
+            return result;
         }
 
-        public string file_time_to_utc_date_time(int seconds)
+        public object to_int(object value)
         {
-            var buffer = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return buffer.AddSeconds(seconds).ToUniversalTime().ToString("O");
-        }
+            if (value is int i)
+            {
+                return i;
+            }
 
-        public string file_time_to_utc_time(int seconds)
-        {
-            var buffer = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return buffer.AddSeconds(seconds).ToUniversalTime().TimeOfDay.ToString("c");
-        }
+            var text = to_string(value);
+            if (!int.TryParse(text, out var result))
+            {
+                return null;
+            }
 
-        // TODO: Move to "DateTimeParserPythonProxy (date_time_parser.get_day(date)).
-        public int day_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Day;
-        }
-
-        public int month_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Month;
-        }
-
-        public int year_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Year;
-        }
-
-        public int hour_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Hour;
-        }
-
-        public int minute_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Minute;
-        }
-
-        public int second_from_date(string date)
-        {
-            return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Second;
+            return result;
         }
 
         public string to_string(object value)
@@ -84,12 +77,17 @@ namespace Wirehome.Core.Python.Proxies
                 return s;
             }
 
-            if (value is IEnumerable<object> o)
+            if (value is byte[] b)
             {
-                return Encoding.UTF8.GetString(o.Select(Convert.ToByte).ToArray());
+                return Encoding.UTF8.GetString(b);
             }
 
-            return string.Empty;
+            if (value is IEnumerable<object> o)
+            {
+                return Encoding.UTF8.GetString(o.Select(i => Convert.ToByte(i, CultureInfo.InvariantCulture)).ToArray());
+            }
+
+            return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
         public List to_list(object value)
@@ -99,7 +97,7 @@ namespace Wirehome.Core.Python.Proxies
                 PythonConvert.ToPythonList(enumerable);
             }
 
-            return new List { PythonConvert.ForPython(value) };
+            return new List { PythonConvert.ToPython(value) };
         }
 
         // TODO: Move to "JsonPythonProxy (deserialize(json), serialize(source))
@@ -107,7 +105,7 @@ namespace Wirehome.Core.Python.Proxies
         {
             var jsonText = to_string(source);
             var json = JToken.Parse(jsonText);
-            return PythonConvert.ForPython(json);
+            return PythonConvert.ToPython(json);
         }
 
         public List ulong_to_list(ulong buffer, int length)
@@ -235,5 +233,3 @@ namespace Wirehome.Core.Python.Proxies
         }
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

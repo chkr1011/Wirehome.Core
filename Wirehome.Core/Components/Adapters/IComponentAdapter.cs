@@ -5,8 +5,8 @@ namespace Wirehome.Core.Components.Adapters
 {
     public interface IComponentAdapter
     {
-        event EventHandler<ComponentAdapterMessageReceivedEventArgs> MessageReceived;
+        Func<WirehomeDictionary, WirehomeDictionary> MessagePublishedCallback { get; set; }
 
-        WirehomeDictionary SendMessage(WirehomeDictionary parameters);
+        WirehomeDictionary ProcessMessage(WirehomeDictionary message);
     }
 }

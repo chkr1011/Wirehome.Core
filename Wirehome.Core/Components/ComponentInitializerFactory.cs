@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Components

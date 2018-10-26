@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
+using System.Text;
+using IronPython.Runtime;
 using Newtonsoft.Json.Linq;
-using Wirehome.Core.Extensions;
+using Wirehome.Core.Python.Models;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
@@ -15,63 +16,87 @@ namespace Wirehome.Core.Python.Proxies
     {
         public string ModuleName { get; } = "http_client";
 
-        public IDictionary send(IDictionary parameters)
+        public PythonDictionary send(PythonDictionary parameters)
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var uri = parameters["uri"] as string;
-            var method = parameters["method"] as string;
-            var responseContentType = parameters.GetValueOrDefault("response_content_type", "text") as string;
-
-            var result = new Dictionary<object, object>();
-            
-            using (var httpClient = new HttpClient())
-            using (var request = new HttpRequestMessage())
+            try
             {
-                if (method == "post")
+                using (var httpClient = new HttpClient())
+                using (var request = CreateRequest(parameters))
                 {
-                    request.Method = HttpMethod.Post;
-                }
-                else if (method == "delete")
-                {
-                    request.Method = HttpMethod.Delete;
-                }
-                else
-                {
-                    request.Method = HttpMethod.Get;
-                }
+                    var response = httpClient.SendAsync(request).GetAwaiter().GetResult();
+                    var content = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
 
-                request.RequestUri = new Uri(uri, UriKind.Absolute);
-
-                var response = httpClient.SendAsync(request).GetAwaiter().GetResult();
-                var content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-                result["status_code"] = (int)response.StatusCode;
-
-                if (responseContentType == "text")
-                {
-                    result["content"] = content;
-                }
-                else if (responseContentType == "json")
-                {
-                    if (!string.IsNullOrEmpty(content))
+                    var result = new PythonDictionary
                     {
-                        try
+                        ["status_code"] = (int)response.StatusCode
+                    };
+
+                    var responseContentType = Convert.ToString(parameters.get("response_content_type", "text"));
+                    if (responseContentType == "raw")
+                    {
+                        var rawContent = new List();
+                        foreach (var contentByte in content)
                         {
-                            var json = JObject.Parse(content);
-                            var convertedJson = PythonConvert.ForPython(json);
-                            result["content"] = convertedJson;
+                            rawContent.Add(contentByte);
                         }
-                        catch
+
+                        result["content"] = rawContent;
+                    }
+                    else if (responseContentType == "text")
+                    {
+                        result["content"] = Encoding.UTF8.GetString(content);
+                    }
+                    else if (responseContentType == "json")
+                    {
+                        var jsonString = Encoding.UTF8.GetString(content);
+                        if (!string.IsNullOrEmpty(jsonString))
                         {
+                            try
+                            {
+                                var json = JObject.Parse(jsonString);
+
+                                var convertedJson = PythonConvert.ToPython(json);
+                                result["content"] = convertedJson;
+                            }
+                            catch (Exception exception)
+                            {
+                                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                            }
                         }
                     }
+
+                    return result;
                 }
             }
+            catch (Exception exception)
+            {
+                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+            }
+        }
 
-            return result;
+        private static HttpRequestMessage CreateRequest(PythonDictionary parameters)
+        {
+            var uri = Convert.ToString(parameters.get("uri"));
+            var method = Convert.ToString(parameters.get("method", "get"));
+            var headers = (PythonDictionary)parameters.get("headers", new PythonDictionary());
+
+            var request = new HttpRequestMessage
+            {
+                Method = new HttpMethod(method),
+                RequestUri = new Uri(uri, UriKind.Absolute)
+            };
+
+            foreach (var header in headers)
+            {
+                var headerName = Convert.ToString(header.Key, CultureInfo.InvariantCulture);
+                var headerValue = Convert.ToString(header.Value, CultureInfo.InvariantCulture);
+
+                request.Headers.TryAddWithoutValidation(headerName, headerValue);
+            }
+
+            return request;
         }
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

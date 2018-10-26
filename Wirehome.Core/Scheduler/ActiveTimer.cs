@@ -6,42 +6,68 @@ using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Scheduler
 {
-    public class ActiveTimer
+    public sealed class ActiveTimer : IDisposable
     {
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-        private readonly string _uid;
-        private readonly TimeSpan _interval;
-        private readonly Action<string, TimeSpan> _callback;
+        private readonly Action<TimerTickCallbackParameters> _callback;
+        private readonly object _state;
         private readonly ILogger _logger;
 
-        public ActiveTimer(string uid, TimeSpan interval, Action<string, TimeSpan> callback, ILoggerFactory loggerFactory)
+        public ActiveTimer(string uid, TimeSpan interval, Action<TimerTickCallbackParameters> callback, object state, ILogger logger)
         {
-            _uid = uid ?? throw new ArgumentNullException(nameof(uid));
-            _interval = interval;
+            Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+            _state = state;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ActiveTimer>();
+            Interval = interval;
         }
 
         public void Start()
         {
-            Task.Factory.StartNew(() => Run(_cancellationTokenSource.Token), _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(
+                () => RunAsync(_cancellationTokenSource.Token),
+                _cancellationTokenSource.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default).ConfigureAwait(false);
         }
 
-        private void Run(CancellationToken cancellationToken)
+        public string Uid { get; }
+
+        public TimeSpan Interval { get; }
+
+        public void Stop()
+        {
+            _cancellationTokenSource.Cancel(false);
+            _logger.Log(LogLevel.Debug, "Stopped timer '{0}'.", Uid);
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource?.Dispose();
+        }
+
+        private async Task RunAsync(CancellationToken cancellationToken)
         {
             try
             {
                 var stopwatch = Stopwatch.StartNew();
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    var elapsed = stopwatch.Elapsed;
-                    TryTick(elapsed);
-                    stopwatch.Restart();
+                    // TODO: Consider adding a flag "HighPrecision=true|false". Then use Thread.Sleep or await to safe threads.
+                    //Thread.Sleep(Interval);
+                    await Task.Delay(Interval, cancellationToken).ConfigureAwait(false);
 
-                    Thread.Sleep(_interval);
+                    // Ensure that the tick is not called when the task was cancelled during the sleep time.
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    var elapsed = stopwatch.Elapsed;
+                    stopwatch.Restart();
+                    TryTick(elapsed);
                 }
             }
             catch (OperationCanceledException)
@@ -57,7 +83,7 @@ namespace Wirehome.Core.Scheduler
         {
             try
             {
-                _callback(_uid, elapsed);
+                _callback(new TimerTickCallbackParameters(Uid, (int)elapsed.TotalMilliseconds, _state));
             }
             catch (OperationCanceledException)
             {
@@ -65,13 +91,8 @@ namespace Wirehome.Core.Scheduler
             catch (Exception exception)
             {
                 _logger.Log(LogLevel.Error, exception, "Error while executing timer callback.");
+                Thread.Sleep(TimeSpan.FromSeconds(1)); // Prevent flooding the log.
             }
-        }
-
-        public void Stop()
-        {
-            _cancellationTokenSource.Cancel(false);
-            _logger.Log(LogLevel.Debug, "Stopped timer '{0}'.", _uid);
         }
     }
 }

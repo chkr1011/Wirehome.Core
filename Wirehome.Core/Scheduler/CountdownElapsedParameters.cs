@@ -1,0 +1,15 @@
+﻿namespace Wirehome.Core.Scheduler
+{
+    public class CountdownElapsedParameters
+    {
+        public CountdownElapsedParameters(string countdownUid, object state)
+        {
+            CountdownUid = countdownUid;
+            State = state;
+        }
+
+        public string CountdownUid { get; }
+
+        public object State { get; }
+    }
+}

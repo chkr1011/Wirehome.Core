@@ -49,10 +49,10 @@ namespace Wirehome.Core.Macros
 
         private void AttachToMessageBus()
         {
-            _messageBusService.Subscribe("macros.execute", OnExecuteMacroBusMessage);
+            _messageBusService.Subscribe("macros.execute", new WirehomeDictionary().WithType("macros.execute"), OnExecuteMacroBusMessage);
         }
 
-        private void OnExecuteMacroBusMessage(WirehomeDictionary properties)
+        private void OnExecuteMacroBusMessage(MessageBusMessage busMessage)
         {
 
         }

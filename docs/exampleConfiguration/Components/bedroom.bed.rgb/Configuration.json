@@ -1,0 +1,37 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "wirehome.rgb",
+      "version": "1.0.0"
+    },
+    "variables": {
+      "config": {
+        "default_color": {
+          "red": 255,
+          "green": 255,
+          "blue": 255
+        }
+      }
+    },
+    "adapter": {
+      "uid": {
+        "id": "wirehome.mqtt.rgb",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "max_pwm_value": 1023,
+          "set_color_message": {
+            "topic": "bed/$patch/rgb",
+            "payload_template": "{\"r\":{r},\"g\":{g},\"b\":{b}}"
+          },
+          "turn_off_message": {
+            "topic": "bed/$patch/rgb",
+            "payload": "{\"r\":0,\"g\":0,\"b\":0}"
+          }
+        }
+      }
+    }
+  }
+}

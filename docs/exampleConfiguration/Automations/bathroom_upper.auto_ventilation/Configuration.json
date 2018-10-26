@@ -1,0 +1,17 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.two_level_auto_ventilation",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "motion_detectors": ["bathroom_upper.motion_detector"],
+                "fans": ["bathroom_upper.fan"],
+                "first_level_duration": 480000,
+                "second_level_duration": 720000
+            }
+        }
+    }
+}

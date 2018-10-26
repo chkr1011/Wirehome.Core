@@ -3,11 +3,10 @@ using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Logic;
-using Wirehome.Core.Components.Logic.Implementations;
-using Wirehome.Core.Exceptions;
+using Wirehome.Core.Constants;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repositories;
+using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Components
@@ -19,11 +18,11 @@ namespace Wirehome.Core.Components
         private readonly StorageService _storageService;
         private readonly RepositoryService _repositoryService;
         private readonly ILoggerFactory _loggerFactory;
-        
+
         public ComponentInitializer(
-            ComponentRegistryService componentRegistryService, 
+            ComponentRegistryService componentRegistryService,
             PythonEngineService pythonEngineService,
-            StorageService storageService, 
+            StorageService storageService,
             RepositoryService repositoryService,
             ILoggerFactory loggerFactory)
         {
@@ -36,8 +35,13 @@ namespace Wirehome.Core.Components
 
         public void InitializeComponent(Component component, ComponentConfiguration configuration)
         {
+            if (component == null) throw new ArgumentNullException(nameof(component));
+            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+
             InitializeSettings(component);
-            component.Logic = InitializeLogic(component, configuration);
+            InitializeLogic(component, configuration.Logic);
+            
+            component.ProcessMessage(new WirehomeDictionary().WithType(ControlType.Initialize));
         }
 
         private void InitializeSettings(Component component)
@@ -51,84 +55,61 @@ namespace Wirehome.Core.Components
             }
         }
 
-        private IComponentLogic InitializeLogic(Component component, ComponentConfiguration configuration)
+        private void InitializeLogic(Component component, ComponentLogicConfiguration configuration)
         {
-            var adapter = InitializeAdapter(component, configuration.Logic.Adapter);
-
-            if (configuration.Logic.Uid == null)
+            var scope = new WirehomeDictionary
             {
-                return new EmptyLogic(adapter);
-            }
+                ["component_uid"] = component.Uid
+            };
 
-            if (configuration.Logic.Uid?.Id == "Wirehome.Lamp")
+            var adapterEntity = _repositoryService.LoadEntity(configuration.Adapter.Uid);
+
+            var adapter = new ScriptComponentAdapter(_pythonEngineService, _componentRegistryService, _loggerFactory);
+            adapter.Initialize(component.Uid, adapterEntity.Script);
+
+            if (configuration.Adapter.Variables != null)
             {
-                return new LampLogic(component.Uid, adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.Button")
-            {
-                return new ButtonLogic(component.Uid, adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.MotionDetector")
-            {
-                return new MotionDetectorLogic(component.Uid, adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.Ventilation")
-            {
-                return new VentilationLogic(component.Uid, adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.RollerShutter")
-            {
-                return new RollerShutterLogic(component.Uid, adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.TemperatureSensor")
-            {
-                return new SensorLogic(component.Uid, "temperature.value", adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.HumiditySensor")
-            {
-                return new SensorLogic(component.Uid, "humidity.value", adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.Window")
-            {
-                return new WindowLogic(component.Uid, adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.StateMachine")
-            {
-                return new StateMachineLogic(component.Uid, adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            if (configuration.Logic.Uid?.Id == "Wirehome.Socket")
-            {
-                return new SocketLogic(component.Uid, adapter, _componentRegistryService, _loggerFactory);
-            }
-
-            throw new WirehomeConfigurationException($"Logic '{configuration.Logic.Uid}' not found.");
-        }
-
-        private IComponentAdapter InitializeAdapter(Component component, ComponentAdapterConfiguration configuration)
-        {
-            var repositoryEntity = _repositoryService.LoadEntity(RepositoryType.ComponentAdapters, configuration.Uid);
-
-            var pythonAdapter = new ScriptComponentAdapter(_pythonEngineService, _componentRegistryService, _loggerFactory);
-            pythonAdapter.Initialize(component, repositoryEntity.Script);
-
-            if (configuration.Variables != null)
-            {
-                foreach (var parameter in configuration.Variables)
+                foreach (var parameter in configuration.Adapter.Variables)
                 {
-                    pythonAdapter.SetVariable(parameter.Key, parameter.Value);
+                    adapter.SetVariable(parameter.Key, parameter.Value);
                 }
             }
 
-            return pythonAdapter;
+            scope["adapter_uid"] = adapterEntity.Uid.ToString();
+            scope["adapter_id"] = adapterEntity.Uid.Id;
+            scope["adapter_version"] = adapterEntity.Uid.Version;
+            
+            if (string.IsNullOrEmpty(configuration.Uid?.Id))
+            {
+                component.SetLogic(new EmptyLogic(adapter));
+            }
+            else
+            {
+                var logicEntity = _repositoryService.LoadEntity(configuration.Uid);
+
+                var logic = new ScriptComponentLogic(_pythonEngineService, _componentRegistryService, _loggerFactory);
+                adapter.MessagePublishedCallback = message => logic.ProcessAdapterMessage(message);
+                logic.AdapterMessagePublishedCallback = message => adapter.ProcessMessage(message);
+
+                logic.Initialize(component.Uid, logicEntity.Script);
+
+                if (configuration.Variables != null)
+                {
+                    foreach (var parameter in configuration.Variables)
+                    {
+                        logic.SetVariable(parameter.Key, parameter.Value);
+                    }
+                }
+
+                scope["logic_uid"] = logicEntity.Uid.ToString();
+                scope["logic_id"] = logicEntity.Uid.Id;
+                scope["logic_version"] = logicEntity.Uid.Version;
+
+                logic.SetVariable("scope", scope);
+                component.SetLogic(logic);
+            }
+            
+            adapter.SetVariable("scope", scope);
         }
     }
 }

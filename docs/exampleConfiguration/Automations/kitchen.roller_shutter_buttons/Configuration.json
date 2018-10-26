@@ -1,0 +1,16 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "wirehome.roller_shutter_buttons",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "up_button": "kitchen.button.up",
+                "down_button": "kitchen.button.down",
+                "roller_shutter": "kitchen.roller_shutter"
+            }
+        }
+    }
+}

@@ -2,8 +2,13 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "Wirehome.TemperatureSensor",
+      "id": "wirehome.sensor",
       "version": "1.0.0"
+    },
+    "variables": {
+      "config": {
+        "sensor_type": "temperature"
+      }
     },
     "adapter": {
       "uid": {
@@ -12,7 +17,7 @@
       },
       "variables": {
         "config": {
-          "topic": "sensors-bridge/temperature/2"
+          "topic": "sensors-bridge/temperature/3"
         }
       }
     }
