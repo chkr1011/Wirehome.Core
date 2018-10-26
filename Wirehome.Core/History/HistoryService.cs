@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components;
 using Wirehome.Core.Diagnostics;
@@ -80,7 +81,7 @@ namespace Wirehome.Core.History
             AttachToMessageBus();
 
             Task.Factory.StartNew(
-                () => TryProcessMessages(_systemService.CancellationToken),
+                () => ProcessHistoryMessages(_systemService.CancellationToken),
                 _systemService.CancellationToken,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
@@ -147,10 +148,12 @@ namespace Wirehome.Core.History
             }
         }
 
-        private void TryProcessMessages(CancellationToken cancellationToken)
+        private void ProcessHistoryMessages(CancellationToken cancellationToken)
         {
             try
             {
+                Thread.CurrentThread.Name = nameof(ProcessHistoryMessages);
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     TryProcessNextMessage(cancellationToken);

@@ -78,7 +78,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             _mqttServer.StartAsync(serverOptions.Build()).GetAwaiter().GetResult();
 
-            Task.Factory.StartNew(() => TryProcessIncomingMessages(_systemService.CancellationToken), _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(() => ProcessIncomingMqttMessages(_systemService.CancellationToken), _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public string StartTopicImport(string uid, MqttImportTopicParameters parameters)
@@ -184,8 +184,10 @@ namespace Wirehome.Core.Hardware.MQTT
             }
         }
 
-        private void TryProcessIncomingMessages(CancellationToken cancellationToken)
+        private void ProcessIncomingMqttMessages(CancellationToken cancellationToken)
         {
+            Thread.CurrentThread.Name = nameof(ProcessIncomingMqttMessages);
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 MqttApplicationMessageReceivedEventArgs message = null;

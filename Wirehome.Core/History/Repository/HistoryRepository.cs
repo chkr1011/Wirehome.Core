@@ -45,9 +45,10 @@ namespace Wirehome.Core.History.Repository
             using (var databaseContext = CreateDatabaseContext())
             {
                 var latestEntities = databaseContext.ComponentStatus
-                    .Where(s => s.ComponentUid == componentStatusValue.ComponentUid &&
-                           s.StatusUid == componentStatusValue.StatusUid &&
-                           s.NextEntityID == null)
+                    .Where(s => 
+                        s.ComponentUid == componentStatusValue.ComponentUid &&
+                        s.StatusUid == componentStatusValue.StatusUid &&
+                        s.NextEntityID == null)
                     .OrderByDescending(s => s.RangeEnd)
                     .ThenByDescending(s => s.RangeStart)
                     .ToList();
@@ -73,7 +74,7 @@ namespace Wirehome.Core.History.Repository
                     }
 
                     var latestIsOutdated = componentStatusValue.Timestamp - latestEntity.RangeEnd > ComponentStatusOutdatedTimeout;
-                    var valueHasChanged = string.CompareOrdinal(latestEntity.Value, componentStatusValue.Value) != 0;
+                    var valueHasChanged = !string.Equals(latestEntity.Value, componentStatusValue.Value, StringComparison.Ordinal);
 
                     if (valueHasChanged)
                     {

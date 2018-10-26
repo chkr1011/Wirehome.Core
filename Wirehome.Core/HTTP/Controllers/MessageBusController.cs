@@ -30,9 +30,9 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/message_bus/message_with_reply")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostMessageWithReply([FromBody] WirehomeDictionary messsage)
+        public async Task<WirehomeDictionary> PostMessageWithReply(TimeSpan timeout, [FromBody] WirehomeDictionary messsage)
         {
-            throw new NotImplementedException();
+            return await _messageBusService.PublishRequestAsync(messsage, timeout);
         }
 
         [HttpPost]

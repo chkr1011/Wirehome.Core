@@ -30,6 +30,7 @@ namespace Wirehome.Core.HTTP
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.AddSignalRCore();
 
             services.AddSwaggerGen(c =>
             {
@@ -38,7 +39,7 @@ namespace Wirehome.Core.HTTP
                     Title = "Wirehome.Core API",
                     Version = "v1",
                     Description = "This is the public API for the Wirehome.Core backend.",
-                    License = new License()
+                    License = new License
                     {
                         Name = "Apache-2.0",
                         Url = "https://github.com/chkr1011/Wirehome.Core/blob/master/LICENSE"
@@ -83,18 +84,9 @@ namespace Wirehome.Core.HTTP
                     }
                 };
 
-                config.MapRoute(
-                    name: "default",
-                    template: "api/{controller}/{action}/{id?}",
-                    defaults: null,
-                    constraints: null,
-                    dataTokens: dataTokens
-                );
+                config.MapRoute("default", "api/{controller}/{action}/{id?}", null, null, dataTokens);
 
-                // TODO: Forward to htto listener from scripts.
-
-                //app.Run(context =>
-                //    context.Response.WriteAsync("Hello, World!"));
+                app.Run(context => app.ApplicationServices.GetRequiredService<HttpServerService>().HandleRequestAsync(context));
             });
         }
 
@@ -106,7 +98,7 @@ namespace Wirehome.Core.HTTP
             var webAppRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
             var webConfiguratorRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebConfigurator");
             var customContentRootPath = Path.Combine(StorageService.DataPath, "CustomContent");
-            
+
             if (Debugger.IsAttached)
             {
                 webAppRootPath = Path.Combine(
