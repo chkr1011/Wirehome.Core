@@ -55,7 +55,7 @@ namespace Wirehome.Core.MessageBus
         public void Start()
         {
             Task.Factory.StartNew(
-                () => TryDispatchMessages(_systemService.CancellationToken),
+                () => DispatchMessageBusMessages(_systemService.CancellationToken),
                 _systemService.CancellationToken,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
@@ -63,7 +63,7 @@ namespace Wirehome.Core.MessageBus
             for (var i = 0; i < 3; i++)
             {
                 Task.Factory.StartNew(
-                    () => TryProcessMessages(_systemService.CancellationToken),
+                    () => ProcessMessageBusMessages(_systemService.CancellationToken),
                     _systemService.CancellationToken,
                     TaskCreationOptions.LongRunning,
                     TaskScheduler.Default);
@@ -105,7 +105,7 @@ namespace Wirehome.Core.MessageBus
 
             var response = new MessageBusMessage
             {
-                RequestUid = request.Uid,
+                ResponseUid = request.Uid,
                 Message = responseMessage
             };
 
@@ -178,8 +178,10 @@ namespace Wirehome.Core.MessageBus
             _subscribers.TryRemove(uid, out _);
         }
 
-        private void TryDispatchMessages(CancellationToken cancellationToken)
+        private void DispatchMessageBusMessages(CancellationToken cancellationToken)
         {
+            Thread.CurrentThread.Name = nameof(DispatchMessageBusMessages);
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
@@ -199,11 +201,11 @@ namespace Wirehome.Core.MessageBus
                         }
                     }
 
-                    if (message.RequestUid != null)
+                    if (message.ResponseUid != null)
                     {
                         foreach (var responseSubscriber in _responseSubscribers)
                         {
-                            if (responseSubscriber.Key.Equals(message.RequestUid.Value))
+                            if (responseSubscriber.Key.Equals(message.ResponseUid.Value))
                             {
                                 responseSubscriber.Value.SetResponse(message);
                                 break;
@@ -229,8 +231,10 @@ namespace Wirehome.Core.MessageBus
             }
         }
 
-        private void TryProcessMessages(CancellationToken cancellationToken)
+        private void ProcessMessageBusMessages(CancellationToken cancellationToken)
         {
+            Thread.CurrentThread.Name = nameof(ProcessMessageBusMessages);
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 try

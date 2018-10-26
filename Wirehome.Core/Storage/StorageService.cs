@@ -11,16 +11,13 @@ namespace Wirehome.Core.Storage
 {
     public class StorageService
     {
-        private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
-        {
-            DateParseHandling = DateParseHandling.None,
-            Formatting = Formatting.Indented
-        };
-
+        private readonly JsonSerializerService _jsonSerializerService;
         private readonly ILogger _logger;
 
-        public StorageService(ILoggerFactory loggerFactory)
+        public StorageService(JsonSerializerService jsonSerializerService, ILoggerFactory loggerFactory)
         {
+            _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
+
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<StorageService>();
         }
@@ -96,11 +93,6 @@ namespace Wirehome.Core.Storage
             return files;
         }
 
-        public string Serialize(object value)
-        {
-            return JsonConvert.SerializeObject(value, _jsonSerializerSettings);
-        }
-
         public bool TryRead<TValue>(out TValue value, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -124,7 +116,7 @@ namespace Wirehome.Core.Storage
                 return true;
             }
 
-            value = JsonConvert.DeserializeObject<TValue>(json, _jsonSerializerSettings);
+            value = _jsonSerializerService.Deserialize<TValue>(json);
             return true;
         }
 
@@ -195,7 +187,7 @@ namespace Wirehome.Core.Storage
                 return;
             }
 
-            var json = Serialize(value);
+            var json = _jsonSerializerService.Serialize(value);
             File.WriteAllText(filename, json, Encoding.UTF8);
         }
 

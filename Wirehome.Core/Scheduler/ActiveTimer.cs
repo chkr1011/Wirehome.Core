@@ -26,8 +26,11 @@ namespace Wirehome.Core.Scheduler
 
         public void Start()
         {
-            Task.Factory.StartNew(() => RunAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token).ConfigureAwait(false);
-            //Task.Factory.StartNew(() => Run(_cancellationTokenSource.Token), _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(
+                () => RunAsync(_cancellationTokenSource.Token),
+                _cancellationTokenSource.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default).ConfigureAwait(false);
         }
 
         public string Uid { get; }

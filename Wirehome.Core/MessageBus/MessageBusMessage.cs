@@ -7,7 +7,7 @@ namespace Wirehome.Core.MessageBus
     {
         public Guid Uid { get; } = Guid.NewGuid();
 
-        public Guid? RequestUid { get; set; }
+        public Guid? ResponseUid { get; set; }
 
         public DateTime EnqueuedTimestamp { get; set; }
 

@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Quartz;
-using Quartz.Impl;
-using Quartz.Logging;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Proxies;
+using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -19,35 +16,28 @@ namespace Wirehome.Core.Scheduler
 {
     public class SchedulerService
     {
-        private readonly ILogger _logger;
-        private readonly IScheduler _scheduler;
-        private readonly SystemService _systemService;
-
         private readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
         private readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
         private readonly Dictionary<string, ActiveThread> _activeThreads = new Dictionary<string, ActiveThread>();
         private readonly Dictionary<string, DefaultTimerSubscriber> _defaultTimerSubscribers = new Dictionary<string, DefaultTimerSubscriber>();
 
+        private readonly ILogger _logger;
+        //private readonly IScheduler _scheduler;
+        private readonly SystemService _systemService;
+        private readonly StorageService _storageService;
+
         public SchedulerService(
             PythonEngineService pythonEngineService,
             SystemStatusService systemStatusService,
             SystemService systemService,
+            StorageService storageService,
             ILoggerFactory loggerFactory)
         {
             _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
+            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<SchedulerService>();
-
-            LogProvider.SetCurrentLogProvider(new QuartzLogBridge(_logger));
-
-            var configuration = new NameValueCollection
-            {
-                { "quartz.serializer.type", "binary" }
-            };
-
-            var factory = new StdSchedulerFactory(configuration);
-            _scheduler = factory.GetScheduler().GetAwaiter().GetResult();
 
             if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
             pythonEngineService.RegisterSingletonProxy(new SchedulerPythonProxy(this));
@@ -59,9 +49,12 @@ namespace Wirehome.Core.Scheduler
 
         public void Start()
         {
-            _scheduler.Start().GetAwaiter().GetResult();
-
             Task.Factory.StartNew(ScheduleTasks, _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+            //LogProvider.SetCurrentLogProvider(new QuartzLogBridge(_logger));
+
+            //GlobalConfiguration.Configuration.UseStorage()
+            //_backgroundJobServer = new BackgroundJobServer();
         }
 
         public string AttachToDefaultTimer(string uid, Action<TimerTickCallbackParameters> callback, object state = null)
@@ -250,6 +243,8 @@ namespace Wirehome.Core.Scheduler
 
         private void ScheduleTasks()
         {
+            Thread.CurrentThread.Name = nameof(ScheduleTasks);
+
             var stopwatch = Stopwatch.StartNew();
 
             while (!_systemService.CancellationToken.IsCancellationRequested)

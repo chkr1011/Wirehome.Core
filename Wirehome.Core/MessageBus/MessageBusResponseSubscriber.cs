@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Wirehome.Core.MessageBus
 {
@@ -10,6 +11,8 @@ namespace Wirehome.Core.MessageBus
 
         public void SetResponse(MessageBusMessage responseMessage)
         {
+            if (responseMessage == null) throw new ArgumentNullException(nameof(responseMessage));
+
             _taskCompletionSource.TrySetResult(responseMessage);
         }
     }

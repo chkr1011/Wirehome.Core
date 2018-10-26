@@ -54,7 +54,7 @@ namespace Wirehome.Core
                 _logger = _loggerFactory.CreateLogger<WirehomeController>();
                 _logger.Log(LogLevel.Information, "Starting Wirehome.Core (c) Christian Kratky 2011 - 2018");
 
-                var storageService = new StorageService(_loggerFactory);
+                var storageService = new StorageService(new JsonSerializerService(), _loggerFactory);
                 storageService.Start();
                 
                 var serviceProvider = StartHttpServer(storageService);
@@ -140,6 +140,7 @@ namespace Wirehome.Core
         {
             serviceCollection.AddSingleton(_loggerFactory);
 
+            serviceCollection.AddSingleton<JsonSerializerService>();
             serviceCollection.AddSingleton<HttpServerService>();
 
             serviceCollection.AddSingleton<LogService>();
