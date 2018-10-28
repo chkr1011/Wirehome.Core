@@ -42,7 +42,7 @@ namespace Wirehome.Cloud.Services
                     {
                         return;
                     }
-                    
+
                     if (!_cloudMessageParser.TryParse(initialResult.Message, out AuthorizeCloudMessage authorizeMessage))
                     {
                         throw new UnauthorizedAccessException();
@@ -65,7 +65,7 @@ namespace Wirehome.Cloud.Services
             }
         }
 
-        public async Task<JObject> SendRequest(string identityUid, string channelUid, JObject request, CancellationToken cancellationToken)
+        public async Task<JObject> Invoke(string identityUid, string channelUid, JObject request, CancellationToken cancellationToken)
         {
             if (identityUid == null) throw new ArgumentNullException(nameof(identityUid));
             if (channelUid == null) throw new ArgumentNullException(nameof(channelUid));
@@ -85,7 +85,7 @@ namespace Wirehome.Cloud.Services
                 {
                     if (string.Equals(requestMessage.CorrelationUid, responseMessage.CorrelationUid))
                     {
-                        result.TrySetResult(eventArgs.Message);
+                        result.TrySetResult(responseMessage.Message);
                     }
                 }
             }
@@ -112,7 +112,7 @@ namespace Wirehome.Cloud.Services
             if (message == null) throw new ArgumentNullException(nameof(message));
 
             var session = GetSession(identityUid, channelUid);
-             
+
             throw new NotImplementedException();
         }
 

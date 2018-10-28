@@ -44,7 +44,7 @@ namespace Wirehome.Core.System
 
             _systemStatusService.Set("arguments", _arguments);
 
-            _systemStatusService.Set("wirehome.core.version", "1.0-alpha4");
+            _systemStatusService.Set("wirehome.core.version", WirehomeVersion.Version);
 
             AddOSInformation();
             AddThreadPoolInformation();

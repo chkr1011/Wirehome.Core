@@ -16,13 +16,13 @@ namespace Wirehome.Core.Cloud
     public class CloudService
     {
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private readonly CloudMessageParser _messageParser = new CloudMessageParser();
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
+
         private CloudServiceOptions _options;
-
         private Channel _channel;
-
         private bool _isConnected;
 
         public CloudService(StorageService storageService, MessageBusService messageBusService, SystemStatusService systemStatusService, ILoggerFactory loggerFactory)
@@ -46,11 +46,9 @@ namespace Wirehome.Core.Cloud
                 return;
             }
 
-            _options.Host = "localhost:5001";
-
             Task.Run(() => ListenAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
         }
-        
+
         private async Task ListenAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -79,6 +77,7 @@ namespace Wirehome.Core.Cloud
                         await _channel.SendMessageAsync(authorizeMessage, cancellationToken).ConfigureAwait(false);
 
                         _isConnected = true;
+                        _logger.LogInformation($"Connected with Wirehome.Cloud at host '{_options.Host}'.");
 
                         while (_channel.IsConnected && !cancellationToken.IsCancellationRequested)
                         {
@@ -93,7 +92,7 @@ namespace Wirehome.Core.Cloud
                                 continue;
                             }
 
-                            ProcessCloudMessage(receiveResult.Message);
+                            await ProcessCloudMessageAsync(receiveResult.Message, cancellationToken).ConfigureAwait(false);
                         }
                     }
                 }
@@ -102,25 +101,48 @@ namespace Wirehome.Core.Cloud
                     _isConnected = false;
                     _channel = null;
 
-                    _logger.LogError(exception, "Error while connecting Cloud service.");
+                    _logger.LogError(exception, "Error while connecting with Wirehome.Cloud service.");
 
                     await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
-        private void SendCloudMessage(string message)
-        {
-            //_channel.SendMessageAsync()
-        }
-
-        private void ProcessCloudMessage(JObject message)
+        private JObject ProcessCloudRpcMessage(JObject message)
         {
             var type = Convert.ToString(message["type"]);
+            if (type == "wirehome.cloud.message.ping")
+            {
+                return new JObject { ["type"] = "success" };
+            }
+
             if (type == "wirehome.cloud.message.message_bus.publish")
             {
                 _messageBusService.Publish((WirehomeDictionary)PythonConvert.ToPython(message["message"]));
+                return new JObject { ["type"] = "success" };
             }
+
+            return new JObject { ["type"] = "exception.not_supported" };
+        }
+
+        private Task ProcessCloudMessageAsync(JObject message, CancellationToken cancellationToken)
+        {
+            if (_messageParser.TryParse(message, out RpcRequestCloudMessage requestMessage))
+            {
+                var response = ProcessCloudRpcMessage(requestMessage.Message);
+                if (response != null)
+                {
+                    var responseMessage = new RpcResponseCloudMessage
+                    {
+                        CorrelationUid = requestMessage.CorrelationUid,
+                        Message = response
+                    };
+
+                    return _channel.SendMessageAsync(responseMessage, cancellationToken);
+                }
+            }
+
+            return Task.CompletedTask;
         }
     }
 }
