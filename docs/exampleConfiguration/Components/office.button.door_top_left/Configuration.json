@@ -2,12 +2,12 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "wirehome.button",
+      "id": "component_logic.wirehome.button",
       "version": "1.0.0"
     },
     "adapter": {
       "uid": {
-        "id": "wirehome.cc_tools.button",
+        "id": "component_adapter.wirehome.cc_tools.button",
         "version": "1.0.0"
       },
       "variables": {

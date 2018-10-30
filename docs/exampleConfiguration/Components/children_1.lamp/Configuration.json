@@ -2,17 +2,17 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "wirehome.lamp",
+      "id": "component_logic.wirehome.lamp",
       "version": "1.0.0"
     },
     "variables": {
       "config": {
-        "static_power_consumption": 18
+        "static_power_consumption": 30
       }
     },
     "adapter": {
       "uid": {
-        "id": "wirehome.cc_tools.relay",
+        "id": "component_adapter.wirehome.cc_tools.relay",
         "version": "1.0.0"
       },
       "variables": {

@@ -2,12 +2,12 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "wirehome.ventilation",
+      "id": "component_logic.wirehome.ventilation",
       "version": "1.0.0"
     },
     "adapter": {
       "uid": {
-        "id": "wirehome.cc_tools.ventilation",
+        "id": "component_adapter.wirehome.cc_tools.ventilation",
         "version": "1.0.0"
       },
       "variables": {

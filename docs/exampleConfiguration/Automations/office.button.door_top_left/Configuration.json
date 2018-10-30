@@ -2,7 +2,7 @@
     "isEnabled": true,
     "logic": {
         "uid": {
-            "id": "wirehome.flip_flop_state",
+            "id": "automation.wirehome.flip_flop_state",
             "version": "1.0.0"
         },
         "variables": {

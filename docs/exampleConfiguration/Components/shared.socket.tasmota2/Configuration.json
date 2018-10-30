@@ -2,12 +2,12 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "wirehome.socket",
+      "id": "component_logic.wirehome.socket",
       "version": "1.0.0"
     },
     "adapter": {
       "uid": {
-        "id": "wirehome.tasmota.relay",
+        "id": "component_adapter.wirehome.tasmota.relay",
         "version": "1.0.0"
       },
       "variables": {

@@ -2,7 +2,7 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "wirehome.rgb",
+      "id": "component_logic.wirehome.rgb",
       "version": "1.0.0"
     },
     "variables": {
@@ -16,7 +16,7 @@
     },
     "adapter": {
       "uid": {
-        "id": "wirehome.mqtt.rgb",
+        "id": "component_adapter.wirehome.mqtt.rgb",
         "version": "1.0.0"
       },
       "variables": {

@@ -2,12 +2,12 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "wirehome.motion_detector",
+      "id": "component_logic.wirehome.motion_detector",
       "version": "1.0.0"
     },
     "adapter": {
       "uid": {
-        "id": "wirehome.cc_tools.motion_detector",
+        "id": "component_adapter.wirehome.cc_tools.motion_detector",
         "version": "1.0.0"
       },
       "variables": {

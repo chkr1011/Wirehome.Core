@@ -2,7 +2,7 @@
     "isEnabled": true,
     "logic": {
         "uid": {
-            "id": "wirehome.auto_light",
+            "id": "automation.wirehome.auto_light",
             "version": "1.0.0"
         },
         "variables": {

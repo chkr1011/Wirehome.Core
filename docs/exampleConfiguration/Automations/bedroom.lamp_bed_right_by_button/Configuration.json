@@ -2,7 +2,7 @@
     "isEnabled": true,
     "logic": {
         "uid": {
-            "id": "wirehome.toggler",
+            "id": "automation.wirehome.toggler",
             "version": "1.0.0"
         },
         "variables": {
