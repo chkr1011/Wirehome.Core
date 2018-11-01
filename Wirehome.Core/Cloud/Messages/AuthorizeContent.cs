@@ -1,12 +1,7 @@
 ﻿namespace Wirehome.Core.Cloud.Messages
 {
-    public class AuthorizeCloudMessage : BaseCloudMessage
+    public class AuthorizeContent
     {
-        public AuthorizeCloudMessage()
-        {
-            Type = "wirehome.cloud.message.authorize";
-        }
-
         public string IdentityUid { get; set; }
 
         public string Password { get; set; }
