@@ -11,6 +11,7 @@ using Wirehome.Core.Extensions;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
+using Wirehome.Core.Python.Models;
 using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 
@@ -259,7 +260,14 @@ namespace Wirehome.Core.Components
                 }
             }
 
-            return component.ProcessMessage(message);
+            try
+            {
+                return component.ProcessMessage(message);
+            }
+            catch (Exception exception)
+            {
+                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+            }
         }
 
         private void Load()
