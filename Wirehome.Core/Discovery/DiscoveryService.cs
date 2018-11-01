@@ -1,31 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Rssdp;
 using Wirehome.Core.Extensions;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
+using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Discovery
 {
+    public class DiscoveryServiceOptions
+    {
+        public const string Filename = "DiscoveryServiceConfiguration.json";
+
+        public TimeSpan SearchDuration { get; set; } = TimeSpan.FromSeconds(10);
+    }
+
     public class DiscoveryService
     {
         private readonly List<DiscoveredSsdpDevice> _discoveredSsdpDevices = new List<DiscoveredSsdpDevice>();
         private readonly ILogger _logger;
+        private readonly DiscoveryServiceOptions _options;
 
         private SsdpDevicePublisher _publisher;
         
-        public DiscoveryService(ILoggerFactory loggerFactory)
+        public DiscoveryService(PythonEngineService pythonEngineService, StorageService storageService, ILoggerFactory loggerFactory)
         {
+            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
 
             _logger = loggerFactory.CreateLogger<DiscoveryService>();
+
+            pythonEngineService.RegisterSingletonProxy(new DiscoveryPythonProxy(this));
+
+            storageService.TryReadOrCreate(out _options, DiscoveryServiceOptions.Filename);
         }
 
         public void Start()
         {
             _publisher = new SsdpDevicePublisher();
 
-            Task.Run(SearchAsync).Forget(_logger);
+            ParallelTask.Start(SearchAsync, CancellationToken.None, _logger);
+        }
+
+        public List<DiscoveredSsdpDevice> GetDiscoveredDevices()
+        {
+            lock (_discoveredSsdpDevices)
+            {
+                return new List<DiscoveredSsdpDevice>(_discoveredSsdpDevices);
+            }
         }
 
         private async Task SearchAsync()
@@ -53,14 +78,20 @@ namespace Wirehome.Core.Discovery
             {
                 using (var deviceLocator = new SsdpDeviceLocator())
                 {
-                    var discoverResult = new List<DiscoveredSsdpDevice>(await deviceLocator.SearchAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false));
+                    var devices = new List<DiscoveredSsdpDevice>(await deviceLocator.SearchAsync(_options.SearchDuration).ConfigureAwait(false));
 
+                    var tasks = new List<Task>();
+                    foreach (var device in devices)
+                    {
+                        tasks.Add(device.GetDeviceInfo());
+                    }
+
+                    await Task.WhenAll(tasks);
+                    
                     lock (_discoveredSsdpDevices)
                     {
-                        // TODO: Consider adding var fullDevice = await foundDevice.GetDeviceInfo();
-
                         _discoveredSsdpDevices.Clear();
-                        _discoveredSsdpDevices.AddRange(discoverResult);
+                        _discoveredSsdpDevices.AddRange(devices);
 
                         _logger.LogInformation($"Discovered {_discoveredSsdpDevices.Count} SSDP devices.");
                     }

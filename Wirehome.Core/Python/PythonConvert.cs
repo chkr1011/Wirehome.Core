@@ -139,7 +139,7 @@ namespace Wirehome.Core.Python
 
                 return result;
             }
-            
+
             return value;
         }
 
