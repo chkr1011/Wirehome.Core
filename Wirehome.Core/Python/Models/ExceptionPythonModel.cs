@@ -3,6 +3,8 @@ using Wirehome.Core.Model;
 
 namespace Wirehome.Core.Python.Models
 {
+    // TODO: Convert to "ExceptionModel" and add implicit operator for conversion to dictionaries.
+    // TODO: Or use PythonConvert or WirehomeConvert.
     public class ExceptionPythonModel : TypedWirehomeDictionary
     {
         public ExceptionPythonModel(Exception exception)

@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core
 {
-    public static class WirehomeVersion
+    public static class WirehomeCoreVersion
     {
         public static string Version => "1.0.0-alpha5";
     }

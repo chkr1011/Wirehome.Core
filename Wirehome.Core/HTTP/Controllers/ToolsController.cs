@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections;
-using System.IO;
 using System.Net;
 using IronPython.Runtime;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Exceptions;
 using Wirehome.Core.Python.Models;
 using Wirehome.Core.Repository;
 using Wirehome.Core.Repository.Exceptions;
@@ -56,29 +54,6 @@ namespace Wirehome.Core.HTTP.Controllers
             {
                 return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
             }
-        }
-
-        [HttpPost]
-        [Route("api/v1/tools/execute")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public object ExecuteScript(string function_name = "main")
-        {
-            string script;
-            using (var streamReader = new StreamReader(HttpContext.Request.Body))
-            {
-                script = streamReader.ReadToEnd();
-            }
-
-            var scriptHost = _pythonEngineService.CreateScriptHost();
-            scriptHost.Initialize(script);
-
-            object result = null;
-            if (!string.IsNullOrEmpty(function_name))
-            {
-                result = scriptHost.InvokeFunction(function_name);
-            }
-
-            return result;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Linq;
 using IronPython.Runtime;
-using Microsoft.Extensions.Logging;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Wirehome.Core.Python.Exceptions;
@@ -10,14 +10,10 @@ namespace Wirehome.Core.Python
     public class PythonScriptHost
     {
         private readonly ScriptScope _scriptScope;
-        private readonly ILogger _logger;
-
-        public PythonScriptHost(ScriptScope scriptScope, ILoggerFactory loggerFactory)
+        
+        public PythonScriptHost(ScriptScope scriptScope)
         {
             _scriptScope = scriptScope ?? throw new ArgumentNullException(nameof(scriptScope));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<PythonScriptHost>();
         }
 
         public void Initialize(string scriptCode)
@@ -46,9 +42,10 @@ namespace Wirehome.Core.Python
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            var pythonValue = PythonConvert.ToPython(value);
             lock (_scriptScope)
             {
-                _scriptScope.SetVariable(name, PythonConvert.ToPython(value));
+                _scriptScope.SetVariable(name, pythonValue);
             }
         }
 
@@ -56,10 +53,13 @@ namespace Wirehome.Core.Python
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            object pythonValue;
             lock (_scriptScope)
             {
-                return PythonConvert.FromPython(_scriptScope.GetVariable(name));
+                pythonValue = _scriptScope.GetVariable(name);
             }
+
+            return PythonConvert.FromPython(pythonValue);
         }
 
         public bool FunctionExists(string name)
@@ -86,6 +86,7 @@ namespace Wirehome.Core.Python
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            object result;
             lock (_scriptScope)
             {
                 if (!_scriptScope.Engine.Operations.TryGetMember(_scriptScope, name, out var member))
@@ -100,24 +101,19 @@ namespace Wirehome.Core.Python
 
                 try
                 {
-                    for (var i = 0; i < parameters.Length; i++)
-                    {
-                        parameters[i] = PythonConvert.ToPython(parameters[i]);
-                    }
-
-                    object result = _scriptScope.Engine.Operations.Invoke(function, parameters);
-                    return PythonConvert.FromPython(result);
+                    var pythonParameters = parameters.Select(PythonConvert.ToPython).ToArray();
+                    result = _scriptScope.Engine.Operations.Invoke(function, pythonParameters);
                 }
                 catch (Exception exception)
                 {
                     var details = _scriptScope.Engine.GetService<ExceptionOperations>().FormatException(exception);
                     var message = "Error while invoking function. " + Environment.NewLine + details;
 
-                    _logger.Log(LogLevel.Warning, exception, message);
-
                     throw new PythonProxyException(message, exception);
                 }
             }
+
+            return PythonConvert.FromPython(result);
         }
     }
 }

@@ -10,6 +10,7 @@ using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Diagnostics.Log;
+using Wirehome.Core.Discovery;
 using Wirehome.Core.FunctionPool;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Hardware.GPIO;
@@ -150,6 +151,7 @@ namespace Wirehome.Core
             serviceCollection.AddSingleton<StartupScriptsService>();
             serviceCollection.AddSingleton<SystemStatusService>();
             serviceCollection.AddSingleton<GlobalVariablesService>();
+            serviceCollection.AddSingleton<CloudService>();
 
             serviceCollection.AddSingleton<ResourcesService>();
             serviceCollection.AddSingleton<FunctionPoolService>();
@@ -161,6 +163,7 @@ namespace Wirehome.Core
             serviceCollection.AddSingleton<MqttService>();
             serviceCollection.AddSingleton<I2CBusService>();
             serviceCollection.AddSingleton<GpioRegistryService>();
+            serviceCollection.AddSingleton<DiscoveryService>();
 
             serviceCollection.AddSingleton<NotificationsService>();
 
@@ -175,8 +178,6 @@ namespace Wirehome.Core
             serviceCollection.AddSingleton<ComponentInitializerFactory>();
             serviceCollection.AddSingleton<AutomationsRegistryService>();
             serviceCollection.AddSingleton<MacroRegistryService>();
-
-            serviceCollection.AddSingleton<CloudService>();
         }
 
         private void StartServices(IServiceProvider serviceProvider)
@@ -188,11 +189,13 @@ namespace Wirehome.Core
 
             serviceProvider.GetRequiredService<ResourcesService>().Start();
             serviceProvider.GetRequiredService<GlobalVariablesService>().Start();
+            serviceProvider.GetRequiredService<CloudService>().Start();
 
             serviceProvider.GetRequiredService<SchedulerService>().Start();
 
             serviceProvider.GetRequiredService<MqttService>().Start();
             serviceProvider.GetRequiredService<HttpServerService>().Start();
+            serviceProvider.GetRequiredService<DiscoveryService>().Start();
 
             serviceProvider.GetRequiredService<PythonEngineService>().Start();
 
@@ -213,9 +216,7 @@ namespace Wirehome.Core
             serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
             serviceProvider.GetRequiredService<AutomationsRegistryService>().Start();
             serviceProvider.GetRequiredService<MacroRegistryService>().Start();
-
-            serviceProvider.GetRequiredService<CloudService>().Start();
-
+            
             startupScriptsService.OnConfigurationLoaded();
 
             _logger.Log(LogLevel.Debug, "Service startup completed.");

@@ -35,7 +35,6 @@ namespace Wirehome.Core.Python.Proxies
             return buffer.AddSeconds(seconds).ToUniversalTime().TimeOfDay.ToString("c");
         }
 
-        // TODO: Move to "DateTimeParserPythonProxy (date_time_parser.get_day(date)).
         public int day_from_date(string date)
         {
             return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Day;
@@ -64,6 +63,21 @@ namespace Wirehome.Core.Python.Proxies
         public int second_from_date(string date)
         {
             return DateTime.ParseExact(date, "O", CultureInfo.InvariantCulture).Second;
+        }
+
+        public int hour_from_time(string time)
+        {
+            return TimeSpan.ParseExact(time, "c", CultureInfo.InvariantCulture).Hours;
+        }
+
+        public int minute_from_time(string time)
+        {
+            return TimeSpan.ParseExact(time, "c", CultureInfo.InvariantCulture).Minutes;
+        }
+
+        public int second_from_time(string time)
+        {
+            return TimeSpan.ParseExact(time, "c", CultureInfo.InvariantCulture).Seconds;
         }
     }
 }

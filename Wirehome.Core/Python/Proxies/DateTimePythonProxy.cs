@@ -11,7 +11,18 @@ namespace Wirehome.Core.Python.Proxies
     {
         public string ModuleName { get; } = "date_time";
 
-        public string now()
+        public string get_date()
+        {
+            // This is the valid date part of an ISO date time.
+            return DateTime.Now.Date.ToString("yyyy-MM-dd");
+        }
+
+        public string get_time()
+        {
+            return DateTime.Now.TimeOfDay.ToString("c");
+        }
+
+        public string get_date_time()
         {
             return DateTime.Now.ToString("O", CultureInfo.InvariantCulture);
         }
