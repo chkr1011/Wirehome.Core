@@ -1,10 +1,10 @@
 ﻿using System;
 
-namespace Wirehome.Cloud.Services
+namespace Wirehome.Cloud.Services.Authorization
 {
-    public class AuthorizationScope
+    public class AuthorizationContext
     {
-        public AuthorizationScope(string identityUid, string channelUid)
+        public AuthorizationContext(string identityUid, string channelUid)
         {
             IdentityUid = identityUid ?? throw new ArgumentNullException(nameof(identityUid));
             ChannelUid = channelUid ?? throw new ArgumentNullException(nameof(channelUid));
@@ -19,11 +19,6 @@ namespace Wirehome.Cloud.Services
         public override string ToString()
         {
             return $"{IdentityUid}/{ChannelUid}";
-        }
-
-        public override int GetHashCode()
-        {
-            return IdentityUid.GetHashCode(StringComparison.Ordinal) ^ ChannelUid.GetHashCode(StringComparison.Ordinal);
         }
     }
 }

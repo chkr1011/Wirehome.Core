@@ -3,57 +3,50 @@ using System.Linq;
 using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
 using Wirehome.Cloud.Controllers;
-using Wirehome.Cloud.Services;
+using Wirehome.Cloud.Filters;
+using Wirehome.Cloud.Services.Authorization;
+using Wirehome.Cloud.Services.Connector;
 using Wirehome.Cloud.Services.Repository;
 using Wirehome.Core.HTTP.Controllers;
 
 namespace Wirehome.Cloud
 {
+    // ReSharper disable once ClassNeverInstantiated.Global
     public class Startup
     {
         // ReSharper disable once UnusedMember.Global
         public void ConfigureServices(IServiceCollection services)
         {
+            if (services == null) throw new ArgumentNullException(nameof(services));
+
             services.AddSingleton<ConnectorService>();
             services.AddSingleton<AuthorizationService>();
             services.AddSingleton<RepositoryService>();
 
-            services.AddMvc().ConfigureApplicationPartManager(manager =>
+            services.AddMvc(config =>
             {
-                manager.FeatureProviders.Remove(manager.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
-                manager.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(FunctionsController).Namespace));
+                config.Filters.Add(new DefaultExceptionFilter());
+            })
+            .ConfigureApplicationPartManager(config =>
+            {
+                config.FeatureProviders.Remove(config.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
+                config.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(FunctionsController).Namespace));
             });
 
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Info
-                {
-                    Title = "Wirehome.Cloud API",
-                    Version = "v1",
-                    Description = "This is the public API for the Wirehome.Cloud service.",
-                    License = new License
-                    {
-                        Name = "Apache-2.0",
-                        Url = "https://github.com/chkr1011/Wirehome.Core/blob/master/LICENSE"
-                    },
-                    Contact = new Contact
-                    {
-                        Name = "Wirehome.Core",
-                        Email = string.Empty,
-                        Url = "https://github.com/chkr1011/Wirehome.Core"
-                    },
-                });
-            });
+            ConfigureSwaggerServices(services);
         }
 
         // ReSharper disable once UnusedMember.Global
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ConnectorService connectorService)
         {
+            if (app == null) throw new ArgumentNullException(nameof(app));
+            if (env == null) throw new ArgumentNullException(nameof(env));
+            if (connectorService == null) throw new ArgumentNullException(nameof(connectorService));
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -61,13 +54,9 @@ namespace Wirehome.Cloud
 
             ConfigureMvc(app);
             ConfigureSwagger(app);
-            ConfigureConnector(app);
+            ConfigureConnector(app, connectorService);
 
-            app.Run(async (context) =>
-            {
-                // TODO: Map requets to Channel for external WebApp access.
-                await context.Response.WriteAsync("Hello World!");
-            });
+            app.Run(connectorService.ForwardHttpRequestAsync);
         }
 
         private static void ConfigureSwagger(IApplicationBuilder app)
@@ -88,39 +77,60 @@ namespace Wirehome.Cloud
             });
         }
 
-        private static void ConfigureConnector(IApplicationBuilder app)
+        private static void ConfigureConnector(IApplicationBuilder app, ConnectorService connectorService)
         {
-            app.UseWebSockets(new WebSocketOptions
+            app.Map("/Connector", config =>
             {
-                KeepAliveInterval = TimeSpan.FromSeconds(120),
-                ReceiveBufferSize = 4 * 1024
+                config.UseWebSockets(new WebSocketOptions
+                {
+                    KeepAliveInterval = TimeSpan.FromSeconds(30),
+                    ReceiveBufferSize = 1024
+                });
+
+                config.Use(async (context, next) =>
+                {
+                    if (!context.WebSockets.IsWebSocketRequest)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        return;
+                    }
+
+                    try
+                    {
+                        using (var webSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false))
+                        {
+                            await connectorService.RunAsync(webSocket, context.RequestAborted).ConfigureAwait(false);
+                        }
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    }
+                });
             });
+        }
 
-            var connectorService = app.ApplicationServices.GetRequiredService<ConnectorService>();
-
-            app.Use(async (context, next) =>
+        private static void ConfigureSwaggerServices(IServiceCollection services)
+        {
+            services.AddSwaggerGen(c =>
             {
-                if (context.Request.Path != "/Connector")
+                c.SwaggerDoc("v1", new Info
                 {
-                    await next();
-                    return;
-                }
-
-                if (!context.WebSockets.IsWebSocketRequest)
-                {
-                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    return;
-                }
-
-                var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                try
-                {
-                    await connectorService.ConnectAsync(webSocket, context.RequestAborted);
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                }
+                    Title = "Wirehome.Cloud API",
+                    Version = "v1",
+                    Description = "This is the public API for the Wirehome.Cloud service.",
+                    License = new License
+                    {
+                        Name = "Apache-2.0",
+                        Url = "https://github.com/chkr1011/Wirehome.Core/blob/master/LICENSE"
+                    },
+                    Contact = new Contact
+                    {
+                        Name = "Wirehome.Core",
+                        Email = string.Empty,
+                        Url = "https://github.com/chkr1011/Wirehome.Core"
+                    },
+                });
             });
         }
     }
