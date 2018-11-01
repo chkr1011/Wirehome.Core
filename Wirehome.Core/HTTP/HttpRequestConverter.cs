@@ -69,7 +69,7 @@ namespace Wirehome.Core.HTTP
 
         public void UnwrapContext(WirehomeDictionary dictionary, HttpContext context)
         {
-            var statusCode = Convert.ToInt32(dictionary.GetValueOr("status_code", 200), CultureInfo.InvariantCulture);
+            var statusCode = Convert.ToInt32(dictionary.GetValueOrDefault("status_code", 200), CultureInfo.InvariantCulture);
             context.Response.StatusCode = statusCode;
 
             if (dictionary.GetValueOrDefault("headers") is WirehomeDictionary headers)
