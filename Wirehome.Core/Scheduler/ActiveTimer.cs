@@ -37,6 +37,8 @@ namespace Wirehome.Core.Scheduler
 
         public TimeSpan Interval { get; }
 
+        public Exception LastException { get; private set; }
+
         public void Stop()
         {
             _cancellationTokenSource.Cancel(false);
@@ -90,6 +92,8 @@ namespace Wirehome.Core.Scheduler
             }
             catch (Exception exception)
             {
+                LastException = exception;
+
                 _logger.Log(LogLevel.Error, exception, "Error while executing timer callback.");
                 Thread.Sleep(TimeSpan.FromSeconds(1)); // Prevent flooding the log.
             }

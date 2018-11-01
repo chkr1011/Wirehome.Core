@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.HTTP.Controllers.Models;
+using Wirehome.Core.Python.Models;
 using Wirehome.Core.Scheduler;
 
 namespace Wirehome.Core.HTTP.Controllers
@@ -44,7 +45,8 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             return _schedulerService.GetActiveTimers().ToDictionary(t => t.Uid, t => new ActiveTimerModel
             {
-                Interval = (int)t.Interval.TotalMilliseconds
+                Interval = (int)t.Interval.TotalMilliseconds,
+                LastException = new ExceptionPythonModel(t.LastException)
             });
         }
 

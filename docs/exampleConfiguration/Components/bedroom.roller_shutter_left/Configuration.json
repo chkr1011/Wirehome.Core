@@ -2,12 +2,18 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "wirehome.roller_shutter",
+      "id": "component_logic.wirehome.roller_shutter",
       "version": "1.0.0"
+    },
+    "variables": {
+      "config": {
+        "static_power_consumption": 30,
+        "max_position": 18000
+      }
     },
     "adapter": {
       "uid": {
-        "id": "wirehome.cc_tools.roller_shutter",
+        "id": "component_adapter.wirehome.cc_tools.roller_shutter",
         "version": "1.0.0"
       },
       "variables": {

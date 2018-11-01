@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Swashbuckle.AspNetCore.Swagger;
-using Wirehome.Core.HTTP.Controllers.Diagnostics;
+using Wirehome.Core.HTTP.Controllers;
 using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
@@ -29,7 +30,14 @@ namespace Wirehome.Core.HTTP
         // ReSharper disable once UnusedMember.Global
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc();
+            if (services == null) throw new ArgumentNullException(nameof(services));
+
+            services.AddMvc().ConfigureApplicationPartManager(manager =>
+            {
+                manager.FeatureProviders.Remove(manager.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
+                manager.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(ComponentsController).Namespace));
+            });
+
             services.AddSignalRCore();
 
             services.AddSwaggerGen(c =>
@@ -38,7 +46,7 @@ namespace Wirehome.Core.HTTP
                 {
                     Title = "Wirehome.Core API",
                     Version = "v1",
-                    Description = "This is the public API for the Wirehome.Core backend.",
+                    Description = "This is the public API for the Wirehome.Core service.",
                     License = new License
                     {
                         Name = "Apache-2.0",
@@ -61,8 +69,12 @@ namespace Wirehome.Core.HTTP
         }
 
         // ReSharper disable once UnusedMember.Global
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, HttpServerService httpServerService)
         {
+            if (app == null) throw new ArgumentNullException(nameof(app));
+            if (env == null) throw new ArgumentNullException(nameof(env));
+            if (httpServerService == null) throw new ArgumentNullException(nameof(httpServerService));
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -71,24 +83,20 @@ namespace Wirehome.Core.HTTP
             ConfigureSwagger(app);
             ConfigureWebApps(app);
             ConfigureMvc(app);
+
+            app.Run(httpServerService.HandleRequestAsync);
         }
 
         private static void ConfigureMvc(IApplicationBuilder app)
         {
+            if (app == null) throw new ArgumentNullException(nameof(app));
+
             app.UseMvc(config =>
             {
-                var dataTokens = new RouteValueDictionary
-                {
-                    {
-                        "Namespaces", new[] {typeof(SystemStatusController).Namespace}
-                    }
-                };
-
-                config.MapRoute("default", "api/{controller}/{action}/{id?}", null, null, dataTokens);
-
+                config.MapRoute("default", "api/{controller}/{action}/{id?}", null, null, null);
             });
 
-            app.Run(context => app.ApplicationServices.GetRequiredService<HttpServerService>().HandleRequestAsync(context));
+            // TODO: Mapp SignalR Hub.
         }
 
         private static void ConfigureWebApps(IApplicationBuilder app)

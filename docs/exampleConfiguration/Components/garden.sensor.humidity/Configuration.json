@@ -1,0 +1,26 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "component_logic.wirehome.sensor",
+      "version": "1.0.0"
+    },
+    "variables": {
+      "config": {
+        "sensor_type": "humidity",
+        "publish_as_global_variable": "outdoor.humidity"
+      }
+    },
+    "adapter": {
+      "uid": {
+        "id": "component_adapter.wirehome.mqtt.sensor",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "topic": "outdoor/humidity"
+        }
+      }
+    }
+  }
+}

@@ -1,11 +1,24 @@
 ﻿using System;
 using System.Collections;
+using System.Globalization;
 using System.Text;
 
 namespace Wirehome.Core.Extensions
 {
     public static class DictionaryExtensions
     {
+        public static TValue GetValueOr<TValue>(this IDictionary dictionary, object key, TValue defaultValue)
+        {
+            if (!dictionary.Contains(key))
+            {
+                return defaultValue;
+            }
+
+            var value = dictionary[key];
+
+            return (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
+        }
+
         public static object GetValueOrDefault(this IDictionary dictionary, object key, object defaultValue = null)
         {
             if (!dictionary.Contains(key))

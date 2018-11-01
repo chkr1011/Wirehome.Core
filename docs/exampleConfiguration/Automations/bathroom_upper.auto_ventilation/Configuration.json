@@ -2,7 +2,7 @@
     "isEnabled": true,
     "logic": {
         "uid": {
-            "id": "wirehome.two_level_auto_ventilation",
+            "id": "automation.wirehome.two_level_auto_ventilation",
             "version": "1.0.0"
         },
         "variables": {

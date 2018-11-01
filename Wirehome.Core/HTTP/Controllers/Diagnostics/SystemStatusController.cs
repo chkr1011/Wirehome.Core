@@ -18,6 +18,14 @@ namespace Wirehome.Core.HTTP.Controllers.Diagnostics
         }
 
         [HttpGet]
+        [Route("/api/v1/system/ping")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public string GetPing()
+        {
+            return "pong";
+        }
+
+        [HttpGet]
         [Route("/api/v1/system/status")]
         [ApiExplorerSettings(GroupName = "v1")]
         public Dictionary<string, object> GetSystemStatus()

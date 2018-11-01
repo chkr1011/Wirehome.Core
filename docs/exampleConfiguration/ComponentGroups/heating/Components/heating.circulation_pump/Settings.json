@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "app.caption": "Zirkulationspumpe",
+    "app.image_id": "fas fa-retweet",
+    "app.position_index": 5
+}

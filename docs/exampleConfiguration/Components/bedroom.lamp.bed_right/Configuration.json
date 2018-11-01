@@ -2,12 +2,12 @@
   "isEnabled": true,
   "logic": {
     "uid": {
-      "id": "wirehome.lamp",
+      "id": "component_logic.wirehome.lamp",
       "version": "1.0.0"
     },
     "adapter": {
       "uid": {
-        "id": "wirehome.mqtt.relay",
+         "id": "component_adapter.wirehome.mqtt.relay",
         "version": "1.0.0"
       },
       "variables": {

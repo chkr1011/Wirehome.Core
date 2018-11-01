@@ -1,0 +1,19 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "automation.wirehome.toggler",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "buttons": [
+                    "office.button.edge_left"
+                ],
+                "targets": [
+                    "tradfri.lamp.3"
+                ]
+            }
+        }
+    }
+}

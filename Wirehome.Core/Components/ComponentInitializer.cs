@@ -57,7 +57,7 @@ namespace Wirehome.Core.Components
 
         private void InitializeLogic(Component component, ComponentLogicConfiguration configuration)
         {
-            var scope = new WirehomeDictionary
+            var context = new WirehomeDictionary
             {
                 ["component_uid"] = component.Uid
             };
@@ -75,9 +75,9 @@ namespace Wirehome.Core.Components
                 }
             }
 
-            scope["adapter_uid"] = adapterEntity.Uid.ToString();
-            scope["adapter_id"] = adapterEntity.Uid.Id;
-            scope["adapter_version"] = adapterEntity.Uid.Version;
+            context["adapter_uid"] = adapterEntity.Uid.ToString();
+            context["adapter_id"] = adapterEntity.Uid.Id;
+            context["adapter_version"] = adapterEntity.Uid.Version;
             
             if (string.IsNullOrEmpty(configuration.Uid?.Id))
             {
@@ -101,15 +101,19 @@ namespace Wirehome.Core.Components
                     }
                 }
 
-                scope["logic_uid"] = logicEntity.Uid.ToString();
-                scope["logic_id"] = logicEntity.Uid.Id;
-                scope["logic_version"] = logicEntity.Uid.Version;
+                context["logic_uid"] = logicEntity.Uid.ToString();
+                context["logic_id"] = logicEntity.Uid.Id;
+                context["logic_version"] = logicEntity.Uid.Version;
 
-                logic.SetVariable("scope", scope);
+                // TODO: Remove "scope" as soon as it is migrated.
+                logic.SetVariable("scope", context);
+                logic.SetVariable("context", context);
                 component.SetLogic(logic);
             }
-            
-            adapter.SetVariable("scope", scope);
+
+            // TODO: Remove "scope" as soon as it is migrated.
+            adapter.SetVariable("scope", context);
+            adapter.SetVariable("context", context);
         }
     }
 }

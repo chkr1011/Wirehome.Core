@@ -1,0 +1,40 @@
+{
+  "isEnabled": true,
+  "logic": {
+    "uid": {
+      "id": "component_logic.wirehome.lamp",
+      "version": "1.0.0"
+    },
+    "adapter": {
+      "uid": {
+         "id": "component_adapter.wirehome.mqtt.relay",
+        "version": "1.0.0"
+      },
+      "variables": {
+        "config": {
+          "on": {
+            "server": "192.168.1.16",
+            "topic": "garden_controller/$PATCH/lamp.terrace",
+            "payload": "on"
+          },
+          "off": {
+            "server": "192.168.1.16",
+            "topic": "garden_controller/$PATCH/lamp.terrace",
+            "payload": "off"
+          },
+          "update_status_from_backward_channel_only": true,
+          "backward_channel": {
+            "on": {
+              "topic": "garden_controller/$STATUS/lamp.terrace",
+              "payload": "on"
+            },
+            "off": {
+              "topic": "garden_controller/$STATUS/lamp.terrace",
+              "payload": "off"
+            } 
+          }
+        }
+      }
+    }
+  }
+}

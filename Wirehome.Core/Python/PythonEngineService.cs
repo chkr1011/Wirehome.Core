@@ -12,7 +12,6 @@ namespace Wirehome.Core.Python
     {
         private readonly PythonProxyFactory _pythonProxyFactory = new PythonProxyFactory();
         private readonly StorageService _storageService;
-        private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
         
         private ScriptEngine _scriptEngine;
@@ -20,8 +19,8 @@ namespace Wirehome.Core.Python
         public PythonEngineService(StorageService storageService, ILoggerFactory loggerFactory)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<PythonEngineService>();
         }
 
@@ -32,14 +31,7 @@ namespace Wirehome.Core.Python
             _scriptEngine = IronPython.Hosting.Python.CreateEngine();
             _scriptEngine.Runtime.IO.SetOutput(new PythonIOToLogStream(_logger), Encoding.UTF8);
 
-            var librariesPath = Path.Combine(_storageService.DataPath, "PythonLibraries");
-            if (!Directory.Exists(librariesPath))
-            {
-                Directory.CreateDirectory(librariesPath);
-            }
-
-            var searchPaths = _scriptEngine.GetSearchPaths();
-            searchPaths.Add(librariesPath);
+            SetSearchPath(_scriptEngine);
 
             var scriptHost = CreateScriptHost(_logger);
             scriptHost.Initialize("def test():\r\n    return 0");
@@ -79,7 +71,20 @@ namespace Wirehome.Core.Python
                 scriptScope.SetVariable(proxy.ModuleName, proxy);
             }
 
-            return new PythonScriptHost(scriptScope, _loggerFactory);
+            return new PythonScriptHost(scriptScope);
+        }
+
+        private void SetSearchPath(ScriptEngine scriptEngine)
+        {
+            var librariesPath = Path.Combine(_storageService.DataPath, "PythonLibraries");
+            if (!Directory.Exists(librariesPath))
+            {
+                Directory.CreateDirectory(librariesPath);
+            }
+
+            var searchPaths = scriptEngine.GetSearchPaths();
+            searchPaths.Add(librariesPath);
+            scriptEngine.SetSearchPaths(searchPaths);
         }
     }
 }

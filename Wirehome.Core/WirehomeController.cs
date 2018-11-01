@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Automations;
+using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Diagnostics.Log;
+using Wirehome.Core.Discovery;
 using Wirehome.Core.FunctionPool;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Hardware.GPIO;
@@ -58,7 +60,7 @@ namespace Wirehome.Core
                 storageService.Start();
                 
                 var serviceProvider = StartHttpServer(storageService);
-                _loggerFactory.AddProvider(new LogServiceLoggerProvider(serviceProvider.GetService<LogService>()));
+                _loggerFactory.AddProvider(new LogServiceLoggerProvider(serviceProvider.GetRequiredService<LogService>()));
 
                 SetupHardwareAdapters(serviceProvider); // TODO: From config!
 
@@ -72,7 +74,7 @@ namespace Wirehome.Core
 
                 _logger.Log(LogLevel.Information, "Startup completed.");
 
-                serviceProvider.GetService<SystemService>().Start(timestamp, string.Join(" ", _arguments));
+                serviceProvider.GetRequiredService<SystemService>().Start(timestamp, string.Join(" ", _arguments));
                 serviceProvider.GetRequiredService<StartupScriptsService>().OnStartupCompleted();
             }
             catch (Exception exception)
@@ -83,8 +85,8 @@ namespace Wirehome.Core
 
         private static void RegisterEvents(IServiceProvider serviceProvider)
         {
-            var systemService = serviceProvider.GetService<SystemService>();
-            var notificationsService = serviceProvider.GetService<NotificationsService>();
+            var systemService = serviceProvider.GetRequiredService<SystemService>();
+            var notificationsService = serviceProvider.GetRequiredService<NotificationsService>();
 
             systemService.RebootInitiated += (s, e) =>
             {
@@ -102,10 +104,10 @@ namespace Wirehome.Core
 
         private static void PublishBootedNotification(IServiceProvider serviceProvider)
         {
-            var messageBusService = serviceProvider.GetService<MessageBusService>();
+            var messageBusService = serviceProvider.GetRequiredService<MessageBusService>();
             messageBusService.Publish(new WirehomeDictionary().WithType(MessageBusMessageTypes.Booted));
     
-            var notificationService = serviceProvider.GetService<NotificationsService>();
+            var notificationService = serviceProvider.GetRequiredService<NotificationsService>();
             notificationService.PublishFromResource(new PublishFromResourceParameters()
             {
                 Type = NotificationType.Information,
@@ -115,7 +117,7 @@ namespace Wirehome.Core
 
         private void RegisterDefaultResources(IServiceProvider serviceProvider)
         {
-            var resourcesService = serviceProvider.GetService<ResourcesService>();
+            var resourcesService = serviceProvider.GetRequiredService<ResourcesService>();
 
             // Notifications
             resourcesService.RegisterString(NotificationResourceUids.Booted, "en", "System has booted.");
@@ -129,7 +131,7 @@ namespace Wirehome.Core
 
         private void RegisterDefaultGlobalVariables(IServiceProvider serviceProvider)
         {
-            var globalVariablesService = serviceProvider.GetService<GlobalVariablesService>();
+            var globalVariablesService = serviceProvider.GetRequiredService<GlobalVariablesService>();
 
             globalVariablesService.RegisterValue(GlobalVariableUids.LanguageCode, "en");
 
@@ -149,6 +151,7 @@ namespace Wirehome.Core
             serviceCollection.AddSingleton<StartupScriptsService>();
             serviceCollection.AddSingleton<SystemStatusService>();
             serviceCollection.AddSingleton<GlobalVariablesService>();
+            serviceCollection.AddSingleton<CloudService>();
 
             serviceCollection.AddSingleton<ResourcesService>();
             serviceCollection.AddSingleton<FunctionPoolService>();
@@ -160,6 +163,7 @@ namespace Wirehome.Core
             serviceCollection.AddSingleton<MqttService>();
             serviceCollection.AddSingleton<I2CBusService>();
             serviceCollection.AddSingleton<GpioRegistryService>();
+            serviceCollection.AddSingleton<DiscoveryService>();
 
             serviceCollection.AddSingleton<NotificationsService>();
 
@@ -180,37 +184,39 @@ namespace Wirehome.Core
         {
             _logger.Log(LogLevel.Debug, "Starting services...");
 
-            serviceProvider.GetService<DiagnosticsService>().Start();
-            serviceProvider.GetService<MessageBusService>().Start();
+            serviceProvider.GetRequiredService<DiagnosticsService>().Start();
+            serviceProvider.GetRequiredService<MessageBusService>().Start();
 
-            serviceProvider.GetService<ResourcesService>().Start();
-            serviceProvider.GetService<GlobalVariablesService>().Start();
+            serviceProvider.GetRequiredService<ResourcesService>().Start();
+            serviceProvider.GetRequiredService<GlobalVariablesService>().Start();
+            serviceProvider.GetRequiredService<CloudService>().Start();
 
-            serviceProvider.GetService<SchedulerService>().Start();
+            serviceProvider.GetRequiredService<SchedulerService>().Start();
 
-            serviceProvider.GetService<MqttService>().Start();
-            serviceProvider.GetService<HttpServerService>().Start();
+            serviceProvider.GetRequiredService<MqttService>().Start();
+            serviceProvider.GetRequiredService<HttpServerService>().Start();
+            serviceProvider.GetRequiredService<DiscoveryService>().Start();
 
-            serviceProvider.GetService<PythonEngineService>().Start();
+            serviceProvider.GetRequiredService<PythonEngineService>().Start();
 
-            var startupScriptsService = serviceProvider.GetService<StartupScriptsService>();
+            var startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
             startupScriptsService.Start();
 
-            serviceProvider.GetService<FunctionPoolService>().Start();
-            serviceProvider.GetService<ServiceHostService>().Start();
+            serviceProvider.GetRequiredService<FunctionPoolService>().Start();
+            serviceProvider.GetRequiredService<ServiceHostService>().Start();
             
-            serviceProvider.GetService<NotificationsService>().Start();
+            serviceProvider.GetRequiredService<NotificationsService>().Start();
 
-            serviceProvider.GetService<HistoryService>().Start();
+            serviceProvider.GetRequiredService<HistoryService>().Start();
 
             startupScriptsService.OnServicesInitialized();
 
             // Start data related services.
-            serviceProvider.GetService<ComponentGroupRegistryService>().Start();
-            serviceProvider.GetService<ComponentRegistryService>().Start();
-            serviceProvider.GetService<AutomationsRegistryService>().Start();
-            serviceProvider.GetService<MacroRegistryService>().Start();
-
+            serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
+            serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
+            serviceProvider.GetRequiredService<AutomationsRegistryService>().Start();
+            serviceProvider.GetRequiredService<MacroRegistryService>().Start();
+            
             startupScriptsService.OnConfigurationLoaded();
 
             _logger.Log(LogLevel.Debug, "Service startup completed.");
@@ -218,10 +224,10 @@ namespace Wirehome.Core
 
         private static void SetupHardwareAdapters(IServiceProvider serviceProvider)
         {
-            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
-            var i2CService = serviceProvider.GetService<I2CBusService>();
-            var gpioService = serviceProvider.GetService<GpioRegistryService>();
+            var i2CService = serviceProvider.GetRequiredService<I2CBusService>();
+            var gpioService = serviceProvider.GetRequiredService<GpioRegistryService>();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
