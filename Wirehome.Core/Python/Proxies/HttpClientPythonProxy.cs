@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text;
 using IronPython.Runtime;
 using Newtonsoft.Json.Linq;
+using Wirehome.Core.Constants;
 using Wirehome.Core.Python.Models;
 
 #pragma warning disable IDE1006 // Naming Styles
@@ -30,6 +31,7 @@ namespace Wirehome.Core.Python.Proxies
 
                     var result = new PythonDictionary
                     {
+                        ["type"] = ControlType.Success,
                         ["status_code"] = (int)response.StatusCode
                     };
 
