@@ -1,49 +1,25 @@
 ﻿using System;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repository;
+using Wirehome.Core.ServiceHost.Configuration;
 
 namespace Wirehome.Core.ServiceHost
 {
     public class ServiceInstance
     {
         private readonly object _syncRoot = new object();
+        private readonly PythonScriptHost _scriptHost;
 
-        private readonly RepositoryService _repositoryService;
-        private readonly PythonEngineService _pythonEngineService;
-        private readonly ILogger _logger;
-
-        private PythonScriptHost _pythonScriptHost;
-
-        public RepositoryEntityUid RepositoryEntityUid { get; private set; }
-
-        public ServiceInstance(RepositoryService repositoryService, PythonEngineService pythonEngineService, ILoggerFactory loggerFactory)
+        public ServiceInstance(string id, ServiceConfiguration configuration, PythonScriptHost scriptHost)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
+            Id = id ?? throw new ArgumentNullException(nameof(id));
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-            _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
-            _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
-            
-            _logger = loggerFactory.CreateLogger<ServiceInstance>();
+            _scriptHost = scriptHost ?? throw new ArgumentNullException(nameof(scriptHost));
         }
 
-        public void Initialize()
-        {
-            Initialize(RepositoryEntityUid);
-        }
+        public string Id { get; }
 
-        public void Initialize(RepositoryEntityUid repositoryEntityUid)
-        {
-            RepositoryEntityUid = repositoryEntityUid ?? throw new ArgumentNullException(nameof(repositoryEntityUid));
-
-            var repositoryEntitySource = _repositoryService.LoadEntity(RepositoryEntityUid);
-
-            lock (_syncRoot)
-            {
-                _pythonScriptHost = _pythonEngineService.CreateScriptHost(_logger);
-                _pythonScriptHost.Initialize(repositoryEntitySource.Script);
-            }
-        }
+        public ServiceConfiguration Configuration { get; }
 
         public void SetVariable(string key, object value)
         {
@@ -51,7 +27,7 @@ namespace Wirehome.Core.ServiceHost
 
             lock (_syncRoot)
             {
-                _pythonScriptHost.SetVariable(key, value);
+                _scriptHost.SetVariable(key, value);
             }
         }
 
@@ -59,7 +35,7 @@ namespace Wirehome.Core.ServiceHost
         {
             lock (_syncRoot)
             {
-                return _pythonScriptHost.InvokeFunction(name, parameters);
+                return _scriptHost.InvokeFunction(name, parameters);
             }
         }
     }

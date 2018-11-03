@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.ServiceHost;
 using Wirehome.Core.ServiceHost.Configuration;
+using Wirehome.Core.ServiceHost.Exceptions;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -15,18 +18,54 @@ namespace Wirehome.Core.HTTP.Controllers
             _serviceHostService = serviceHostService ?? throw new ArgumentNullException(nameof(serviceHostService));
         }
 
+        [HttpGet]
+        [Route("api/v1/services")]
+        public List<ServiceInstance> GetServices()
+        {
+            return _serviceHostService.GetServices();
+        }
+
+        [HttpGet]
+        [Route("api/v1/services/{id}")]
+        public ServiceInstance GetService(string id)
+        {
+            var service = _serviceHostService.GetServices().FirstOrDefault(s => s.Id == id);
+            if (service == null)
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+            }
+
+            return service;
+        }
+
+        [HttpGet]
+        [Route("api/v1/services/{id}/configuration")]
+        public ServiceConfiguration GetConfiguration(string id)
+        {
+            try
+            {
+                return _serviceHostService.ReadServiceConfiguration(id);
+            }
+            catch (ServiceNotFoundException)
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
+        }
+
+        [HttpPost]
+        [Route("api/v1/services/{id}/configuration")]
+        public void PostConfiguration(string id, [FromBody] ServiceConfiguration serviceConfiguration)
+        {
+            _serviceHostService.WriteServiceConfiguration(id, serviceConfiguration);
+        }
+
         [HttpPost]
         [Route("/api/v1/services/{id}/initialize")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostInitialize(string id, string version, [FromBody] Dictionary<string, object> variables)
+        public void PostInitialize(string id)
         {
-            var configuration = new ServiceConfiguration
-            {
-                Version = version,
-                Variables = variables
-            };
-
-            _serviceHostService.TryInitializeService(id, configuration);
+            _serviceHostService.TryInitializeService(id);
         }
 
         [HttpPost]
