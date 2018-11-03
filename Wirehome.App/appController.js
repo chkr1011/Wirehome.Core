@@ -143,12 +143,13 @@ function createAppController($http, $scope, modalService, apiService, localizati
 
         model.template = getValue(source.configuration, "app.view_source", null);
         if (model.template == undefined || model.template == null) {
-            model.template = "views/components/componentViewMissing.html";
+            model.template = "views/componentViewMissing.html";
         }
 
         var associationSettings = componentGroupModel.source.components[model.uid].settings;
         model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", model.uid);
         
+        // TODO: Remove this as soon the spec for a RGB control is completed.
         if (model.template == undefined || model.template == null) {
             if (source.status["color.red"] !== undefined) {
                 model.template = "views/components/rgbTemplate.html";
