@@ -11,13 +11,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Discovery
 {
-    public class DiscoveryServiceOptions
-    {
-        public const string Filename = "DiscoveryServiceConfiguration.json";
-
-        public TimeSpan SearchDuration { get; set; } = TimeSpan.FromSeconds(10);
-    }
-
+    // TODO: Create own model with all information in place.
     public class DiscoveryService
     {
         private readonly List<DiscoveredSsdpDevice> _discoveredSsdpDevices = new List<DiscoveredSsdpDevice>();
@@ -41,6 +35,26 @@ namespace Wirehome.Core.Discovery
         public void Start()
         {
             _publisher = new SsdpDevicePublisher();
+
+            //var rootDevice = new SsdpRootDevice
+            //{
+            //    Uuid = "c6faa85a-d7e9-48b7-8c54-7459c4d9c329",
+                
+            //    CacheLifetime = TimeSpan.Zero,
+            //    //UrlBase = new Uri("http://localhost"),
+            //    //PresentationUrl = new Uri("configurator", UriKind.Relative),
+            //    FriendlyName = "Wirehome.Core",
+
+            //    Manufacturer = "Wirehome",
+            //    //ManufacturerUrl = new Uri("https://github.com/chkr1011/Wirehome.Core/"),
+
+            //    ModelNumber = WirehomeCoreVersion.Version,
+            //    //ModelUrl = new Uri("app", UriKind.Relative),
+            //    ModelName = "Wirehome.Core",
+            //    ModelDescription = "Wirehome.Core",
+            //};
+            
+            //_publisher.AddDevice(rootDevice);
 
             ParallelTask.Start(SearchAsync, CancellationToken.None, _logger);
         }
@@ -79,15 +93,18 @@ namespace Wirehome.Core.Discovery
                 using (var deviceLocator = new SsdpDeviceLocator())
                 {
                     var devices = new List<DiscoveredSsdpDevice>(await deviceLocator.SearchAsync(_options.SearchDuration).ConfigureAwait(false));
-
-                    var tasks = new List<Task>();
                     foreach (var device in devices)
                     {
-                        tasks.Add(device.GetDeviceInfo());
+                        try
+                        {
+                            await device.GetDeviceInfo().ConfigureAwait(false);
+                        }
+                        catch (Exception exception)
+                        {
+                            _logger.LogWarning(exception, $"Error while loading device info from '{device.DescriptionLocation}.'");
+                        }
                     }
 
-                    await Task.WhenAll(tasks);
-                    
                     lock (_discoveredSsdpDevices)
                     {
                         _discoveredSsdpDevices.Clear();
