@@ -8,6 +8,16 @@ namespace Wirehome.Core.Repository
 
         public string Version { get; set; }
 
+        public RepositoryEntityUid()
+        {
+        }
+
+        public RepositoryEntityUid(string id, string version)
+        {
+            Id = id;
+            Version = version;
+        }
+
         public static RepositoryEntityUid Parse(string source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
