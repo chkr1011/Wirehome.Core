@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Cloud.Messages;
@@ -67,12 +68,6 @@ namespace Wirehome.Core.Cloud
             _messageHandlers[type] = new CloudMessageHandler(type, handler);
         }
 
-        private Task AuthorizeAsync(CancellationToken cancellationToken)
-        {
-            var authorizeMessage = _messageFactory.CreateAuthorizeMessage(_options.IdentityUid, _options.Password, _options.ChannelUid);
-            return _channel.SendMessageAsync(authorizeMessage, cancellationToken);
-        }
-
         private async Task ConnectAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -81,20 +76,26 @@ namespace Wirehome.Core.Cloud
                 {
                     _isConnected = false;
 
+                    if (string.IsNullOrEmpty(_options.IdentityUid) || string.IsNullOrEmpty(_options.Password))
+                    {
+                        continue;
+                    }
+
                     using (var webSocketClient = new ClientWebSocket())
                     {
                         using (var timeout = new CancellationTokenSource(_options.ReconnectDelay))
                         {
-                            var url = $"wss://{_options.Host}/Connector";
+                            var encodedIdentityUid = HttpUtility.UrlEncode(_options.IdentityUid);
+                            var encodedChannelUid = HttpUtility.UrlEncode(_options.ChannelUid);
+                            var encodedPassword = HttpUtility.UrlEncode(_options.Password);
+
+                            var url = $"wss://{_options.Host}/Connectors/{encodedIdentityUid}/Channels/{encodedChannelUid}?password={encodedPassword}";
                             await webSocketClient.ConnectAsync(new Uri(url, UriKind.Absolute), timeout.Token).ConfigureAwait(false);
-
-                            _channel = new ConnectorChannel(webSocketClient, _logger);
-
-                            await AuthorizeAsync(timeout.Token).ConfigureAwait(false);
                         }
 
-                        _isConnected = true;
+                        _channel = new ConnectorChannel(webSocketClient, _logger);
                         _logger.LogInformation($"Connected with Wirehome.Cloud at host '{_options.Host}'.");
+                        _isConnected = true;
 
                         while (_channel.IsConnected && !cancellationToken.IsCancellationRequested)
                         {
