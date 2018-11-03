@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Scripting.Hosting;
 using Wirehome.Core.Python.Proxies;
+using Wirehome.Core.Python.Proxies.OS;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Python
@@ -31,7 +34,7 @@ namespace Wirehome.Core.Python
             _scriptEngine = IronPython.Hosting.Python.CreateEngine();
             _scriptEngine.Runtime.IO.SetOutput(new PythonIOToLogStream(_logger), Encoding.UTF8);
 
-            SetSearchPath(_scriptEngine);
+            AddSearchPaths(_scriptEngine);
 
             var scriptHost = CreateScriptHost(_logger);
             scriptHost.Initialize("def test():\r\n    return 0");
@@ -59,22 +62,25 @@ namespace Wirehome.Core.Python
             var scriptScope = _scriptEngine.CreateScope();
 
             var pythonProxies = _pythonProxyFactory.CreateProxies();
+            pythonProxies.AddRange(customProxies);
             pythonProxies.Add(new LogPythonProxy(logger ?? _logger));
+            pythonProxies.Add(new DebuggerPythonProxy());
+
+            var wirehomePythonProxy = (IDictionary<string, object>)new ExpandoObject();
 
             foreach (var pythonProxy in pythonProxies)
             {
+                // TODO: Remove this as soon as all entities are migrated.
                 scriptScope.SetVariable(pythonProxy.ModuleName, pythonProxy);
+
+                wirehomePythonProxy.Add(pythonProxy.ModuleName, pythonProxy);
             }
 
-            foreach (var proxy in customProxies)
-            {
-                scriptScope.SetVariable(proxy.ModuleName, proxy);
-            }
-
+            scriptScope.SetVariable("wirehome", wirehomePythonProxy);
             return new PythonScriptHost(scriptScope);
         }
 
-        private void SetSearchPath(ScriptEngine scriptEngine)
+        private void AddSearchPaths(ScriptEngine scriptEngine)
         {
             var librariesPath = Path.Combine(_storageService.DataPath, "PythonLibraries");
             if (!Directory.Exists(librariesPath))
@@ -83,6 +89,19 @@ namespace Wirehome.Core.Python
             }
 
             var searchPaths = scriptEngine.GetSearchPaths();
+
+            const string LinuxLibsPath = "/usr/lib/python2.7";
+            if (Directory.Exists(LinuxLibsPath))
+            {
+                searchPaths.Add(LinuxLibsPath);
+            }
+
+            const string WindowsLibsPath = @"C:\Python27\Lib";
+            if (Directory.Exists(WindowsLibsPath))
+            {
+                searchPaths.Add(WindowsLibsPath);
+            }
+            
             searchPaths.Add(librariesPath);
             scriptEngine.SetSearchPaths(searchPaths);
         }
