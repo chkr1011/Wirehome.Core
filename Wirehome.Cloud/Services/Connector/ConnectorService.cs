@@ -29,41 +29,14 @@ namespace Wirehome.Cloud.Services.Connector
             _logger = loggerFactory.CreateLogger<ConnectorService>();
         }
 
-        public async Task RunAsync(WebSocket webSocket, CancellationToken cancellationToken)
+        public async Task RunAsync(WebSocket webSocket, AuthorizationContext authorizationContext, CancellationToken cancellationToken)
         {
             if (webSocket == null) throw new ArgumentNullException(nameof(webSocket));
 
             var channel = new ConnectorChannel(webSocket, _logger);
             try
             {
-                AuthorizationContext scope;
-                using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
-                {
-                    var initialResult = await channel.ReceiveMessageAsync(timeout.Token).ConfigureAwait(false);
-                    if (initialResult.CloseConnection)
-                    {
-                        return;
-                    }
-
-                    if (initialResult.Message.Type != CloudMessageType.Authorize)
-                    {
-                        throw new UnauthorizedAccessException();
-                    }
-
-                    var authorizationContent = initialResult.Message.Content?.ToObject<AuthorizeContent>();
-                    if (authorizationContent == null)
-                    {
-                        throw new UnauthorizedAccessException();
-                    }
-
-                    scope = _authorizationService.AuthorizeConnector(authorizationContent);
-                    if (scope == null)
-                    {
-                        throw new UnauthorizedAccessException();
-                    }
-                }
-
-                await RunSessionAsync(channel, scope, cancellationToken).ConfigureAwait(false);
+                await RunSessionAsync(channel, authorizationContext, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -97,7 +70,13 @@ namespace Wirehome.Cloud.Services.Connector
             try
             {
                 session.MessageReceived += messageReceived;
-                cancellationToken.Register(() => result.TrySetCanceled());
+                cancellationToken.Register(() =>
+                {
+                    if (!result.Task.IsCompleted && !result.Task.IsFaulted && !result.Task.IsCanceled)
+                    {
+                        result.TrySetCanceled();
+                    }
+                });
 
                 await session.SendMessageAsync(requestMessage, CancellationToken.None).ConfigureAwait(false);
                 return await result.Task.ConfigureAwait(false);
@@ -161,12 +140,12 @@ namespace Wirehome.Cloud.Services.Connector
             }
         }
 
-        private async Task RunSessionAsync(ConnectorChannel channel, AuthorizationContext scope, CancellationToken cancellationToken)
+        private async Task RunSessionAsync(ConnectorChannel channel, AuthorizationContext authorizationContext, CancellationToken cancellationToken)
         {
-            var sessionKey = scope.ToString();
+            var sessionKey = authorizationContext.ToString();
             try
             {
-                var session = new Session(channel, scope, _logger);
+                var session = new Session(channel, authorizationContext, _logger);
                 lock (_sessions)
                 {
                     _sessions[sessionKey] = session;

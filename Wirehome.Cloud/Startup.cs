@@ -41,7 +41,7 @@ namespace Wirehome.Cloud
         }
 
         // ReSharper disable once UnusedMember.Global
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ConnectorService connectorService)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ConnectorService connectorService, AuthorizationService authorizationService)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             if (env == null) throw new ArgumentNullException(nameof(env));
@@ -54,7 +54,7 @@ namespace Wirehome.Cloud
 
             ConfigureMvc(app);
             ConfigureSwagger(app);
-            ConfigureConnector(app, connectorService);
+            ConfigureConnector(app, connectorService, authorizationService);
 
             app.Run(connectorService.ForwardHttpRequestAsync);
         }
@@ -77,9 +77,9 @@ namespace Wirehome.Cloud
             });
         }
 
-        private static void ConfigureConnector(IApplicationBuilder app, ConnectorService connectorService)
+        private static void ConfigureConnector(IApplicationBuilder app, ConnectorService connectorService, AuthorizationService authorizationService)
         {
-            app.Map("/Connector", config =>
+            app.Map("/Connectors", config =>
             {
                 config.UseWebSockets(new WebSocketOptions
                 {
@@ -97,9 +97,11 @@ namespace Wirehome.Cloud
 
                     try
                     {
+                        var authorizationContext = authorizationService.AuthorizeConnector(context);
+                        
                         using (var webSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false))
                         {
-                            await connectorService.RunAsync(webSocket, context.RequestAborted).ConfigureAwait(false);
+                            await connectorService.RunAsync(webSocket, authorizationContext, context.RequestAborted).ConfigureAwait(false);
                         }
                     }
                     catch (UnauthorizedAccessException)

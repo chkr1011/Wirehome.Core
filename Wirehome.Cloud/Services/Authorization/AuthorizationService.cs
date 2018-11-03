@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.EntityFrameworkCore.Internal;
 using Wirehome.Cloud.Services.Repository;
-using Wirehome.Core.Cloud.Messages;
 
 namespace Wirehome.Cloud.Services.Authorization
 {
@@ -51,18 +52,25 @@ namespace Wirehome.Cloud.Services.Authorization
             return Authorize(identityUid, password, channelUid);
         }
 
-        public AuthorizationContext AuthorizeConnector(AuthorizeContent authorizeContent)
+        public AuthorizationContext AuthorizeConnector(HttpContext httpContext)
         {
-            if (authorizeContent == null) throw new ArgumentNullException(nameof(authorizeContent));
+            if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 
-            if (string.IsNullOrEmpty(authorizeContent.IdentityUid) ||
-                string.IsNullOrEmpty(authorizeContent.Password) ||
-                string.IsNullOrEmpty(authorizeContent.ChannelUid))
+            var routeTemplate = TemplateParser.Parse("{identityUid}/Channels/{channelUid}");
+            var values = new RouteValueDictionary();
+            var templateMatcher = new TemplateMatcher(routeTemplate, values);
+            var isMatch = templateMatcher.TryMatch(httpContext.Request.Path, values);
+
+            if (!isMatch || !httpContext.Request.Query.ContainsKey("password"))
             {
                 throw new UnauthorizedAccessException();
             }
 
-            return Authorize(authorizeContent.IdentityUid, authorizeContent.Password, authorizeContent.ChannelUid);
+            var identityUid = Convert.ToString(values["identityUid"]);
+            var channelUid = Convert.ToString(values["channelUid"]);
+            var passwordHash = httpContext.Request.Query["password"];
+
+            return Authorize(identityUid, passwordHash, channelUid);
         }
 
         private AuthorizationContext Authorize(string identityUid, string password, string channelUid)

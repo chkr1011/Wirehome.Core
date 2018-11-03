@@ -6,6 +6,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Wirehome.Cloud.Services.Repository.Models;
+using Wirehome.Core.Storage;
 
 namespace Wirehome.Cloud.Services.Repository
 {
@@ -41,7 +42,7 @@ namespace Wirehome.Cloud.Services.Repository
                     return true;
                 }
 
-                var filename = Path.Combine(_rootPath, identityUid, "Configuration.json");
+                var filename = Path.Combine(_rootPath, identityUid, DefaultFilenames.Configuration);
                 if (!File.Exists(filename))
                 {
                     identityConfiguration = null;
