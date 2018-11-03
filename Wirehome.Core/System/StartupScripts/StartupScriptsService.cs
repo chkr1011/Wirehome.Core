@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Python;
 using Wirehome.Core.Storage;
@@ -27,9 +25,10 @@ namespace Wirehome.Core.System.StartupScripts
 
         public void Start()
         {
-            lock (_scripts)
+            var startupScriptDirectories = _storageService.EnumeratureDirectories("*", "StartupScripts");
+            foreach (var startupScriptUid in startupScriptDirectories)
             {
-                Load();
+                TryInitializeStartupScript(startupScriptUid);
             }
         }
 
@@ -57,83 +56,59 @@ namespace Wirehome.Core.System.StartupScripts
             }
         }
 
-        public Dictionary<string, StartupScript> GetStartupScripts()
+        public List<StartupScriptInstance> GetStartupScripts()
         {
             lock (_scripts)
             {
-                var configurationFiles = _storageService.EnumerateFiles("Configuration.json", "StartupScripts");
-
-                var startupScripts = new Dictionary<string, StartupScript>();
-                foreach (var configurationFile in configurationFiles)
-                {
-                    var uid = Path.GetDirectoryName(configurationFile);
-                    startupScripts[uid] = GetStartupScript(uid);
-                }
-
-                return startupScripts;
+                return new List<StartupScriptInstance>(_scripts);
             }
         }
 
-        public StartupScript GetStartupScript(string uid)
+        public void WriteStartupScriptCode(string uid, string scriptCode)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (scriptCode == null) throw new ArgumentNullException(nameof(scriptCode));
 
-            lock (_scripts)
-            {
-                if (!_storageService.TryRead(out StartupScriptConfiguration configuration, "StartupScripts", uid,
-                    "Configuration.json"))
-                {
-                    throw new StartupScriptNotFoundException(uid);
-                }
-
-                return new StartupScript { Configuration = configuration };
-            }
+            _storageService.WriteText(scriptCode, "StartupScripts", uid, DefaultFilenames.Script);
         }
 
-        public void SetStartupScriptCode(string uid, string scriptCode)
+        public string ReadStartupScriptCode(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            lock (_scripts)
+            if (_storageService.TryReadText(out var scriptCode, "StartupScripts", uid, DefaultFilenames.Script))
             {
-                _storageService.WriteText(scriptCode, "StartupScripts", uid, "script.py");
+                return scriptCode;
             }
+
+            throw new StartupScriptNotFoundException(uid);
         }
 
-        public string GetStartupScriptCode(string uid)
+        public void DeleteStartupScript(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            lock (_scripts)
-            {
-                if (_storageService.TryReadText(out var scriptCode, "StartupScripts", uid, "script.py"))
-                {
-                    return scriptCode;
-                }
+            _storageService.DeleteDirectory("StartupScripts", uid);
+        }
 
+        public StartupScriptConfiguration ReadStartupScriptConfiguration(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            if (!_storageService.TryRead(out StartupScriptConfiguration configuration, "StartupScripts", uid, DefaultFilenames.Configuration))
+            {
                 throw new StartupScriptNotFoundException(uid);
             }
+
+            return configuration;
         }
 
-        public void RemoveStartupScript(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_scripts)
-            {
-                _storageService.DeleteDirectory("StartupScripts", uid);
-            }
-        }
-
-        public void CreateStartupScript(string uid, StartupScriptConfiguration configuration)
+        public void WriteStartupScripConfiguration(string uid, StartupScriptConfiguration configuration)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            lock (_scripts)
-            {
-                _storageService.Write(configuration, "StartupScripts", uid, "Configuration.json");
-            }
+            _storageService.Write(configuration, "StartupScripts", uid, DefaultFilenames.Configuration);
         }
 
         private void TryExecuteFunction(string name)
@@ -144,63 +119,66 @@ namespace Wirehome.Core.System.StartupScripts
             }
         }
 
-        private void TryExecuteFunction(StartupScriptInstance scriptInstance, string name)
+        private void TryExecuteFunction(StartupScriptInstance startupScriptInstance, string functionName)
         {
             try
             {
-                if (!scriptInstance.ScriptHost.FunctionExists(name))
+                if (!startupScriptInstance.FunctionExists(functionName))
                 {
                     return;
                 }
 
-                scriptInstance.ScriptHost.InvokeFunction(name);
+                startupScriptInstance.InvokeFunction(functionName);
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, $"Error while executing function '{name}' of startup script '{scriptInstance.Uid}'.");
+                _logger.LogError(exception, $"Error while executing function '{functionName}' of startup script '{startupScriptInstance.Uid}'.");
             }
         }
 
-        private void Load()
-        {
-            var configurationFiles = _storageService.EnumerateFiles("Configuration.json", "StartupScripts");
-            foreach (var configurationFile in configurationFiles.OrderBy(f => f))
-            {
-                var uid = Path.GetDirectoryName(configurationFile);
-                if (!_storageService.TryReadText(out var scriptCode, "StartupScripts", uid, "script.py"))
-                {
-                    _logger.LogWarning($"Startup script '{uid}' contains no script code.");
-                    return;
-                }
-
-                if (TryInitializeScript(uid, scriptCode, out var scriptHost))
-                {
-                    _scripts.Add(new StartupScriptInstance(uid, scriptHost));
-                }
-            }
-        }
-
-        private bool TryInitializeScript(string uid, string scriptCode, out PythonScriptHost scriptHost)
+        private void TryInitializeStartupScript(string uid)
         {
             try
             {
-                scriptHost = _pythonEngineService.CreateScriptHost(_logger);
-                scriptHost.Initialize(scriptCode);
-
-                if (scriptHost.FunctionExists("initialize"))
+                if (!_storageService.TryRead(out StartupScriptConfiguration configuration, "StartupScripts", uid, DefaultFilenames.Configuration))
                 {
-                    scriptHost.InvokeFunction("initialize");
+                    return;
                 }
 
-                return true;
+                if (!configuration.IsEnabled)
+                {
+                    _logger.LogInformation($"Startup script '{uid}' not executed because it is disabled.");
+                    return;
+                }
+
+                _logger.LogInformation($"Initializing startup script '{uid}'.");
+                var startupScriptInstance = CreateStartupScriptInstance(uid, configuration);
+                if (startupScriptInstance.FunctionExists("initialize"))
+                {
+                    startupScriptInstance.InvokeFunction("initialize");
+                }
+
+                _logger.LogInformation($"Startup script '{uid}' initialized.");
+
+                _scripts.Add(startupScriptInstance);
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, $"Error while initializing startup script '{uid}'.");
-
-                scriptHost = null;
-                return false;
             }
+        }
+
+        private StartupScriptInstance CreateStartupScriptInstance(string uid, StartupScriptConfiguration configuration)
+        {
+            if (!_storageService.TryReadText(out var scriptCode, "StartupScripts", uid, DefaultFilenames.Script))
+            {
+                throw new InvalidOperationException("Script file not found.");
+            }
+
+            var scriptHost = _pythonEngineService.CreateScriptHost(_logger);
+            scriptHost.Initialize(scriptCode);
+
+            return new StartupScriptInstance(uid, configuration, scriptHost);
         }
     }
 }
