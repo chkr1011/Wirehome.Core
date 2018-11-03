@@ -21,7 +21,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("api/v1/components")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<Component> Get()
+        public List<Component> GetComponents()
         {
             return _componentRegistryService.GetComponents();
         }

@@ -176,7 +176,7 @@ namespace Wirehome.Core
             serviceCollection.AddSingleton<ServiceHostService>();
             serviceCollection.AddSingleton<ComponentRegistryService>();
             serviceCollection.AddSingleton<ComponentInitializerFactory>();
-            serviceCollection.AddSingleton<AutomationsRegistryService>();
+            serviceCollection.AddSingleton<AutomationRegistryService>();
             serviceCollection.AddSingleton<MacroRegistryService>();
         }
 
@@ -214,7 +214,7 @@ namespace Wirehome.Core
             // Start data related services.
             serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
             serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
-            serviceProvider.GetRequiredService<AutomationsRegistryService>().Start();
+            serviceProvider.GetRequiredService<AutomationRegistryService>().Start();
             serviceProvider.GetRequiredService<MacroRegistryService>().Start();
             
             startupScriptsService.OnConfigurationLoaded();

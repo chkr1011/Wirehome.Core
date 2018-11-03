@@ -62,7 +62,7 @@ namespace Wirehome.Core.Storage
                 return new List<string>();
             }
 
-            var directories = Directory.EnumerateDirectories(directory, pattern, SearchOption.AllDirectories).ToList();
+            var directories = Directory.EnumerateDirectories(directory, pattern, SearchOption.TopDirectoryOnly).ToList();
             for (var i = 0; i < directories.Count; i++)
             {
                 directories[i] = directories[i].Replace(directory, string.Empty).TrimStart(Path.DirectorySeparatorChar);

@@ -68,6 +68,7 @@ namespace Wirehome.Core.Components
                 {
                     if (_components.TryGetValue(uid, out var existingComponent))
                     {
+                        // TODO: Convert this to a real method call.
                         existingComponent.ProcessMessage(new WirehomeDictionary().WithType("destroy"));
                     }
 
@@ -76,13 +77,13 @@ namespace Wirehome.Core.Components
 
                 _componentInitializerFactory.Create(this).InitializeComponent(component, configuration);
 
-                _logger.Log(LogLevel.Information, $"Component '{component.Uid}' initialized successfully.");
+                _logger.LogInformation($"Component '{component.Uid}' initialized successfully.");
 
                 return true;
             }
             catch (Exception exception)
             {
-                _logger.Log(LogLevel.Error, exception, $"Error while initializing component '{uid}'.");
+                _logger.LogError(exception, $"Error while initializing component '{uid}'.");
 
                 lock (_components)
                 {
