@@ -15,15 +15,18 @@ namespace Wirehome.Core.Hosts.Console
                 loggerFactory.AddConsole(LogLevel.Debug);
                
                 _controller = new WirehomeController(loggerFactory, arguments);
-                _controller.Startup();
+                _controller.Start();
+
+                global::System.Console.WriteLine("Press <Enter> to exit.");
+                global::System.Console.ReadLine();
+
+                _controller?.Stop();
+                global::System.Console.WriteLine("Wirehome.Core stopped.");
             }
             catch (Exception exception)
             {
                 global::System.Console.WriteLine(exception.ToString());
             }
-            
-            global::System.Console.WriteLine("Press <Enter> to exit.");
-            global::System.Console.ReadLine();
         }
     }
 }

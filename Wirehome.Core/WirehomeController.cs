@@ -39,7 +39,9 @@ namespace Wirehome.Core
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly string[] _arguments;
+
         private ILogger _logger;
+        private SystemService _systemService;
 
         public WirehomeController(ILoggerFactory loggerFactory, string[] arguments)
         {
@@ -47,7 +49,7 @@ namespace Wirehome.Core
             _arguments = arguments;
         }
 
-        public void Startup()
+        public void Start()
         {
             try
             {
@@ -74,13 +76,20 @@ namespace Wirehome.Core
 
                 _logger.Log(LogLevel.Information, "Startup completed.");
 
-                serviceProvider.GetRequiredService<SystemService>().Start(timestamp, string.Join(" ", _arguments));
+                _systemService = serviceProvider.GetRequiredService<SystemService>();
+                _systemService.Start(timestamp, string.Join(" ", _arguments));
+
                 serviceProvider.GetRequiredService<StartupScriptsService>().OnStartupCompleted();
             }
             catch (Exception exception)
             {
                 _logger.Log(LogLevel.Critical, exception, "Startup failed.");
             }
+        }
+
+        public void Stop()
+        {
+            _systemService?.Stop();
         }
 
         private static void RegisterEvents(IServiceProvider serviceProvider)

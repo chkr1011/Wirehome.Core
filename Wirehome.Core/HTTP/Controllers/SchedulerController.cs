@@ -46,7 +46,7 @@ namespace Wirehome.Core.HTTP.Controllers
             return _schedulerService.GetActiveTimers().ToDictionary(t => t.Uid, t => new ActiveTimerModel
             {
                 Interval = (int)t.Interval.TotalMilliseconds,
-                LastException = new ExceptionPythonModel(t.LastException)
+                LastException = t.LastException != null ? new ExceptionPythonModel(t.LastException) : null
             });
         }
 

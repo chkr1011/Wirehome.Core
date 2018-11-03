@@ -140,7 +140,7 @@ namespace Wirehome.Core.Automations
             });
         }
 
-        private void TryInitializeAutomation(string uid)
+        public void TryInitializeAutomation(string uid)
         {
             try
             {

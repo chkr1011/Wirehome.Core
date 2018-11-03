@@ -50,6 +50,9 @@ namespace Wirehome.Core.Diagnostics
                         operationsPerSecondCounter.Reset();
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                }
                 catch (Exception exception)
                 {
                     _logger.LogError(exception, "Error while resetting OperationsPerSecondCounters.");

@@ -11,11 +11,11 @@ namespace Wirehome.Core.HTTP.Controllers
 {
     public class AutomationsController : Controller
     {
-        private readonly AutomationRegistryService _automationsRegistryService;
+        private readonly AutomationRegistryService _automationRegistryService;
 
-        public AutomationsController(AutomationRegistryService automationsRegistryService)
+        public AutomationsController(AutomationRegistryService automationRegistryService)
         {
-            _automationsRegistryService = automationsRegistryService ?? throw new ArgumentNullException(nameof(automationsRegistryService));
+            _automationRegistryService = automationRegistryService ?? throw new ArgumentNullException(nameof(automationRegistryService));
         }
 
         [HttpGet]
@@ -23,7 +23,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public List<Automation> GetAutomations()
         {
-            return _automationsRegistryService.GetAutomations();
+            return _automationRegistryService.GetAutomations();
         }
 
         [HttpGet]
@@ -33,7 +33,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             try
             {
-                return _automationsRegistryService.GetAutomation(uid);
+                return _automationRegistryService.GetAutomation(uid);
             }
             catch (AutomationNotFoundException)
             {
@@ -49,7 +49,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             try
             {
-                return _automationsRegistryService.ReadAutomationConfiguration(uid);
+                return _automationRegistryService.ReadAutomationConfiguration(uid);
             }
             catch (AutomationNotFoundException)
             {
@@ -63,7 +63,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostConfiguration(string uid, [FromBody] AutomationConfiguration configuration)
         {
-            _automationsRegistryService.WriteAutomationConfiguration(uid, configuration);
+            _automationRegistryService.WriteAutomationConfiguration(uid, configuration);
         }
 
         [HttpGet]
@@ -71,7 +71,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public object GetSetting(string automationUid, string settingUid)
         {
-            return _automationsRegistryService.GetAutomationSetting(automationUid, settingUid);
+            return _automationRegistryService.GetAutomationSetting(automationUid, settingUid);
         }
 
         [HttpPost]
@@ -79,7 +79,15 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostSettingValue(string automationUid, string settingUid, [FromBody] object value)
         {
-            _automationsRegistryService.SetAutomationSetting(automationUid, settingUid, value);
+            _automationRegistryService.SetAutomationSetting(automationUid, settingUid, value);
+        }
+
+        [HttpPost]
+        [Route("api/v1/automations/{uid}/initialize")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostInitialize(string uid)
+        {
+            _automationRegistryService.TryInitializeAutomation(uid);
         }
 
         [HttpPost]
@@ -87,7 +95,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostActivate(string uid)
         {
-            _automationsRegistryService.ActivateAutomation(uid);
+            _automationRegistryService.ActivateAutomation(uid);
         }
 
         [HttpPost]
@@ -95,7 +103,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostDeactivate(string uid)
         {
-            _automationsRegistryService.DeactivateAutomation(uid);
+            _automationRegistryService.DeactivateAutomation(uid);
         }
 
         [HttpGet]
@@ -103,7 +111,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public WirehomeDictionary GetStatus(string uid)
         {
-            return _automationsRegistryService.GetAutomation(uid).GetStatus();
+            return _automationRegistryService.GetAutomation(uid).GetStatus();
         }
     }
 }

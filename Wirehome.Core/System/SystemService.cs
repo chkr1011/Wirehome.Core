@@ -50,6 +50,11 @@ namespace Wirehome.Core.System
             AddThreadPoolInformation();
         }
 
+        public void Stop()
+        {
+            _cancellationTokenSource.Cancel(false);
+        }
+
         public void Reboot(int waitTime)
         {
             _logger.Log(LogLevel.Information, "Reboot initiated.");
