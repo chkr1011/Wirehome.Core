@@ -69,7 +69,7 @@ namespace Wirehome.Core.GlobalVariables
             return result;
         }
 
-        public object GetValue(string uid)
+        public object GetValue(string uid, object defaultValue = null)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
@@ -77,7 +77,7 @@ namespace Wirehome.Core.GlobalVariables
             {
                 if (!_variables.TryGetValue(uid, out var value))
                 {
-                    return null;
+                    return defaultValue;
                 }
 
                 return value;
