@@ -18,7 +18,7 @@ namespace Wirehome.Core.Python.Proxies
 
         public string ModuleName { get; } = "notifications";
 
-        public void publish(string type, string message, string ttl)
+        public void publish(string type, string message, string ttl = null)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
             if (message == null) throw new ArgumentNullException(nameof(message));
@@ -34,7 +34,7 @@ namespace Wirehome.Core.Python.Proxies
             _notificationsService.Publish(typeBuffer, message, ttlBuffer);
         }
 
-        public void publish_from_resource(string type, string resourceUid, string ttl)
+        public void publish_from_resource(string type, string resourceUid, string ttl = null)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
             if (resourceUid == null) throw new ArgumentNullException(nameof(resourceUid));

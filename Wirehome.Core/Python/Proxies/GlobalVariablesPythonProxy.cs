@@ -1,9 +1,9 @@
-﻿using System;
-using Wirehome.Core.GlobalVariables;
-
-#pragma warning disable IDE1006 // Naming Styles
+﻿#pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
+
+using System;
+using Wirehome.Core.GlobalVariables;
 
 namespace Wirehome.Core.Python.Proxies
 {
@@ -25,11 +25,11 @@ namespace Wirehome.Core.Python.Proxies
             _globalVariablesService.SetValue(uid, value);
         }
 
-        public object get(string uid)
+        public object get(string uid, object defaultValue = null)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            return _globalVariablesService.GetValue(uid);
+            return _globalVariablesService.GetValue(uid, defaultValue);
         }
 
         public void delete(string uid)
@@ -47,5 +47,3 @@ namespace Wirehome.Core.Python.Proxies
         }
     }
 }
-
-#pragma warning restore IDE1006 // Naming Styles

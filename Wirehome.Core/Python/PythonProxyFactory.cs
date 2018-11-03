@@ -10,9 +10,6 @@ namespace Wirehome.Core.Python
         private readonly List<IPythonProxy> _proxies = new List<IPythonProxy>
         {
             new ConverterPythonProxy(),
-            new DateTimePythonProxy(),
-            new DateTimeParserPythonProxy(),
-            new DataProviderPythonProxy(),
             new JsonSerializerPythonProxy(),
             new OSPythonProxy(),
             new ResponseCreatorPythonProxy(),
