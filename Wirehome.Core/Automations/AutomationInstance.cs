@@ -4,11 +4,11 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Automations
 {
-    public class Automation
+    public class AutomationInstance
     {
         private readonly PythonScriptHost _scriptHost;
         
-        public Automation(string uid, PythonScriptHost scriptHost)
+        public AutomationInstance(string uid, PythonScriptHost scriptHost)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             _scriptHost = scriptHost ?? throw new ArgumentNullException(nameof(scriptHost));

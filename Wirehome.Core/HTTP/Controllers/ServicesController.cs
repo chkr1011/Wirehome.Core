@@ -19,6 +19,13 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
+        [Route("api/v1/services/uids")]
+        public List<string> GetServiceUids()
+        {
+            return _serviceHostService.GetServiceUids();
+        }
+
+        [HttpGet]
         [Route("api/v1/services")]
         public List<ServiceInstance> GetServices()
         {

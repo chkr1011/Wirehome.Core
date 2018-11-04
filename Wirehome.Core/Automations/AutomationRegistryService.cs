@@ -14,7 +14,9 @@ namespace Wirehome.Core.Automations
 {
     public class AutomationRegistryService
     {
-        private readonly Dictionary<string, Automation> _automations = new Dictionary<string, Automation>();
+        private const string AutomationsDirectory = "Automations";
+
+        private readonly Dictionary<string, AutomationInstance> _automations = new Dictionary<string, AutomationInstance>();
 
         private readonly RepositoryService _repositoryService;
         private readonly PythonEngineService _pythonEngineService;
@@ -40,18 +42,22 @@ namespace Wirehome.Core.Automations
 
         public void Start()
         {
-            var automationDirectories = _storageService.EnumeratureDirectories("*", "Automations");
-            foreach (var automationUid in automationDirectories)
+            foreach (var automationUid in GetAutomationUids())
             {
                 TryInitializeAutomation(automationUid);
             }
+        }
+
+        public List<string> GetAutomationUids()
+        {
+            return _storageService.EnumeratureDirectories("*", AutomationsDirectory);
         }
 
         public AutomationConfiguration ReadAutomationConfiguration(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out AutomationConfiguration configuration, "Automations", uid, DefaultFilenames.Configuration))
+            if (!_storageService.TryRead(out AutomationConfiguration configuration, AutomationsDirectory, uid, DefaultFilenames.Configuration))
             {
                 throw new AutomationNotFoundException(uid);
             }
@@ -64,18 +70,18 @@ namespace Wirehome.Core.Automations
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, "Automations", uid, DefaultFilenames.Configuration);
+            _storageService.Write(configuration, AutomationsDirectory, uid, DefaultFilenames.Configuration);
         }
 
-        public List<Automation> GetAutomations()
+        public List<AutomationInstance> GetAutomations()
         {
             lock (_automations)
             {
-                return new List<Automation>(_automations.Values);
+                return new List<AutomationInstance>(_automations.Values);
             }
         }
 
-        public Automation GetAutomation(string uid)
+        public AutomationInstance GetAutomation(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
@@ -128,7 +134,7 @@ namespace Wirehome.Core.Automations
 
             automation.Settings[settingUid] = value;
 
-            _storageService.Write(automation.Settings, "Automations", automation.Uid, DefaultFilenames.Settings);
+            _storageService.Write(automation.Settings, AutomationsDirectory, automation.Uid, DefaultFilenames.Settings);
             _messageBusService.Publish(new WirehomeDictionary
             {
                 ["type"] = "automation_registry.event.setting_changed",
@@ -144,7 +150,7 @@ namespace Wirehome.Core.Automations
         {
             try
             {
-                if (!_storageService.TryRead(out AutomationConfiguration configuration, "Automations", uid, DefaultFilenames.Configuration))
+                if (!_storageService.TryRead(out AutomationConfiguration configuration, AutomationsDirectory, uid, DefaultFilenames.Configuration))
                 {
                     return;
                 }
@@ -155,7 +161,7 @@ namespace Wirehome.Core.Automations
                     return;
                 }
 
-                if (!_storageService.TryRead(out WirehomeDictionary settings, "Automations", uid, DefaultFilenames.Settings))
+                if (!_storageService.TryRead(out WirehomeDictionary settings, AutomationsDirectory, uid, DefaultFilenames.Settings))
                 {
                     settings = new WirehomeDictionary();
                 }
@@ -187,7 +193,7 @@ namespace Wirehome.Core.Automations
             }
         }
 
-        private Automation CreateAutomation(string uid, AutomationConfiguration configuration, WirehomeDictionary settings)
+        private AutomationInstance CreateAutomation(string uid, AutomationConfiguration configuration, WirehomeDictionary settings)
         {
             var repositoryEntitySource = _repositoryService.LoadEntity(configuration.Logic.Uid);
             var scriptHost = _pythonEngineService.CreateScriptHost(_logger, new AutomationPythonProxy(uid, this));
@@ -210,7 +216,7 @@ namespace Wirehome.Core.Automations
                 scriptHost.SetVariable(variable.Key, variable.Value);
             }
 
-            var automation = new Automation(uid, scriptHost);
+            var automation = new AutomationInstance(uid, scriptHost);
             foreach (var setting in settings)
             {
                 automation.Settings[setting.Key] = setting.Value;

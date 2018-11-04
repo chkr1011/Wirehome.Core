@@ -13,7 +13,9 @@ namespace Wirehome.Core.ServiceHost
 {
     public class ServiceHostService
     {
-        private readonly Dictionary<string, ServiceInstance> _serviceInstances = new Dictionary<string, ServiceInstance>();
+        private const string ServicesDirectory = "Services";
+
+        private readonly Dictionary<string, ServiceInstance> _services = new Dictionary<string, ServiceInstance>();
 
         private readonly RepositoryService _repositoryService;
         private readonly StorageService _storageService;
@@ -37,16 +39,20 @@ namespace Wirehome.Core.ServiceHost
             pythonEngineService.RegisterSingletonProxy(new ServiceHostPythonProxy(this));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
-            systemStatusService.Set("service_host.service_count", () => _serviceInstances.Count);
+            systemStatusService.Set("service_host.service_count", () => _services.Count);
         }
 
         public void Start()
         {
-            var serviceDirectories = _storageService.EnumeratureDirectories("*", "Services");
-            foreach (var serviceUid in serviceDirectories)
+            foreach (var serviceUid in GetServiceUids())
             {
                 TryInitializeService(serviceUid);
             }
+        }
+
+        public List<string> GetServiceUids()
+        {
+            return _storageService.EnumeratureDirectories("*", ServicesDirectory);
         }
 
         public void WriteServiceConfiguration(string id, ServiceConfiguration serviceConfiguration)
@@ -54,14 +60,14 @@ namespace Wirehome.Core.ServiceHost
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (serviceConfiguration == null) throw new ArgumentNullException(nameof(serviceConfiguration));
 
-            _storageService.Write(serviceConfiguration, "Services", id, DefaultFilenames.Configuration);
+            _storageService.Write(serviceConfiguration, ServicesDirectory, id, DefaultFilenames.Configuration);
         }
 
         public ServiceConfiguration ReadServiceConfiguration(string id)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
 
-            if (!_storageService.TryRead(out ServiceConfiguration configuration, "Services", id, DefaultFilenames.Configuration))
+            if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFilenames.Configuration))
             {
                 throw new ServiceNotFoundException(id);
             }
@@ -71,9 +77,9 @@ namespace Wirehome.Core.ServiceHost
 
         public List<ServiceInstance> GetServices()
         {
-            lock (_serviceInstances)
+            lock (_services)
             {
-                return new List<ServiceInstance>(_serviceInstances.Values);
+                return new List<ServiceInstance>(_services.Values);
             }
         }
 
@@ -83,7 +89,7 @@ namespace Wirehome.Core.ServiceHost
             
             try
             {
-                if (!_storageService.TryRead(out ServiceConfiguration configuration, "Services", id, DefaultFilenames.Configuration))
+                if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFilenames.Configuration))
                 {
                     return;
                 }
@@ -99,16 +105,16 @@ namespace Wirehome.Core.ServiceHost
                 serviceInstance.ExecuteFunction("initialize");
                 _logger.LogInformation($"Service '{id}' initialized.");
 
-                lock (_serviceInstances)
+                lock (_services)
                 {
-                    if (_serviceInstances.TryGetValue(id, out var existingServiceInstance))
+                    if (_services.TryGetValue(id, out var existingServiceInstance))
                     {
                         _logger.LogInformation($"Stopping service '{id}'.");
                         existingServiceInstance.ExecuteFunction("stop");
                         _logger.LogInformation($"Service '{id}' stopped.");
                     }
 
-                    _serviceInstances[id] = serviceInstance;
+                    _services[id] = serviceInstance;
 
                     _logger.LogInformation($"Starting service '{id}'.");
                     serviceInstance.ExecuteFunction("start");
@@ -128,9 +134,9 @@ namespace Wirehome.Core.ServiceHost
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
             ServiceInstance serviceInstance;
-            lock (_serviceInstances)
+            lock (_services)
             {
-                if (!_serviceInstances.TryGetValue(serviceId, out serviceInstance))
+                if (!_services.TryGetValue(serviceId, out serviceInstance))
                 {
                     throw new ServiceNotStartedException(serviceId);
                 }

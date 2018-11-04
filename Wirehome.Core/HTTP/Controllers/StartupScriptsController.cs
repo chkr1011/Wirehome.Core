@@ -18,6 +18,13 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
+        [Route("api/v1/startup_scripts/uids")]
+        public List<string> GetStartupScriptUids()
+        {
+            return _startupScriptsService.GetStartupScriptUids();
+        }
+
+        [HttpGet]
         [Route("api/v1/startup_scripts")]
         [ApiExplorerSettings(GroupName = "v1")]
         public List<StartupScriptInstance> GetStartupScripts()

@@ -19,9 +19,17 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
+        [Route("api/v1/automations/uids")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<string> GetAutomationUids()
+        {
+            return _automationRegistryService.GetAutomationUids();
+        }
+
+        [HttpGet]
         [Route("api/v1/automations")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<Automation> GetAutomations()
+        public List<AutomationInstance> GetAutomations()
         {
             return _automationRegistryService.GetAutomations();
         }
@@ -29,7 +37,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/automations/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Automation GetAutomation(string uid)
+        public AutomationInstance GetAutomation(string uid)
         {
             try
             {

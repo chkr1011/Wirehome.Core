@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP.Controllers
@@ -16,25 +18,30 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/settings/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostSettings([FromBody] object value, params string[] path)
+        public void PostSettings([FromBody] JObject value, params string[] uid)
         {
-            _storageService.Write(value, path);
+            _storageService.Write(value, uid);
         }
 
-        //[HttpGet]
-        //[Route("api/v1/settings/{uid}")]
-        //[ApiExplorerSettings(GroupName = "v1")]
-        //public object GetSettings(params string[] path)
-        //{
-        //    _storageService.TryRead()
-        //}
+        [HttpGet]
+        [Route("api/v1/settings/{uid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public object GetSettings(params string[] uid)
+        {
+            if (!_storageService.TryRead(out JObject value, uid))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+            }
 
-        //[HttpDelete]
-        //[Route("api/v1/settings/{uid}")]
-        //[ApiExplorerSettings(GroupName = "v1")]
-        //public void DeleteSettings(params string[] path)
-        //{
-        //    _storageService.Delete(path);
-        //}
+            return value;
+        }
+
+        [HttpDelete]
+        [Route("api/v1/settings/{uid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteSettings(params string[] uid)
+        {
+            _storageService.DeleteFile(uid);
+        }
     }
 }
