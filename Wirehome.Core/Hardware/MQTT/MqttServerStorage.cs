@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Server;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Hardware.MQTT
@@ -14,6 +16,8 @@ namespace Wirehome.Core.Hardware.MQTT
         private readonly StorageService _storageService;
         private readonly ILogger _logger;
 
+        private bool _messagesHaveChanged;
+
         public MqttServerStorage(StorageService storageService, ILogger logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
@@ -22,7 +26,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public void Start()
         {
-            Task.Factory.StartNew(SaveRetainedMessagesInternalAsync);
+            ParallelTask.Start(SaveRetainedMessagesInternalAsync, CancellationToken.None, _logger);
         }
 
         private async Task SaveRetainedMessagesInternalAsync()
@@ -36,7 +40,13 @@ namespace Wirehome.Core.Hardware.MQTT
                     List<MqttApplicationMessage> messages;
                     lock (_messages)
                     {
+                        if (!_messagesHaveChanged)
+                        {
+                            continue;
+                        }
+
                         messages = new List<MqttApplicationMessage>(_messages);
+                        _messagesHaveChanged = false;
                     }
 
                     _storageService.Write(messages, "RetainedMqttMessages.json");
@@ -56,6 +66,8 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 _messages.Clear();
                 _messages.AddRange(messages);
+
+                _messagesHaveChanged = true;
             }
 
             return Task.CompletedTask;
