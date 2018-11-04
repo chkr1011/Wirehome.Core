@@ -11,6 +11,7 @@ using Wirehome.Cloud.Filters;
 using Wirehome.Cloud.Services.Authorization;
 using Wirehome.Cloud.Services.Connector;
 using Wirehome.Cloud.Services.Repository;
+using Wirehome.Cloud.Services.StaticFiles;
 using Wirehome.Core.HTTP.Controllers;
 
 namespace Wirehome.Cloud
@@ -26,6 +27,7 @@ namespace Wirehome.Cloud
             services.AddSingleton<ConnectorService>();
             services.AddSingleton<AuthorizationService>();
             services.AddSingleton<RepositoryService>();
+            services.AddSingleton<StaticFilesService>();
 
             services.AddMvc(config =>
             {
@@ -41,11 +43,18 @@ namespace Wirehome.Cloud
         }
 
         // ReSharper disable once UnusedMember.Global
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ConnectorService connectorService, AuthorizationService authorizationService)
+        public void Configure(
+            IApplicationBuilder app,
+            IHostingEnvironment env,
+            AuthorizationService authorizationService,
+            ConnectorService connectorService,
+            StaticFilesService staticFilesService)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             if (env == null) throw new ArgumentNullException(nameof(env));
+            if (authorizationService == null) throw new ArgumentNullException(nameof(authorizationService));
             if (connectorService == null) throw new ArgumentNullException(nameof(connectorService));
+            if (staticFilesService == null) throw new ArgumentNullException(nameof(staticFilesService));
 
             if (env.IsDevelopment())
             {
@@ -56,7 +65,15 @@ namespace Wirehome.Cloud
             ConfigureSwagger(app);
             ConfigureConnector(app, connectorService, authorizationService);
 
-            app.Run(connectorService.ForwardHttpRequestAsync);
+            app.Run(async context =>
+            {
+                if (await staticFilesService.HandleRequestAsync(context))
+                {
+                    return;
+                }
+
+                await connectorService.ForwardHttpRequestAsync(context);
+            });
         }
 
         private static void ConfigureSwagger(IApplicationBuilder app)
@@ -98,7 +115,7 @@ namespace Wirehome.Cloud
                     try
                     {
                         var authorizationContext = authorizationService.AuthorizeConnector(context);
-                        
+
                         using (var webSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false))
                         {
                             await connectorService.RunAsync(webSocket, authorizationContext, context.RequestAborted).ConfigureAwait(false);
