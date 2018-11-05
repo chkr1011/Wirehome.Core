@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/logo256.png?raw=true" width="128">
+<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/gitHubLogo.png?raw=true" width="256">
 <br/>
 <br/>
 </p>
