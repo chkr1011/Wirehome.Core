@@ -67,9 +67,6 @@ namespace Wirehome.Core
                 SetupHardwareAdapters(serviceProvider); // TODO: From config!
 
                 StartServices(serviceProvider);
-
-                RegisterDefaultResources(serviceProvider);
-                RegisterDefaultGlobalVariables(serviceProvider);
                 RegisterEvents(serviceProvider);
 
                 PublishBootedNotification(serviceProvider);
@@ -124,29 +121,6 @@ namespace Wirehome.Core
             });
         }
 
-        private void RegisterDefaultResources(IServiceProvider serviceProvider)
-        {
-            var resourcesService = serviceProvider.GetRequiredService<ResourcesService>();
-
-            // Notifications
-            resourcesService.RegisterString(NotificationResourceUids.Booted, "en", "System has booted.");
-            resourcesService.RegisterString(NotificationResourceUids.Booted, "de", "Das System wurde gestartet.");
-
-            resourcesService.RegisterString(NotificationResourceUids.RebootInitiated, "en", "Reboot initiated.");
-            resourcesService.RegisterString(NotificationResourceUids.RebootInitiated, "de", "Neustart eingeleitet.");
-
-            _logger.Log(LogLevel.Debug, "Registered default resources.");
-        }
-
-        private void RegisterDefaultGlobalVariables(IServiceProvider serviceProvider)
-        {
-            var globalVariablesService = serviceProvider.GetRequiredService<GlobalVariablesService>();
-
-            globalVariablesService.RegisterValue(GlobalVariableUids.LanguageCode, "en");
-
-            _logger.Log(LogLevel.Debug, "Registered default global variables.");
-        }
-
         private void RegisterServices(IServiceCollection serviceCollection)
         {
             serviceCollection.AddSingleton(_loggerFactory);
@@ -162,7 +136,7 @@ namespace Wirehome.Core
             serviceCollection.AddSingleton<GlobalVariablesService>();
             serviceCollection.AddSingleton<CloudService>();
 
-            serviceCollection.AddSingleton<ResourcesService>();
+            serviceCollection.AddSingleton<ResourceService>();
             serviceCollection.AddSingleton<FunctionPoolService>();
 
             serviceCollection.AddSingleton<MessageBusService>();
@@ -196,7 +170,7 @@ namespace Wirehome.Core
             serviceProvider.GetRequiredService<DiagnosticsService>().Start();
             serviceProvider.GetRequiredService<MessageBusService>().Start();
 
-            serviceProvider.GetRequiredService<ResourcesService>().Start();
+            serviceProvider.GetRequiredService<ResourceService>().Start();
             serviceProvider.GetRequiredService<GlobalVariablesService>().Start();
             serviceProvider.GetRequiredService<CloudService>().Start();
 
