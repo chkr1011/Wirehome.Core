@@ -17,10 +17,10 @@ namespace Wirehome.Core.Components.Adapters
 
         public ScriptComponentAdapter(PythonEngineService pythonEngineService, ComponentRegistryService componentRegistryService, ILoggerFactory loggerFactory)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
 
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ScriptComponentAdapter>();
         }
 
@@ -32,7 +32,8 @@ namespace Wirehome.Core.Components.Adapters
             if (script == null) throw new ArgumentNullException(nameof(script));
 
             _scriptHost = _pythonEngineService.CreateScriptHost(_logger, new ComponentPythonProxy(componentUid, _componentRegistryService));
-            _scriptHost.SetVariable("publish_adapter_message", (Func<PythonDictionary, PythonDictionary>)OnMessageReceived);
+            _scriptHost.SetVariable("publish_adapter_message", (PythonScriptHost.CallbackWithResultDelegate)OnMessageReceived);
+            _scriptHost.WirehomeWrapper.Add("publish_adapter_message", (PythonScriptHost.CallbackWithResultDelegate)OnMessageReceived);
 
             _scriptHost.Initialize(script);
         }

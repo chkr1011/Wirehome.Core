@@ -18,10 +18,10 @@ namespace Wirehome.Core.Components.Logic
 
         public ScriptComponentLogic(PythonEngineService pythonEngineService, ComponentRegistryService componentRegistryService, ILoggerFactory loggerFactory)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
 
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ScriptComponentAdapter>();
         }
 
@@ -33,8 +33,9 @@ namespace Wirehome.Core.Components.Logic
             if (script == null) throw new ArgumentNullException(nameof(script));
 
             _scriptHost = _pythonEngineService.CreateScriptHost(_logger, new ComponentPythonProxy(componentUid, _componentRegistryService));
-            _scriptHost.SetVariable("publish_adapter_message", (Func<PythonDictionary, PythonDictionary>)OnAdapterMessagePublished);
-            
+            _scriptHost.SetVariable("publish_adapter_message", (PythonScriptHost.CallbackWithResultDelegate)OnAdapterMessagePublished);
+            _scriptHost.WirehomeWrapper.Add("publish_adapter_message", (PythonScriptHost.CallbackWithResultDelegate)OnAdapterMessagePublished);
+
             _scriptHost.Initialize(script);
         }
 
@@ -56,13 +57,6 @@ namespace Wirehome.Core.Components.Logic
             var result = _scriptHost.InvokeFunction("process_adapter_message", message);
             return result as WirehomeDictionary ?? new WirehomeDictionary();
         }
-
-        ////private object OnLogicMessagePublished(object message)
-        ////{
-        ////    var eventArgs = new ComponentAdapterMessageReceivedEventArgs(message);
-        ////    LogicMessageReceived?.Invoke(this, eventArgs);
-        ////    return eventArgs.Result;
-        ////}
 
         private PythonDictionary OnAdapterMessagePublished(PythonDictionary message)
         {
