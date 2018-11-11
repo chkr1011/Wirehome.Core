@@ -55,12 +55,12 @@ namespace Wirehome.Core.ServiceHost
             return _storageService.EnumeratureDirectories("*", ServicesDirectory);
         }
 
-        public void WriteServiceConfiguration(string id, ServiceConfiguration serviceConfiguration)
+        public void WriteServiceConfiguration(string id, ServiceConfiguration configuration)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
-            if (serviceConfiguration == null) throw new ArgumentNullException(nameof(serviceConfiguration));
+            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(serviceConfiguration, ServicesDirectory, id, DefaultFilenames.Configuration);
+            _storageService.Write(configuration, ServicesDirectory, id, DefaultFilenames.Configuration);
         }
 
         public ServiceConfiguration ReadServiceConfiguration(string id)
@@ -73,6 +73,13 @@ namespace Wirehome.Core.ServiceHost
             }
 
             return configuration;
+        }
+
+        public void DeleteService(string id)
+        {
+            if (id == null) throw new ArgumentNullException(nameof(id));
+            
+            _storageService.DeleteDirectory(ServicesDirectory, id);
         }
 
         public List<ServiceInstance> GetServices()
