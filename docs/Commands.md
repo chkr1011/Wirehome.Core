@@ -25,6 +25,12 @@ The following table contains all predefined commands in Wirehome. Other adapters
 | **Set brightness** || Sets the brightness of a component (e.g. lamps). |
 | `type` | `"set_brightness"` ||
 | `brightness` | `0 - 100` | The brightness in %. |
+| **Increase brightness** || Increases the brightness of a component (e.g. lamps). |
+| `type` | `"increase_brightness"` ||
+| `value` | `0 - 100` | The value for increasing the brightness. |
+| **Decrease brightness** || Decreases the brightness of a component (e.g. lamps). |
+| `type` | `"decrease_brightness"` ||
+| `value` | `0 - 100` | The value for decreasing the brightness. |
 | **Set state** || Sets the state of a component (e.g. state machines). |
 | `type` | `"set_state"` ||
 | `state` | `"xyz"` | The ID of the state. |
