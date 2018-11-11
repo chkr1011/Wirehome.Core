@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -17,7 +18,7 @@ namespace Wirehome.Core.MessageBus
         private readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
         private readonly LinkedList<MessageBusMessage> _history = new LinkedList<MessageBusMessage>();
         private readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new ConcurrentDictionary<string, MessageBusSubscriber>();
-        private readonly ConcurrentDictionary<Guid, MessageBusResponseSubscriber> _responseSubscribers = new ConcurrentDictionary<Guid, MessageBusResponseSubscriber>();
+        private readonly ConcurrentDictionary<string, MessageBusResponseSubscriber> _responseSubscribers = new ConcurrentDictionary<string, MessageBusResponseSubscriber>();
 
         private readonly SystemService _systemService;
 
@@ -79,36 +80,48 @@ namespace Wirehome.Core.MessageBus
                 Message = message
             };
 
-            var responseSubscriber = new MessageBusResponseSubscriber();
+            string requestCorrelationUid = null;
             try
             {
-                _responseSubscribers.TryAdd(request.Uid, responseSubscriber);
+                var responseSubscriber = new MessageBusResponseSubscriber();
+
+                if (message.TryGetValue(MessageBusMessagePropertyName.CorrelationUid, out var buffer))
+                {
+                    requestCorrelationUid = Convert.ToString(buffer, CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    requestCorrelationUid = Guid.NewGuid().ToString("D");
+                }
+
+                _responseSubscribers.TryAdd(requestCorrelationUid, responseSubscriber);
 
                 Publish(request);
 
                 using (var timeoutCts = new CancellationTokenSource(timeout))
                 {
-                    await Task.Run(() => responseSubscriber.Task, timeoutCts.Token).ConfigureAwait(false);
-                    return responseSubscriber.Task.Result.Message;
+                    var responseMessage = await Task.Run(() => responseSubscriber.Task, timeoutCts.Token).ConfigureAwait(false);
+                    return responseMessage.Message;
                 }
             }
             finally
             {
-                _responseSubscribers.TryRemove(request.Uid, out _);
+                if (requestCorrelationUid != null)
+                {
+                    _responseSubscribers.TryRemove(requestCorrelationUid, out _);
+                }
             }
         }
 
-        public void PublishResponse(MessageBusMessage request, WirehomeDictionary responseMessage)
+        public void PublishResponse(WirehomeDictionary request, WirehomeDictionary responseMessage)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (responseMessage == null) throw new ArgumentNullException(nameof(responseMessage));
 
-            var response = new MessageBusMessage
-            {
-                ResponseUid = request.Uid,
-                Message = responseMessage
-            };
+            responseMessage[MessageBusMessagePropertyName.CorrelationUid] =
+                request[MessageBusMessagePropertyName.CorrelationUid];
 
+            var response = new MessageBusMessage { Message = responseMessage };
             Publish(response);
         }
 
@@ -201,11 +214,13 @@ namespace Wirehome.Core.MessageBus
                         }
                     }
 
-                    if (message.ResponseUid != null)
+                    if (message.Message.TryGetValue(MessageBusMessagePropertyName.CorrelationUid, out var correlationUid))
                     {
+                        var responseCorrelationUid = Convert.ToString(correlationUid, CultureInfo.InvariantCulture);
+
                         foreach (var responseSubscriber in _responseSubscribers)
                         {
-                            if (responseSubscriber.Key.Equals(message.ResponseUid.Value))
+                            if (responseSubscriber.Key.Equals(responseCorrelationUid, StringComparison.Ordinal))
                             {
                                 responseSubscriber.Value.SetResponse(message);
                                 break;
