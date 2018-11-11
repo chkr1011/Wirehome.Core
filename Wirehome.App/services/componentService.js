@@ -1,4 +1,4 @@
-﻿function createComponentService(apiService) {
+﻿function createComponentService(apiService, modalService) {
     var srv = this;
 
     srv.enable = function (component) {
@@ -18,51 +18,85 @@
     };
 
     srv.togglePowerState = function (component) {
-        var parameters = {}
-        parameters["type"] = "toggle";
+        var parameters = {
+            type: "toggle",
+        };
+
         srv.sendCommand(component, parameters);
     }
 
     srv.turnOn = function (component) {
-        var parameters = {}
-        parameters["type"] = "turn_on";
+        var parameters = {
+            type: "turn_on",
+        };
+
         srv.sendCommand(component, parameters);
     }
 
     srv.turnOff = function (component) {
-        var parameters = {}
-        parameters["type"] = "turn_off";
+        var parameters = {
+            type: "turn_off",
+        };
+
         srv.sendCommand(component, parameters);
     }
 
     srv.setLevel = function (component, level) {
-        var parameters = {}
-        parameters["type"] = "set_level";
-        parameters["level"] = level;
+        var parameters = {
+            type: "set_level",
+            level: level
+        };
+
         srv.sendCommand(component, parameters);
     }
 
     srv.increaseLevel = function (component) {
-        var parameters = {}
-        parameters["type"] = "increase_level";
+        var parameters = {
+            type: "increase_level"
+        };
+
         srv.sendCommand(component, parameters);
     }
 
     srv.decreaseLevel = function (component) {
-        var parameters = {}
-        parameters["type"] = "decrease_level";
+        var parameters = {
+            type: "decrease_level"
+        };
+
+        srv.sendCommand(component, parameters);
+    }
+
+    srv.increaseBrightness = function (component) {
+        var parameters = {
+            type: "increase_brightness",
+            value: 5
+        };
+
+        srv.sendCommand(component, parameters);
+    }
+
+    srv.decreaseBrightness = function (component) {
+        var parameters = {
+            type: "decrease_brightness",
+            value: 5
+        };
+
         srv.sendCommand(component, parameters);
     }
 
     srv.moveUp = function (component) {
-        var parameters = {}
-        parameters["type"] = "move_up";
+        var parameters = {
+            type: "move_up"
+        };
+
         srv.sendCommand(component, parameters);
     }
 
     srv.moveDown = function (component) {
-        var parameters = {}
-        parameters["type"] = "move_down";
+        var parameters = {
+            type: "move_down"
+        };
+
         srv.sendCommand(component, parameters);
     }
 
@@ -79,17 +113,12 @@
         srv.sendCommand(component, parameters);
     }
 
-    srv.pressButton = function (component, duration) {
-        var parameters = {}
-        parameters["type"] = "press";
-        parameters["duration"] = duration;
-        srv.sendCommand(component, parameters);
-    }
-
     srv.setState = function (component, state) {
-        var parameters = {}
-        parameters["type"] = "set_state";
-        parameters["state"] = state;
+        var parameters = {
+            type: "set_state",
+            state: state
+        };
+
         srv.sendCommand(component, parameters);
     }
 
@@ -97,7 +126,7 @@
         apiService.executePost("/api/v1/components/" + component.uid + "/process_message", message, function (response) {
             if (response["type"] !== "success") {
                 delete response["component"];
-                alert(JSON.stringify(response));
+                modalService.show("Executing component command failed!", JSON.stringify(response));
 
                 return;
             }

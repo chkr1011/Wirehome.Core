@@ -1,12 +1,11 @@
 var app;
 
 (function () {
-    app = angular.module("app", ["ngjsColorPicker"]);
-
+    app = angular.module("app", []);
     app.factory("localizationService", ["$http", createLocalizationService]);
     app.factory("apiService", ["$http", createApiService]);
-    app.factory("componentService", ["apiService", createComponentService]);
     app.factory("modalService", [createModalService]);
+    app.factory("componentService", ["apiService", "modalService", createComponentService]);
     app.factory("notificationService", ["apiService", createNotificationService]);
     
     app.controller(
@@ -14,7 +13,6 @@ var app;
         [
             "$http",
             "$scope",
-            "modalService",
             "apiService",
             "localizationService",
             "componentService",

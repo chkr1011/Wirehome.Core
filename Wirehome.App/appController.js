@@ -1,16 +1,7 @@
-function createAppController($http, $scope, modalService, apiService, localizationService, componentService, notificationService) {
+function createAppController($http, $scope, apiService, localizationService, componentService, notificationService) {
     var c = this;
 
     extendAngularScope($scope);
-
-    $scope.selectedColorChanged = function (component) {
-        if (component.appliedColor == undefined || component.appliedColor == component.selectedColor) {
-            return;
-        }
-
-        c.componentService.setColor(component, component.selectedColor);
-        component.appliedColor = component.selectedColor;
-    }
 
     c.version = "-";
     c.notifications = [];
@@ -59,8 +50,15 @@ function createAppController($http, $scope, modalService, apiService, localizati
             console.log("Building UI...");
             localizationService.load(status.global_variables["system.language_code"]);
 
+            var urlParams = new URLSearchParams(window.location.search);
+            var selectedComponentGroup = urlParams.get('componentGroup');
+
             $.each(status.componentGroups, function (i, componentGroup) {
                 if (componentGroup.settings["app.is_visible"] === false) {
+                    return;
+                }
+
+                if (selectedComponentGroup != null && componentGroup.uid != selectedComponentGroup) {
                     return;
                 }
 
@@ -148,25 +146,6 @@ function createAppController($http, $scope, modalService, apiService, localizati
 
         var associationSettings = componentGroupModel.source.components[model.uid].settings;
         model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", model.uid);
-        
-        // TODO: Remove this as soon the spec for a RGB control is completed.
-        if (model.template == undefined || model.template == null) {
-            if (source.status["color.red"] !== undefined) {
-                model.template = "views/components/rgbTemplate.html";
-                model.imageId = getEffectiveValue([associationSettings, source.settings], "app.image_id", "fas fa-palette");
-
-                model.selectedColor = "#FFFFFF";
-            }
-        }
-
-        if (model.template == "views/rgbTemplate.html") {
-            var r = source.status["color.red"];
-            var g = source.status["color.green"];
-            var b = source.status["color.blue"];
-            var hex = c.componentService.rgbToHex(r, g, b);
-            model.appliedColor = hex;
-            model.selectedColor = hex;
-        }
     }
 
     c.configureComponentGroup = function (model, source, status) {
@@ -184,8 +163,11 @@ function createAppController($http, $scope, modalService, apiService, localizati
         });
     }
 
-    $http.get("version.txt").then(function (response) {
-        c.version = response.data;
+    $http.get("app.manifest").then(function (response) {
+        var parser = new RegExp("# version: ([0-9|.]*)", "");
+        var results = parser.exec(response.data);
+
+        c.version = results[1];
     });
 
     componentService.componentUpdatedCallback = c.applyNewComponentStatus;

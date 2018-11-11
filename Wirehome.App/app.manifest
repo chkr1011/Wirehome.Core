@@ -1,0 +1,25 @@
+CACHE MANIFEST
+# version: 2.6.11
+
+index.html
+
+appController.js
+module.js
+
+icon.png
+touch-icon.png
+
+/contents/*
+/scripts/*
+/fonts/*
+/services/*
+/views/*
+
+NETWORK:
+/api/*
+/repository/*
+/customContent/*
+
+CACHE:
+ 
+FALLBACK:

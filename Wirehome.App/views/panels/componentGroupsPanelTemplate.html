@@ -2,7 +2,7 @@
     ng-repeat="componentGroup in ctrl.componentGroups | orderBy:['sortValue']">
     <div class="panel-heading pointer clearfix" ng-click="ctrl.setActivePanel(componentGroup.uid)">
         <span class="component-group-icon pull-right" ng-style="{color: ctrl.activePanel===componentGroup.uid ? 'white' : componentGroup.getSetting('app.image_color', '#427AB6')}"
-            ng-class="componentGroup.imageId"></span>
+            ng-class="componentGroup.getSetting('app.image_id', '')"></span>
         <span class="panel-title pull-left">{{componentGroup.getSetting("app.caption", "#" + componentGroup.uid)}}</span>
     </div>
 
