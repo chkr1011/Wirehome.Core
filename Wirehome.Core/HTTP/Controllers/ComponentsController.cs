@@ -19,6 +19,14 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
+        [Route("api/v1/components/uids")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<string> GetComponentUids()
+        {
+            return _componentRegistryService.GetComponentUids();
+        }
+
+        [HttpGet]
         [Route("api/v1/components")]
         [ApiExplorerSettings(GroupName = "v1")]
         public List<Component> GetComponents()
@@ -40,26 +48,22 @@ namespace Wirehome.Core.HTTP.Controllers
             return component;
         }
 
-        [HttpPost]
-        [Route("api/v1/components/{uid}")]
+        [HttpDelete]
+        [Route("/api/v1/components/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void Post(string uid, [FromBody] ComponentConfiguration configuration)
+        public void DeleteComponent(string uid)
         {
-            _componentRegistryService.TryInitializeComponent(uid, configuration, out _);
+            _componentRegistryService.DeleteComponent(uid);
         }
 
-        [HttpPost]
-        [Route("/api/v1/components/{uid}/process_message")]
+        [HttpGet]
+        [Route("api/v1/components/{uid}/configuration")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message)
+        public ComponentConfiguration GetConfiguration(string uid)
         {
             try
             {
-                var component = _componentRegistryService.GetComponent(uid);
-
-                var result = _componentRegistryService.ProcessComponentMessage(uid, message);
-                result["component"] = component;
-                return result;
+                return _componentRegistryService.ReadComponentConfiguration(uid);
             }
             catch (ComponentNotFoundException)
             {
@@ -67,11 +71,44 @@ namespace Wirehome.Core.HTTP.Controllers
                 return null;
             }
         }
-        
+
+        [HttpPost]
+        [Route("api/v1/components/{uid}/configuration")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostConfiguration(string uid, [FromBody] ComponentConfiguration configuration)
+        {
+            _componentRegistryService.WriteComponentConfiguration(uid, configuration);
+        }
+
+        [HttpPost]
+        [Route("api/v1/components/{uid}/initialize")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostInitialize(string uid)
+        {
+            _componentRegistryService.TryInitializeComponent(uid);
+        }
+
+        [HttpPost]
+        [Route("/api/v1/components/{uid}/process_message")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public WirehomeDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message)
+        {
+            var result = _componentRegistryService.ProcessComponentMessage(uid, message);
+
+            if (!_componentRegistryService.TryGetComponent(uid, out var component))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
+
+            result["component"] = component;
+            return result;
+        }
+
         [HttpGet]
         [Route("/api/v1/components/{uid}/settings")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetComponentSettings(string uid)
+        public ConcurrentWirehomeDictionary GetSettingValues(string uid)
         {
             if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {
@@ -85,7 +122,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{componentUid}/settings/{settingUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object GetSetting(string componentUid, string settingUid)
+        public object GetSettingValue(string componentUid, string settingUid)
         {
             return _componentRegistryService.GetComponentSetting(componentUid, settingUid);
         }
@@ -101,15 +138,15 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpDelete]
         [Route("/api/v1/components/{componentUid}/settings/{settingUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object DeleteComponentSetting(string componentUid, string settingUid)
+        public object DeleteSetting(string componentUid, string settingUid)
         {
             return _componentRegistryService.RemoveComponentSetting(componentUid, settingUid);
         }
-        
+
         [HttpGet]
         [Route("/api/v1/components/{uid}/status")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetComponentStatus(string uid)
+        public ConcurrentWirehomeDictionary GetStatusValues(string uid)
         {
             if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {
@@ -123,7 +160,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{componentUid}/status/{statusUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object GetComponentStatusValue(string componentUid, string statusUid)
+        public object GetStatusValue(string componentUid, string statusUid)
         {
             if (!_componentRegistryService.TryGetComponent(componentUid, out var component))
             {
@@ -143,7 +180,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/components/{componentUid}/status/{statusUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostComponentStatusValue(string componentUid, string statusUid, [FromBody] object value)
+        public void PostStatusValue(string componentUid, string statusUid, [FromBody] object value)
         {
             if (!_componentRegistryService.TryGetComponent(componentUid, out var component))
             {
@@ -155,9 +192,9 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
-        [Route("/api/v1/components/{uid}/configuration")]
+        [Route("/api/v1/components/{uid}/runtime_configuration")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetComponentConfiguration(string uid)
+        public ConcurrentWirehomeDictionary GetConfigurationValues(string uid)
         {
             if (!_componentRegistryService.TryGetComponent(uid, out var component))
             {
@@ -169,9 +206,9 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
-        [Route("/api/v1/components/{componentUid}/configuration/{configurationUid}")]
+        [Route("/api/v1/components/{componentUid}/runtime_configuration/{configurationUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object GetComponentConfigurationValue(string componentUid, string configurationUid)
+        public object GetConfigurationValue(string componentUid, string configurationUid)
         {
             if (!_componentRegistryService.TryGetComponent(componentUid, out var component))
             {

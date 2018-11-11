@@ -50,6 +50,14 @@ namespace Wirehome.Core.HTTP.Controllers
             }
         }
 
+        [HttpDelete]
+        [Route("/api/v1/automations/{uid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteAutomation(string uid)
+        {
+            _automationRegistryService.DeleteAutomation(uid);
+        }
+
         [HttpGet]
         [Route("api/v1/automations/{uid}/configuration")]
         [ApiExplorerSettings(GroupName = "v1")]

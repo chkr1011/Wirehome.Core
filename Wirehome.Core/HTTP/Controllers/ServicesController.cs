@@ -45,6 +45,13 @@ namespace Wirehome.Core.HTTP.Controllers
             return service;
         }
 
+        [HttpDelete]
+        [Route("api/v1/services/{id}")]
+        public void DeleteService(string id)
+        {
+            _serviceHostService.DeleteService(id);
+        }
+
         [HttpGet]
         [Route("api/v1/services/{id}/configuration")]
         public ServiceConfiguration GetConfiguration(string id)

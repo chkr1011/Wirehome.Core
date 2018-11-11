@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,9 +31,9 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/message_bus/message_with_reply")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public async Task<WirehomeDictionary> PostMessageWithReply(TimeSpan timeout, [FromBody] WirehomeDictionary messsage)
+        public Task<WirehomeDictionary> PostMessageWithReply(TimeSpan timeout, [FromBody] WirehomeDictionary messsage)
         {
-            return await _messageBusService.PublishRequestAsync(messsage, timeout);
+            return _messageBusService.PublishRequestAsync(messsage, timeout);
         }
 
         [HttpPost]
@@ -52,21 +53,22 @@ namespace Wirehome.Core.HTTP.Controllers
                     subscriptions.Add(_messageBusService.Subscribe(subscriptionUid, filter, m => tcs.TrySetResult(m)));
                 }
 
-                var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-                var cts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, HttpContext.RequestAborted);
-                var timeoutTask = Task.Run(async () => await Task.Delay(TimeSpan.FromSeconds(timeout), cts.Token), cts.Token);
-                var finishedTask = await Task.WhenAny(tcs.Task, timeoutTask);
-
-                if (finishedTask == timeoutTask)
+                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout)))
                 {
-                    return new WirehomeDictionary().WithType("exception.timeout");
-                }
+                    timeoutCts.Token.Register(() =>
+                    {
+                        if (!tcs.Task.IsCanceled && !tcs.Task.IsCompleted && !tcs.Task.IsFaulted)
+                        {
+                            tcs.TrySetCanceled();
+                        }
+                    });
 
-                return tcs.Task.Result.Message;
+                    return (await tcs.Task).Message;
+                }
             }
             catch (OperationCanceledException)
             {
-                return null;
+                return new WirehomeDictionary().WithType("exception.timeout");
             }
             finally
             {
@@ -80,10 +82,24 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/message_bus/history")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IList<MessageBusMessage> GetHistory()
+        public IList<MessageBusMessage> GetHistory(string typeFilter = null)
         {
             var history = _messageBusService.GetHistory();
-            history.Reverse();
+
+            if (!string.IsNullOrEmpty(typeFilter))
+            {
+                history.RemoveAll(i =>
+                {
+                    if (!i.Message.TryGetValue("type", out var typeValue))
+                    {
+                        return false;
+                    }
+
+                    var type = Convert.ToString(typeValue, CultureInfo.InvariantCulture);
+                    return !string.Equals(type, typeFilter, StringComparison.Ordinal);
+                });
+            }
+            
             return history;
         }
 

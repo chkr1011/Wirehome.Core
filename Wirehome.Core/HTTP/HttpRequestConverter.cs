@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
@@ -69,7 +70,7 @@ namespace Wirehome.Core.HTTP
 
         public void UnwrapContext(WirehomeDictionary dictionary, HttpContext context)
         {
-            var statusCode = Convert.ToInt32(dictionary.GetValueOrDefault("status_code", 200), CultureInfo.InvariantCulture);
+            var statusCode = Convert.ToInt32(dictionary.GetValueOrDefault("status_code", (int)HttpStatusCode.NotFound), CultureInfo.InvariantCulture);
             context.Response.StatusCode = statusCode;
 
             if (dictionary.GetValueOrDefault("headers") is WirehomeDictionary headers)

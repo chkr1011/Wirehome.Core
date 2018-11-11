@@ -20,7 +20,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("api/v1/component_groups")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<ComponentGroup> Get()
+        public List<ComponentGroup> GetComponentGroups()
         {
             return _componentGroupRegistryService.GetComponentGroups();
         }
@@ -28,17 +28,41 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("api/v1/component_groups/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ComponentGroup Get(string uid)
+        public ComponentGroup GetComponentGroup(string uid)
         {
             return _componentGroupRegistryService.GetComponentGroup(uid);
         }
 
         [HttpPost]
-        [Route("api/v1/component_groups/{uid}")]
+        [Route("api/v1/component_groups/{uid}/configuration")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void Post(string uid, [FromBody] ComponentGroupConfiguration configuration)
+        public void PostConfiguration(string uid, [FromBody] ComponentGroupConfiguration configuration)
         {
-            _componentGroupRegistryService.CreateComponentGroup(uid, configuration);
+            _componentGroupRegistryService.WriteComponentGroupConfiguration(uid, configuration);
+        }
+
+        [HttpGet]
+        [Route("api/v1/component_groups/{uid}/configuration")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public ComponentGroupConfiguration GetConfiguration(string uid)
+        {
+            try
+            {
+                return _componentGroupRegistryService.ReadComponentGroupConfiguration(uid);
+            }
+            catch (ComponentGroupNotFoundException)
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
+        }
+
+        [HttpDelete]
+        [Route("/api/v1/component_groups/{uid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteComponentGroup(string uid)
+        {
+            _componentGroupRegistryService.DeleteComponentGroup(uid);
         }
 
         [HttpPost]
