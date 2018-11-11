@@ -15,5 +15,7 @@
         public const string Success = "success";
 
         public const string Initialize = "initialize";
+
+        public const string Destroy = "destroy";
     }
 }
