@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Globalization;
 using IronPython.Runtime;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Template;
 using Wirehome.Core.HTTP;
 
 #pragma warning disable IDE1006 // Naming Styles
@@ -27,6 +30,29 @@ namespace Wirehome.Core.Python.Proxies
         public void unregister_route(string uid)
         {
             _httpServerService.UnregisterRoute(uid);
+        }
+
+        public PythonDictionary match_template(string template, string path)
+        {
+            if (template == null) throw new ArgumentNullException(nameof(template));
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            var routeTemplate = TemplateParser.Parse(template);
+            var values = new RouteValueDictionary();
+            var templateMatcher = new TemplateMatcher(routeTemplate, values);
+            var isMatch = templateMatcher.TryMatch(path, values);
+
+            var resultValues = new PythonDictionary();
+            foreach (var value in values)
+            {
+                resultValues.Add(value.Key, Convert.ToString(value.Value, CultureInfo.InvariantCulture));
+            }
+
+            return new PythonDictionary
+            {
+                ["is_match"] = isMatch,
+                ["values"] = resultValues
+            };            
         }
     }
 }

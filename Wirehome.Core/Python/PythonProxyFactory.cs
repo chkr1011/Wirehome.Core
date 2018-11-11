@@ -13,6 +13,7 @@ namespace Wirehome.Core.Python
             new JsonSerializerPythonProxy(),
             new OSPythonProxy(),
             new ResponseCreatorPythonProxy(),
+            new ResponseValidatorPythonProxy(),
             new RepositoryPythonProxy()
         };
 

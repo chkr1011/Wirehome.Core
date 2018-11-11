@@ -24,11 +24,10 @@ namespace Wirehome.Core.Python.Proxies
             _messageBusService.Publish(message);
         }
 
-        public void publish_response(PythonDictionary message)
-        {
-            // TODO: Implement.
-            //_messageBusService.Publish(message);
-        }
+        //public void publish_response(PythonDictionary request, PythonDictionary response)
+        //{
+        //    _messageBusService.PublishResponse(request, response);
+        //}
 
         public string subscribe(string uid, PythonDictionary filter, Action<PythonDictionary> callback)
         {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using IronPython.Runtime;
 using Microsoft.Scripting;
@@ -11,10 +12,17 @@ namespace Wirehome.Core.Python
     {
         private readonly ScriptScope _scriptScope;
         
-        public PythonScriptHost(ScriptScope scriptScope)
+        public PythonScriptHost(ScriptScope scriptScope, IDictionary<string, object> wirehomeWrapper)
         {
+            WirehomeWrapper = wirehomeWrapper ?? throw new ArgumentNullException(nameof(wirehomeWrapper));
             _scriptScope = scriptScope ?? throw new ArgumentNullException(nameof(scriptScope));
         }
+
+        public delegate PythonDictionary CallbackWithResultDelegate(PythonDictionary parameters);
+
+        public delegate void CallbackDelegate(PythonDictionary parameters);
+
+        public IDictionary<string, object> WirehomeWrapper { get; }
 
         public void Initialize(string scriptCode)
         {

@@ -6,7 +6,6 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Scripting.Hosting;
 using Wirehome.Core.Python.Proxies;
-using Wirehome.Core.Python.Proxies.OS;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Python
@@ -66,18 +65,18 @@ namespace Wirehome.Core.Python
             pythonProxies.Add(new LogPythonProxy(logger ?? _logger));
             pythonProxies.Add(new DebuggerPythonProxy());
 
-            var wirehomePythonProxy = (IDictionary<string, object>)new ExpandoObject();
+            var wirehomeWrapper = (IDictionary<string, object>)new ExpandoObject();
 
             foreach (var pythonProxy in pythonProxies)
             {
                 // TODO: Remove this as soon as all entities are migrated.
                 scriptScope.SetVariable(pythonProxy.ModuleName, pythonProxy);
 
-                wirehomePythonProxy.Add(pythonProxy.ModuleName, pythonProxy);
+                wirehomeWrapper.Add(pythonProxy.ModuleName, pythonProxy);
             }
 
-            scriptScope.SetVariable("wirehome", wirehomePythonProxy);
-            return new PythonScriptHost(scriptScope);
+            scriptScope.SetVariable("wirehome", wirehomeWrapper);
+            return new PythonScriptHost(scriptScope, wirehomeWrapper);
         }
 
         private void AddSearchPaths(ScriptEngine scriptEngine)

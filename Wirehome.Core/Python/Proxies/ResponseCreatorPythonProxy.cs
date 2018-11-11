@@ -10,6 +10,15 @@ namespace Wirehome.Core.Python.Proxies
     {
         public string ModuleName { get; } = "response_creator";
 
+        public PythonDictionary not_supported(string origin_type)
+        {
+            return new PythonDictionary
+            {
+                ["type"] = "exception.not_supported",
+                ["origin_type"] = origin_type
+            };
+        }
+
         public PythonDictionary success()
         {
             return new PythonDictionary
