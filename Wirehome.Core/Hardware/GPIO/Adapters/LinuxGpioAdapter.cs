@@ -22,7 +22,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         public void Enable()
         {
-            Task.Factory.StartNew(PollGpios, TaskCreationOptions.LongRunning, CancellationToken.None);
+            Task.Factory.StartNew(PollGpios, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public event EventHandler<GpioAdapterStateChangedEventArgs> GpioStateChanged;
@@ -101,7 +101,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
             _logger.Log(LogLevel.Debug, $"Exported GPIO {gpioId}.");
         }
 
-        private void PollGpios(object state)
+        private void PollGpios()
         {
             Thread.CurrentThread.Name = nameof(PollGpios);
 
