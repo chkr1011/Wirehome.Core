@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Exceptions;
@@ -19,6 +18,8 @@ namespace Wirehome.Core.Components
 {
     public class ComponentRegistryService
     {
+        private const string ComponentsDirectory = "Components";
+
         private readonly Dictionary<string, Component> _components = new Dictionary<string, Component>();
 
         private readonly ComponentRegistryMessageBusProxy _messageBusProxy;
@@ -52,34 +53,83 @@ namespace Wirehome.Core.Components
 
         public void Start()
         {
-            Load();
+            foreach (var componentUid in GetComponentUids())
+            {
+                TryInitializeComponent(componentUid);
+            }
+
             AttachToMessageBus();
         }
 
-        public bool TryInitializeComponent(string uid, ComponentConfiguration configuration, out Component component)
+        public void WriteComponentConfiguration(string uid, ComponentConfiguration configuration)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
+            _storageService.Write(configuration, ComponentsDirectory, uid, DefaultFilenames.Configuration);
+        }
+
+        public ComponentConfiguration ReadComponentConfiguration(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFilenames.Configuration))
+            {
+                throw new ComponentNotFoundException(uid);
+            }
+
+            return configuration;
+        }
+
+        public void DeleteComponent(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            _storageService.DeleteDirectory(ComponentsDirectory, uid);
+        }
+
+        public void TryInitializeComponent(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            
             try
             {
-                component = new Component(uid);
+                if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFilenames.Configuration))
+                {
+                    return;
+                }
+
+                if (!configuration.IsEnabled)
+                {
+                    _logger.LogInformation($"Component '{uid}' not initialized because it is disabled.");
+                    return;
+                }
+
+                if (!_storageService.TryRead(out WirehomeDictionary settings, ComponentsDirectory, uid, DefaultFilenames.Settings))
+                {
+                    settings = new WirehomeDictionary();
+                }
+                
+                var component = new Component(uid);
+                foreach (var setting in settings)
+                {
+                    component.Settings[setting.Key] = setting.Value;
+                }
+
                 lock (_components)
                 {
                     if (_components.TryGetValue(uid, out var existingComponent))
                     {
-                        // TODO: Convert this to a real method call.
-                        existingComponent.ProcessMessage(new WirehomeDictionary().WithType("destroy"));
+                        existingComponent.ProcessMessage(new WirehomeDictionary().WithType(ControlType.Destroy));
                     }
 
                     _components[uid] = component;
                 }
 
                 _componentInitializerFactory.Create(this).InitializeComponent(component, configuration);
+                component.ProcessMessage(new WirehomeDictionary().WithType(ControlType.Initialize));
 
                 _logger.LogInformation($"Component '{component.Uid}' initialized successfully.");
-
-                return true;
             }
             catch (Exception exception)
             {
@@ -89,9 +139,6 @@ namespace Wirehome.Core.Components
                 {
                     _components.Remove(uid, out _);
                 }
-
-                component = null;
-                return false;
             }
         }
 
@@ -271,26 +318,9 @@ namespace Wirehome.Core.Components
             }
         }
 
-        private void Load()
+        public List<string> GetComponentUids()
         {
-            lock (_components)
-            {
-                _components.Clear();
-            }
-
-            var configurationFiles = _storageService.EnumerateFiles("Configuration.json", "Components");
-            foreach (var configurationFile in configurationFiles)
-            {
-                if (_storageService.TryRead(out ComponentConfiguration configuration, "Components", configurationFile))
-                {
-                    var componentUid = Path.GetDirectoryName(configurationFile);
-
-                    if (configuration.IsEnabled)
-                    {
-                        TryInitializeComponent(componentUid, configuration, out _);
-                    }
-                }
-            }
+            return _storageService.EnumeratureDirectories("*", ComponentsDirectory);
         }
 
         private void AttachToMessageBus()
@@ -307,7 +337,7 @@ namespace Wirehome.Core.Components
             // TODO: Refactor this conversion!
             var innerMessage = (WirehomeDictionary)message["message"];
 
-            _messageBusService.PublishResponse(busMessage, ProcessComponentMessage(componentUid, innerMessage));
+            _messageBusService.PublishResponse(message, ProcessComponentMessage(componentUid, innerMessage));
         }
     }
 }
