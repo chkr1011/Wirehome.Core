@@ -49,5 +49,25 @@ namespace Wirehome.Core.Storage
                 return (TValue)_serializer.Deserialize(streamReader, typeof(TValue));
             }
         }
+
+        public bool TryDeserializeFile<TContent>(string filename, out TContent content)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+
+            if (!File.Exists(filename))
+            {
+                content = default(TContent);
+                return false;
+            }
+
+            using (var fileStream = File.OpenRead(filename))
+            using (var streamReader = new StreamReader(fileStream, Encoding.UTF8))
+            {
+                var jsonReader = new JsonTextReader(streamReader);
+                
+                content = _serializer.Deserialize<TContent>(jsonReader);
+                return true;
+            }
+        }
     }
 }
