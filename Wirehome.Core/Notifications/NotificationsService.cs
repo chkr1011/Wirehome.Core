@@ -16,7 +16,9 @@ namespace Wirehome.Core.Notifications
 {
     /// <summary>
     /// TODO: Expose publish method to function pool.
-    /// TODO: Expose publich method to message bus.
+    /// TODO: Expose publish method to message bus.
+    ///
+    /// TODO: Add a dictionary of parameters to each notifications. They can be shown in the UI.
     /// </summary>
     public class NotificationsService
     {
@@ -25,7 +27,7 @@ namespace Wirehome.Core.Notifications
         private readonly List<Notification> _notifications = new List<Notification>();
 
         private readonly StorageService _storageService;
-        private readonly ResourcesService _resourcesService;
+        private readonly ResourceService _resourcesService;
         private readonly MessageBusService _messageBusService;
         private readonly SystemService _systemService;
 
@@ -34,7 +36,7 @@ namespace Wirehome.Core.Notifications
         public NotificationsService(
             StorageService storageService,
             SystemStatusService systemStatusService,
-            ResourcesService resourcesService,
+            ResourceService resourcesService,
             PythonEngineService pythonEngineService,
             MessageBusService messageBusService,
             SystemService systemService,
@@ -82,7 +84,7 @@ namespace Wirehome.Core.Notifications
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var message = _resourcesService.ResolveString(parameters.ResourceUid);
+            var message = _resourcesService.GetResourceValueInSystemLanguage(parameters.ResourceUid);
             message = _resourcesService.FormatValue(message, parameters.Parameters);
 
             Publish(parameters.Type, message, parameters.TimeToLive);
@@ -92,22 +94,22 @@ namespace Wirehome.Core.Notifications
         {
             if (!timeToLive.HasValue)
             {
-                if (!_storageService.TryRead(out NotificationsServiceSettings settings, "NotificationService.json"))
+                if (!_storageService.TryReadOrCreate(out NotificationsServiceOptions options, NotificationsServiceOptions.Filename))
                 {
-                    settings = new NotificationsServiceSettings();
+                    options = new NotificationsServiceOptions();
                 }
 
                 if (type == NotificationType.Information)
                 {
-                    timeToLive = settings.DefaultTimeToLiveForInformation;
+                    timeToLive = options.DefaultTimeToLiveForInformation;
                 }
                 else if (type == NotificationType.Warning)
                 {
-                    timeToLive = settings.DefaultTimeToLiveForWarning;
+                    timeToLive = options.DefaultTimeToLiveForWarning;
                 }
                 else
                 {
-                    timeToLive = settings.DefaultTimeToLiveForError;
+                    timeToLive = options.DefaultTimeToLiveForError;
                 }
             }
 
