@@ -19,6 +19,17 @@ namespace Wirehome.Core.Python.Proxies
 
         public string ModuleName => "component_registry";
 
+        public List get_uids()
+        {
+            var result = new List();
+            foreach (var componentUid in _componentRegistryService.GetComponentUids())
+            {
+                result.Add(componentUid);
+            }
+
+            return result;
+        }
+
         public object get_status(string componentUid, string statusUid)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
