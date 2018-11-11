@@ -73,6 +73,13 @@ namespace Wirehome.Core.Automations
             _storageService.Write(configuration, AutomationsDirectory, uid, DefaultFilenames.Configuration);
         }
 
+        public void DeleteAutomation(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            _storageService.DeleteDirectory(AutomationsDirectory, uid);
+        }
+
         public List<AutomationInstance> GetAutomations()
         {
             lock (_automations)
