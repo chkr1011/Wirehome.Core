@@ -15,8 +15,8 @@ namespace Wirehome.Core.Hosts.Console
                 loggerFactory.AddConsole(LogLevel.Debug);
                
                 _controller = new WirehomeController(loggerFactory, arguments);
-                _controller.Start();
 
+                _controller.Start();
                 global::System.Console.WriteLine("Press <Enter> to exit.");
                 global::System.Console.ReadLine();
 

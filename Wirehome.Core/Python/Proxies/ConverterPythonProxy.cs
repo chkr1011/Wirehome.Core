@@ -13,7 +13,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Wirehome.Core.Python.Proxies
 {
-    public class ConverterPythonProxy : IPythonProxy
+    public class ConverterPythonProxy : IInjectedPythonProxy
     {
         public string ModuleName { get; } = "convert";
 
@@ -101,6 +101,7 @@ namespace Wirehome.Core.Python.Proxies
         }
 
         // TODO: Move to "JsonPythonProxy (deserialize(json), serialize(source))
+        [Obsolete]
         public object deserialize_json(object source)
         {
             var jsonText = to_string(source);

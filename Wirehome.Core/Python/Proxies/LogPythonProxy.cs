@@ -14,7 +14,7 @@ namespace Wirehome.Core.Python.Proxies
 
         public LogPythonProxy(ILogger logger)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public string ModuleName { get; } = "log";

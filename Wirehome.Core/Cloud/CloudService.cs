@@ -9,17 +9,17 @@ using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Cloud.Messages;
 using Wirehome.Core.Constants;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Cloud
 {
-    public class CloudService
+    public class CloudService : IService
     {
         private readonly ConcurrentDictionary<string, CloudMessageHandler> _messageHandlers = new ConcurrentDictionary<string, CloudMessageHandler>();
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
@@ -33,7 +33,7 @@ namespace Wirehome.Core.Cloud
         private ConnectorChannel _channel;
         private bool _isConnected;
 
-        public CloudService(StorageService storageService, SystemStatusService systemStatusService, PythonEngineService pythonEngineService, ILoggerFactory loggerFactory)
+        public CloudService(StorageService storageService, SystemStatusService systemStatusService, ILoggerFactory loggerFactory)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
 
@@ -44,8 +44,6 @@ namespace Wirehome.Core.Cloud
             systemStatusService.Set("cloud.is_connected", () => _isConnected);
 
             _httpClient.BaseAddress = new Uri("http://127.0.0.1:80");
-
-            pythonEngineService.RegisterSingletonProxy(new CloudPythonProxy(this));
         }
 
         public void Start()

@@ -12,18 +12,18 @@ namespace Wirehome.Core.Components
     public class ComponentInitializer
     {
         private readonly ComponentRegistryService _componentRegistryService;
-        private readonly PythonEngineService _pythonEngineService;
+        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly RepositoryService _repositoryService;
         private readonly ILoggerFactory _loggerFactory;
 
         public ComponentInitializer(
             ComponentRegistryService componentRegistryService,
-            PythonEngineService pythonEngineService,
+            PythonScriptHostFactoryService pythonScriptHostFactoryService,
             RepositoryService repositoryService,
             ILoggerFactory loggerFactory)
         {
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
-            _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
+            _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(_pythonScriptHostFactoryService));
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
@@ -40,7 +40,7 @@ namespace Wirehome.Core.Components
 
             var adapterEntity = _repositoryService.LoadEntity(configuration.Logic.Adapter.Uid);
 
-            var adapter = new ScriptComponentAdapter(_pythonEngineService, _componentRegistryService, _loggerFactory);
+            var adapter = new ScriptComponentAdapter(_pythonScriptHostFactoryService, _componentRegistryService, _loggerFactory);
             adapter.Initialize(component.Uid, adapterEntity.Script);
 
             if (configuration.Logic.Adapter.Variables != null)
@@ -63,7 +63,7 @@ namespace Wirehome.Core.Components
             {
                 var logicEntity = _repositoryService.LoadEntity(configuration.Logic.Uid);
 
-                var logic = new ScriptComponentLogic(_pythonEngineService, _componentRegistryService, _loggerFactory);
+                var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _loggerFactory);
                 adapter.MessagePublishedCallback = message => logic.ProcessAdapterMessage(message);
                 logic.AdapterMessagePublishedCallback = message => adapter.ProcessMessage(message);
 

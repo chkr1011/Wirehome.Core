@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Resources;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
@@ -20,7 +19,7 @@ namespace Wirehome.Core.Notifications
     ///
     /// TODO: Add a dictionary of parameters to each notifications. They can be shown in the UI.
     /// </summary>
-    public class NotificationsService
+    public class NotificationsService : IService
     {
         private const string StorageFilename = "Notifications.json";
 
@@ -29,7 +28,7 @@ namespace Wirehome.Core.Notifications
         private readonly StorageService _storageService;
         private readonly ResourceService _resourcesService;
         private readonly MessageBusService _messageBusService;
-        private readonly SystemService _systemService;
+        private readonly SystemCancellationToken _systemCancellationToken;
 
         private readonly ILogger<NotificationsService> _logger;
 
@@ -37,20 +36,17 @@ namespace Wirehome.Core.Notifications
             StorageService storageService,
             SystemStatusService systemStatusService,
             ResourceService resourcesService,
-            PythonEngineService pythonEngineService,
             MessageBusService messageBusService,
-            SystemService systemService,
+            SystemCancellationToken systemCancellationToken,
             ILoggerFactory loggerFactory)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _resourcesService = resourcesService ?? throw new ArgumentNullException(nameof(resourcesService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-            _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<NotificationsService>();
-
-            pythonEngineService.RegisterSingletonProxy(new NotificationsPythonProxy(this));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("notifications.count", () =>
@@ -69,7 +65,7 @@ namespace Wirehome.Core.Notifications
                 Load();
             }
 
-            Task.Run(() => RemoveNotificationsAsync(_systemService.CancellationToken), _systemService.CancellationToken);
+            Task.Run(() => RemoveNotificationsAsync(_systemCancellationToken.Token), _systemCancellationToken.Token);
         }
 
         public List<Notification> GetNotifications()

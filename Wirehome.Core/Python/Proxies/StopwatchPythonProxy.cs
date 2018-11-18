@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace Wirehome.Core.Python.Proxies
 {
-    public class StopwatchPythonProxy : IPythonProxy
+    public class StopwatchPythonProxy : IInjectedPythonProxy
     {
         private readonly Dictionary<string, Stopwatch> _stopwatches = new Dictionary<string, Stopwatch>();
 

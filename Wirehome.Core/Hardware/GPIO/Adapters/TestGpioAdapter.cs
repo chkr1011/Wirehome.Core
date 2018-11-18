@@ -7,11 +7,9 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
     {
         private readonly ILogger _logger;
 
-        public TestGpioAdapter(ILoggerFactory loggerFactory)
+        public TestGpioAdapter(ILogger logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-
-            _logger = loggerFactory.CreateLogger<TestGpioAdapter>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public event EventHandler<GpioAdapterStateChangedEventArgs> GpioStateChanged;

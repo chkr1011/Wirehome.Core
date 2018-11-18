@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
+using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Diagnostics
 {
-    public class SystemStatusService
+    public class SystemStatusService : IService
     {
         private readonly ConcurrentDictionary<string, Func<object>> _values = new ConcurrentDictionary<string, Func<object>>();
 
-        public SystemStatusService(PythonEngineService pythonEngineService)
+        public void Start()
         {
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
-            
-            pythonEngineService.RegisterSingletonProxy(new SystemInformationPythonProxy(this));
         }
 
         public void Set(string uid, object value)

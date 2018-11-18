@@ -3,20 +3,21 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Diagnostics
 {
-    public class SystemInformationPythonProxy : IPythonProxy
+    public class SystemStatusPythonProxy : IInjectedPythonProxy
     {
         private readonly SystemStatusService _systemInformationService;
 
-        public SystemInformationPythonProxy(SystemStatusService systemInformationService)
+        public SystemStatusPythonProxy(SystemStatusService systemInformationService)
         {
             _systemInformationService = systemInformationService ?? throw new ArgumentNullException(nameof(systemInformationService));
         }
 
-        public string ModuleName { get; } = "system_information";
+        public string ModuleName { get; } = "system_status";
 
         public void set(string key, object value)
         {

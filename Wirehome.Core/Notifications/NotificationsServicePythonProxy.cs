@@ -1,17 +1,18 @@
 ﻿using System;
-using Wirehome.Core.Notifications;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Notifications
 {
-    public class NotificationsPythonProxy : IPythonProxy
+    public class NotificationsServicePythonProxy : IInjectedPythonProxy
     {
         private readonly NotificationsService _notificationsService;
 
-        public NotificationsPythonProxy(NotificationsService notificationsService)
+        public NotificationsServicePythonProxy(NotificationsService notificationsService)
         {
             _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
         }

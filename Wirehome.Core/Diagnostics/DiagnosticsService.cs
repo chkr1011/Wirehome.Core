@@ -3,28 +3,29 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Diagnostics
 {
-    public class DiagnosticsService
+    public class DiagnosticsService : IService
     {
         private readonly ConcurrentBag<OperationsPerSecondCounter> _operationsPerSecondCounters = new ConcurrentBag<OperationsPerSecondCounter>();
-        private readonly SystemService _systemService;
-
+        private readonly SystemCancellationToken _systemCancellationToken;
+        
         private readonly ILogger _logger;
 
-        public DiagnosticsService(SystemService systemService, ILoggerFactory loggerFactory)
+        public DiagnosticsService(SystemCancellationToken systemCancellationToken, ILoggerFactory loggerFactory)
         {
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
-
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
+            
             _logger = loggerFactory.CreateLogger<DiagnosticsService>();
         }
 
         public void Start()
         {
-            Task.Run(() => ResetOperationsPerSecondCountersAsync(_systemService.CancellationToken), _systemService.CancellationToken).ConfigureAwait(false);
+            Task.Run(() => ResetOperationsPerSecondCountersAsync(_systemCancellationToken.Token), _systemCancellationToken.Token).ConfigureAwait(false);
         }
 
         public OperationsPerSecondCounter CreateOperationsPerSecondCounter(string uid)

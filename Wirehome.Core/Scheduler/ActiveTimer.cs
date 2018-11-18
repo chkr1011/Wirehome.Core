@@ -77,7 +77,7 @@ namespace Wirehome.Core.Scheduler
             }
             catch (Exception exception)
             {
-                _logger.Log(LogLevel.Error, exception, "Error while executing timer.");
+                _logger.Log(LogLevel.Error, exception, $"Error while executing timer '{Uid}'.");
             }
         }
 
@@ -94,7 +94,8 @@ namespace Wirehome.Core.Scheduler
             {
                 LastException = exception;
 
-                _logger.Log(LogLevel.Error, exception, "Error while executing timer callback.");
+                _logger.Log(LogLevel.Error, exception, $"Error while executing callback of timer '{Uid}'.");
+
                 Thread.Sleep(TimeSpan.FromSeconds(1)); // Prevent flooding the log.
             }
         }

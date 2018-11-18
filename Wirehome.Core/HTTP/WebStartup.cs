@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Swagger;
 using Wirehome.Core.HTTP.Controllers;
 using Wirehome.Core.Repository;
@@ -25,7 +26,6 @@ namespace Wirehome.Core.HTTP
 
         public static Action<IServiceCollection> OnServiceRegistration { get; set; }
         public static IServiceProvider ServiceProvider { get; set; }
-        public static StorageService StorageService { get; set; }
 
         // ReSharper disable once UnusedMember.Global
         public IServiceProvider ConfigureServices(IServiceCollection services)
@@ -37,8 +37,6 @@ namespace Wirehome.Core.HTTP
                 manager.FeatureProviders.Remove(manager.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
                 manager.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(ComponentsController).Namespace));
             });
-
-            services.AddSignalRCore();
 
             services.AddSwaggerGen(c =>
             {
@@ -62,7 +60,6 @@ namespace Wirehome.Core.HTTP
             });
 
             OnServiceRegistration(services);
-            services.AddSingleton(StorageService);
 
             ServiceProvider = services.BuildServiceProvider();
             return ServiceProvider;
@@ -95,23 +92,32 @@ namespace Wirehome.Core.HTTP
             {
                 config.MapRoute("default", "api/{controller}/{action}/{id?}", null, null, null);
             });
-
-            // TODO: Mapp SignalR Hub.
         }
 
         private static void ConfigureWebApps(IApplicationBuilder app)
         {
-            StorageService.TryReadOrCreate(out RepositoryServiceOptions repositoryServiceOptions, RepositoryServiceOptions.Filename);
-            var repositoryRootPath = string.IsNullOrEmpty(repositoryServiceOptions.RootPath) ? Path.Combine(StorageService.DataPath, "Repository") : repositoryServiceOptions.RootPath;
+            var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var webAppRootPath = Path.Combine(baseDirectory, "WebApp");
+            var webConfiguratorRootPath = Path.Combine(baseDirectory, "WebConfigurator");
 
-            var webAppRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebApp");
-            var webConfiguratorRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebConfigurator");
-            var customContentRootPath = Path.Combine(StorageService.DataPath, "CustomContent");
+            var storagePaths = new StoragePaths();
+            var customContentRootPath = Path.Combine(storagePaths.DataPath, "CustomContent");
+
+            var repositoryRootPath = Path.Combine(storagePaths.DataPath, "Repository");
+            var storageService = new StorageService(new JsonSerializerService(), new LoggerFactory());
+            storageService.Start();
+            if (storageService.TryRead(out RepositoryServiceOptions repositoryServiceOptions, RepositoryServiceOptions.Filename))
+            {
+                if (!string.IsNullOrEmpty(repositoryServiceOptions.RootPath))
+                {
+                    repositoryRootPath = repositoryServiceOptions.RootPath;
+                }
+            }
 
             if (Debugger.IsAttached)
             {
                 webAppRootPath = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
+                    baseDirectory,
                     "..",
                     "..",
                     "..",
@@ -119,7 +125,7 @@ namespace Wirehome.Core.HTTP
                     "Wirehome.App");
 
                 webConfiguratorRootPath = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
+                    baseDirectory,
                     "..",
                     "..",
                     "..",

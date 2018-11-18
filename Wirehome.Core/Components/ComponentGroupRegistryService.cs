@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Exceptions;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
@@ -12,7 +13,7 @@ namespace Wirehome.Core.Components
     /// <summary>
     /// TODO: Create bus messages when something has changed (settings etc.)
     /// </summary>
-    public class ComponentGroupRegistryService
+    public class ComponentGroupRegistryService : IService
     {
         private const string ComponentGroupsDirectory = "ComponentGroups";
 
@@ -87,7 +88,7 @@ namespace Wirehome.Core.Components
             {
                 if (!_storageService.TryRead(out ComponentGroupConfiguration configuration, ComponentGroupsDirectory, uid, DefaultFilenames.Configuration))
                 {
-                    return;
+                    throw new ComponentGroupNotFoundException(uid);
                 }
 
                 if (!_storageService.TryRead(out WirehomeDictionary settings, ComponentGroupsDirectory, uid, DefaultFilenames.Settings))

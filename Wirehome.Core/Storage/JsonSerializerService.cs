@@ -3,10 +3,11 @@ using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Storage
 {
-    public class JsonSerializerService
+    public class JsonSerializerService : IService
     {
         private readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
         {
@@ -23,6 +24,10 @@ namespace Wirehome.Core.Storage
         public JsonSerializerService()
         {
             _serializer = JsonSerializer.Create(_serializerSettings);
+        }
+
+        public void Start()
+        {
         }
 
         public string Serialize(object value)

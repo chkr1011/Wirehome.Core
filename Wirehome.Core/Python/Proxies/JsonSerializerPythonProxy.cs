@@ -8,10 +8,10 @@ using Newtonsoft.Json.Linq;
 
 namespace Wirehome.Core.Python.Proxies
 {
-    public class JsonSerializerPythonProxy : IPythonProxy
+    public class JsonSerializerPythonProxy : IInjectedPythonProxy
     {
         public string ModuleName { get; } = "json_serializer";
-
+        
         public object deserialize(object value)
         {
             var jsonText = new ConverterPythonProxy().to_string(value);

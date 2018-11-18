@@ -3,26 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Constants;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Model;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.FunctionPool
 {
-    public class FunctionPoolService
+    public class FunctionPoolService : IService
     {
         private readonly Dictionary<string, Func<WirehomeDictionary, WirehomeDictionary>> _functions = new Dictionary<string, Func<WirehomeDictionary, WirehomeDictionary>>();
 
         private readonly ILogger<FunctionPoolService> _logger;
 
-        public FunctionPoolService(PythonEngineService pythonEngineService, ILoggerFactory loggerFactory)
+        public FunctionPoolService(ILoggerFactory loggerFactory)
         {
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-
             _logger = loggerFactory.CreateLogger<FunctionPoolService>();
-
-            pythonEngineService.RegisterSingletonProxy(new FunctionPoolPythonProxy(this));
         }
 
         public void Start()
@@ -52,6 +47,7 @@ namespace Wirehome.Core.FunctionPool
 
         public bool FunctionRegistered(string uid)
         {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
             lock (_functions)
             {
                 return _functions.ContainsKey(uid);
@@ -60,6 +56,8 @@ namespace Wirehome.Core.FunctionPool
 
         public WirehomeDictionary InvokeFunction(string uid, WirehomeDictionary parameters)
         {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
             Func<WirehomeDictionary, WirehomeDictionary> function;
             lock (_functions)
             {

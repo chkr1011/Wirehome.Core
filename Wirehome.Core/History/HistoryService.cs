@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Operations;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.History.Extract;
 using Wirehome.Core.History.Repository;
@@ -18,14 +18,15 @@ using Wirehome.Core.System;
 
 namespace Wirehome.Core.History
 {
-    public class HistoryService
+    public class HistoryService : IService
     {
-        private readonly BlockingCollection<ComponentStatusValue> _pendingComponentStatusValues = new BlockingCollection<ComponentStatusValue>();
+        private readonly BlockingCollection<ComponentStatusValue> _pendingComponentStatusValues =
+            new BlockingCollection<ComponentStatusValue>();
 
         private readonly ComponentRegistryService _componentRegistryService;
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
-        private readonly SystemService _systemService;
+        private readonly SystemCancellationToken _systemCancellationToken;
         private readonly ILogger _logger;
         private readonly OperationsPerSecondCounter _updateRateCounter;
 
@@ -38,14 +39,15 @@ namespace Wirehome.Core.History
             StorageService storageService,
             MessageBusService messageBusService,
             SystemStatusService systemStatusService,
-            SystemService systemService,
+            SystemCancellationToken systemCancellationToken,
             DiagnosticsService diagnosticsService,
             ILoggerFactory loggerFactory)
         {
-            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
+            _componentRegistryService = componentRegistryService ??
+                                        throw new ArgumentNullException(nameof(componentRegistryService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-            _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<HistoryService>();
@@ -81,14 +83,14 @@ namespace Wirehome.Core.History
             AttachToMessageBus();
 
             Task.Factory.StartNew(
-                () => ProcessHistoryMessages(_systemService.CancellationToken),
-                _systemService.CancellationToken,
+                () => ProcessHistoryMessages(_systemCancellationToken.Token),
+                _systemCancellationToken.Token,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
 
             Task.Run(
-                () => TryUpdateComponentStatusValuesAsync(_systemService.CancellationToken),
-                _systemService.CancellationToken);
+                () => TryUpdateComponentStatusValuesAsync(_systemCancellationToken.Token),
+                _systemCancellationToken.Token);
         }
 
         public HistoryExtract BuildHistoryExtract(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
@@ -180,7 +182,8 @@ namespace Wirehome.Core.History
 
                 var stopwatch = Stopwatch.StartNew();
 
-                var roundSetting = GetComponentStatusHistorySetting(componentStatusValue.ComponentUid, componentStatusValue.StatusUid, HistorySettingName.RoundDigits);
+                var roundSetting = GetComponentStatusHistorySetting(componentStatusValue.ComponentUid,
+                    componentStatusValue.StatusUid, HistorySettingName.RoundDigits);
                 if (roundSetting != null)
                 {
                     var roundDigitsCount = Convert.ToInt32(roundSetting);

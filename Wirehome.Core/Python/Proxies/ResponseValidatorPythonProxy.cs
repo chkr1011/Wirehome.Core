@@ -1,15 +1,15 @@
-﻿using System;
+﻿#pragma warning disable IDE1006 // Naming Styles
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
+
+using System;
 using System.Globalization;
 using IronPython.Runtime;
 using Wirehome.Core.Constants;
 
-#pragma warning disable IDE1006 // Naming Styles
-// ReSharper disable InconsistentNaming
-// ReSharper disable UnusedMember.Global
-
 namespace Wirehome.Core.Python.Proxies
 {
-    public class ResponseValidatorPythonProxy : IPythonProxy
+    public class ResponseValidatorPythonProxy : IInjectedPythonProxy
     {
         public string ModuleName { get; } = "response_validator";
 

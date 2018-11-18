@@ -13,11 +13,9 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
         private readonly object _syncRoot = new object();
         private readonly ILogger _logger;
 
-        public LinuxGpioAdapter(ILoggerFactory loggerFactory)
+        public LinuxGpioAdapter(ILogger logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-
-            _logger = loggerFactory.CreateLogger<LinuxGpioAdapter>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Enable()

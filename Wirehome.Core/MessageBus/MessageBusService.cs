@@ -5,22 +5,21 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Model;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.MessageBus
 {
-    public class MessageBusService
+    public class MessageBusService : IService
     {
         private readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
         private readonly LinkedList<MessageBusMessage> _history = new LinkedList<MessageBusMessage>();
         private readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new ConcurrentDictionary<string, MessageBusSubscriber>();
         private readonly ConcurrentDictionary<string, MessageBusResponseSubscriber> _responseSubscribers = new ConcurrentDictionary<string, MessageBusResponseSubscriber>();
 
-        private readonly SystemService _systemService;
+        private readonly SystemCancellationToken _systemCancellationToken;
 
         private readonly OperationsPerSecondCounter _inboundCounter;
         private readonly OperationsPerSecondCounter _processingRateCounter;
@@ -28,19 +27,15 @@ namespace Wirehome.Core.MessageBus
         private readonly ILogger _logger;
 
         public MessageBusService(
-            PythonEngineService pythonEngineService,
             SystemStatusService systemStatusService,
             DiagnosticsService diagnosticsService,
-            SystemService systemService,
+            SystemCancellationToken systemCancellationToken,
             ILoggerFactory loggerFactory)
         {
-            _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<MessageBusService>();
-
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
-            pythonEngineService.RegisterSingletonProxy(new MessageBusPythonProxy(this));
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _inboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("message_bus.inbound_rate");
@@ -56,16 +51,16 @@ namespace Wirehome.Core.MessageBus
         public void Start()
         {
             Task.Factory.StartNew(
-                () => DispatchMessageBusMessages(_systemService.CancellationToken),
-                _systemService.CancellationToken,
+                () => DispatchMessageBusMessages(_systemCancellationToken.Token),
+                _systemCancellationToken.Token,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
 
             for (var i = 0; i < 3; i++)
             {
                 Task.Factory.StartNew(
-                    () => ProcessMessageBusMessages(_systemService.CancellationToken),
-                    _systemService.CancellationToken,
+                    () => ProcessMessageBusMessages(_systemCancellationToken.Token),
+                    _systemCancellationToken.Token,
                     TaskCreationOptions.LongRunning,
                     TaskScheduler.Default);
             }

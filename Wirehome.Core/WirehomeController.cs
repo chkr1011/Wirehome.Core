@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,25 +6,22 @@ using Microsoft.Extensions.Logging;
 using Wirehome.Core.Automations;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
-using Wirehome.Core.Constants;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Diagnostics.Log;
 using Wirehome.Core.Discovery;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.FunctionPool;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Hardware.GPIO;
-using Wirehome.Core.Hardware.GPIO.Adapters;
 using Wirehome.Core.Hardware.I2C;
-using Wirehome.Core.Hardware.I2C.Adapters;
 using Wirehome.Core.Hardware.MQTT;
 using Wirehome.Core.History;
 using Wirehome.Core.HTTP;
 using Wirehome.Core.Macros;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Model;
 using Wirehome.Core.Notifications;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repository;
 using Wirehome.Core.Resources;
 using Wirehome.Core.Scheduler;
 using Wirehome.Core.ServiceHost;
@@ -37,207 +33,92 @@ namespace Wirehome.Core
 {
     public class WirehomeController
     {
+        private readonly SystemCancellationToken _systemCancellationToken = new SystemCancellationToken();
+        private readonly SystemLaunchArguments _systemLaunchArguments;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly string[] _arguments;
-
         private ILogger _logger;
-        private SystemService _systemService;
 
         public WirehomeController(ILoggerFactory loggerFactory, string[] arguments)
         {
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            _arguments = arguments;
+            _systemLaunchArguments = new SystemLaunchArguments(arguments ?? new string[0]);
         }
 
         public void Start()
         {
             try
             {
-                var timestamp = DateTime.Now;
-
                 _logger = _loggerFactory.CreateLogger<WirehomeController>();
-                _logger.Log(LogLevel.Information, "Starting Wirehome.Core (c) Christian Kratky 2011 - 2018");
+                _logger.LogInformation("Starting Wirehome.Core (c) Christian Kratky 2011 - 2018");
 
-                var storageService = new StorageService(new JsonSerializerService(), _loggerFactory);
-                storageService.Start();
-                
-                var serviceProvider = StartHttpServer(storageService);
-                _loggerFactory.AddProvider(new LogServiceLoggerProvider(serviceProvider.GetRequiredService<LogService>()));
+                var serviceProvider = StartHttpServer();
+                _loggerFactory.AddProvider(
+                    new LogServiceLoggerProvider(serviceProvider.GetRequiredService<LogService>()));
 
-                SetupHardwareAdapters(serviceProvider); // TODO: From config!
+                _logger.LogDebug("Starting services...");
 
-                StartServices(serviceProvider);
-                RegisterEvents(serviceProvider);
+                serviceProvider.GetRequiredService<StorageService>().Start();
+                serviceProvider.GetRequiredService<DiagnosticsService>().Start();
+                serviceProvider.GetRequiredService<MessageBusService>().Start();
 
-                PublishBootedNotification(serviceProvider);
+                serviceProvider.GetRequiredService<ResourceService>().Start();
+                serviceProvider.GetRequiredService<GlobalVariablesService>().Start();
+                serviceProvider.GetRequiredService<CloudService>().Start();
 
-                _logger.Log(LogLevel.Information, "Startup completed.");
+                serviceProvider.GetRequiredService<SchedulerService>().Start();
 
-                _systemService = serviceProvider.GetRequiredService<SystemService>();
-                _systemService.Start(timestamp, string.Join(" ", _arguments));
+                // Start hardware related services.
+                serviceProvider.GetRequiredService<GpioRegistryService>().Start();
+                serviceProvider.GetRequiredService<I2CBusService>().Start();
+                serviceProvider.GetRequiredService<MqttService>().Start();
+                serviceProvider.GetRequiredService<HttpServerService>().Start();
+                serviceProvider.GetRequiredService<DiscoveryService>().Start();
 
-                serviceProvider.GetRequiredService<StartupScriptsService>().OnStartupCompleted();
+                serviceProvider.GetRequiredService<PythonEngineService>().Start();
+
+                var startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
+                startupScriptsService.Start();
+
+                serviceProvider.GetRequiredService<FunctionPoolService>().Start();
+                serviceProvider.GetRequiredService<ServiceHostService>().Start();
+
+                serviceProvider.GetRequiredService<NotificationsService>().Start();
+
+                serviceProvider.GetRequiredService<HistoryService>().Start();
+
+                startupScriptsService.OnServicesInitialized();
+
+                // Start data related services.
+                serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
+                serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
+                serviceProvider.GetRequiredService<AutomationRegistryService>().Start();
+                serviceProvider.GetRequiredService<MacroRegistryService>().Start();
+
+                _logger.LogDebug("Service startup completed.");
+
+                startupScriptsService.OnConfigurationLoaded();
+
+                var systemService = serviceProvider.GetRequiredService<SystemService>();
+                systemService.Start();
+
+                startupScriptsService.OnStartupCompleted();
             }
             catch (Exception exception)
             {
-                _logger.Log(LogLevel.Critical, exception, "Startup failed.");
+                _logger.LogCritical(exception, "Startup failed.");
             }
         }
 
         public void Stop()
         {
-            _systemService?.Stop();
+            _systemCancellationToken?.Cancel();
         }
 
-        private static void RegisterEvents(IServiceProvider serviceProvider)
+        private IServiceProvider StartHttpServer()
         {
-            var systemService = serviceProvider.GetRequiredService<SystemService>();
-            var notificationsService = serviceProvider.GetRequiredService<NotificationsService>();
-
-            systemService.RebootInitiated += (s, e) =>
-            {
-                notificationsService.PublishFromResource(new PublishFromResourceParameters
-                {
-                    Type = NotificationType.Warning,
-                    ResourceUid = NotificationResourceUids.RebootInitiated,
-                    Parameters = new WirehomeDictionary
-                    {
-                        ["wait_time"] = 0 // TODO: Add to event args.
-                    }
-                });
-            };
-        }
-
-        private static void PublishBootedNotification(IServiceProvider serviceProvider)
-        {
-            var messageBusService = serviceProvider.GetRequiredService<MessageBusService>();
-            messageBusService.Publish(new WirehomeDictionary().WithType(MessageBusMessageTypes.Booted));
-    
-            var notificationService = serviceProvider.GetRequiredService<NotificationsService>();
-            notificationService.PublishFromResource(new PublishFromResourceParameters()
-            {
-                Type = NotificationType.Information,
-                ResourceUid = NotificationResourceUids.Booted
-            });
-        }
-
-        private void RegisterServices(IServiceCollection serviceCollection)
-        {
-            serviceCollection.AddSingleton(_loggerFactory);
-
-            serviceCollection.AddSingleton<JsonSerializerService>();
-            serviceCollection.AddSingleton<HttpServerService>();
-
-            serviceCollection.AddSingleton<LogService>();
-            serviceCollection.AddSingleton<SystemService>();
-            serviceCollection.AddSingleton<DiagnosticsService>();
-            serviceCollection.AddSingleton<StartupScriptsService>();
-            serviceCollection.AddSingleton<SystemStatusService>();
-            serviceCollection.AddSingleton<GlobalVariablesService>();
-            serviceCollection.AddSingleton<CloudService>();
-
-            serviceCollection.AddSingleton<ResourceService>();
-            serviceCollection.AddSingleton<FunctionPoolService>();
-
-            serviceCollection.AddSingleton<MessageBusService>();
-            serviceCollection.AddSingleton<SchedulerService>();
-            serviceCollection.AddSingleton<PythonEngineService>();
-
-            serviceCollection.AddSingleton<MqttService>();
-            serviceCollection.AddSingleton<I2CBusService>();
-            serviceCollection.AddSingleton<GpioRegistryService>();
-            serviceCollection.AddSingleton<DiscoveryService>();
-
-            serviceCollection.AddSingleton<NotificationsService>();
-
-            serviceCollection.AddSingleton<ComponentGroupRegistryService>();
-
-            serviceCollection.AddSingleton<RepositoryService>();
-
-            serviceCollection.AddSingleton<HistoryService>();
-
-            serviceCollection.AddSingleton<ServiceHostService>();
-            serviceCollection.AddSingleton<ComponentRegistryService>();
-            serviceCollection.AddSingleton<ComponentInitializerFactory>();
-            serviceCollection.AddSingleton<AutomationRegistryService>();
-            serviceCollection.AddSingleton<MacroRegistryService>();
-        }
-
-        private void StartServices(IServiceProvider serviceProvider)
-        {
-            _logger.Log(LogLevel.Debug, "Starting services...");
-
-            serviceProvider.GetRequiredService<DiagnosticsService>().Start();
-            serviceProvider.GetRequiredService<MessageBusService>().Start();
-
-            serviceProvider.GetRequiredService<ResourceService>().Start();
-            serviceProvider.GetRequiredService<GlobalVariablesService>().Start();
-            serviceProvider.GetRequiredService<CloudService>().Start();
-
-            serviceProvider.GetRequiredService<SchedulerService>().Start();
-
-            serviceProvider.GetRequiredService<MqttService>().Start();
-            serviceProvider.GetRequiredService<HttpServerService>().Start();
-            serviceProvider.GetRequiredService<DiscoveryService>().Start();
-
-            serviceProvider.GetRequiredService<PythonEngineService>().Start();
-
-            var startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
-            startupScriptsService.Start();
-
-            serviceProvider.GetRequiredService<FunctionPoolService>().Start();
-            serviceProvider.GetRequiredService<ServiceHostService>().Start();
-            
-            serviceProvider.GetRequiredService<NotificationsService>().Start();
-
-            serviceProvider.GetRequiredService<HistoryService>().Start();
-
-            startupScriptsService.OnServicesInitialized();
-
-            // Start data related services.
-            serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
-            serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
-            serviceProvider.GetRequiredService<AutomationRegistryService>().Start();
-            serviceProvider.GetRequiredService<MacroRegistryService>().Start();
-            
-            startupScriptsService.OnConfigurationLoaded();
-
-            _logger.Log(LogLevel.Debug, "Service startup completed.");
-        }
-
-        private static void SetupHardwareAdapters(IServiceProvider serviceProvider)
-        {
-            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-
-            var i2CService = serviceProvider.GetRequiredService<I2CBusService>();
-            var gpioService = serviceProvider.GetRequiredService<GpioRegistryService>();
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var i2CAdapter = new LinuxI2CBusAdapter(1, loggerFactory);
-                i2CAdapter.Enable();
-                i2CService.RegisterAdapter(string.Empty, i2CAdapter);
-
-                var gpioAdapter = new LinuxGpioAdapter(loggerFactory);
-                gpioAdapter.Enable();
-                gpioService.RegisterAdapter(string.Empty, gpioAdapter);
-            }
-            else
-            {
-                var i2CAdapter = new TestI2CBusAdapter(loggerFactory);
-                i2CService.RegisterAdapter(string.Empty, i2CAdapter);
-
-                var gpioAdapter = new TestGpioAdapter(loggerFactory);
-                gpioService.RegisterAdapter(string.Empty, gpioAdapter);
-            }
-        }
-
-        private IServiceProvider StartHttpServer(StorageService storageService)
-        {
-            _logger.Log(LogLevel.Debug, "Starting HTTP server");
+            _logger.LogDebug("Starting HTTP server");
 
             WebStartup.OnServiceRegistration = RegisterServices;
-            WebStartup.StorageService = storageService;
 
             var host = WebHost.CreateDefaultBuilder()
                 .UseKestrel()
@@ -247,9 +128,26 @@ namespace Wirehome.Core
 
             host.Start();
 
-            _logger.Log(LogLevel.Debug, "HTTP server started.");
+            _logger.LogDebug("HTTP server started.");
 
             return WebStartup.ServiceProvider;
+        }
+
+        private void RegisterServices(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddSingleton(_loggerFactory);
+            serviceCollection.AddSingleton(_systemLaunchArguments);
+            serviceCollection.AddSingleton(_systemCancellationToken);
+
+            foreach (var singletonService in Reflection.GetClassesImplementingInterface<IService>())
+            {
+                serviceCollection.AddSingleton(singletonService);
+            }
+
+            foreach (var pythonProxy in Reflection.GetClassesImplementingInterface<IInjectedPythonProxy>())
+            {
+                serviceCollection.AddSingleton(typeof(IPythonProxy), pythonProxy);
+            }
         }
     }
 }

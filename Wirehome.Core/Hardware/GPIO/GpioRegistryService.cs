@@ -1,29 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Exceptions;
 using Wirehome.Core.Hardware.GPIO.Adapters;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.Hardware.GPIO
 {
-    public class GpioRegistryService
+    public class GpioRegistryService : IService
     {
         private readonly Dictionary<string, IGpioAdapter> _adapters = new Dictionary<string, IGpioAdapter>();
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
-        public GpioRegistryService(PythonEngineService pythonEngineService, MessageBusService messageBusService, ILoggerFactory loggerFactory)
+        public GpioRegistryService(MessageBusService messageBusService, ILoggerFactory loggerFactory)
         {
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-
             _logger = loggerFactory?.CreateLogger<GpioRegistryService>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+        }
 
-            pythonEngineService.RegisterSingletonProxy(new GpioPythonProxy(this, loggerFactory));
+        public void Start()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var gpioAdapter = new LinuxGpioAdapter(_logger);
+                gpioAdapter.Enable();
+                RegisterAdapter(string.Empty, gpioAdapter);
+            }
+            else
+            {
+                var gpioAdapter = new TestGpioAdapter(_logger);
+                RegisterAdapter(string.Empty, gpioAdapter);
+            }
         }
 
         public void RegisterAdapter(string hostId, IGpioAdapter adapter)

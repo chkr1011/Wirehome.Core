@@ -16,11 +16,9 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
 
         private int _handle;
 
-        public LinuxI2CBusAdapter(int busId, ILoggerFactory loggerFactory)
+        public LinuxI2CBusAdapter(int busId, ILogger logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-
-            _logger = loggerFactory.CreateLogger<LinuxI2CBusAdapter>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _filename = "/dev/i2c-" + busId;
         }

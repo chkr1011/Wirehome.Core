@@ -5,15 +5,17 @@ using System.Text;
 using IronPython.Runtime;
 using Newtonsoft.Json.Linq;
 using Wirehome.Core.Constants;
+using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
+using Wirehome.Core.Python.Proxies;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.HTTP
 {
-    public class HttpClientPythonProxy : IPythonProxy
+    public class HttpClientPythonProxy : IInjectedPythonProxy
     {
         public string ModuleName { get; } = "http_client";
 

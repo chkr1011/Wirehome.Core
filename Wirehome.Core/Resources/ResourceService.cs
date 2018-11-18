@@ -5,13 +5,14 @@ using System.Globalization;
 using System.IO;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Constants;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Resources.Exception;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Resources
 {
-    public class ResourceService
+    public class ResourceService : IService
     {
         private const string ResourcesDirectory = "Resources";
         private const string StringsFilename = "Strings.js";

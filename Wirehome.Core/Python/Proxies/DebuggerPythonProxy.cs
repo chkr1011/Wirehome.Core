@@ -10,7 +10,7 @@ using Microsoft.Scripting.Utils;
 
 namespace Wirehome.Core.Python.Proxies
 {
-    public class DebuggerPythonProxy : IPythonProxy
+    public class DebuggerPythonProxy : IInjectedPythonProxy
     {
         private readonly ConcurrentBag<object> _trace = new ConcurrentBag<object>();
         private bool _isEnabled;

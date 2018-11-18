@@ -4,15 +4,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Rssdp;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Extensions;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Discovery
 {
     // TODO: Create own model with all information in place.
-    public class DiscoveryService
+    public class DiscoveryService : IService
     {
         private readonly List<DiscoveredSsdpDevice> _discoveredSsdpDevices = new List<DiscoveredSsdpDevice>();
         private readonly ILogger _logger;
@@ -20,14 +19,10 @@ namespace Wirehome.Core.Discovery
 
         private SsdpDevicePublisher _publisher;
         
-        public DiscoveryService(PythonEngineService pythonEngineService, StorageService storageService, ILoggerFactory loggerFactory)
+        public DiscoveryService(StorageService storageService, ILoggerFactory loggerFactory)
         {
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-
             _logger = loggerFactory.CreateLogger<DiscoveryService>();
-
-            pythonEngineService.RegisterSingletonProxy(new DiscoveryPythonProxy(this));
 
             storageService.TryReadOrCreate(out _options, DiscoveryServiceOptions.Filename);
         }

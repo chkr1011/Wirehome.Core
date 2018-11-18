@@ -4,33 +4,49 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Constants;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.MessageBus;
+using Wirehome.Core.Model;
+using Wirehome.Core.Notifications;
 
 namespace Wirehome.Core.System
 {
-    public class SystemService
+    public class SystemService : IService
     {
         private readonly SystemStatusService _systemStatusService;
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private readonly SystemLaunchArguments _systemLaunchArguments;
+        private readonly NotificationsService _notificationsService;
+        private readonly MessageBusService _messageBusService;
 
         private readonly ILogger _logger;
+        private readonly DateTime _creationTimestamp;
 
-        public SystemService(SystemStatusService systemStatusService, ILoggerFactory loggerFactory)
+        public SystemService(
+            SystemStatusService systemStatusService,
+            SystemLaunchArguments systemLaunchArguments,
+            SystemCancellationToken systemCancellationToken,
+            NotificationsService notificationsService,
+            MessageBusService messageBusService,
+            ILoggerFactory loggerFactory)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
+            _systemLaunchArguments = systemLaunchArguments ?? throw new ArgumentNullException(nameof(systemLaunchArguments));
+            _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
+            _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
+
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<SystemService>();
+
+            _creationTimestamp = DateTime.Now;
         }
 
-        public event EventHandler RebootInitiated;
-
-        public CancellationToken CancellationToken => _cancellationTokenSource.Token;
-
-        public void Start(DateTime startupTimestamp, string _arguments)
+        public void Start()
         {
-            _systemStatusService.Set("startup.timestamp", startupTimestamp);
-            _systemStatusService.Set("startup.duration", DateTime.Now - startupTimestamp);
-            
+            _systemStatusService.Set("startup.timestamp", _creationTimestamp);
+            _systemStatusService.Set("startup.duration", DateTime.Now - _creationTimestamp);
+
             _systemStatusService.Set("framework.description", RuntimeInformation.FrameworkDescription);
 
             _systemStatusService.Set("process.architecture", RuntimeInformation.ProcessArchitecture);
@@ -40,33 +56,50 @@ namespace Wirehome.Core.System
             _systemStatusService.Set("system.processor_count", Environment.ProcessorCount);
             _systemStatusService.Set("system.working_set", () => Environment.WorkingSet);
 
-            _systemStatusService.Set("up_time", () => DateTime.Now - startupTimestamp);
+            _systemStatusService.Set("up_time", () => DateTime.Now - _creationTimestamp);
 
-            _systemStatusService.Set("arguments", _arguments);
+            _systemStatusService.Set("arguments", string.Join(" ", _systemLaunchArguments.Values));
 
             _systemStatusService.Set("wirehome.core.version", WirehomeCoreVersion.Version);
 
             AddOSInformation();
             AddThreadPoolInformation();
-        }
-
-        public void Stop()
-        {
-            _cancellationTokenSource.Cancel(false);
+            PublishBootedNotification();
         }
 
         public void Reboot(int waitTime)
         {
-            _logger.Log(LogLevel.Information, "Reboot initiated.");
-            RebootInitiated?.Invoke(this, EventArgs.Empty);
+            _logger.LogInformation("Reboot initiated.");
 
-            _cancellationTokenSource.Cancel(false);
+            _notificationsService.PublishFromResource(new PublishFromResourceParameters
+            {
+                Type = NotificationType.Warning,
+                ResourceUid = NotificationResourceUids.RebootInitiated,
+                Parameters = new WirehomeDictionary
+                {
+                    ["wait_time"] = 0 // TODO: Add to event args.
+                }
+            });
+
+            _messageBusService.Publish(new WirehomeDictionary().WithType("system.reboot_initiated"));
 
             Task.Run(() =>
             {
                 Thread.Sleep(TimeSpan.FromSeconds(waitTime));
                 Process.Start("shutdown", " -r now");
-            }, CancellationToken);
+            }, CancellationToken.None);
+        }
+
+        private void PublishBootedNotification()
+        {
+            _logger.LogInformation("Startup completed.");
+
+            _messageBusService.Publish(new WirehomeDictionary().WithType("system.booted"));
+            _notificationsService.PublishFromResource(new PublishFromResourceParameters
+            {
+                Type = NotificationType.Information,
+                ResourceUid = NotificationResourceUids.Booted
+            });
         }
 
         private void AddOSInformation()

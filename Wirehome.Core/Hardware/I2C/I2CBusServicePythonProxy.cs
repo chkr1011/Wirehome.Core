@@ -5,15 +5,16 @@
 using System;
 using IronPython.Runtime;
 using Wirehome.Core.Extensions;
-using Wirehome.Core.Hardware.I2C;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Hardware.I2C
 {
-    public class I2CBusPythonProxy : IPythonProxy
+    public class I2CBusServicePythonProxy : IInjectedPythonProxy
     {
         private readonly I2CBusService _i2CBusService;
 
-        public I2CBusPythonProxy(I2CBusService i2CBusService)
+        public I2CBusServicePythonProxy(I2CBusService i2CBusService)
         {
             _i2CBusService = i2CBusService ?? throw new ArgumentNullException(nameof(i2CBusService));
         }

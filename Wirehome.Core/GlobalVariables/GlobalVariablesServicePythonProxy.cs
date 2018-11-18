@@ -3,15 +3,16 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using Wirehome.Core.GlobalVariables;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.GlobalVariables
 {
-    public class GlobalVariablesPythonProxy : IPythonProxy
+    public class GlobalVariablesServicePythonProxy : IInjectedPythonProxy
     {
         private readonly GlobalVariablesService _globalVariablesService;
 
-        public GlobalVariablesPythonProxy(GlobalVariablesService globalVariablesService)
+        public GlobalVariablesServicePythonProxy(GlobalVariablesService globalVariablesService)
         {
             _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
         }

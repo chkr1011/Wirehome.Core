@@ -3,36 +3,36 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Automations.Configuration;
 using Wirehome.Core.Automations.Exceptions;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Automations
 {
-    public class AutomationRegistryService
+    public class AutomationRegistryService : IService
     {
         private const string AutomationsDirectory = "Automations";
 
         private readonly Dictionary<string, AutomationInstance> _automations = new Dictionary<string, AutomationInstance>();
 
         private readonly RepositoryService _repositoryService;
-        private readonly PythonEngineService _pythonEngineService;
+        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
         public AutomationRegistryService(
             RepositoryService repositoryService,
-            PythonEngineService pythonEngineService,
+            PythonScriptHostFactoryService pythonScriptHostFactoryService,
             StorageService storageService,
             MessageBusService messageBusService,
             ILoggerFactory loggerFactory)
         {
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
-            _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
+            _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
 
@@ -159,7 +159,7 @@ namespace Wirehome.Core.Automations
             {
                 if (!_storageService.TryRead(out AutomationConfiguration configuration, AutomationsDirectory, uid, DefaultFilenames.Configuration))
                 {
-                    return;
+                    throw new AutomationNotFoundException(uid);
                 }
 
                 if (!configuration.IsEnabled)
@@ -203,7 +203,7 @@ namespace Wirehome.Core.Automations
         private AutomationInstance CreateAutomation(string uid, AutomationConfiguration configuration, WirehomeDictionary settings)
         {
             var repositoryEntitySource = _repositoryService.LoadEntity(configuration.Logic.Uid);
-            var scriptHost = _pythonEngineService.CreateScriptHost(_logger, new AutomationPythonProxy(uid, this));
+            var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger, new AutomationPythonProxy(uid, this));
 
             scriptHost.Initialize(repositoryEntitySource.Script);
 

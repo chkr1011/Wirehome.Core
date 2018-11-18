@@ -1,26 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Exceptions;
 using Wirehome.Core.Hardware.I2C.Adapters;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.Hardware.I2C
 {
-    public class I2CBusService
+    public class I2CBusService : IService
     {
         private readonly Dictionary<string, II2CBusAdapter> _adapters = new Dictionary<string, II2CBusAdapter>();
 
         private readonly ILogger _logger;
 
-        public I2CBusService(PythonEngineService pythonEngineService, ILoggerFactory loggerFactory)
+        public I2CBusService(ILoggerFactory loggerFactory)
         {
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
-
             _logger = loggerFactory?.CreateLogger<I2CBusService>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+        }
 
-            pythonEngineService.RegisterSingletonProxy(new I2CBusPythonProxy(this));
+        public void Start()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var i2CAdapter = new LinuxI2CBusAdapter(1, _logger);
+                i2CAdapter.Enable();
+                RegisterAdapter(string.Empty, i2CAdapter);
+            }
+            else
+            {
+                var i2CAdapter = new TestI2CBusAdapter(_logger);
+                RegisterAdapter(string.Empty, i2CAdapter);
+            }
         }
 
         public void RegisterAdapter(string busId, II2CBusAdapter adapter)

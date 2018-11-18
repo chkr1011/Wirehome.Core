@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Storage
 {
-    public class StorageService
+    public class StorageService : IService
     {
         private readonly JsonSerializerService _jsonSerializerService;
         private readonly ILogger _logger;
@@ -19,36 +19,21 @@ namespace Wirehome.Core.Storage
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<StorageService>();
-        }
 
-        public string BinPath { get; private set; }
-
-        public string DataPath { get; private set; }
-
-        public void Start()
-        {
-            BinPath = AppDomain.CurrentDomain.BaseDirectory;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                DataPath = Path.Combine(Environment.ExpandEnvironmentVariables("%appData%"), "Wirehome");
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                DataPath = Path.Combine("/etc/wirehome");
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
-
-            if (!Directory.Exists(DataPath))
-            {
-                Directory.CreateDirectory(DataPath);
-            }
+            var paths = new StoragePaths();
+            BinPath = paths.BinPath;
+            DataPath = paths.DataPath;
 
             _logger.Log(LogLevel.Information, $"Bin path  = {BinPath}");
             _logger.Log(LogLevel.Information, $"Data path = {DataPath}");
+        }
+
+        public string BinPath { get; }
+
+        public string DataPath { get; }
+
+        public void Start()
+        {
         }
 
         public List<string> EnumeratureDirectories(string pattern, params string[] path)

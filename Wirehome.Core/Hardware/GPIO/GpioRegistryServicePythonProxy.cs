@@ -4,22 +4,23 @@
 
 using System;
 using Microsoft.Extensions.Logging;
-using Wirehome.Core.Hardware.GPIO;
+using Wirehome.Core.Python;
 using Wirehome.Core.Python.Exceptions;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Hardware.GPIO
 {
-    public class GpioPythonProxy : IPythonProxy
+    public class GpioRegistryServicePythonProxy : IInjectedPythonProxy
     {
         private readonly ILogger _logger;
         private readonly GpioRegistryService _gpioRegistryService;
 
-        public GpioPythonProxy(GpioRegistryService gpioRegistryService, ILoggerFactory loggerFactory)
+        public GpioRegistryServicePythonProxy(GpioRegistryService gpioRegistryService, ILoggerFactory loggerFactory)
         {
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _gpioRegistryService = gpioRegistryService ?? throw new ArgumentNullException(nameof(gpioRegistryService));
 
-            _logger = loggerFactory.CreateLogger<GpioPythonProxy>();
+            _logger = loggerFactory.CreateLogger<GpioRegistryServicePythonProxy>();
         }
 
         public string ModuleName { get; } = "gpio";

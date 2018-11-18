@@ -12,17 +12,18 @@ using MQTTnet;
 using MQTTnet.Adapter;
 using MQTTnet.Client;
 using MQTTnet.Protocol;
-using Wirehome.Core.Hardware.MQTT;
 using Wirehome.Core.Model;
+using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttPythonProxy : IPythonProxy
+    public class MqttServicePythonProxy : IInjectedPythonProxy
     {
         private readonly MqttService _mqttService;
 
-        public MqttPythonProxy(MqttService mqttService)
+        public MqttServicePythonProxy(MqttService mqttService)
         {
             _mqttService = mqttService ?? throw new ArgumentNullException(nameof(mqttService));
         }

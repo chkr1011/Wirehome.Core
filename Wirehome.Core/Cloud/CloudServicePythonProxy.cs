@@ -4,15 +4,16 @@
 
 using System;
 using IronPython.Runtime;
-using Wirehome.Core.Cloud;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Cloud
 {
-    public class CloudPythonProxy : IPythonProxy
+    public class CloudServicePythonProxy : IInjectedPythonProxy
     {
         private readonly CloudService _cloudService;
 
-        public CloudPythonProxy(CloudService cloudService)
+        public CloudServicePythonProxy(CloudService cloudService)
         {
             _cloudService = cloudService ?? throw new ArgumentNullException(nameof(cloudService));
         }

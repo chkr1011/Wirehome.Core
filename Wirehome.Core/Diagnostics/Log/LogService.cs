@@ -1,28 +1,73 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
+using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Diagnostics.Log
 {
-    public class LogService
+    public class LogService : IService
     {
         private readonly LinkedList<LogEntry> _logEntries = new LinkedList<LogEntry>();
-
         private readonly SystemStatusService _systemStatusService;
+        private readonly LogServiceOptions _options;
 
-        public LogService(SystemStatusService systemStatusService)
+        private int _informationsCount;
+        private int _warningsCount;
+        private int _errorsCount;
+
+        public LogService(StorageService storageService, SystemStatusService systemStatusService)
         {
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
+
+            if (!storageService.TryReadOrCreate(out _options, LogServiceOptions.Filename))
+            {
+                _options = new LogServiceOptions();
+            }
         }
 
+        public void Start()
+        {
+        }
+        
         public void Publish(DateTime timestamp, LogLevel logLevel, string source, string message, Exception exception)
         {
+            var newLogEntry = new LogEntry(timestamp, logLevel, source, message, exception?.ToString());
+
             lock (_logEntries)
             {
-                _logEntries.AddFirst(new LogEntry(timestamp, logLevel, source, message, exception?.ToString()));
-
-                if (_logEntries.Count > 1000)
+                if (newLogEntry.Level == LogLevel.Error)
                 {
+                    _errorsCount++;
+                }
+                else if (newLogEntry.Level == LogLevel.Warning)
+                {
+                    _warningsCount++;
+                }
+                else if (newLogEntry.Level == LogLevel.Information)
+                {
+                    _informationsCount++;
+                }
+
+                _logEntries.AddFirst(newLogEntry);
+
+                if (_logEntries.Count > _options.MessageCount)
+                {
+                    var removedLogEntry = _logEntries.Last.Value;
+
+                    if (removedLogEntry.Level == LogLevel.Error)
+                    {
+                        _errorsCount--;
+                    }
+                    else if (removedLogEntry.Level == LogLevel.Warning)
+                    {
+                        _warningsCount--;
+                    }
+                    else if (removedLogEntry.Level == LogLevel.Information)
+                    {
+                        _informationsCount--;
+                    }
+
                     _logEntries.RemoveLast();
                 }
 
@@ -35,6 +80,11 @@ namespace Wirehome.Core.Diagnostics.Log
             lock (_logEntries)
             {
                 _logEntries.Clear();
+
+                _informationsCount = 0;
+                _warningsCount = 0;
+                _errorsCount = 0;
+
                 UpdateSystemStatus();
             }
         }
@@ -73,29 +123,9 @@ namespace Wirehome.Core.Diagnostics.Log
 
         private void UpdateSystemStatus()
         {
-            var informationsCount = 0;
-            var warningsCount = 0;
-            var errorsCount = 0;
-
-            foreach (var logEntry in _logEntries)
-            {
-                if (logEntry.Level == LogLevel.Error)
-                {
-                    errorsCount++;
-                }
-                else if (logEntry.Level == LogLevel.Warning)
-                {
-                    warningsCount++;
-                }
-                else if (logEntry.Level == LogLevel.Information)
-                {
-                    informationsCount++;
-                }
-            }
-
-            _systemStatusService.Set("log.informations_count", informationsCount);
-            _systemStatusService.Set("log.warnings_count", warningsCount);
-            _systemStatusService.Set("log.errors_count", errorsCount);
+            _systemStatusService.Set("log.informations_count", _informationsCount);
+            _systemStatusService.Set("log.warnings_count", _warningsCount);
+            _systemStatusService.Set("log.errors_count", _errorsCount);
         }
     }
 }

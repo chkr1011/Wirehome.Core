@@ -5,16 +5,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Wirehome.Core.Scheduler
 {
-    public class SchedulerService
+    public class SchedulerService : IService
     {
         private readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
         private readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
@@ -23,24 +22,20 @@ namespace Wirehome.Core.Scheduler
 
         private readonly ILogger _logger;
         //private readonly IScheduler _scheduler;
-        private readonly SystemService _systemService;
+        private readonly SystemCancellationToken _systemCancellationToken;
         private readonly StorageService _storageService;
 
         public SchedulerService(
-            PythonEngineService pythonEngineService,
             SystemStatusService systemStatusService,
-            SystemService systemService,
+            SystemCancellationToken systemCancellationToken,
             StorageService storageService,
             ILoggerFactory loggerFactory)
         {
-            _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<SchedulerService>();
-
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
-            pythonEngineService.RegisterSingletonProxy(new SchedulerPythonProxy(this));
 
             systemStatusService.Set("scheduler.active_threads", () => _activeThreads.Count);
             systemStatusService.Set("scheduler.active_timers", () => _activeTimers.Count);
@@ -49,7 +44,7 @@ namespace Wirehome.Core.Scheduler
 
         public void Start()
         {
-            Task.Factory.StartNew(ScheduleTasks, _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(ScheduleTasks, _systemCancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
             //LogProvider.SetCurrentLogProvider(new QuartzLogBridge(_logger));
 
@@ -142,6 +137,16 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
+        public bool TimerExists(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            lock (_activeTimers)
+            {
+                return _activeTimers.ContainsKey(uid);
+            }
+        }
+
         public string StartCountdown(string uid, TimeSpan timeLeft, Action<CountdownElapsedParameters> callback, object state = null)
         {
             if (callback == null) throw new ArgumentNullException(nameof(callback));
@@ -180,6 +185,16 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
+        public bool CountdownExists(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            lock (_activeCountdowns)
+            {
+                return _activeCountdowns.ContainsKey(uid);
+            }
+        }
+        
         public string StartThread(string uid, Action<StartThreadCallbackParameters> action, object state = null)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
@@ -195,7 +210,7 @@ namespace Wirehome.Core.Scheduler
             {
                 StopThread(uid);
 
-                var activeThread = new ActiveThread(uid, action, state, _systemService.CancellationToken, _logger);
+                var activeThread = new ActiveThread(uid, action, state, _systemCancellationToken.Token, _logger);
                 activeThread.StoppedCallback = () =>
                 {
                     lock (_activeThreads)
@@ -247,7 +262,7 @@ namespace Wirehome.Core.Scheduler
 
             var stopwatch = Stopwatch.StartNew();
 
-            while (!_systemService.CancellationToken.IsCancellationRequested)
+            while (!_systemCancellationToken.Token.IsCancellationRequested)
             {
                 var elapsed = stopwatch.Elapsed;
                 stopwatch.Restart();

@@ -6,16 +6,17 @@ using System;
 using System.Linq;
 using IronPython.Runtime;
 using Rssdp;
-using Wirehome.Core.Discovery;
 using Wirehome.Core.Extensions;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Discovery
 {
-    public class DiscoveryPythonProxy : IPythonProxy
+    public class DiscoveryServicePythonProxy : IInjectedPythonProxy
     {
         private readonly DiscoveryService _discoveryService;
 
-        public DiscoveryPythonProxy(DiscoveryService discoveryService)
+        public DiscoveryServicePythonProxy(DiscoveryService discoveryService)
         {
             _discoveryService = discoveryService ?? throw new ArgumentNullException(nameof(discoveryService));
         }

@@ -11,7 +11,7 @@ using Wirehome.Core.Python.Models;
 
 namespace Wirehome.Core.Python.Proxies.OS
 {
-    public class OSPythonProxy : IPythonProxy
+    public class OSPythonProxy : IInjectedPythonProxy
     {
         public string ModuleName { get; } = "os";
 

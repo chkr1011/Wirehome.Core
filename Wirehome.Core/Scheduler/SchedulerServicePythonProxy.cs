@@ -4,15 +4,15 @@
 
 using System;
 using IronPython.Runtime;
-using Wirehome.Core.Scheduler;
+using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Scheduler
 {
-    public class SchedulerPythonProxy : IPythonProxy
+    public class SchedulerServicePythonProxy : IInjectedPythonProxy
     {
         private readonly SchedulerService _schedulerService;
 
-        public SchedulerPythonProxy(SchedulerService schedulerService)
+        public SchedulerServicePythonProxy(SchedulerService schedulerService)
         {
             _schedulerService = schedulerService ?? throw new ArgumentNullException(nameof(schedulerService));
         }
@@ -39,6 +39,11 @@ namespace Wirehome.Core.Python.Proxies
             _schedulerService.StopTimer(uid);
         }
 
+        public bool timer_exists(string uid)
+        {
+            return _schedulerService.TimerExists(uid);
+        }
+
         public string attach_to_default_timer(string uid, Action<PythonDictionary> callback, object state = null)
         {
             return _schedulerService.AttachToDefaultTimer(uid, p => callback(PythonConvert.ToPythonDictionary(p)), state);
@@ -57,6 +62,11 @@ namespace Wirehome.Core.Python.Proxies
         public void stop_countdown(string uid)
         {
             _schedulerService.StopCountdown(uid);
+        }
+
+        public bool countdown_exists(string uid)
+        {
+            return _schedulerService.CountdownExists(uid);
         }
     }
 }

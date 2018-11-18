@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Python;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.System.StartupScripts
 {
-    public class StartupScriptsService
+    public class StartupScriptsService : IService
     {
         private const string StartupScriptsDirectory = "StartupScripts";
 
@@ -14,14 +15,14 @@ namespace Wirehome.Core.System.StartupScripts
 
         private readonly ILogger _logger;
         private readonly StorageService _storageService;
-        private readonly PythonEngineService _pythonEngineService;
-
-        public StartupScriptsService(StorageService storageService, PythonEngineService pythonEngineService, ILoggerFactory loggerFactory)
+        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
+        
+        public StartupScriptsService(StorageService storageService, PythonScriptHostFactoryService pythonScriptHostFactoryService, ILoggerFactory loggerFactory)
         {
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
 
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
+            _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _logger = loggerFactory.CreateLogger<StartupScriptsService>();
         }
 
@@ -148,7 +149,7 @@ namespace Wirehome.Core.System.StartupScripts
             {
                 if (!_storageService.TryRead(out StartupScriptConfiguration configuration, StartupScriptsDirectory, uid, DefaultFilenames.Configuration))
                 {
-                    return;
+                    throw new StartupScriptNotFoundException(uid);
                 }
 
                 if (!configuration.IsEnabled)
@@ -184,7 +185,7 @@ namespace Wirehome.Core.System.StartupScripts
                 throw new InvalidOperationException("Script file not found.");
             }
 
-            var scriptHost = _pythonEngineService.CreateScriptHost(_logger);
+            var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
             scriptHost.Initialize(scriptCode);
 
             return new StartupScriptInstance(uid, configuration, scriptHost);

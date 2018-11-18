@@ -9,11 +9,11 @@ using Wirehome.Core.ServiceHost.Exceptions;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
-    public class ServicesController : Controller
+    public class ServiceHostController : Controller
     {
         private readonly ServiceHostService _serviceHostService;
 
-        public ServicesController(ServiceHostService serviceHostService)
+        public ServiceHostController(ServiceHostService serviceHostService)
         {
             _serviceHostService = serviceHostService ?? throw new ArgumentNullException(nameof(serviceHostService));
         }

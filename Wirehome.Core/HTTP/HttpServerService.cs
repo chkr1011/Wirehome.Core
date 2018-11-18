@@ -4,35 +4,29 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Model;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
 {
-    public class HttpServerService
+    public class HttpServerService : IService
     {
         private readonly ConcurrentDictionary<string, HttpRequestInterceptor> _interceptors = new ConcurrentDictionary<string, HttpRequestInterceptor>();
 
         private readonly JsonSerializerService _jsonSerializerService;
         private readonly ILogger _logger;
 
-        public HttpServerService(JsonSerializerService jsonSerializerService, PythonEngineService pythonEngineService, ILoggerFactory loggerFactory)
+        public HttpServerService(JsonSerializerService jsonSerializerService, ILoggerFactory loggerFactory)
         {
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<HttpServerService>();
-
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
-            pythonEngineService.RegisterSingletonProxy(new HttpClientPythonProxy());
-            pythonEngineService.RegisterSingletonProxy(new HttpServerPythonProxy(this));
         }
 
         public void Start()
         {
-
         }
 
         public string RegisterRoute(string uid, string uriTemplate, Func<WirehomeDictionary, WirehomeDictionary> handler)

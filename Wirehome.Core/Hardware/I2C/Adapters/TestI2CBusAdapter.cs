@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
-using Wirehome.Core.Extensions;
 
 namespace Wirehome.Core.Hardware.I2C.Adapters
 {
@@ -8,11 +7,9 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
     {
         private readonly ILogger _logger;
 
-        public TestI2CBusAdapter(ILoggerFactory loggerFactory)
+        public TestI2CBusAdapter(ILogger logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-
-            _logger = loggerFactory.CreateLogger<TestI2CBusAdapter>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Write(int deviceAddress, ArraySegment<byte> buffer)

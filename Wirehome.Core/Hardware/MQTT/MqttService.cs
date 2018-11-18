@@ -7,23 +7,22 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Server;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttService
+    public class MqttService : IService
     {
         private readonly BlockingCollection<MqttApplicationMessageReceivedEventArgs> _incomingMessages = new BlockingCollection<MqttApplicationMessageReceivedEventArgs>();
         private readonly Dictionary<string, MqttTopicImporter> _importers = new Dictionary<string, MqttTopicImporter>();
         private readonly Dictionary<string, MqttSubscriber> _subscribers = new Dictionary<string, MqttSubscriber>();
         private readonly OperationsPerSecondCounter _inboundCounter;
         private readonly OperationsPerSecondCounter _outboundCounter;
-        
-        private readonly SystemService _systemService;
+
+        private readonly SystemCancellationToken _systemCancellationToken;
         private readonly StorageService _storageService;
 
         private readonly ILogger _logger;
@@ -31,21 +30,17 @@ namespace Wirehome.Core.Hardware.MQTT
         private IMqttServer _mqttServer;
 
         public MqttService(
-            PythonEngineService pythonEngineService,
-            SystemService systemService,
+            SystemCancellationToken systemCancellationToken,
             DiagnosticsService diagnosticsService,
             StorageService storageService,
             SystemStatusService systemStatusService,
             ILoggerFactory loggerFactory)
         {
-            _systemService = systemService ?? throw new ArgumentNullException(nameof(systemService));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<MqttService>();
-
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
-            pythonEngineService.RegisterSingletonProxy(new MqttPythonProxy(this));
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _inboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("mqtt.inbound_rate");
@@ -78,7 +73,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             _mqttServer.StartAsync(serverOptions.Build()).GetAwaiter().GetResult();
 
-            Task.Factory.StartNew(() => ProcessIncomingMqttMessages(_systemService.CancellationToken), _systemService.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(() => ProcessIncomingMqttMessages(_systemCancellationToken.Token), _systemCancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public string StartTopicImport(string uid, MqttImportTopicParameters parameters)

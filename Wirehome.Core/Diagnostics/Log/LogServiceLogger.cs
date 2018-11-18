@@ -11,11 +11,14 @@ namespace Wirehome.Core.Diagnostics.Log
         public LogServiceLogger(LogService logService, string categoryName)
         {
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
+
             _categoryName = categoryName;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
+            if (formatter == null) throw new ArgumentNullException(nameof(formatter));
+
             if (!IsEnabled(logLevel))
             {
                 return;

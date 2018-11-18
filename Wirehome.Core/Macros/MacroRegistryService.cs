@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.MessageBus;
@@ -9,7 +10,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Macros
 {
-    public class MacroRegistryService
+    public class MacroRegistryService : IService
     {
         private readonly Dictionary<string, Macro> _macros = new Dictionary<string, Macro>();
 

@@ -3,11 +3,12 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using Wirehome.Core.Repository;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Repository
 {
-    public class RepositoryPythonProxy : IPythonProxy
+    public class RepositoryServicePythonProxy : IInjectedPythonProxy
     {
         public string ModuleName { get; } = "repository";
 

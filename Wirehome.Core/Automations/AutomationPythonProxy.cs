@@ -3,9 +3,9 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using Wirehome.Core.Automations;
+using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Automations
 {
     public class AutomationPythonProxy : IPythonProxy
     {

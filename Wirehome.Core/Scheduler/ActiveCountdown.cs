@@ -33,7 +33,7 @@ namespace Wirehome.Core.Scheduler
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, "Error while executing countdown callback.");
+                _logger.LogError(exception, $"Error while executing callback of countdown '{Uid}'.");
             }
         }
     }

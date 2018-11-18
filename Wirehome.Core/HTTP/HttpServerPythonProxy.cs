@@ -3,15 +3,16 @@ using System.Globalization;
 using IronPython.Runtime;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
-using Wirehome.Core.HTTP;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.HTTP
 {
-    public class HttpServerPythonProxy : IPythonProxy
+    public class HttpServerPythonProxy : IInjectedPythonProxy
     {
         private readonly HttpServerService _httpServerService;
 

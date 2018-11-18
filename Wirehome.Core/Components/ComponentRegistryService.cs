@@ -5,18 +5,17 @@ using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Constants;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
-using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Components
 {
-    public class ComponentRegistryService
+    public class ComponentRegistryService : IService
     {
         private const string ComponentsDirectory = "Components";
 
@@ -25,24 +24,21 @@ namespace Wirehome.Core.Components
         private readonly ComponentRegistryMessageBusProxy _messageBusProxy;
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
-        private readonly ComponentInitializerFactory _componentInitializerFactory;
+        private readonly ComponentInitializerService _componentInitializerService;
         private readonly ILogger _logger;
 
         public ComponentRegistryService(
             StorageService storageService,
             SystemStatusService systemStatusService,
             MessageBusService messageBusService,
-            ComponentInitializerFactory componentInitializerFactory,
-            PythonEngineService pythonEngineService,
+            ComponentInitializerService componentInitializerService,
             ILoggerFactory loggerFactory)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-            _componentInitializerFactory = componentInitializerFactory ?? throw new ArgumentNullException(nameof(componentInitializerFactory));
+            _componentInitializerService = componentInitializerService ?? throw new ArgumentNullException(nameof(componentInitializerService));
 
             _messageBusProxy = new ComponentRegistryMessageBusProxy(messageBusService);
-
-            pythonEngineService.RegisterSingletonProxy(new ComponentRegistryPythonProxy(this));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ComponentRegistryService>();
@@ -96,7 +92,7 @@ namespace Wirehome.Core.Components
             {
                 if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFilenames.Configuration))
                 {
-                    return;
+                    throw new ComponentNotFoundException(uid);
                 }
 
                 if (!configuration.IsEnabled)
@@ -126,7 +122,7 @@ namespace Wirehome.Core.Components
                     _components[uid] = component;
                 }
 
-                _componentInitializerFactory.Create(this).InitializeComponent(component, configuration);
+                _componentInitializerService.Create(this).InitializeComponent(component, configuration);
                 component.ProcessMessage(new WirehomeDictionary().WithType(ControlType.Initialize));
 
                 _logger.LogInformation($"Component '{component.Uid}' initialized successfully.");
@@ -192,6 +188,15 @@ namespace Wirehome.Core.Components
             return component.Configuration.GetValueOrDefault(configurationUid, defaultValue);
         }
 
+        public bool ComponentHasStatus(string componentUid, string statusUid)
+        {
+            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
+            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
+
+            var component = GetComponent(componentUid);
+            return component.Status.ContainsKey(statusUid);
+        }
+
         public object GetComponentStatus(string componentUid, string statusUid, object defaultValue = null)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
@@ -233,6 +238,15 @@ namespace Wirehome.Core.Components
                     oldValueString,
                     newValueString);
             }
+        }
+
+        public bool ComponentHasSetting(string componentUid, string settingUid)
+        {
+            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
+            if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
+
+            var component = GetComponent(componentUid);
+            return component.Settings.ContainsKey(settingUid);
         }
 
         public object GetComponentSetting(string componentUid, string settingUid, object defaultValue = null)

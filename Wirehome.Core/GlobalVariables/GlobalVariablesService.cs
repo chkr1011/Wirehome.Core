@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
-using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.GlobalVariables
 {
-    public class GlobalVariablesService
+    public class GlobalVariablesService : IService
     {
+        private const string GlobalVariablesFilename = "GlobalVariables.json";
+
         private readonly Dictionary<string, object> _variables = new Dictionary<string, object>();
 
         private readonly StorageService _storageService;
@@ -19,7 +20,6 @@ namespace Wirehome.Core.GlobalVariables
 
         public GlobalVariablesService(
             StorageService storageService, 
-            PythonEngineService pythonEngineService, 
             MessageBusService messageBusService, 
             ILoggerFactory loggerFactory)
         {
@@ -28,9 +28,6 @@ namespace Wirehome.Core.GlobalVariables
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<GlobalVariablesService>();
-
-            if (pythonEngineService == null) throw new ArgumentNullException(nameof(pythonEngineService));
-            pythonEngineService.RegisterSingletonProxy(new GlobalVariablesPythonProxy(this));
         }
 
         public void Start()
@@ -146,7 +143,7 @@ namespace Wirehome.Core.GlobalVariables
 
         private void Load()
         {
-            if (_storageService.TryRead(out Dictionary<string, object> globalVariables, "GlobalVariables.json"))
+            if (_storageService.TryRead(out Dictionary<string, object> globalVariables, GlobalVariablesFilename))
             {
                 if (globalVariables == null)
                 {
@@ -162,7 +159,7 @@ namespace Wirehome.Core.GlobalVariables
 
         private void Save()
         {
-            _storageService.Write(_variables, "GlobalVariables.json");
+            _storageService.Write(_variables, GlobalVariablesFilename);
         }
     }
 }

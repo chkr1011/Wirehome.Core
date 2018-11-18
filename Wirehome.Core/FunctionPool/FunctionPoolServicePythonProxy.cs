@@ -3,16 +3,17 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using Wirehome.Core.FunctionPool;
 using Wirehome.Core.Model;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.FunctionPool
 {
-    public class FunctionPoolPythonProxy : IPythonProxy
+    public class FunctionPoolServicePythonProxy : IInjectedPythonProxy
     {
         private readonly FunctionPoolService _functionPoolService;
 
-        public FunctionPoolPythonProxy(FunctionPoolService functionPoolService)
+        public FunctionPoolServicePythonProxy(FunctionPoolService functionPoolService)
         {
             _functionPoolService = functionPoolService ?? throw new ArgumentNullException(nameof(functionPoolService));
         }

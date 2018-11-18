@@ -1,32 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using Wirehome.Core.Python.Proxies;
-using Wirehome.Core.Python.Proxies.OS;
+using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
+using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Python
 {
-    public class PythonProxyFactory
+    public class PythonProxyFactory : IService
     {
-        private readonly List<IPythonProxy> _proxies = new List<IPythonProxy>
+        private readonly IServiceProvider _serviceProvider;
+        
+        public PythonProxyFactory(IServiceProvider serviceProvider)
         {
-            new ConverterPythonProxy(),
-            new JsonSerializerPythonProxy(),
-            new OSPythonProxy(),
-            new ResponseCreatorPythonProxy(),
-            new ResponseValidatorPythonProxy(),
-            new RepositoryPythonProxy()
-        };
-
-        public List<IPythonProxy> CreateProxies()
-        {
-            return new List<IPythonProxy>(_proxies);
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
-        public void RegisterProxy(IPythonProxy pythonProxy)
+        public void Start()
         {
-            if (pythonProxy == null) throw new ArgumentNullException(nameof(pythonProxy));
+        }
 
-            _proxies.Add(pythonProxy);
+        public List<IPythonProxy> GetPythonProxies()
+        {
+            return _serviceProvider.GetServices<IPythonProxy>().ToList();
         }
     }
 }

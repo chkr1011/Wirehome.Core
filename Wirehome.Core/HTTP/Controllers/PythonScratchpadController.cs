@@ -8,11 +8,11 @@ namespace Wirehome.Core.HTTP.Controllers
 {
     public class PythonScratchpadController : Controller
     {
-        private readonly PythonEngineService _pythonEngineService;
-
-        public PythonScratchpadController(PythonEngineService pythonEngineService)
+        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
+        
+        public PythonScratchpadController(PythonScriptHostFactoryService pythonScriptHostFactoryService)
         {
-            _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
+            _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
         }
 
         [HttpPost]
@@ -28,7 +28,7 @@ namespace Wirehome.Core.HTTP.Controllers
                     script = streamReader.ReadToEnd();
                 }
 
-                var scriptHost = _pythonEngineService.CreateScriptHost();
+                var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(null);
                 scriptHost.Initialize(script);
 
                 if (string.IsNullOrEmpty(function_name))

@@ -5,22 +5,20 @@ using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Scripting.Hosting;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Python
 {
-    public class PythonEngineService
+    public class PythonEngineService : IService
     {
-        private readonly PythonProxyFactory _pythonProxyFactory = new PythonProxyFactory();
-        private readonly StorageService _storageService;
         private readonly ILogger _logger;
-        
+
         private ScriptEngine _scriptEngine;
 
-        public PythonEngineService(StorageService storageService, ILoggerFactory loggerFactory)
+        public PythonEngineService(ILoggerFactory loggerFactory)
         {
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<PythonEngineService>();
@@ -28,42 +26,30 @@ namespace Wirehome.Core.Python
 
         public void Start()
         {
-            _logger.Log(LogLevel.Information, "Starting Python engine...");
-
+            _logger.LogInformation("Starting Python engine...");
+            
             _scriptEngine = IronPython.Hosting.Python.CreateEngine();
             _scriptEngine.Runtime.IO.SetOutput(new PythonIOToLogStream(_logger), Encoding.UTF8);
 
             AddSearchPaths(_scriptEngine);
 
-            var scriptHost = CreateScriptHost(_logger);
+            var scriptHost = CreateScriptHost(new List<IPythonProxy>(), _logger);
             scriptHost.Initialize("def test():\r\n    return 0");
             scriptHost.InvokeFunction("test");
 
-            _logger.Log(LogLevel.Information, "Python engine started.");
+            _logger.LogInformation("Python engine started.");
         }
 
-        public void RegisterSingletonProxy(IPythonProxy proxy)
+        public PythonScriptHost CreateScriptHost(ICollection<IPythonProxy> pythonProxies, ILogger logger)
         {
-            if (proxy == null) throw new ArgumentNullException(nameof(proxy));
-
-            _pythonProxyFactory.RegisterProxy(proxy);
-        }
-
-        public PythonScriptHost CreateScriptHost(params IPythonProxy[] customProxies)
-        {
-            return CreateScriptHost(null, customProxies);
-        }
-
-        public PythonScriptHost CreateScriptHost(ILogger logger, params IPythonProxy[] customProxies)
-        {
-            if (customProxies == null) throw new ArgumentNullException(nameof(customProxies));
+            if (pythonProxies == null) throw new ArgumentNullException(nameof(pythonProxies));
 
             var scriptScope = _scriptEngine.CreateScope();
 
-            var pythonProxies = _pythonProxyFactory.CreateProxies();
-            pythonProxies.AddRange(customProxies);
-            pythonProxies.Add(new LogPythonProxy(logger ?? _logger));
-            pythonProxies.Add(new DebuggerPythonProxy());
+            pythonProxies = new List<IPythonProxy>(pythonProxies)
+            {
+                new LogPythonProxy(logger ?? _logger)
+            };
 
             var wirehomeWrapper = (IDictionary<string, object>)new ExpandoObject();
 
@@ -79,9 +65,11 @@ namespace Wirehome.Core.Python
             return new PythonScriptHost(scriptScope, wirehomeWrapper);
         }
 
-        private void AddSearchPaths(ScriptEngine scriptEngine)
+        private static void AddSearchPaths(ScriptEngine scriptEngine)
         {
-            var librariesPath = Path.Combine(_storageService.DataPath, "PythonLibraries");
+            var storagePaths = new StoragePaths();
+
+            var librariesPath = Path.Combine(storagePaths.DataPath, "PythonLibraries");
             if (!Directory.Exists(librariesPath))
             {
                 Directory.CreateDirectory(librariesPath);
@@ -100,7 +88,7 @@ namespace Wirehome.Core.Python
             {
                 searchPaths.Add(WindowsLibsPath);
             }
-            
+
             searchPaths.Add(librariesPath);
             scriptEngine.SetSearchPaths(searchPaths);
         }

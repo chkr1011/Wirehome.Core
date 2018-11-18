@@ -12,12 +12,12 @@ namespace Wirehome.Core.HTTP.Controllers
 {
     public class ToolsController : Controller
     {
-        private readonly PythonEngineService _pythonEngineService;
+        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly RepositoryService _repositoryService;
 
-        public ToolsController(PythonEngineService pythonEngineService, RepositoryService repositoryService)
+        public ToolsController(PythonScriptHostFactoryService pythonScriptHostFactoryService, RepositoryService repositoryService)
         {
-            _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
+            _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
         }
 
@@ -46,7 +46,7 @@ namespace Wirehome.Core.HTTP.Controllers
 
             try
             {
-                var scriptHost = _pythonEngineService.CreateScriptHost();
+                var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(null);
                 scriptHost.Initialize(repositoryEntity.Script);
                 return scriptHost.InvokeFunction("main", parameters);
             }

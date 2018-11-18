@@ -4,15 +4,16 @@
 
 using System;
 using IronPython.Runtime;
-using Wirehome.Core.MessageBus;
+using Wirehome.Core.Python;
+using Wirehome.Core.Python.Proxies;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.MessageBus
 {
-    public class MessageBusPythonProxy : IPythonProxy
+    public class MessageBusServicePythonProxy : IInjectedPythonProxy
     {
         private readonly MessageBusService _messageBusService;
 
-        public MessageBusPythonProxy(MessageBusService messageBusService)
+        public MessageBusServicePythonProxy(MessageBusService messageBusService)
         {
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
         }

@@ -35,19 +35,31 @@ namespace Wirehome.Core.Python
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            if (count == 0)
+            {
+                return;
+            }
+
+            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+
             var text = Encoding.UTF8.GetString(buffer, 0, count);
             if (text.Equals(Environment.NewLine))
             {
                 return;
             }
 
-            _logger.Log(LogLevel.Debug, text);
+            _logger.LogDebug(text);
         }
 
         public override bool CanRead { get; } = false;
         public override bool CanSeek { get; } = false;
         public override bool CanWrite { get; } = true;
         public override long Length { get; }
-        public override long Position { get; set; }
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
     }
 }

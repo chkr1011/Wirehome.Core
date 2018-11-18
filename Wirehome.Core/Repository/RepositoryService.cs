@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Exceptions;
 using Wirehome.Core.Repository.Exceptions;
 using Wirehome.Core.Repository.GitHub;
@@ -12,7 +13,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Repository
 {
-    public class RepositoryService
+    public class RepositoryService : IService
     {
         private readonly StorageService _storageService;
         private readonly ILoggerFactory _loggerFactory;
@@ -24,6 +25,11 @@ namespace Wirehome.Core.Repository
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             _logger = _loggerFactory.CreateLogger<RepositoryService>();
+        }
+
+        public void Start()
+        {
+            
         }
 
         public RepositoryEntity LoadEntity(RepositoryEntityUid uid)
@@ -41,14 +47,14 @@ namespace Wirehome.Core.Repository
             return source;
         }
 
-        public async Task DownloadEntityAsync(RepositoryEntityUid uid)
+        public Task DownloadEntityAsync(RepositoryEntityUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             _storageService.TryReadOrCreate(out RepositoryServiceOptions options, "RepositoryServiceConfiguration.json");
 
             var downloader = new GitHubRepositoryEntityDownloader(options, _loggerFactory);
-            await downloader.DownloadAsync(uid, GetEntityRootPath(uid)).ConfigureAwait(false);
+            return downloader.DownloadAsync(uid, GetEntityRootPath(uid));
         }
 
         public void DeleteEntity(RepositoryEntityUid uid)

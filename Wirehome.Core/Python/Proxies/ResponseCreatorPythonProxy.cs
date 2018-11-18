@@ -6,7 +6,7 @@ using IronPython.Runtime;
 
 namespace Wirehome.Core.Python.Proxies
 {
-    public class ResponseCreatorPythonProxy : IPythonProxy
+    public class ResponseCreatorPythonProxy : IInjectedPythonProxy
     {
         public string ModuleName { get; } = "response_creator";
 

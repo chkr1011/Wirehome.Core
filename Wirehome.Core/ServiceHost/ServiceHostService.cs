@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.ServiceHost.Configuration;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Repository;
 using Wirehome.Core.ServiceHost.Exceptions;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.ServiceHost
 {
-    public class ServiceHostService
+    public class ServiceHostService : IService
     {
         private const string ServicesDirectory = "Services";
 
@@ -19,24 +19,22 @@ namespace Wirehome.Core.ServiceHost
 
         private readonly RepositoryService _repositoryService;
         private readonly StorageService _storageService;
-        private readonly PythonEngineService _pythonEngineService;
+        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly ILogger _logger;
 
         public ServiceHostService(
             StorageService storageService,
             RepositoryService repositoryService,
-            PythonEngineService pythonEngineService,
+            PythonScriptHostFactoryService pythonScriptHostFactoryService,
             SystemStatusService systemStatusService,
             ILoggerFactory loggerFactory)
         {
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
-            _pythonEngineService = pythonEngineService ?? throw new ArgumentNullException(nameof(pythonEngineService));
+            _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ServiceHostService>();
-
-            pythonEngineService.RegisterSingletonProxy(new ServiceHostPythonProxy(this));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("service_host.service_count", () => _services.Count);
@@ -98,7 +96,7 @@ namespace Wirehome.Core.ServiceHost
             {
                 if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFilenames.Configuration))
                 {
-                    return;
+                    throw new ServiceNotFoundException(id);
                 }
 
                 if (!configuration.IsEnabled)
@@ -157,7 +155,7 @@ namespace Wirehome.Core.ServiceHost
             var repositoryEntityUid = new RepositoryEntityUid(id, configuration.Version);
             var repositoryEntitySource = _repositoryService.LoadEntity(repositoryEntityUid);
 
-            var scriptHost = _pythonEngineService.CreateScriptHost(_logger);
+            var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
             scriptHost.Initialize(repositoryEntitySource.Script);
 
             var serviceInstance = new ServiceInstance(id, configuration, scriptHost);

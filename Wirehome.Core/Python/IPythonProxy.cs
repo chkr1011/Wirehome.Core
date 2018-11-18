@@ -1,4 +1,4 @@
-﻿namespace Wirehome.Core.Python.Proxies
+﻿namespace Wirehome.Core.Python
 {
     public interface IPythonProxy
     {
