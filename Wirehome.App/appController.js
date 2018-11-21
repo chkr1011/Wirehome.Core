@@ -163,7 +163,7 @@ function createAppController($http, $scope, apiService, localizationService, com
         });
     }
 
-    $http.get("app.manifest").then(function (response) {
+    $http.get("cache.manifest").then(function (response) {
         var parser = new RegExp("# version: ([0-9|.]*)", "");
         var results = parser.exec(response.data);
 

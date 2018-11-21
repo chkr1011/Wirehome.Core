@@ -1,7 +1,5 @@
 CACHE MANIFEST
-# version: 2.6.11
-
-index.html
+# version: 2.6.16
 
 appController.js
 module.js
