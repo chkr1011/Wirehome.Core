@@ -22,7 +22,7 @@ namespace Wirehome.Core.Components
                 ["status_uid"] = statusUid,
                 ["old_value"] = oldValue,
                 ["new_value"] = newValue,
-                ["timestamp"] = DateTimeOffset.UtcNow
+                ["timestamp"] = DateTime.Now.ToString("O")
             };
 
             _messageBusService.Publish(message);
@@ -37,7 +37,7 @@ namespace Wirehome.Core.Components
                 ["setting_uid"] = settingUid,
                 ["old_value"] = oldValue,
                 ["new_value"] = newValue,
-                ["timestamp"] = DateTimeOffset.UtcNow
+                ["timestamp"] = DateTime.Now.ToString("O")
             };
 
             _messageBusService.Publish(message);
@@ -51,7 +51,7 @@ namespace Wirehome.Core.Components
                 ["component_uid"] = componentUid,
                 ["setting_uid"] = settingUid,
                 ["value"] = value,
-                ["timestamp"] = DateTimeOffset.UtcNow
+                ["timestamp"] = DateTime.Now.ToString("O")
             };
 
             _messageBusService.Publish(message);

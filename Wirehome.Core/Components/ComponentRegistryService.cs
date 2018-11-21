@@ -216,7 +216,7 @@ namespace Wirehome.Core.Components
             var isAdd = true;
             object oldValue = null;
 
-            component.Status.AddOrUpdate(statusUid, value, (s, v) =>
+            component.Status.AddOrUpdate(statusUid, value, (_, v) =>
             {
                 isAdd = false;
                 oldValue = v;
@@ -227,17 +227,19 @@ namespace Wirehome.Core.Components
             var newValueString = Convert.ToString(value, CultureInfo.InvariantCulture);
             var hasChanged = isAdd || !string.Equals(oldValueString, newValueString, StringComparison.Ordinal);
 
-            if (hasChanged)
+            if (!hasChanged)
             {
-                _messageBusProxy.PublishStatusChangedBusMessage(component.Uid, statusUid, oldValue, value);
-
-                _logger.LogDebug(
-                    "Status '{0}' of component '{1}' changed from '{2}' to '{3}'.",
-                    statusUid,
-                    component.Uid,
-                    oldValueString,
-                    newValueString);
+                return;
             }
+
+            _messageBusProxy.PublishStatusChangedBusMessage(component.Uid, statusUid, oldValue, value);
+
+            _logger.LogDebug(
+                "Component '{0}' changed '{1}' ({2} -> {3}).",
+                component.Uid,
+                statusUid,
+                oldValueString,
+                newValueString);
         }
 
         public bool ComponentHasSetting(string componentUid, string settingUid)
@@ -310,17 +312,7 @@ namespace Wirehome.Core.Components
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (message == null) throw new ArgumentNullException(nameof(message));
 
-            Component component;
-            lock (_components)
-            {
-                if (!_components.TryGetValue(componentUid, out component))
-                {
-                    return new WirehomeDictionary()
-                        .WithValue("type", ControlType.ParameterInvalidException)
-                        .WithValue("parameter_name", nameof(componentUid))
-                        .WithValue("parameter_value", componentUid);
-                }
-            }
+            Component component = GetComponent(componentUid);
 
             try
             {
@@ -340,7 +332,7 @@ namespace Wirehome.Core.Components
         private void AttachToMessageBus()
         {
             var filter = new WirehomeDictionary().WithType("component_registry.process_message");
-            _messageBusService.Subscribe("component_registry.execute_command", filter, OnBusMessageExecuteCommand);
+            _messageBusService.Subscribe("component_registry.process_message", filter, OnBusMessageExecuteCommand);
         }
 
         private void OnBusMessageExecuteCommand(MessageBusMessage busMessage)

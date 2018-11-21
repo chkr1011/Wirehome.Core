@@ -176,7 +176,7 @@ namespace Wirehome.Core.Python
             foreach (var entry in pythonDictionary)
             {
                 var key = Convert.ToString(entry.Key, CultureInfo.InvariantCulture);
-                wirehomeDictionary.TryAdd(key, FromPython(entry.Value));
+                wirehomeDictionary.Add(key, FromPython(entry.Value));
             }
 
             return wirehomeDictionary;
