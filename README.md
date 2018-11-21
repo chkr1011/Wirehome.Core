@@ -21,6 +21,6 @@ Also automations and custom services are written in Python. The integration of _
 A Web App which is hosted by Wirehome.Core is also part of this project. It runs on nearly all current devices like smartphones, tablets, PCs etc.
 
 <p align="center">
-<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/app_screen_1.png?raw=true" width="300">
-<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/app_screen_1.png?raw=true" width="300">
+<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/app_screen_1.png?raw=true" width="384">
+<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/app_screen_1.png?raw=true" width="384">
 </p>
