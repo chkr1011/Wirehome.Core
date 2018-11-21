@@ -48,7 +48,8 @@ namespace Wirehome.Core.Python
 
             pythonProxies = new List<IPythonProxy>(pythonProxies)
             {
-                new LogPythonProxy(logger ?? _logger)
+                new LogPythonProxy(logger ?? _logger),
+                new DebuggerPythonProxy()
             };
 
             var wirehomeWrapper = (IDictionary<string, object>)new ExpandoObject();

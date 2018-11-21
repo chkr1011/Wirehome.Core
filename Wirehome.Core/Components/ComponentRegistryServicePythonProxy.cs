@@ -4,8 +4,9 @@
 
 using System;
 using IronPython.Runtime;
+using Wirehome.Core.Components.Exceptions;
+using Wirehome.Core.Model;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.Components
 {
@@ -67,14 +68,23 @@ namespace Wirehome.Core.Components
         }
 
         [Obsolete]
-        public PythonDictionary execute_command(string componentUid, PythonDictionary message)
+        public PythonDictionary execute_command(string component_uid, PythonDictionary message)
         {
-            return process_message(componentUid, message);
+            return process_message(component_uid, message);
         }
 
-        public PythonDictionary process_message(string componentUid, PythonDictionary message)
+        public PythonDictionary process_message(string component_uid, PythonDictionary message)
         {
-            return _componentRegistryService.ProcessComponentMessage(componentUid, message);
+            try
+            {
+                return _componentRegistryService.ProcessComponentMessage(component_uid, message);
+            }
+            catch (ComponentNotFoundException)
+            {
+                return new WirehomeDictionary()
+                    .WithValue("type", "exception.component_not_found")
+                    .WithValue("component_uid", component_uid);
+            }
         }
     }
 }

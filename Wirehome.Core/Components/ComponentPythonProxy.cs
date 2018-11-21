@@ -4,7 +4,6 @@
 
 using System;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.Components
 {
@@ -51,14 +50,14 @@ namespace Wirehome.Core.Components
             return PythonConvert.ToPython(_componentRegistryService.GetComponentSetting(_componentUid, setting_uid, default_value));
         }
         
-        public void set_setting(string settingUid, object value)
+        public void set_setting(string setting_uid, object value)
         {
-            _componentRegistryService.SetComponentSetting(_componentUid, settingUid, PythonConvert.FromPython(value));
+            _componentRegistryService.SetComponentSetting(_componentUid, setting_uid, PythonConvert.FromPython(value));
         }
 
-        public void register_setting(string settingUid, object value)
+        public void register_setting(string setting_uid, object value)
         {
-            _componentRegistryService.RegisterComponentSetting(_componentUid, settingUid, PythonConvert.FromPython(value));
+            _componentRegistryService.RegisterComponentSetting(_componentUid, setting_uid, PythonConvert.FromPython(value));
         }
         
         public object get_configuration(string configuration_uid, object default_value = null)
