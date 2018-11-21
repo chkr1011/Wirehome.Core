@@ -7,14 +7,19 @@
 [![BCH compliance](https://bettercodehub.com/edge/badge/chkr1011/MQTTnet?branch=master)](https://bettercodehub.com/)
 
 # Wirehome.Core
-This is an open source Home Automation system for .NET Core. This system is written in C# targeting .NET Standard 2.0+- It runs on Windows and Linux (e.g. Raspberry Pi 2+). 
+Wirehome.Core is an open source Home Automation system for .NET Core. This system is written in C# targeting .NET Standard 2.0+- It runs on Windows, macOS and Linux (e.g. a Raspberry Pi 2 Model B+). 
 
-The interaction with the physical home automation hardware is done via _adapters_ which are written in Python. They are available in a separate repository and can be downloaded into the local instance of Wirehome.Core. The backend for the python code is _IronPython_.
+The interaction with the physical home automation hardware is abstracted via _adapters_ which are written in Python. They are available in a separate repository and can be downloaded into the local instance of Wirehome.Core. The engine for the Python code is _IronPython_.
 
-The python adapters can access a wide range of modules which are providing access to `GPIOs`, `I2C`, `MQTT` (with a built-in broker), `HTTP ` etc.
+The Python adapters can access a wide range of modules (Wirehome.API) which are providing access to `GPIOs`, `I2C`, `MQTT`, `HTTP`, `COAP` etc.
 
-Also automations and hardware services are written in Python. The integration of _Open Weather Map_ is completely written in Python and can be downloaded from the official _Wirehome.Repositories_. Also version updates are distributed from the repositories.
+Wirehome.Core also includes a fully features MQTT broker and a HTTP server which can be used to host user content or for interaction with the devices.
 
-A Web App which is hosted by Wirehome.Core is also part of this project. It runs on nearly all current devices like smartphones, tablets etc.
+Also automations and custom services are written in Python. The integration of _Open Weather Map_ is completely written in Python and can be downloaded from the official _Wirehome.Repositoriy_. Also version updates are distributed from that repository.
+
+# Wirehome.App
+A Web App which is hosted by Wirehome.Core is also part of this project. It runs on nearly all current devices like smartphones, tablets, PCs etc.
+
+
 
 Please visit the Wiki for more details etc.
