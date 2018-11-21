@@ -120,6 +120,7 @@ namespace Wirehome.Core.HTTP.Controllers
             {
                 ProcessedMessagesCount = s.ProcessedMessagesCount,
                 PendingMessagesCount = s.PendingMessagesCount,
+                FaultedMessagesCount = s.FaultedMessagesCount,
                 Filter = s.Filter
             });
         }

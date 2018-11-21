@@ -9,5 +9,7 @@ namespace Wirehome.Core.HTTP.Controllers.Models
         public int ProcessedMessagesCount { get; set; }
 
         public int PendingMessagesCount { get; set; }
+
+        public int FaultedMessagesCount { get; set; }
     }
 }

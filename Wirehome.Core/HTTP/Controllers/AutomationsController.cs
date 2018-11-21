@@ -127,7 +127,15 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public WirehomeDictionary GetStatus(string uid)
         {
-            return _automationRegistryService.GetAutomation(uid).GetStatus();
+            try
+            {
+                return _automationRegistryService.GetAutomation(uid).GetStatus();
+            }
+            catch (AutomationNotFoundException)
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
         }
     }
 }
