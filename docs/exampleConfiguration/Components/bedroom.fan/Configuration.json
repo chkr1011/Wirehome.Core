@@ -1,97 +1,97 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.ventilation",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.ventilation",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "level_definitions": [
-            {
-              "states": [
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 0,
-                  "state": "open"
-                },
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 1,
-                  "state": "open"
-                },
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 2,
-                  "state": "open"
-                }
-              ]
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.ventilation",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.ventilation",
+                "version": "1.0.0"
             },
-            {
-              "states": [
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 0,
-                  "state": "closed"
-                },
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 1,
-                  "state": "open"
-                },
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 2,
-                  "state": "closed"
+            "variables": {
+                "config": {
+                    "level_definitions": [
+                        {
+                            "states": [
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 0,
+                                    "state": "open"
+                                },
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 1,
+                                    "state": "open"
+                                },
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 2,
+                                    "state": "open"
+                                }
+                            ]
+                        },
+                        {
+                            "states": [
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 0,
+                                    "state": "closed"
+                                },
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 1,
+                                    "state": "open"
+                                },
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 2,
+                                    "state": "closed"
+                                }
+                            ]
+                        },
+                        {
+                            "states": [
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 0,
+                                    "state": "closed"
+                                },
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 1,
+                                    "state": "closed"
+                                },
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 2,
+                                    "state": "open"
+                                }
+                            ]
+                        },
+                        {
+                            "states": [
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 0,
+                                    "state": "closed"
+                                },
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 1,
+                                    "state": "closed"
+                                },
+                                {
+                                    "device_uid": "bedroom_hsrel8",
+                                    "port": 2,
+                                    "state": "closed"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "states": [
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 0,
-                  "state": "closed"
-                },
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 1,
-                  "state": "closed"
-                },
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 2,
-                  "state": "open"
-                }
-              ]
-            },
-            {
-              "states": [
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 0,
-                  "state": "closed"
-                },
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 1,
-                  "state": "closed"
-                },
-                {
-                  "device_uid": "bedroom_hsrel8",
-                  "port": 2,
-                  "state": "closed"
-                }
-              ]
             }
-          ]
         }
-      }
     }
-  }
 }

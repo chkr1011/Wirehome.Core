@@ -1,27 +1,27 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.lamp",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-         "id": "component_adapter.wirehome.mqtt.relay",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "on": {
-            "topic": "bed/$patch/lamp-right",
-            "payload": "on"
-          },
-          "off": {
-            "topic": "bed/$patch/lamp-right",
-            "payload": "off"
-          }
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.lamp",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.mqtt.relay",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "on": {
+                        "topic": "bed/$patch/lamp-right",
+                        "payload": "on"
+                    },
+                    "off": {
+                        "topic": "bed/$patch/lamp-right",
+                        "payload": "off"
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }

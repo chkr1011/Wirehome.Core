@@ -1,33 +1,33 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.lamp",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.relay",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "ports": [
-            {
-              "device_uid": "upperBathroom_hsrel5",
-              "port": 0
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.lamp",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.relay",
+                "version": "1.0.0"
             },
-            {
-              "device_uid": "upperBathroom_hsrel5",
-              "port": 1
-            },
-            {
-              "device_uid": "upperBathroom_hsrel5",
-              "port": 2
+            "variables": {
+                "config": {
+                    "ports": [
+                        {
+                            "device_uid": "upperBathroom_hsrel5",
+                            "port": 0
+                        },
+                        {
+                            "device_uid": "upperBathroom_hsrel5",
+                            "port": 1
+                        },
+                        {
+                            "device_uid": "upperBathroom_hsrel5",
+                            "port": 2
+                        }
+                    ]
+                }
             }
-          ]
         }
-      }
     }
-  }
 }

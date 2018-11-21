@@ -1,20 +1,20 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.socket",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.tasmota.relay",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "device_uid": "sonoff234"
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.socket",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.tasmota.relay",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "device_uid": "sonoff234"
+                }
+            }
         }
-      }
     }
-  }
 }

@@ -1,3 +1,5 @@
 {
-    "app.image_id": "fas fa-bed"
+    "app.image_id": "fas fa-bed",
+    "app.caption": "Schlafzimmer",
+    "app.position_index": 1
 }

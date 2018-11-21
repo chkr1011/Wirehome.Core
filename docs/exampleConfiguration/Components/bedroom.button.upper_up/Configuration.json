@@ -1,21 +1,21 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.button",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.button",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "device_uid": "input5",
-          "port": 6
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.button",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.button",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "device_uid": "input5",
+                    "port": 6
+                }
+            }
         }
-      }
     }
-  }
 }

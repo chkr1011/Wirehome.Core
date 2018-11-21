@@ -1,0 +1,11 @@
+{
+    "version": "1.0.0",
+    "isEnabled": true,
+    "variables": {
+        "config": {
+            "gateway_address": "GW-B8D7AF2B3EA3",
+            "identity": "Wirehome.Core",
+            "psk": "055PemHo7oWxa3Ix"
+        }
+    }
+}

@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "app.caption": "Luftfeuchtigkeit",
+    "app.position_index": 1,
+    "app.image_id": "fas fa-tint"
+}

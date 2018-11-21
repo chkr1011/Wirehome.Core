@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "app.caption": "Temperatur",
+    "app.image_id": "fas fa-thermometer-half",
+    "app.position_index": 0
+}

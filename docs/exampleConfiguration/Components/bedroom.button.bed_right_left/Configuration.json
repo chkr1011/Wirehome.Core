@@ -1,20 +1,20 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.button",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.mqtt.button",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "topic": "bed/button-right-left"
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.button",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.mqtt.button",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "topic": "bed/button-right-left"
+                }
+            }
         }
-      }
     }
-  }
 }

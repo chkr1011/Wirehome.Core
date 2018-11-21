@@ -1,0 +1,25 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "automation.wirehome.circulation_pump",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "duration": 300,
+                "pause": 3600,
+                "disabled_range": {
+                    "start": "23:00",
+                    "end": "07:00"
+                },
+                "pump_uid": "heating.circulation_pump",
+                "triggers": [
+                    "kitchen.motion_detector",
+                    "bathroom_lower.motion_detector",
+                    "office.motion_detector"
+                ]
+            }
+        }
+    }
+}

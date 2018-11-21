@@ -1,4 +1,5 @@
 ﻿{
     "app.caption": "Büro",
-    "app.position_index": 14
+    "app.position_index": 14,
+    "app.image_id": "fas fa-thermometer-half"
 }

@@ -1,4 +1,5 @@
 ﻿{
     "app.caption": "Wohnzimmer",
-    "app.position_index": 7
+    "app.position_index": 7,
+    "app.image_id": "fas fa-thermometer-half"
 }

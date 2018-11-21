@@ -3,10 +3,10 @@
     "isEnabled": true,
     "variables": {
         "config": {
-            "app_id": "xxx",
+            "app_id": "",
             "city_name": "Kamp-Lintfort",
-            "latitude": 1.2,
-            "longitude": 3.4,
+            "latitude": 1.357,
+            "longitude": 2.468,
             "query_mode": "city",
             "import_temperature": false,
             "import_humidity": false

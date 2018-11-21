@@ -1,57 +1,57 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.roller_shutter",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.roller_shutter",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "state_definitions": {
-            "off": [
-              {
-                "device_uid": "children1_hsrel5",
-                "port": 3,
-                "state": "open"
-              },
-              {
-                "device_uid": "children1_hsrel5",
-                "port": 4,
-                "state": "open"
-              }
-            ],
-            "moving_up": [
-              {
-                "device_uid": "children1_hsrel5",
-                "port": 3,
-                "state": "open"
-              },
-              {
-                "device_uid": "children1_hsrel5",
-                "port": 4,
-                "state": "closed"
-              }
-            ],
-            "moving_down": [
-              {
-                "device_uid": "children1_hsrel5",
-                "port": 3,
-                "state": "closed"
-              },
-              {
-                "device_uid": "children1_hsrel5",
-                "port": 4,
-                "state": "closed"
-              }
-            ]
-          }
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.roller_shutter",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.roller_shutter",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "state_definitions": {
+                        "off": [
+                            {
+                                "device_uid": "children1_hsrel5",
+                                "port": 3,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "children1_hsrel5",
+                                "port": 4,
+                                "state": "open"
+                            }
+                        ],
+                        "moving_up": [
+                            {
+                                "device_uid": "children1_hsrel5",
+                                "port": 3,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "children1_hsrel5",
+                                "port": 4,
+                                "state": "closed"
+                            }
+                        ],
+                        "moving_down": [
+                            {
+                                "device_uid": "children1_hsrel5",
+                                "port": 3,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "children1_hsrel5",
+                                "port": 4,
+                                "state": "closed"
+                            }
+                        ]
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }

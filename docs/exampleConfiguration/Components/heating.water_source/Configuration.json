@@ -1,46 +1,46 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.state_machine",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.state_machine",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "initial_state": "own",
-          "state_definitions": {
-            "own": [
-              {
-                "device_uid": "heating_hsrel5",
-                "port": 5,
-                "state": "low"
-              },
-              {
-                "device_uid": "heating_hsrel5",
-                "port": 6,
-                "state": "low"
-              }
-            ],
-            "external": [
-              {
-                "device_uid": "heating_hsrel5",
-                "port": 5,
-                "state": "high"
-              },
-              {
-                "device_uid": "heating_hsrel5",
-                "port": 6,
-                "state": "high"
-              }
-            ]
-          }
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.state_machine",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.state_machine",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "initial_state": "own",
+                    "state_definitions": {
+                        "own": [
+                            {
+                                "device_uid": "heating_hsrel5",
+                                "port": 5,
+                                "state": "low"
+                            },
+                            {
+                                "device_uid": "heating_hsrel5",
+                                "port": 6,
+                                "state": "low"
+                            }
+                        ],
+                        "external": [
+                            {
+                                "device_uid": "heating_hsrel5",
+                                "port": 5,
+                                "state": "high"
+                            },
+                            {
+                                "device_uid": "heating_hsrel5",
+                                "port": 6,
+                                "state": "high"
+                            }
+                        ]
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }

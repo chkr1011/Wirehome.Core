@@ -1,26 +1,26 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.sensor",
-      "version": "1.0.0"
-    },
-    "variables": {
-      "config": {
-        "sensor_type": "temperature",
-        "publish_as_global_variable": "outdoor.temperature"
-      }
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.mqtt.sensor",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "topic": "outdoor/temperature"
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.sensor",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "sensor_type": "temperature",
+                "publish_as_global_variable": "outdoor.temperature"
+            }
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.mqtt.sensor",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "topic": "outdoor/temperature"
+                }
+            }
         }
-      }
     }
-  }
 }

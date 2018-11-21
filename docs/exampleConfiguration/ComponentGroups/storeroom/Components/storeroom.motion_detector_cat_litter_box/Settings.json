@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "app.caption": "Katzenklo - Bewegungsmelder",
+    "app.image_id": "fas fa-cat",
+    "app.position_index": 2,
+}

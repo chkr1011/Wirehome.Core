@@ -10,9 +10,8 @@
                 "roller_shutters": [
                     "children_1.roller_shutter",
                     "kitchen.roller_shutter",
-                    "stairway.roller_shutter",
-                    "bedroom.roller_shutter_left",
-                    "bedroom.roller_shutter_right"]
+                    "stairway.roller_shutter"
+                ]
             }
         }
     }

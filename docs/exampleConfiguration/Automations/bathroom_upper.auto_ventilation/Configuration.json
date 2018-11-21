@@ -7,8 +7,12 @@
         },
         "variables": {
             "config": {
-                "motion_detectors": ["bathroom_upper.motion_detector"],
-                "fans": ["bathroom_upper.fan"],
+                "motion_detectors": [
+                    "bathroom_upper.motion_detector"
+                ],
+                "fans": [
+                    "bathroom_upper.fan"
+                ],
                 "first_level_duration": 480000,
                 "second_level_duration": 720000
             }

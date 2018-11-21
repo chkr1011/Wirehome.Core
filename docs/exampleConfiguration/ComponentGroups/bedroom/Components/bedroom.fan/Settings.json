@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "app.caption": "Ventilator",
+    "app.position_index": 7,
+    "app.image_id": "fas fa-wind"
+}

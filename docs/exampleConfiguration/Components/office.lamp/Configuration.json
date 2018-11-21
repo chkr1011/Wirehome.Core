@@ -1,160 +1,120 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.state_machine",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.state_machine",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "initial_state": "off",
-          "state_template": [
-            {
-              "device_uid": "office+upperFloor_hspe8",
-              "port": 0,
-              "is_inverted": true
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.state_machine",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.state_machine",
+                "version": "1.0.0"
             },
-            {
-              "device_uid": "office+upperFloor_hspe8",
-              "port": 1,
-              "is_inverted": true
-            },
-            {
-              "device_uid": "office+upperFloor_hspe8",
-              "port": 2,
-              "is_inverted": true
-            },
-            {
-              "device_uid": "office+upperFloor_hspe8",
-              "port": 3,
-              "is_inverted": true
-            },
-            {
-              "device_uid": "office_hsrel8",
-              "port": 8,
-              "is_inverted": true
-            },
-            {
-              "device_uid": "office_hsrel8",
-              "port": 9,
-              "is_inverted": true
-            },
-            {
-              "device_uid": "office_hsrel8",
-              "port": 12
-            },
-            {
-              "device_uid": "office_hsrel8",
-              "port": 13
+            "variables": {
+                "config": {
+                    "initial_state": "off",
+                    "state_definitions": {
+                        "off": [
+                            {
+                                "device_uid": "office+upperFloor_hspe8",
+                                "port": 0,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "office+upperFloor_hspe8",
+                                "port": 1,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "office+upperFloor_hspe8",
+                                "port": 2,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "office+upperFloor_hspe8",
+                                "port": 3,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "office_hsrel8",
+                                "port": 8,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "office_hsrel8",
+                                "port": 9,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "office_hsrel8",
+                                "port": 12,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "office_hsrel8",
+                                "port": 13,
+                                "state": "open"
+                            }
+                        ],
+                        "on": [
+                            {
+                                "device_uid": "office+upperFloor_hspe8",
+                                "port": 0,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "office+upperFloor_hspe8",
+                                "port": 1,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "office+upperFloor_hspe8",
+                                "port": 2,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "office+upperFloor_hspe8",
+                                "port": 3,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "office_hsrel8",
+                                "port": 8,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "office_hsrel8",
+                                "port": 9,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "office_hsrel8",
+                                "port": 12,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "office_hsrel8",
+                                "port": 13,
+                                "state": "closed"
+                            }
+                        ],
+                        "couch_only": [],
+                        "desk_only": []
+                    }
+                }
             }
-          ],
-          "state_definitions": {
-            "off": [
-              {
-                "device_uid": "office+upperFloor_hspe8",
-                "port": 0,
-                "is_inverted": true,
-                "state": "open"
-              },
-              {
-                "device_uid": "office+upperFloor_hspe8",
-                "port": 1,
-                "is_inverted": true,
-                "state": "open"
-              },
-              {
-                "device_uid": "office+upperFloor_hspe8",
-                "port": 2,
-                "is_inverted": true,
-                "state": "open"
-              },
-              {
-                "device_uid": "office+upperFloor_hspe8",
-                "port": 3,
-                "is_inverted": true,
-                "state": "open"
-              },
-              {
-                "device_uid": "office_hsrel8",
-                "port": 8,
-                "is_inverted": true,
-                "state": "open"
-              },
-              {
-                "device_uid": "office_hsrel8",
-                "port": 9,
-                "is_inverted": true,
-                "state": "open"
-              },
-              {
-                "device_uid": "office_hsrel8",
-                "port": 12,
-                "state": "open"
-              },
-              {
-                "device_uid": "office_hsrel8",
-                "port": 13,
-                "state": "open"
-              }
-            ],
-            "on": [
-              {
-                "device_uid": "office+upperFloor_hspe8",
-                "port": 0,
-                "is_inverted": true,
-                "state": "closed"
-              },
-              {
-                "device_uid": "office+upperFloor_hspe8",
-                "port": 1,
-                "is_inverted": true,
-                "state": "closed"
-              },
-              {
-                "device_uid": "office+upperFloor_hspe8",
-                "port": 2,
-                "is_inverted": true,
-                "state": "closed"
-              },
-              {
-                "device_uid": "office+upperFloor_hspe8",
-                "port": 3,
-                "is_inverted": true,
-                "state": "closed"
-              },
-              {
-                "device_uid": "office_hsrel8",
-                "port": 8,
-                "is_inverted": true,
-                "state": "closed"
-              },
-              {
-                "device_uid": "office_hsrel8",
-                "port": 9,
-                "is_inverted": true,
-                "state": "closed"
-              },
-              {
-                "device_uid": "office_hsrel8",
-                "port": 12,
-                "state": "closed"
-              },
-              {
-                "device_uid": "office_hsrel8",
-                "port": 13,
-                "state": "closed"
-              }
-            ],
-            "couch_only": [],
-            "desk_only": []
-          }
         }
-      }
     }
-  }
 }

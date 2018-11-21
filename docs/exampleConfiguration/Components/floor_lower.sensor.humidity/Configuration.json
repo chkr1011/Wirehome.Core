@@ -1,25 +1,25 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.sensor",
-      "version": "1.0.0"
-    },
-    "variables": {
-      "config": {
-        "sensor_type": "humidity"
-      }
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.mqtt.sensor",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "topic": "sensors-bridge/humidity/3"
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.sensor",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "sensor_type": "humidity"
+            }
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.mqtt.sensor",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "topic": "sensors-bridge/humidity/3"
+                }
+            }
         }
-      }
     }
-  }
 }

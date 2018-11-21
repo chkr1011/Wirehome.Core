@@ -1,26 +1,26 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.lamp",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.relay",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "ports": [
-            {
-              "device_uid": "lowerFloor+lowerBathroom_hspe16",
-              "port": 4,
-              "is_inverted": true
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.lamp",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.relay",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "ports": [
+                        {
+                            "device_uid": "lowerFloor+lowerBathroom_hspe16",
+                            "port": 4,
+                            "is_inverted": true
+                        }
+                    ]
+                }
             }
-          ]
         }
-      }
     }
-  }
 }

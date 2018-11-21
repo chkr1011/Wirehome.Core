@@ -76,11 +76,11 @@
                     "board": "HSREL5",
                     "address": 56
                 },
-                "children1_hsrel5" : {
+                "children1_hsrel5": {
                     "board": "HSREL5",
                     "address": 62
                 },
-                "children2_hsrel5" : {
+                "children2_hsrel5": {
                     "board": "HSREL5",
                     "address": 63
                 },
@@ -92,11 +92,11 @@
                     "board": "HSPE8-OUT",
                     "address": 39
                 },
-                "livingRoom_hsrel8":{
+                "livingRoom_hsrel8": {
                     "board": "HSREL8",
                     "address": 18
                 },
-                "livingRoom_hsrel5":{
+                "livingRoom_hsrel5": {
                     "board": "HSREL5",
                     "address": 57
                 }

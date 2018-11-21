@@ -1,57 +1,57 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.roller_shutter",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.roller_shutter",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "state_definitions": {
-            "off": [
-              {
-                "device_uid": "bedroom_hsrel8",
-                "port": 4,
-                "state": "open"
-              },
-              {
-                "device_uid": "bedroom_hsrel8",
-                "port": 3,
-                "state": "open"
-              }
-            ],
-            "moving_up": [
-              {
-                "device_uid": "bedroom_hsrel8",
-                "port": 4,
-                "state": "open"
-              },
-              {
-                "device_uid": "bedroom_hsrel8",
-                "port": 3,
-                "state": "closed"
-              }
-            ],
-            "moving_down": [
-              {
-                "device_uid": "bedroom_hsrel8",
-                "port": 4,
-                "state": "closed"
-              },
-              {
-                "device_uid": "bedroom_hsrel8",
-                "port": 3,
-                "state": "closed"
-              }
-            ]
-          }
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.roller_shutter",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.roller_shutter",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "state_definitions": {
+                        "off": [
+                            {
+                                "device_uid": "bedroom_hsrel8",
+                                "port": 4,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "bedroom_hsrel8",
+                                "port": 3,
+                                "state": "open"
+                            }
+                        ],
+                        "moving_up": [
+                            {
+                                "device_uid": "bedroom_hsrel8",
+                                "port": 4,
+                                "state": "open"
+                            },
+                            {
+                                "device_uid": "bedroom_hsrel8",
+                                "port": 3,
+                                "state": "closed"
+                            }
+                        ],
+                        "moving_down": [
+                            {
+                                "device_uid": "bedroom_hsrel8",
+                                "port": 4,
+                                "state": "closed"
+                            },
+                            {
+                                "device_uid": "bedroom_hsrel8",
+                                "port": 3,
+                                "state": "closed"
+                            }
+                        ]
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }

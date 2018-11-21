@@ -1,26 +1,198 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.lamp",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.relay",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "ports": [
-            {
-              "device_uid": "kitchen_hsrel5",
-              "port": 5,
-              "is_inverted": true
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.state_machine",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.state_machine",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "initial_state": "off",
+                    "state_definitions": {
+                        "off": [
+                            {
+                                "comment": "Decke",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 5,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Wand 1",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 7,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Wand 2",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 0,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Fenster",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 6,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Passage 1",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 1,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Passage 2",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 2,
+                                "is_inverted": true,
+                                "state": "open"
+                            }
+                        ],
+                        "on": [
+                            {
+                                "comment": "Decke",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 5,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Wand 1",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 7,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Wand 2",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 0,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Fenster",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 6,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Passage 1",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 1,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Passage 2",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 2,
+                                "is_inverted": true,
+                                "state": "closed"
+                            }
+                        ],
+                        "auto": [
+                            {
+                                "comment": "Decke",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 5,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Wand 1",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 7,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Wand 2",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 0,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Fenster",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 6,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Passage 1",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 1,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Passage 2",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 2,
+                                "is_inverted": true,
+                                "state": "closed"
+                            }
+                        ],
+                        "night": [
+                            {
+                                "comment": "Decke",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 5,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Wand 1",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 7,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Wand 2",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 0,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Fenster",
+                                "device_uid": "kitchen_hsrel5",
+                                "port": 6,
+                                "is_inverted": true,
+                                "state": "closed"
+                            },
+                            {
+                                "comment": "Passage 1",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 1,
+                                "is_inverted": true,
+                                "state": "open"
+                            },
+                            {
+                                "comment": "Passage 2",
+                                "device_uid": "kitchen_hspe8",
+                                "port": 2,
+                                "is_inverted": true,
+                                "state": "open"
+                            }
+                        ]
+                    }
+                }
             }
-          ]
         }
-      }
     }
-  }
 }

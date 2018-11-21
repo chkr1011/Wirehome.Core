@@ -1,4 +1,5 @@
 ﻿{
     "app.caption": "Außen",
-    "app.position_index": 6
+    "app.position_index": 6,
+    "app.image_id": "fas fa-thermometer-half"
 }

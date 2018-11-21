@@ -1,0 +1,8 @@
+{
+    "open_on_sunrise": true,
+    "close_on_sunset": true,
+    "sunrise_shift": "-00:30:00",
+    "sunset_shift": "00:30:00",
+    "min_outdoor_temperature": 3,
+    "auto_close_outdoor_temperature": 25
+}

@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "app.caption": "Strahler",
+    "app.position_index": 4,
+    "app.image_id": "fas fa-lightbulb"
+}

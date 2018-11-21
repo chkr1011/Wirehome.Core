@@ -1,4 +1,10 @@
 ﻿{
     "app.caption": "Warmwasser-Quelle",
-    "app.position_index": 3
+    "app.caption.states.own": "Eigen",
+    "app.caption.states.external": "Extern",
+    "app.image_id": "fas fa-share-alt-square",
+    "app.display_vertical": false,
+    "app.position_index": 3,
+    "app.position_index.states.own": 0,
+    "app.position_index.states.external": 1
 }

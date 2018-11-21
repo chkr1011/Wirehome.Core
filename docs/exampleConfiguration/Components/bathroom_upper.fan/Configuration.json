@@ -1,63 +1,63 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.ventilation",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.cc_tools.ventilation",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "level_definitions": [
-            {
-              "states": [
-                {
-                  "device_uid": "upperBathroom_hsrel5",
-                  "port": 4,
-                  "state": "open"
-                },
-                {
-                  "device_uid": "upperBathroom_hsrel5",
-                  "port": 5,
-                  "state": "open"
-                }
-              ]
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.ventilation",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.cc_tools.ventilation",
+                "version": "1.0.0"
             },
-            {
-              "states": [
-                {
-                  "device_uid": "upperBathroom_hsrel5",
-                  "port": 4,
-                  "state": "closed"
-                },
-                {
-                  "device_uid": "upperBathroom_hsrel5",
-                  "port": 5,
-                  "state": "open"
+            "variables": {
+                "config": {
+                    "level_definitions": [
+                        {
+                            "states": [
+                                {
+                                    "device_uid": "upperBathroom_hsrel5",
+                                    "port": 4,
+                                    "state": "open"
+                                },
+                                {
+                                    "device_uid": "upperBathroom_hsrel5",
+                                    "port": 5,
+                                    "state": "open"
+                                }
+                            ]
+                        },
+                        {
+                            "states": [
+                                {
+                                    "device_uid": "upperBathroom_hsrel5",
+                                    "port": 4,
+                                    "state": "closed"
+                                },
+                                {
+                                    "device_uid": "upperBathroom_hsrel5",
+                                    "port": 5,
+                                    "state": "open"
+                                }
+                            ]
+                        },
+                        {
+                            "states": [
+                                {
+                                    "device_uid": "upperBathroom_hsrel5",
+                                    "port": 4,
+                                    "state": "closed"
+                                },
+                                {
+                                    "device_uid": "upperBathroom_hsrel5",
+                                    "port": 5,
+                                    "state": "closed"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "states": [
-                {
-                  "device_uid": "upperBathroom_hsrel5",
-                  "port": 4,
-                  "state": "closed"
-                },
-                {
-                  "device_uid": "upperBathroom_hsrel5",
-                  "port": 5,
-                  "state": "closed"
-                }
-              ]
             }
-          ]
         }
-      }
     }
-  }
 }

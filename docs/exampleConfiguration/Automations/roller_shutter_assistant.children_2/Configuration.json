@@ -1,0 +1,16 @@
+{
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "automation.wirehome.roller_shutter_assistant",
+            "version": "1.0.0"
+        },
+        "variables": {
+            "config": {
+                "roller_shutters": [
+                    "children_2.roller_shutter"
+                ]
+            }
+        }
+    }
+}

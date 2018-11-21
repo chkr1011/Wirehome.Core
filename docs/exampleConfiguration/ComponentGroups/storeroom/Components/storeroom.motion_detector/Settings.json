@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "app.caption": "Bewegungsmelder",
+    "app.image_id": "fas fa-walking",
+    "app.position_index": 0,
+}

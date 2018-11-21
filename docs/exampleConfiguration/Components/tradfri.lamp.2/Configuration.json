@@ -1,22 +1,22 @@
 {
-  "isEnabled": true,
-  "logic": {
-    "uid": {
-      "id": "component_logic.wirehome.lamp",
-      "version": "1.0.0"
-    },
-    "adapter": {
-      "uid": {
-        "id": "component_adapter.wirehome.tradfri.lamp",
-        "version": "1.0.0"
-      },
-      "variables": {
-        "config": {
-          "gateway_address": "GW-B8D7AF2B3EA3",
-          "psk": "055PemHo7oWxa3Ix",
-          "device_id": "65547"
+    "isEnabled": true,
+    "logic": {
+        "uid": {
+            "id": "component_logic.wirehome.lamp",
+            "version": "1.0.0"
+        },
+        "adapter": {
+            "uid": {
+                "id": "component_adapter.wirehome.tradfri.lamp",
+                "version": "1.0.0"
+            },
+            "variables": {
+                "config": {
+                    "gateway_address": "GW-B8D7AF2B3EA3",
+                    "psk": "055PemHo7oWxa3Ix",
+                    "device_id": 65547
+                }
+            }
         }
-      }
     }
-  }
 }

@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "app.caption": "Stehlampe - links",
+    "app.position_index": 5,
+    "app.image_id": "fas fa-palette"
+}
