@@ -79,7 +79,7 @@ namespace Wirehome.Core.Hardware.GPIO
         {
             if (!_adapters.TryGetValue(hostId, out var adapter))
             {
-                throw new WirehomeConfigurationException($"GPIO adapter '{hostId}' not registered.");
+                throw new ConfigurationException($"GPIO adapter '{hostId}' not registered.");
             }
 
             return adapter;

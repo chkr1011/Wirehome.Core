@@ -67,7 +67,7 @@ namespace Wirehome.Core.Hardware.I2C
         {
             if (!_adapters.TryGetValue(busId, out var adapter))
             {
-                throw new WirehomeConfigurationException($"I2C adapter '{busId}' not registered.");
+                throw new ConfigurationException($"I2C adapter '{busId}' not registered.");
             }
 
             return adapter;

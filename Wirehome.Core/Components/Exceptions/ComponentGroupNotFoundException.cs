@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Components.Exceptions
 {
-    public class ComponentGroupNotFoundException : WirehomeException
+    public class ComponentGroupNotFoundException : NotFoundException
     {
         public ComponentGroupNotFoundException(string uid) :
             base($"Component group with UID '{uid}' not found.")
