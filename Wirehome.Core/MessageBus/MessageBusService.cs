@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Model;
+using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.MessageBus
@@ -24,15 +25,21 @@ namespace Wirehome.Core.MessageBus
         private readonly OperationsPerSecondCounter _inboundCounter;
         private readonly OperationsPerSecondCounter _processingRateCounter;
 
+        private readonly MessageBusServiceOptions _options;
+
         private readonly ILogger _logger;
 
         public MessageBusService(
+            StorageService storageService,
             SystemStatusService systemStatusService,
             DiagnosticsService diagnosticsService,
             SystemCancellationToken systemCancellationToken,
             ILoggerFactory loggerFactory)
         {
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
+
+            if (storageService == null) throw new ArgumentNullException(nameof(storageService));
+            storageService.TryReadOrCreate(out _options, MessageBusServiceOptions.Filename);
 
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<MessageBusService>();
@@ -56,10 +63,10 @@ namespace Wirehome.Core.MessageBus
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
 
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < _options.MessageProcessorsCount; i++)
             {
                 Task.Factory.StartNew(
-                    () => ProcessMessageBusMessages(_systemCancellationToken.Token),
+                    () => ProcessMessages(_systemCancellationToken.Token),
                     _systemCancellationToken.Token,
                     TaskCreationOptions.LongRunning,
                     TaskScheduler.Default);
@@ -136,7 +143,7 @@ namespace Wirehome.Core.MessageBus
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
-            message.EnqueuedTimestamp = DateTime.UtcNow;
+            message.EnqueuedTimestamp = DateTime.Now;
             _messageQueue.Add(message);
 
             _inboundCounter.Increment();
@@ -173,7 +180,7 @@ namespace Wirehome.Core.MessageBus
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            var subscriber = new MessageBusSubscriber(uid, filter, callback);
+            var subscriber = new MessageBusSubscriber(uid, filter, callback, _logger);
             _subscribers[uid] = subscriber;
 
             return uid;
@@ -203,7 +210,7 @@ namespace Wirehome.Core.MessageBus
                     lock (_history)
                     {
                         _history.AddFirst(message);
-                        if (_history.Count > 100)
+                        if (_history.Count > _options.HistoryItemsCount)
                         {
                             _history.RemoveLast();
                         }
@@ -235,40 +242,37 @@ namespace Wirehome.Core.MessageBus
                 }
                 catch (Exception exception)
                 {
-                    _logger.Log(LogLevel.Error, exception, "Error while dispatching messages.");
+                    _logger.LogError(exception, "Error while dispatching messages.");
                     Thread.Sleep(TimeSpan.FromSeconds(1));
                 }
             }
         }
 
-        private void ProcessMessageBusMessages(CancellationToken cancellationToken)
+        private void ProcessMessages(CancellationToken cancellationToken)
         {
-            Thread.CurrentThread.Name = nameof(ProcessMessageBusMessages);
-
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                try
+                Thread.CurrentThread.Name = nameof(ProcessMessages);
+
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     foreach (var subscriber in _subscribers.Values)
                     {
-                        if (subscriber.ProcessNextMessage())
+                        if (subscriber.TryProcessNextMessage())
                         {
                             _processingRateCounter.Increment();
                         }
                     }
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                catch (Exception exception)
-                {
-                    _logger.Log(LogLevel.Error, exception, "Error while processing messages.");
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
-                }
-                finally
-                {
+
                     Thread.Sleep(10);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Message processor faulted.");
             }
         }
     }
