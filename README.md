@@ -22,5 +22,6 @@ A Web App which is hosted by Wirehome.Core is also part of this project. It runs
 
 <p align="center">
 <img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/app_screen_1.png?raw=true" width="256">
-<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/app_screen_1.png?raw=true" width="256">
+<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/app_screen_2.png?raw=true" width="256">
+<img src="https://github.com/chkr1011/Wirehome.Core/blob/master/docs/images/app_screen_3.png?raw=true" width="256">
 </p>
