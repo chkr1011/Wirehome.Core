@@ -14,9 +14,9 @@ namespace Wirehome.Core.Hardware.I2C
 
         private readonly ILogger _logger;
 
-        public I2CBusService(ILoggerFactory loggerFactory)
+        public I2CBusService(ILogger<I2CBusService> logger)
         {
-            _logger = loggerFactory?.CreateLogger<I2CBusService>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

@@ -15,12 +15,10 @@ namespace Wirehome.Core.Diagnostics
         
         private readonly ILogger _logger;
 
-        public DiagnosticsService(SystemCancellationToken systemCancellationToken, ILoggerFactory loggerFactory)
+        public DiagnosticsService(SystemCancellationToken systemCancellationToken, ILogger<DiagnosticsService> logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
-            
-            _logger = loggerFactory.CreateLogger<DiagnosticsService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

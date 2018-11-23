@@ -34,15 +34,13 @@ namespace Wirehome.Core.MessageBus
             SystemStatusService systemStatusService,
             DiagnosticsService diagnosticsService,
             SystemCancellationToken systemCancellationToken,
-            ILoggerFactory loggerFactory)
+            ILogger<MessageBusService> logger)
         {
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (storageService == null) throw new ArgumentNullException(nameof(storageService));
             storageService.TryReadOrCreate(out _options, MessageBusServiceOptions.Filename);
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<MessageBusService>();
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _inboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("message_bus.inbound_rate");

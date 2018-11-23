@@ -17,13 +17,14 @@ namespace Wirehome.Core.System.StartupScripts
         private readonly StorageService _storageService;
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         
-        public StartupScriptsService(StorageService storageService, PythonScriptHostFactoryService pythonScriptHostFactoryService, ILoggerFactory loggerFactory)
+        public StartupScriptsService(
+            StorageService storageService, 
+            PythonScriptHostFactoryService pythonScriptHostFactoryService, 
+            ILogger<StartupScriptsService> logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
-            _logger = loggerFactory.CreateLogger<StartupScriptsService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

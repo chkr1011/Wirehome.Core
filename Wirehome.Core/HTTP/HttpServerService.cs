@@ -17,12 +17,10 @@ namespace Wirehome.Core.HTTP
         private readonly JsonSerializerService _jsonSerializerService;
         private readonly ILogger _logger;
 
-        public HttpServerService(JsonSerializerService jsonSerializerService, ILoggerFactory loggerFactory)
+        public HttpServerService(JsonSerializerService jsonSerializerService, ILogger<HttpServerService> logger)
         {
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<HttpServerService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

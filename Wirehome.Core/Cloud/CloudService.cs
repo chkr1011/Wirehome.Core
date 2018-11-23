@@ -33,12 +33,10 @@ namespace Wirehome.Core.Cloud
         private ConnectorChannel _channel;
         private bool _isConnected;
 
-        public CloudService(StorageService storageService, SystemStatusService systemStatusService, ILoggerFactory loggerFactory)
+        public CloudService(StorageService storageService, SystemStatusService systemStatusService, ILogger<CloudService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<CloudService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("cloud.is_connected", () => _isConnected);

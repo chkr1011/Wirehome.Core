@@ -1,7 +1,6 @@
 ﻿using System;
 using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
-using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
 
@@ -15,13 +14,14 @@ namespace Wirehome.Core.Components.Logic
 
         private PythonScriptHost _scriptHost;
 
-        public ScriptComponentLogic(PythonScriptHostFactoryService pythonScriptHostFactoryService, ComponentRegistryService componentRegistryService, ILoggerFactory loggerFactory)
+        public ScriptComponentLogic(
+            PythonScriptHostFactoryService pythonScriptHostFactoryService,
+            ComponentRegistryService componentRegistryService, 
+            ILogger<ScriptComponentLogic> logger)
         {
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
-            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ScriptComponentAdapter>();
+            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));            
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public Func<WirehomeDictionary, WirehomeDictionary> AdapterMessagePublishedCallback { get; set; }

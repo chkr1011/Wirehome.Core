@@ -29,15 +29,13 @@ namespace Wirehome.Core.System
             SystemCancellationToken systemCancellationToken,
             NotificationsService notificationsService,
             MessageBusService messageBusService,
-            ILoggerFactory loggerFactory)
+            ILogger<SystemService> logger)
         {
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _systemLaunchArguments = systemLaunchArguments ?? throw new ArgumentNullException(nameof(systemLaunchArguments));
             _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<SystemService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _creationTimestamp = DateTime.Now;
         }

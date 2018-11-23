@@ -16,10 +16,10 @@ namespace Wirehome.Core.Hardware.GPIO
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
-        public GpioRegistryService(MessageBusService messageBusService, ILoggerFactory loggerFactory)
+        public GpioRegistryService(MessageBusService messageBusService, ILogger<GpioRegistryService> logger)
         {
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-            _logger = loggerFactory?.CreateLogger<GpioRegistryService>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

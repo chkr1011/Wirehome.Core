@@ -14,10 +14,9 @@ namespace Wirehome.Core.FunctionPool
 
         private readonly ILogger<FunctionPoolService> _logger;
 
-        public FunctionPoolService(ILoggerFactory loggerFactory)
+        public FunctionPoolService(ILogger<FunctionPoolService> logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<FunctionPoolService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

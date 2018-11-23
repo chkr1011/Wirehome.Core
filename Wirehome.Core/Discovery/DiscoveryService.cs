@@ -19,10 +19,9 @@ namespace Wirehome.Core.Discovery
 
         private SsdpDevicePublisher _publisher;
         
-        public DiscoveryService(StorageService storageService, ILoggerFactory loggerFactory)
+        public DiscoveryService(StorageService storageService, ILogger<DiscoveryService> logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<DiscoveryService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             storageService.TryReadOrCreate(out _options, DiscoveryServiceOptions.Filename);
         }

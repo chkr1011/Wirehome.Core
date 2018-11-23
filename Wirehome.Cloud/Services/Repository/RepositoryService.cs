@@ -16,10 +16,9 @@ namespace Wirehome.Cloud.Services.Repository
         private readonly string _rootPath;
         private readonly ILogger _logger;
         
-        public RepositoryService(ILoggerFactory loggerFactory)
+        public RepositoryService(ILogger<RepositoryService> logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<RepositoryService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (Debugger.IsAttached)
             {

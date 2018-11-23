@@ -27,14 +27,12 @@ namespace Wirehome.Core.ServiceHost
             RepositoryService repositoryService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             SystemStatusService systemStatusService,
-            ILoggerFactory loggerFactory)
+            ILogger<ServiceHostService> logger)
         {
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ServiceHostService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("service_host.service_count", () => _services.Count);
@@ -152,8 +150,8 @@ namespace Wirehome.Core.ServiceHost
 
         private ServiceInstance CreateServiceInstance(string id, ServiceConfiguration configuration)
         {
-            var repositoryEntityUid = new RepositoryEntityUid(id, configuration.Version);
-            var repositoryEntitySource = _repositoryService.LoadEntity(repositoryEntityUid);
+            var repositoryEntityUid = new PackageUid(id, configuration.Version);
+            var repositoryEntitySource = _repositoryService.LoadPackage(repositoryEntityUid);
 
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
             scriptHost.Initialize(repositoryEntitySource.Script);

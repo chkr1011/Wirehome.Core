@@ -14,18 +14,21 @@ namespace Wirehome.Core.Components
         private readonly ComponentRegistryService _componentRegistryService;
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly RepositoryService _repositoryService;
-        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
+        private readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
 
         public ComponentInitializer(
             ComponentRegistryService componentRegistryService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             RepositoryService repositoryService,
-            ILoggerFactory loggerFactory)
+            ILogger<ScriptComponentLogic> scriptComponentLogicLogger,
+            ILogger<ScriptComponentAdapter> scriptComponentAdapterLogger)
         {
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(_pythonScriptHostFactoryService));
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _scriptComponentLogicLogger = scriptComponentLogicLogger ?? throw new ArgumentNullException(nameof(scriptComponentLogicLogger));
+            _scriptComponentAdapterLogger = scriptComponentAdapterLogger ?? throw new ArgumentNullException(nameof(scriptComponentAdapterLogger));
         }
 
         public void InitializeComponent(Component component, ComponentConfiguration configuration)
@@ -38,9 +41,9 @@ namespace Wirehome.Core.Components
                 ["component_uid"] = component.Uid
             };
 
-            var adapterEntity = _repositoryService.LoadEntity(configuration.Logic.Adapter.Uid);
+            var adapterEntity = _repositoryService.LoadPackage(configuration.Logic.Adapter.Uid);
 
-            var adapter = new ScriptComponentAdapter(_pythonScriptHostFactoryService, _componentRegistryService, _loggerFactory);
+            var adapter = new ScriptComponentAdapter(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentAdapterLogger);
             adapter.Initialize(component.Uid, adapterEntity.Script);
 
             if (configuration.Logic.Adapter.Variables != null)
@@ -61,9 +64,9 @@ namespace Wirehome.Core.Components
             }
             else
             {
-                var logicEntity = _repositoryService.LoadEntity(configuration.Logic.Uid);
+                var logicEntity = _repositoryService.LoadPackage(configuration.Logic.Uid);
 
-                var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _loggerFactory);
+                var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentLogicLogger);
                 adapter.MessagePublishedCallback = message => logic.ProcessAdapterMessage(message);
                 logic.AdapterMessagePublishedCallback = message => adapter.ProcessMessage(message);
 

@@ -104,7 +104,7 @@ namespace Wirehome.Core.HTTP
             var customContentRootPath = Path.Combine(storagePaths.DataPath, "CustomContent");
 
             var repositoryRootPath = Path.Combine(storagePaths.DataPath, "Repository");
-            var storageService = new StorageService(new JsonSerializerService(), new LoggerFactory());
+            var storageService = new StorageService(new JsonSerializerService(), new LoggerFactory().CreateLogger<StorageService>());
             storageService.Start();
             if (storageService.TryRead(out RepositoryServiceOptions repositoryServiceOptions, RepositoryServiceOptions.Filename))
             {

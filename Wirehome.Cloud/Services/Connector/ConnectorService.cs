@@ -21,12 +21,10 @@ namespace Wirehome.Cloud.Services.Connector
         private readonly AuthorizationService _authorizationService;
         private readonly ILogger _logger;
 
-        public ConnectorService(AuthorizationService authorizationService, ILoggerFactory loggerFactory)
+        public ConnectorService(AuthorizationService authorizationService, ILogger<ConnectorService> logger)
         {
             _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ConnectorService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task RunAsync(WebSocket webSocket, AuthorizationContext authorizationContext, CancellationToken cancellationToken)

@@ -32,16 +32,14 @@ namespace Wirehome.Core.Components
             SystemStatusService systemStatusService,
             MessageBusService messageBusService,
             ComponentInitializerService componentInitializerService,
-            ILoggerFactory loggerFactory)
+            ILogger<ComponentRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _componentInitializerService = componentInitializerService ?? throw new ArgumentNullException(nameof(componentInitializerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _messageBusProxy = new ComponentRegistryMessageBusProxy(messageBusService);
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ComponentRegistryService>();
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("component_registry.count", () => _components.Count);

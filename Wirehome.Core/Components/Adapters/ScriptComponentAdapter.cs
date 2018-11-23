@@ -14,13 +14,11 @@ namespace Wirehome.Core.Components.Adapters
 
         private PythonScriptHost _scriptHost;
 
-        public ScriptComponentAdapter(PythonScriptHostFactoryService pythonScriptHostFactoryService, ComponentRegistryService componentRegistryService, ILoggerFactory loggerFactory)
+        public ScriptComponentAdapter(PythonScriptHostFactoryService pythonScriptHostFactoryService, ComponentRegistryService componentRegistryService, ILogger<ScriptComponentAdapter> logger)
         {
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ScriptComponentAdapter>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public Func<WirehomeDictionary, WirehomeDictionary> MessagePublishedCallback { get; set; }

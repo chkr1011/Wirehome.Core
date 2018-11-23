@@ -21,13 +21,11 @@ namespace Wirehome.Core.GlobalVariables
         public GlobalVariablesService(
             StorageService storageService, 
             MessageBusService messageBusService, 
-            ILoggerFactory loggerFactory)
+            ILogger<GlobalVariablesService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<GlobalVariablesService>();
+            _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));            
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

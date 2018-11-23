@@ -30,7 +30,7 @@ namespace Wirehome.Core.Notifications
         private readonly MessageBusService _messageBusService;
         private readonly SystemCancellationToken _systemCancellationToken;
 
-        private readonly ILogger<NotificationsService> _logger;
+        private readonly ILogger _logger;
 
         public NotificationsService(
             StorageService storageService,
@@ -38,15 +38,13 @@ namespace Wirehome.Core.Notifications
             ResourceService resourcesService,
             MessageBusService messageBusService,
             SystemCancellationToken systemCancellationToken,
-            ILoggerFactory loggerFactory)
+            ILogger<NotificationsService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _resourcesService = resourcesService ?? throw new ArgumentNullException(nameof(resourcesService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<NotificationsService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("notifications.count", () =>

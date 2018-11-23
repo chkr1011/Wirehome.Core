@@ -29,15 +29,13 @@ namespace Wirehome.Core.Automations
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             StorageService storageService,
             MessageBusService messageBusService,
-            ILoggerFactory loggerFactory)
+            ILogger<AutomationRegistryService> logger)
         {
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<AutomationRegistryService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()
@@ -149,7 +147,30 @@ namespace Wirehome.Core.Automations
                 ["setting_uid"] = settingUid,
                 ["old_value"] = oldValue,
                 ["new_value"] = value,
-                ["timestamp"] = DateTimeOffset.UtcNow
+                ["timestamp"] = DateTimeOffset.Now.ToString("O")
+            });
+        }
+        
+        public void RemoveAutomationSetting(string automationUid, string settingUid)
+        {
+            if (automationUid == null) throw new ArgumentNullException(nameof(automationUid));
+            if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
+
+            var automation = GetAutomation(automationUid);
+            if (!automation.Settings.TryRemove(settingUid, out var value))
+            {
+                return;
+            }
+
+            _storageService.Write(automation.Settings, AutomationsDirectory, automation.Uid, DefaultFilenames.Settings);
+
+            _messageBusService.Publish(new WirehomeDictionary
+            {
+                ["type"] = "automation_registry.event.setting_removed",
+                ["automation_uid"] = automationUid,
+                ["setting_uid"] = settingUid,
+                ["value"] = value,
+                ["timestamp"] = DateTimeOffset.Now.ToString("O")
             });
         }
 
@@ -202,7 +223,7 @@ namespace Wirehome.Core.Automations
 
         private AutomationInstance CreateAutomation(string uid, AutomationConfiguration configuration, WirehomeDictionary settings)
         {
-            var repositoryEntitySource = _repositoryService.LoadEntity(configuration.Logic.Uid);
+            var repositoryEntitySource = _repositoryService.LoadPackage(configuration.Logic.Uid);
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger, new AutomationPythonProxy(uid, this));
 
             scriptHost.Initialize(repositoryEntitySource.Script);

@@ -34,13 +34,11 @@ namespace Wirehome.Core.Hardware.MQTT
             DiagnosticsService diagnosticsService,
             StorageService storageService,
             SystemStatusService systemStatusService,
-            ILoggerFactory loggerFactory)
+            ILogger<MqttService> logger)
         {
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<MqttService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _inboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("mqtt.inbound_rate");

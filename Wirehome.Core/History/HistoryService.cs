@@ -32,7 +32,7 @@ namespace Wirehome.Core.History
 
         private HistoryRepository _repository;
         private HistoryServiceOptions _options;
-        private long _componentStatusUpateDuration;
+        private long _componentStatusUpdateDuration;
 
         public HistoryService(
             ComponentRegistryService componentRegistryService,
@@ -41,16 +41,13 @@ namespace Wirehome.Core.History
             SystemStatusService systemStatusService,
             SystemCancellationToken systemCancellationToken,
             DiagnosticsService diagnosticsService,
-            ILoggerFactory loggerFactory)
+            ILogger<HistoryService> logger)
         {
-            _componentRegistryService = componentRegistryService ??
-                                        throw new ArgumentNullException(nameof(componentRegistryService));
+            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<HistoryService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _updateRateCounter = diagnosticsService.CreateOperationsPerSecondCounter("history.update_rate");
@@ -58,7 +55,7 @@ namespace Wirehome.Core.History
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("history.component_status.pending_updates_count", _pendingComponentStatusValues.Count);
             systemStatusService.Set("history.component_status.update_rate", () => _updateRateCounter.Count);
-            systemStatusService.Set("history.component_status.update_duration", () => _componentStatusUpateDuration);
+            systemStatusService.Set("history.component_status.update_duration", () => _componentStatusUpdateDuration);
         }
 
         public void Start()
@@ -197,7 +194,7 @@ namespace Wirehome.Core.History
                 _repository.UpdateComponentStatusValue(componentStatusValue);
 
                 stopwatch.Stop();
-                _componentStatusUpateDuration = stopwatch.ElapsedMilliseconds;
+                _componentStatusUpdateDuration = stopwatch.ElapsedMilliseconds;
 
                 _updateRateCounter.Increment();
             }

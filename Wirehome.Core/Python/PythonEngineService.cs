@@ -17,11 +17,9 @@ namespace Wirehome.Core.Python
 
         private ScriptEngine _scriptEngine;
 
-        public PythonEngineService(ILoggerFactory loggerFactory)
+        public PythonEngineService(ILogger<PythonEngineService> logger)
         {
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<PythonEngineService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

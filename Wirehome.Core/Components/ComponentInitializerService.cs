@@ -1,5 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Components.Adapters;
+using Wirehome.Core.Components.Logic;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Python;
 using Wirehome.Core.Repository;
@@ -10,16 +12,19 @@ namespace Wirehome.Core.Components
     {
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly RepositoryService _repositoryService;
-        private readonly ILoggerFactory _loggerFactory;
-
+        private readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
+        private readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
+        
         public ComponentInitializerService(
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             RepositoryService repositoryService,
-            ILoggerFactory loggerFactory)
+            ILogger<ScriptComponentLogic> scriptComponentLogicLogger,
+            ILogger<ScriptComponentAdapter> scriptComponentAdapterLogger)
         {
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _scriptComponentLogicLogger = scriptComponentLogicLogger ?? throw new ArgumentNullException(nameof(scriptComponentLogicLogger));
+            _scriptComponentAdapterLogger = scriptComponentAdapterLogger ?? throw new ArgumentNullException(nameof(scriptComponentAdapterLogger));
         }
 
         public void Start()
@@ -30,7 +35,12 @@ namespace Wirehome.Core.Components
         {
             if (componentRegistryService == null) throw new ArgumentNullException(nameof(componentRegistryService));
 
-            return new ComponentInitializer(componentRegistryService, _pythonScriptHostFactoryService, _repositoryService, _loggerFactory);
+            return new ComponentInitializer(
+                componentRegistryService, 
+                _pythonScriptHostFactoryService, 
+                _repositoryService,
+                _scriptComponentLogicLogger,
+                _scriptComponentAdapterLogger);
         }
     }
 }

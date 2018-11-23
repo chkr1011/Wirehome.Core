@@ -29,13 +29,11 @@ namespace Wirehome.Core.Scheduler
             SystemStatusService systemStatusService,
             SystemCancellationToken systemCancellationToken,
             StorageService storageService,
-            ILoggerFactory loggerFactory)
+            ILogger<SchedulerService> logger)
         {
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<SchedulerService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             systemStatusService.Set("scheduler.active_threads", () => _activeThreads.Count);
             systemStatusService.Set("scheduler.active_timers", () => _activeTimers.Count);

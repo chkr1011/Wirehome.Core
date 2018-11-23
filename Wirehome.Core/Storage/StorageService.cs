@@ -13,13 +13,11 @@ namespace Wirehome.Core.Storage
         private readonly JsonSerializerService _jsonSerializerService;
         private readonly ILogger _logger;
 
-        public StorageService(JsonSerializerService jsonSerializerService, ILoggerFactory loggerFactory)
+        public StorageService(JsonSerializerService jsonSerializerService, ILogger<StorageService> logger)
         {
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<StorageService>();
-
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            
             var paths = new StoragePaths();
             BinPath = paths.BinPath;
             DataPath = paths.DataPath;

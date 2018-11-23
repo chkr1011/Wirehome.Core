@@ -28,13 +28,11 @@ namespace Wirehome.Core.Components
             StorageService storageService,
             SystemStatusService systemInformationService,
             MessageBusService messageBusService,
-            ILoggerFactory loggerFactory)
+            ILogger<ComponentGroupRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ComponentGroupRegistryService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemInformationService == null) throw new ArgumentNullException(nameof(systemInformationService));
             systemInformationService.Set("component_group_registry.count", () => _componentGroups.Count);

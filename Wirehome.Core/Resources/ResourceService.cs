@@ -24,14 +24,16 @@ namespace Wirehome.Core.Resources
         private readonly GlobalVariablesService _globalVariablesService;
         private readonly ILogger _logger;
 
-        public ResourceService(StorageService storageService, JsonSerializerService jsonSerializerService, GlobalVariablesService globalVariablesService, ILoggerFactory loggerFactory)
+        public ResourceService(
+            StorageService storageService, 
+            JsonSerializerService jsonSerializerService, 
+            GlobalVariablesService globalVariablesService, 
+            ILogger<ResourceService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
             _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<ResourceService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()

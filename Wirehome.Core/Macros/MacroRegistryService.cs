@@ -23,14 +23,12 @@ namespace Wirehome.Core.Macros
             StorageService storageService,
             MessageBusService messageBusService,
             SystemStatusService systemStatusService,
-            ILoggerFactory loggerFactory)
+            ILogger<MacroRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
-
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<MacroRegistryService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("macros.macros_count", () => 0);
