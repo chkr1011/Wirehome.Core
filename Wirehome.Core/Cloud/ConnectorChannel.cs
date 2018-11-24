@@ -50,7 +50,7 @@ namespace Wirehome.Core.Cloud
             using (var streamWriter = new StreamWriter(messageBuffer))
             {
                 _serializer.Serialize(streamWriter, message);
-                streamWriter.Flush();
+                await streamWriter.FlushAsync().ConfigureAwait(false);
                 messageBuffer.Position = 0;
 
                 var compressedBuffer = Compress(messageBuffer);

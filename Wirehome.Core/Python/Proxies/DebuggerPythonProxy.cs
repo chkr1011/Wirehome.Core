@@ -3,7 +3,7 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using IronPython.Runtime;
 using Microsoft.Scripting.Utils;
@@ -12,11 +12,11 @@ namespace Wirehome.Core.Python.Proxies
 {
     public class DebuggerPythonProxy : IPythonProxy
     {
-        private readonly ConcurrentBag<object> _trace = new ConcurrentBag<object>();
+        private readonly List<object> _trace = new List<object>();
         private bool _isEnabled;
 
         public string ModuleName { get; } = "debugger";
-        
+
         public void enable()
         {
             _isEnabled = true;
@@ -25,20 +25,26 @@ namespace Wirehome.Core.Python.Proxies
         public void disable()
         {
             _isEnabled = false;
-            _trace.Clear();
+
+            clear_trace();
         }
 
         public string get_trace_string()
         {
-            return string.Join(Environment.NewLine, _trace);
+            lock (_trace)
+            {
+                return string.Join(Environment.NewLine, _trace);
+            }
         }
 
         public List get_trace()
         {
-            var trace = new List();
-            trace.AddRange(_trace);
-
-            return trace;
+            lock (_trace)
+            {
+                var trace = new List();
+                trace.AddRange(_trace);
+                return trace;
+            }
         }
 
         public void trace(object @object)
@@ -48,12 +54,18 @@ namespace Wirehome.Core.Python.Proxies
                 return;
             }
 
-            _trace.Add(@object);
+            lock (_trace)
+            {
+                _trace.Add(@object);
+            }
         }
 
         public void clear_trace()
         {
-            _trace.Clear();
+            lock (_trace)
+            {
+                _trace.Clear();
+            }
         }
 
         public void halt()
