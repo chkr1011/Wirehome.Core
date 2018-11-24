@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.Repository
 {
-    public class RepositoryEntityMetaData
+    public class PackageMetaData
     {
         public string Caption { get; set; }
 

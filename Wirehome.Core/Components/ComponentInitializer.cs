@@ -13,14 +13,14 @@ namespace Wirehome.Core.Components
     {
         private readonly ComponentRegistryService _componentRegistryService;
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly RepositoryService _repositoryService;
+        private readonly PackageRegistryService _repositoryService;
         private readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
         private readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
 
         public ComponentInitializer(
             ComponentRegistryService componentRegistryService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
-            RepositoryService repositoryService,
+            PackageRegistryService repositoryService,
             ILogger<ScriptComponentLogic> scriptComponentLogicLogger,
             ILogger<ScriptComponentAdapter> scriptComponentAdapterLogger)
         {
@@ -41,10 +41,10 @@ namespace Wirehome.Core.Components
                 ["component_uid"] = component.Uid
             };
 
-            var adapterEntity = _repositoryService.LoadPackage(configuration.Logic.Adapter.Uid);
+            var adapterPackage = _repositoryService.LoadPackage(configuration.Logic.Adapter.Uid);
 
             var adapter = new ScriptComponentAdapter(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentAdapterLogger);
-            adapter.Initialize(component.Uid, adapterEntity.Script);
+            adapter.Initialize(component.Uid, adapterPackage.Script);
 
             if (configuration.Logic.Adapter.Variables != null)
             {
@@ -54,9 +54,9 @@ namespace Wirehome.Core.Components
                 }
             }
 
-            context["adapter_uid"] = adapterEntity.Uid.ToString();
-            context["adapter_id"] = adapterEntity.Uid.Id;
-            context["adapter_version"] = adapterEntity.Uid.Version;
+            context["adapter_uid"] = adapterPackage.Uid.ToString();
+            context["adapter_id"] = adapterPackage.Uid.Id;
+            context["adapter_version"] = adapterPackage.Uid.Version;
 
             if (string.IsNullOrEmpty(configuration.Logic.Uid?.Id))
             {
@@ -64,13 +64,13 @@ namespace Wirehome.Core.Components
             }
             else
             {
-                var logicEntity = _repositoryService.LoadPackage(configuration.Logic.Uid);
+                var logicPackage = _repositoryService.LoadPackage(configuration.Logic.Uid);
 
                 var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentLogicLogger);
                 adapter.MessagePublishedCallback = message => logic.ProcessAdapterMessage(message);
                 logic.AdapterMessagePublishedCallback = message => adapter.ProcessMessage(message);
 
-                logic.Initialize(component.Uid, logicEntity.Script);
+                logic.Initialize(component.Uid, logicPackage.Script);
 
                 if (configuration.Logic.Variables != null)
                 {
@@ -80,9 +80,9 @@ namespace Wirehome.Core.Components
                     }
                 }
 
-                context["logic_uid"] = logicEntity.Uid.ToString();
-                context["logic_id"] = logicEntity.Uid.Id;
-                context["logic_version"] = logicEntity.Uid.Version;
+                context["logic_uid"] = logicPackage.Uid.ToString();
+                context["logic_id"] = logicPackage.Uid.Id;
+                context["logic_version"] = logicPackage.Uid.Version;
 
                 // TODO: Remove "scope" as soon as it is migrated.
                 logic.SetVariable("scope", context);

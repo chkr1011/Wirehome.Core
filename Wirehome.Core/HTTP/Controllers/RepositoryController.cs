@@ -6,91 +6,116 @@ using Wirehome.Core.Repository;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
-    public class RepositoryController : Controller
+    public class PackageRegistryController : Controller
     {
-        private readonly RepositoryService _repositoryService;
+        private readonly PackageRegistryService _packageRegistryService;
 
-        public RepositoryController(RepositoryService repositoryService)
+        public PackageRegistryController(PackageRegistryService packageRegistryService)
         {
-            _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
+            _packageRegistryService = packageRegistryService ?? throw new ArgumentNullException(nameof(packageRegistryService));
         }
 
         [HttpGet]
-        [Route("/api/v1/repository/{uid}")]
+        [Route("/api/v1/packages/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public RepositoryEntityMetaData GetMetaInformation(string uid)
+        public PackageMetaData GetMetaInformation(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var entityUid = RepositoryEntityUid.Parse(uid);
-            if (string.IsNullOrEmpty(entityUid.Version))
+            var packageUid = PackageUid.Parse(uid);
+            if (string.IsNullOrEmpty(packageUid.Version))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return null;
             }
 
-            return _repositoryService.GetMetaData(entityUid);
+            return _packageRegistryService.GetMetaData(packageUid);
         }
 
         [HttpGet]
-        [Route("/api/v1/repository/{uid}/description")]
+        [Route("/api/v1/packages/{uid}/description")]
         [ApiExplorerSettings(GroupName = "v1")]
         public string GetDescription(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var entityUid = RepositoryEntityUid.Parse(uid);
-            if (string.IsNullOrEmpty(entityUid.Version))
+            var packageUid = PackageUid.Parse(uid);
+            if (string.IsNullOrEmpty(packageUid.Version))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return null;
             }
 
-            return _repositoryService.GetDescription(entityUid);
+            return _packageRegistryService.GetDescription(packageUid);
         }
 
         [HttpGet]
-        [Route("/api/v1/repository/{uid}/release_notes")]
+        [Route("/api/v1/packages/{uid}/release_notes")]
         [ApiExplorerSettings(GroupName = "v1")]
         public string GetReleaseNotes(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var entityUid = RepositoryEntityUid.Parse(uid);
-            if (string.IsNullOrEmpty(entityUid.Version))
+            var packageUid = PackageUid.Parse(uid);
+            if (string.IsNullOrEmpty(packageUid.Version))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return null;
             }
 
-            return _repositoryService.GetReleaseNotes(entityUid);
+            return _packageRegistryService.GetReleaseNotes(packageUid);
         }
 
         [HttpPost]
-        [Route("/api/v1/repository/{uid}/download")]
+        [Route("/api/v1/packages/{uid}/download")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public async Task DownloadEntity(string uid)
+        public async Task DownloadPackage(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var entityUid = RepositoryEntityUid.Parse(uid);
-            if (string.IsNullOrEmpty(entityUid.Version))
+            var packageUid = PackageUid.Parse(uid);
+            if (string.IsNullOrEmpty(packageUid.Version))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return;
             }
 
-            await _repositoryService.DownloadEntityAsync(entityUid);
+            await _packageRegistryService.DownloadPackageAsync(packageUid);
+        }
+
+        [HttpPost]
+        [Route("/api/v1/packages/{uid}/fork")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public async Task ForkPackage(string uid, string forkUid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (uid == null) throw new ArgumentNullException(nameof(forkUid));
+
+            var packageUid = PackageUid.Parse(uid);
+            if (string.IsNullOrEmpty(packageUid.Version))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
+            var packageForkUid = PackageUid.Parse(forkUid);
+            if (string.IsNullOrEmpty(packageForkUid.Version))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
+            await _packageRegistryService.ForkPackageAsync(packageUid, packageForkUid);
         }
 
         [HttpDelete]
-        [Route("/api/v1/repository/{uid}")]
+        [Route("/api/v1/packages/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void DeleteEntity(string uid)
+        public void DeletePackage(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _repositoryService.DeleteEntity(RepositoryEntityUid.Parse(uid));
+            _packageRegistryService.DeletePackage(PackageUid.Parse(uid));
         }
     }
 }

@@ -103,14 +103,14 @@ namespace Wirehome.Core.HTTP
             var storagePaths = new StoragePaths();
             var customContentRootPath = Path.Combine(storagePaths.DataPath, "CustomContent");
 
-            var repositoryRootPath = Path.Combine(storagePaths.DataPath, "Repository");
+            var packagesRootPath = Path.Combine(storagePaths.DataPath, "Packages");
             var storageService = new StorageService(new JsonSerializerService(), new LoggerFactory().CreateLogger<StorageService>());
             storageService.Start();
-            if (storageService.TryRead(out RepositoryServiceOptions repositoryServiceOptions, RepositoryServiceOptions.Filename))
+            if (storageService.TryRead(out PackageRegistryServiceOptions repositoryServiceOptions, PackageRegistryServiceOptions.Filename))
             {
                 if (!string.IsNullOrEmpty(repositoryServiceOptions.RootPath))
                 {
-                    repositoryRootPath = repositoryServiceOptions.RootPath;
+                    packagesRootPath = repositoryServiceOptions.RootPath;
                 }
             }
 
@@ -136,7 +136,7 @@ namespace Wirehome.Core.HTTP
             ExposeDirectory(app, "/app", webAppRootPath);
             ExposeDirectory(app, "/configurator", webConfiguratorRootPath);
             ExposeDirectory(app, "/customContent", customContentRootPath);
-            ExposeDirectory(app, "/repository", repositoryRootPath);
+            ExposeDirectory(app, "/packages", packagesRootPath);
         }
 
         private static void ExposeDirectory(IApplicationBuilder app, string uri, string path)

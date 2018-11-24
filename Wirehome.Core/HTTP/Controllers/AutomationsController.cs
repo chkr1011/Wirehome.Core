@@ -98,6 +98,14 @@ namespace Wirehome.Core.HTTP.Controllers
             _automationRegistryService.SetAutomationSetting(automationUid, settingUid, value);
         }
 
+        [HttpDelete]
+        [Route("/api/v1/automations/{automationUid}/settings/{settingUid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostSettingValue(string automationUid, string settingUid)
+        {
+            _automationRegistryService.RemoveAutomationSetting(automationUid, settingUid);
+        }
+
         [HttpPost]
         [Route("api/v1/automations/{uid}/initialize")]
         [ApiExplorerSettings(GroupName = "v1")]

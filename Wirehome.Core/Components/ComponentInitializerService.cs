@@ -11,13 +11,13 @@ namespace Wirehome.Core.Components
     public class ComponentInitializerService : IService
     {
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly RepositoryService _repositoryService;
+        private readonly PackageRegistryService _repositoryService;
         private readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
         private readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
         
         public ComponentInitializerService(
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
-            RepositoryService repositoryService,
+            PackageRegistryService repositoryService,
             ILogger<ScriptComponentLogic> scriptComponentLogicLogger,
             ILogger<ScriptComponentAdapter> scriptComponentAdapterLogger)
         {

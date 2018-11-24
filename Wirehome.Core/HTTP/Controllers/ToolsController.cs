@@ -13,9 +13,9 @@ namespace Wirehome.Core.HTTP.Controllers
     public class ToolsController : Controller
     {
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly RepositoryService _repositoryService;
+        private readonly PackageRegistryService _repositoryService;
 
-        public ToolsController(PythonScriptHostFactoryService pythonScriptHostFactoryService, RepositoryService repositoryService)
+        public ToolsController(PythonScriptHostFactoryService pythonScriptHostFactoryService, PackageRegistryService repositoryService)
         {
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
@@ -33,12 +33,12 @@ namespace Wirehome.Core.HTTP.Controllers
                 parameters = new PythonDictionary();
             }
 
-            RepositoryEntity repositoryEntity;
+            Package package;
             try
             {
-                repositoryEntity = _repositoryService.LoadEntity(RepositoryEntityUid.Parse(uid));
+                package = _repositoryService.LoadPackage(PackageUid.Parse(uid));
             }
-            catch (WirehomeRepositoryEntityNotFoundException)
+            catch (WirehomeRepositoryPackageNotFoundException)
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return null;
@@ -47,7 +47,7 @@ namespace Wirehome.Core.HTTP.Controllers
             try
             {
                 var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(null);
-                scriptHost.Initialize(repositoryEntity.Script);
+                scriptHost.Initialize(package.Script);
                 return scriptHost.InvokeFunction("main", parameters);
             }
             catch (Exception exception)

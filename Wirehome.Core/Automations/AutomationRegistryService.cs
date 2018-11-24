@@ -18,14 +18,14 @@ namespace Wirehome.Core.Automations
 
         private readonly Dictionary<string, AutomationInstance> _automations = new Dictionary<string, AutomationInstance>();
 
-        private readonly RepositoryService _repositoryService;
+        private readonly PackageRegistryService _repositoryService;
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
         public AutomationRegistryService(
-            RepositoryService repositoryService,
+            PackageRegistryService repositoryService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             StorageService storageService,
             MessageBusService messageBusService,
@@ -223,10 +223,10 @@ namespace Wirehome.Core.Automations
 
         private AutomationInstance CreateAutomation(string uid, AutomationConfiguration configuration, WirehomeDictionary settings)
         {
-            var repositoryEntitySource = _repositoryService.LoadPackage(configuration.Logic.Uid);
+            var package = _repositoryService.LoadPackage(configuration.Logic.Uid);
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger, new AutomationPythonProxy(uid, this));
 
-            scriptHost.Initialize(repositoryEntitySource.Script);
+            scriptHost.Initialize(package.Script);
 
             var context = new WirehomeDictionary
             {

@@ -10,22 +10,20 @@ namespace Wirehome.Core.Repository.GitHub
 {
     // TODO: Do not write to repo directly. Get "Temp" path from StorageService
     // TODO: Or load all files into memory and return the result and the repo service will store all.
-    public class GitHubRepositoryEntityDownloader
+    public class GitHubRepositoryPackageDownloader
     {
-        private readonly RepositoryServiceOptions _settings;
+        private readonly PackageRegistryServiceOptions _settings;
         private readonly ILogger _logger;
 
-        public GitHubRepositoryEntityDownloader(RepositoryServiceOptions settings, ILoggerFactory loggerFactory)
+        public GitHubRepositoryPackageDownloader(PackageRegistryServiceOptions settings, ILogger logger)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-
-            _logger = loggerFactory.CreateLogger<GitHubRepositoryEntityDownloader>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task DownloadAsync(RepositoryEntityUid uid, string targetPath)
+        public async Task DownloadAsync(PackageUid packageUid, string targetPath)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (packageUid == null) throw new ArgumentNullException(nameof(packageUid));
             if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));
 
             var tempPath = targetPath + "_downloading";
@@ -42,8 +40,8 @@ namespace Wirehome.Core.Repository.GitHub
                 // https://developer.github.com/v3/?#user-agent-required
                 httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wirehome.Core");
 
-                var uri = $"{_settings.OfficialRepositoryBaseUri}/{uid.Id}/{uid.Version}";
-                _logger.Log(LogLevel.Information, $"Downloading file list from '{uri}'.");
+                var uri = $"{_settings.OfficialRepositoryBaseUri}/{packageUid.Id}/{packageUid.Version}";
+                _logger.LogInformation($"Downloading file list from '{uri}'.");
 
                 var fileListContent = await httpClient.GetStringAsync(uri).ConfigureAwait(false);
                 var fileList = JsonConvert.DeserializeObject<List<GitHubFileEntry>>(fileListContent);
@@ -51,12 +49,12 @@ namespace Wirehome.Core.Repository.GitHub
                 foreach (var fileEntry in fileList)
                 {
                     uri = fileEntry.DownloadUrl;
-                    _logger.Log(LogLevel.Information, $"Downloading file '{uri}' (Size = {fileEntry.Size} bytes).");
+                    _logger.LogInformation($"Downloading file '{uri}' (Size = {fileEntry.Size} bytes).");
 
                     var fileContent = await httpClient.GetByteArrayAsync(uri).ConfigureAwait(false);
                     var filename = Path.Combine(tempPath, fileEntry.Name);
 
-                    File.WriteAllBytes(filename, fileContent);
+                    await File.WriteAllBytesAsync(filename, fileContent).ConfigureAwait(false);
                 }
 
                 if (Directory.Exists(targetPath))

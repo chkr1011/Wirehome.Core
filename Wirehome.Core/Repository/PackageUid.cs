@@ -2,23 +2,23 @@
 
 namespace Wirehome.Core.Repository
 {
-    public class RepositoryEntityUid
+    public class PackageUid
     {
         public string Id { get; set; }
 
         public string Version { get; set; }
 
-        public RepositoryEntityUid()
+        public PackageUid()
         {
         }
 
-        public RepositoryEntityUid(string id, string version)
+        public PackageUid(string id, string version)
         {
             Id = id;
             Version = version;
         }
 
-        public static RepositoryEntityUid Parse(string source)
+        public static PackageUid Parse(string source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
@@ -34,7 +34,7 @@ namespace Wirehome.Core.Repository
                 version = parts[1];
             }
 
-            return new RepositoryEntityUid
+            return new PackageUid
             {
                 Id = parts[0],
                 Version = version

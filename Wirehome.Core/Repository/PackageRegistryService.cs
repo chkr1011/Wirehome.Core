@@ -13,18 +13,15 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Repository
 {
-    public class RepositoryService : IService
+    public class PackageRegistryService : IService
     {
         private readonly StorageService _storageService;
-        private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
 
-        public RepositoryService(StorageService storageService, ILoggerFactory loggerFactory)
+        public PackageRegistryService(StorageService storageService, ILogger<PackageRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-
-            _logger = _loggerFactory.CreateLogger<RepositoryService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Start()
@@ -32,74 +29,79 @@ namespace Wirehome.Core.Repository
             
         }
 
-        public RepositoryEntity LoadEntity(RepositoryEntityUid uid)
+        public Package LoadPackage(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             if (string.IsNullOrEmpty(uid.Id))
             {
-                throw new ArgumentException("The ID of the RepositoryEntityUid is not set.");
+                throw new ArgumentException("The ID of the package UID is not set.");
             }
 
-            var path = GetEntityRootPath(uid);
-            var source = LoadEntity(uid, path);
+            var path = GetPackageRootPath(uid);
+            var source = LoadPackage(uid, path);
 
             return source;
         }
 
-        public Task DownloadEntityAsync(RepositoryEntityUid uid)
+        public Task DownloadPackageAsync(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.TryReadOrCreate(out RepositoryServiceOptions options, "RepositoryServiceConfiguration.json");
+            _storageService.TryReadOrCreate(out PackageRegistryServiceOptions options, PackageRegistryServiceOptions.Filename);
 
-            var downloader = new GitHubRepositoryEntityDownloader(options, _loggerFactory);
-            return downloader.DownloadAsync(uid, GetEntityRootPath(uid));
+            var downloader = new GitHubRepositoryPackageDownloader(options, _logger);
+            return downloader.DownloadAsync(uid, GetPackageRootPath(uid));
         }
 
-        public void DeleteEntity(RepositoryEntityUid uid)
+        public async Task ForkPackageAsync(PackageUid packageUid, PackageUid packageForkUid)
+        {
+            
+        }
+
+        public void DeletePackage(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var rootPath = GetEntityRootPath(uid);
+            var rootPath = GetPackageRootPath(uid);
             if (!Directory.Exists(rootPath))
             {
                 return;
             }
 
             Directory.Delete(rootPath, true);
-            _logger.Log(LogLevel.Information, $"Deleted entity '{uid}'.");
+            _logger.Log(LogLevel.Information, $"Deleted package '{uid}'.");
         }
 
-        public RepositoryEntityMetaData GetMetaData(RepositoryEntityUid uid)
+        public PackageMetaData GetMetaData(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            return LoadEntity(uid).MetaData;
+            return LoadPackage(uid).MetaData;
         }
 
-        public string GetDescription(RepositoryEntityUid uid)
+        public string GetDescription(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            return LoadEntity(uid).Description;
+            return LoadPackage(uid).Description;
         }
 
-        public string GetReleaseNotes(RepositoryEntityUid uid)
+        public string GetReleaseNotes(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            return LoadEntity(uid).ReleaseNotes;
+            return LoadPackage(uid).ReleaseNotes;
         }
 
-        private string GetEntityRootPath(RepositoryEntityUid uid)
+        private string GetPackageRootPath(PackageUid uid)
         {
-            _storageService.TryRead(out RepositoryServiceOptions options, RepositoryServiceOptions.Filename);
+            _storageService.TryRead(out PackageRegistryServiceOptions options, PackageRegistryServiceOptions.Filename);
             
             var rootPath = options.RootPath;
             if (string.IsNullOrEmpty(rootPath))
             {
-                rootPath = Path.Combine(_storageService.DataPath, "Repository");
+                rootPath = Path.Combine(_storageService.DataPath, "Packages");
             }
 
             var path = rootPath;
@@ -126,32 +128,32 @@ namespace Wirehome.Core.Repository
             return versions.First();
         }
 
-        private static RepositoryEntity LoadEntity(RepositoryEntityUid uid, string path)
+        private static Package LoadPackage(PackageUid uid, string path)
         {
             if (!Directory.Exists(path))
             {
-                throw new WirehomeRepositoryEntityNotFoundException(uid);
+                throw new WirehomeRepositoryPackageNotFoundException(uid);
             }
 
-            var source = new RepositoryEntity();
+            var source = new Package();
 
             var metaFile = Path.Combine(path, "meta.json");
             if (!File.Exists(metaFile))
             {
-                throw new WirehomeException($"Repository entity directory '{path}' contains no 'meta.json'.");
+                throw new WirehomeException($"Package directory '{path}' contains no 'meta.json'.");
             }
 
             try
             {
                 var metaData = File.ReadAllText(metaFile, Encoding.UTF8);
-                source.MetaData = JsonConvert.DeserializeObject<RepositoryEntityMetaData>(metaData);
+                source.MetaData = JsonConvert.DeserializeObject<PackageMetaData>(metaData);
             }
             catch (Exception exception)
             {
                 throw new WirehomeRepositoryException("Unable to parse 'meta.json'.", exception);
             }
 
-            source.Uid = new RepositoryEntityUid
+            source.Uid = new PackageUid
             {
                 Id = Directory.GetParent(path).Name,
                 Version = new DirectoryInfo(path).Name

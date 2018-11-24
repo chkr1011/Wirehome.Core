@@ -1,10 +1,10 @@
 ﻿namespace Wirehome.Core.Repository
 {
-    public class RepositoryEntity
+    public class Package
     {
-        public RepositoryEntityUid Uid { get; set; }
+        public PackageUid Uid { get; set; }
 
-        public RepositoryEntityMetaData MetaData { get; set; }
+        public PackageMetaData MetaData { get; set; }
 
         public string Description { get; set; }
 

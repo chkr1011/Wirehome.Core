@@ -1,9 +1,9 @@
 ﻿namespace Wirehome.Core.Repository.Exceptions
 {
-    public class WirehomeRepositoryEntityNotFoundException : WirehomeRepositoryException
+    public class WirehomeRepositoryPackageNotFoundException : WirehomeRepositoryException
     {
-        public WirehomeRepositoryEntityNotFoundException(RepositoryEntityUid entityUid) 
-            : base($"Repository entity '{entityUid}' not found.", null)
+        public WirehomeRepositoryPackageNotFoundException(PackageUid packageUid) 
+            : base($"Package '{packageUid}' not found.", null)
         {
         }
     }

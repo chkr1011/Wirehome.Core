@@ -17,14 +17,14 @@ namespace Wirehome.Core.ServiceHost
 
         private readonly Dictionary<string, ServiceInstance> _services = new Dictionary<string, ServiceInstance>();
 
-        private readonly RepositoryService _repositoryService;
+        private readonly PackageRegistryService _repositoryService;
         private readonly StorageService _storageService;
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly ILogger _logger;
 
         public ServiceHostService(
             StorageService storageService,
-            RepositoryService repositoryService,
+            PackageRegistryService repositoryService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             SystemStatusService systemStatusService,
             ILogger<ServiceHostService> logger)
@@ -150,11 +150,11 @@ namespace Wirehome.Core.ServiceHost
 
         private ServiceInstance CreateServiceInstance(string id, ServiceConfiguration configuration)
         {
-            var repositoryEntityUid = new PackageUid(id, configuration.Version);
-            var repositoryEntitySource = _repositoryService.LoadPackage(repositoryEntityUid);
+            var packageUid = new PackageUid(id, configuration.Version);
+            var package = _repositoryService.LoadPackage(packageUid);
 
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
-            scriptHost.Initialize(repositoryEntitySource.Script);
+            scriptHost.Initialize(package.Script);
 
             var serviceInstance = new ServiceInstance(id, configuration, scriptHost);
 
