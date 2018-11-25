@@ -13,20 +13,20 @@ namespace Wirehome.Core.Components
     {
         private readonly ComponentRegistryService _componentRegistryService;
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly PackageRegistryService _repositoryService;
+        private readonly PackageManagerService _packageManagerService;
         private readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
         private readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
 
         public ComponentInitializer(
             ComponentRegistryService componentRegistryService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
-            PackageRegistryService repositoryService,
+            PackageManagerService packageManagerService,
             ILogger<ScriptComponentLogic> scriptComponentLogicLogger,
             ILogger<ScriptComponentAdapter> scriptComponentAdapterLogger)
         {
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(_pythonScriptHostFactoryService));
-            _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
+            _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
             _scriptComponentLogicLogger = scriptComponentLogicLogger ?? throw new ArgumentNullException(nameof(scriptComponentLogicLogger));
             _scriptComponentAdapterLogger = scriptComponentAdapterLogger ?? throw new ArgumentNullException(nameof(scriptComponentAdapterLogger));
         }
@@ -41,7 +41,7 @@ namespace Wirehome.Core.Components
                 ["component_uid"] = component.Uid
             };
 
-            var adapterPackage = _repositoryService.LoadPackage(configuration.Logic.Adapter.Uid);
+            var adapterPackage = _packageManagerService.LoadPackage(configuration.Logic.Adapter.Uid);
 
             var adapter = new ScriptComponentAdapter(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentAdapterLogger);
             adapter.Initialize(component.Uid, adapterPackage.Script);
@@ -64,7 +64,7 @@ namespace Wirehome.Core.Components
             }
             else
             {
-                var logicPackage = _repositoryService.LoadPackage(configuration.Logic.Uid);
+                var logicPackage = _packageManagerService.LoadPackage(configuration.Logic.Uid);
 
                 var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentLogicLogger);
                 adapter.MessagePublishedCallback = message => logic.ProcessAdapterMessage(message);

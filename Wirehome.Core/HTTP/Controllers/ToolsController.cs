@@ -13,12 +13,12 @@ namespace Wirehome.Core.HTTP.Controllers
     public class ToolsController : Controller
     {
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly PackageRegistryService _repositoryService;
+        private readonly PackageManagerService _packageManagerService;
 
-        public ToolsController(PythonScriptHostFactoryService pythonScriptHostFactoryService, PackageRegistryService repositoryService)
+        public ToolsController(PythonScriptHostFactoryService pythonScriptHostFactoryService, PackageManagerService packageManagerService)
         {
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
-            _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
+            _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
         }
 
         [HttpPost]
@@ -36,7 +36,7 @@ namespace Wirehome.Core.HTTP.Controllers
             Package package;
             try
             {
-                package = _repositoryService.LoadPackage(PackageUid.Parse(uid));
+                package = _packageManagerService.LoadPackage(PackageUid.Parse(uid));
             }
             catch (WirehomeRepositoryPackageNotFoundException)
             {

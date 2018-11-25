@@ -7,16 +7,16 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Repository
 {
-    public class PackageRegistryServicePythonProxy : IInjectedPythonProxy
+    public class PackageManagerServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly PackageRegistryService _packageRegistryService;
+        private readonly PackageManagerService _packageManagerService;
 
-        public PackageRegistryServicePythonProxy(PackageRegistryService packageRegistryService)
+        public PackageManagerServicePythonProxy(PackageManagerService packageManagerService)
         {
-            _packageRegistryService = packageRegistryService ?? throw new ArgumentNullException(nameof(packageRegistryService));
+            _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
         }
 
-        public string ModuleName { get; } = "package_registry";
+        public string ModuleName { get; } = "package_manager";
 
         public string get_file_uri(string uid, string filename)
         {
@@ -31,7 +31,7 @@ namespace Wirehome.Core.Repository
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             var packageUid = PackageUid.Parse(uid);
-            _packageRegistryService.DownloadPackageAsync(packageUid).GetAwaiter().GetResult();
+            _packageManagerService.DownloadPackageAsync(packageUid).GetAwaiter().GetResult();
         }
     }
 }

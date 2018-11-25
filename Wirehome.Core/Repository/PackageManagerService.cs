@@ -13,12 +13,12 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Repository
 {
-    public class PackageRegistryService : IService
+    public class PackageManagerService : IService
     {
         private readonly StorageService _storageService;
         private readonly ILogger _logger;
 
-        public PackageRegistryService(StorageService storageService, ILogger<PackageRegistryService> logger)
+        public PackageManagerService(StorageService storageService, ILogger<PackageManagerService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -48,7 +48,7 @@ namespace Wirehome.Core.Repository
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.TryReadOrCreate(out PackageRegistryServiceOptions options, PackageRegistryServiceOptions.Filename);
+            _storageService.TryReadOrCreate(out PackageManagerServiceOptions options, PackageManagerServiceOptions.Filename);
 
             var downloader = new GitHubRepositoryPackageDownloader(options, _logger);
             return downloader.DownloadAsync(uid, GetPackageRootPath(uid));
@@ -96,7 +96,7 @@ namespace Wirehome.Core.Repository
 
         private string GetPackageRootPath(PackageUid uid)
         {
-            _storageService.TryRead(out PackageRegistryServiceOptions options, PackageRegistryServiceOptions.Filename);
+            _storageService.TryRead(out PackageManagerServiceOptions options, PackageManagerServiceOptions.Filename);
             
             var rootPath = options.RootPath;
             if (string.IsNullOrEmpty(rootPath))

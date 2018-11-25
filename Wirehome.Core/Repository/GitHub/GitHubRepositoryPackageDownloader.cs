@@ -12,10 +12,10 @@ namespace Wirehome.Core.Repository.GitHub
     // TODO: Or load all files into memory and return the result and the repo service will store all.
     public class GitHubRepositoryPackageDownloader
     {
-        private readonly PackageRegistryServiceOptions _settings;
+        private readonly PackageManagerServiceOptions _settings;
         private readonly ILogger _logger;
 
-        public GitHubRepositoryPackageDownloader(PackageRegistryServiceOptions settings, ILogger logger)
+        public GitHubRepositoryPackageDownloader(PackageManagerServiceOptions settings, ILogger logger)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

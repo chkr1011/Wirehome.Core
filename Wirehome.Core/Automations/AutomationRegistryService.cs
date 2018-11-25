@@ -18,20 +18,20 @@ namespace Wirehome.Core.Automations
 
         private readonly Dictionary<string, AutomationInstance> _automations = new Dictionary<string, AutomationInstance>();
 
-        private readonly PackageRegistryService _repositoryService;
+        private readonly PackageManagerService _packageManagerService;
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
         public AutomationRegistryService(
-            PackageRegistryService repositoryService,
+            PackageManagerService packageManagerService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             StorageService storageService,
             MessageBusService messageBusService,
             ILogger<AutomationRegistryService> logger)
         {
-            _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
+            _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
@@ -223,7 +223,7 @@ namespace Wirehome.Core.Automations
 
         private AutomationInstance CreateAutomation(string uid, AutomationConfiguration configuration, WirehomeDictionary settings)
         {
-            var package = _repositoryService.LoadPackage(configuration.Logic.Uid);
+            var package = _packageManagerService.LoadPackage(configuration.Logic.Uid);
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger, new AutomationPythonProxy(uid, this));
 
             scriptHost.Initialize(package.Script);

@@ -6,13 +6,13 @@ using Wirehome.Core.Repository;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
-    public class PackageRegistryController : Controller
+    public class PackageManagerController : Controller
     {
-        private readonly PackageRegistryService _packageRegistryService;
+        private readonly PackageManagerService _packageManagerService;
 
-        public PackageRegistryController(PackageRegistryService packageRegistryService)
+        public PackageManagerController(PackageManagerService packageManagerService)
         {
-            _packageRegistryService = packageRegistryService ?? throw new ArgumentNullException(nameof(packageRegistryService));
+            _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
         }
 
         [HttpGet]
@@ -29,7 +29,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return null;
             }
 
-            return _packageRegistryService.GetMetaData(packageUid);
+            return _packageManagerService.GetMetaData(packageUid);
         }
 
         [HttpGet]
@@ -46,7 +46,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return null;
             }
 
-            return _packageRegistryService.GetDescription(packageUid);
+            return _packageManagerService.GetDescription(packageUid);
         }
 
         [HttpGet]
@@ -63,7 +63,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return null;
             }
 
-            return _packageRegistryService.GetReleaseNotes(packageUid);
+            return _packageManagerService.GetReleaseNotes(packageUid);
         }
 
         [HttpPost]
@@ -80,7 +80,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return;
             }
 
-            await _packageRegistryService.DownloadPackageAsync(packageUid);
+            await _packageManagerService.DownloadPackageAsync(packageUid);
         }
 
         [HttpPost]
@@ -105,7 +105,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return;
             }
 
-            await _packageRegistryService.ForkPackageAsync(packageUid, packageForkUid);
+            await _packageManagerService.ForkPackageAsync(packageUid, packageForkUid);
         }
 
         [HttpDelete]
@@ -115,7 +115,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _packageRegistryService.DeletePackage(PackageUid.Parse(uid));
+            _packageManagerService.DeletePackage(PackageUid.Parse(uid));
         }
     }
 }

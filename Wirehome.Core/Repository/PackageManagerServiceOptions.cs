@@ -1,8 +1,8 @@
 ﻿namespace Wirehome.Core.Repository
 {
-    public class PackageRegistryServiceOptions
+    public class PackageManagerServiceOptions
     {
-        public const string Filename = "PackageRegistryServiceConfiguration.json";
+        public const string Filename = "PackageManagerServiceConfiguration.json";
 
         public string RootPath { get; set; }
 

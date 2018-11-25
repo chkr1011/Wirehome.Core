@@ -11,18 +11,18 @@ namespace Wirehome.Core.Components
     public class ComponentInitializerService : IService
     {
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly PackageRegistryService _repositoryService;
+        private readonly PackageManagerService _packageManagerService;
         private readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
         private readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
         
         public ComponentInitializerService(
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
-            PackageRegistryService repositoryService,
+            PackageManagerService packageManagerService,
             ILogger<ScriptComponentLogic> scriptComponentLogicLogger,
             ILogger<ScriptComponentAdapter> scriptComponentAdapterLogger)
         {
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
-            _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
+            _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
             _scriptComponentLogicLogger = scriptComponentLogicLogger ?? throw new ArgumentNullException(nameof(scriptComponentLogicLogger));
             _scriptComponentAdapterLogger = scriptComponentAdapterLogger ?? throw new ArgumentNullException(nameof(scriptComponentAdapterLogger));
         }
@@ -38,7 +38,7 @@ namespace Wirehome.Core.Components
             return new ComponentInitializer(
                 componentRegistryService, 
                 _pythonScriptHostFactoryService, 
-                _repositoryService,
+                _packageManagerService,
                 _scriptComponentLogicLogger,
                 _scriptComponentAdapterLogger);
         }

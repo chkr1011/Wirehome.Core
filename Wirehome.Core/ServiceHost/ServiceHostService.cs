@@ -17,14 +17,14 @@ namespace Wirehome.Core.ServiceHost
 
         private readonly Dictionary<string, ServiceInstance> _services = new Dictionary<string, ServiceInstance>();
 
-        private readonly PackageRegistryService _repositoryService;
+        private readonly PackageManagerService _repositoryService;
         private readonly StorageService _storageService;
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly ILogger _logger;
 
         public ServiceHostService(
             StorageService storageService,
-            PackageRegistryService repositoryService,
+            PackageManagerService repositoryService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             SystemStatusService systemStatusService,
             ILogger<ServiceHostService> logger)

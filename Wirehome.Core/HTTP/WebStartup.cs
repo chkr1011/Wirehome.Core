@@ -106,7 +106,7 @@ namespace Wirehome.Core.HTTP
             var packagesRootPath = Path.Combine(storagePaths.DataPath, "Packages");
             var storageService = new StorageService(new JsonSerializerService(), new LoggerFactory().CreateLogger<StorageService>());
             storageService.Start();
-            if (storageService.TryRead(out PackageRegistryServiceOptions repositoryServiceOptions, PackageRegistryServiceOptions.Filename))
+            if (storageService.TryRead(out PackageManagerServiceOptions repositoryServiceOptions, PackageManagerServiceOptions.Filename))
             {
                 if (!string.IsNullOrEmpty(repositoryServiceOptions.RootPath))
                 {
