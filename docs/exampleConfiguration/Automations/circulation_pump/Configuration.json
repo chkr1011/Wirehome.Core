@@ -16,8 +16,7 @@
                 "pump_uid": "heating.circulation_pump",
                 "triggers": [
                     "kitchen.motion_detector",
-                    "bathroom_lower.motion_detector",
-                    "office.motion_detector"
+                    "bathroom_lower.motion_detector"
                 ]
             }
         }

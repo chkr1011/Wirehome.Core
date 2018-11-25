@@ -11,11 +11,20 @@
                 "motion_detectors": [
                     "kitchen.motion_detector"
                 ],
+                "on_message": {
+                    "type": "set_state",
+                    "state": "auto"
+                },
+                "off_message": {
+                    "type": "set_state",
+                    "state": "off"
+                },
                 "targets": [
-                    "kitchen.lamp.spots_wall",
-                    "kitchen.lamp.spots_window",
-                    "kitchen.lamp.spots_passage"
-                ]
+                    "kitchen.lamp"
+                ],
+                "skip_off_when": {
+                    "state_machine.state": "on"
+                }
             }
         }
     }

@@ -1,5 +1,9 @@
 ﻿{
     "app.caption": "Licht",
     "app.image_id": "fas fa-lightbulb",
-    "app.position_index": 3
+    "app.position_index": 3,
+    "app.caption.states.on": "AN",
+    "app.caption.states.auto": "Auto",
+    "app.caption.states.night": "Nacht",
+    "app.caption.states.off": "AUS",
 }
