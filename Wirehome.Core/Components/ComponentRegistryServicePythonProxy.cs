@@ -10,11 +10,11 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
-    public class ComponentRegistryServicePythonProxy : IInjectedPythonProxy
+    public class MacroRegistryServicePythonProxy : IInjectedPythonProxy
     {
         private readonly ComponentRegistryService _componentRegistryService;
 
-        public ComponentRegistryServicePythonProxy(ComponentRegistryService componentRegistryService)
+        public MacroRegistryServicePythonProxy(ComponentRegistryService componentRegistryService)
         {
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
         }

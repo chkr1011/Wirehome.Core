@@ -117,6 +117,23 @@ namespace Wirehome.Core.Components
                     componentGroup.Components.TryAdd(associationUid, componentAssociation);
                 }
 
+                associationUids = _storageService.EnumeratureDirectories("*", ComponentGroupsDirectory, uid, "Macros");
+                foreach (var associationUid in associationUids)
+                {
+                    if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Macros", associationUid, DefaultFilenames.Settings))
+                    {
+                        associationSettings = new WirehomeDictionary();
+                    }
+
+                    var componentAssociation = new ComponentGroupAssociation();
+                    foreach (var associationSetting in associationSettings)
+                    {
+                        componentAssociation.Settings[associationSetting.Key] = associationSetting.Value;
+                    }
+
+                    componentGroup.Macros.TryAdd(associationUid, componentAssociation);
+                }
+
                 lock (_componentGroups)
                 {
                     _componentGroups[uid] = componentGroup;
@@ -321,7 +338,7 @@ namespace Wirehome.Core.Components
             }
 
             componentGroup.Settings[settingUid] = value;
-            _storageService.Write(componentGroup.Settings, "ComponentGroups", uid);
+            _storageService.Write(componentGroup.Settings, ComponentGroupsDirectory, uid);
 
             _logger.Log(
                 LogLevel.Debug,
@@ -349,16 +366,16 @@ namespace Wirehome.Core.Components
             foreach (var componentGroup in _componentGroups.Values)
             {
                 var configuration = new ComponentGroupConfiguration();
-                _storageService.Write(configuration, "ComponentGroups", componentGroup.Uid, DefaultFilenames.Configuration);
+                _storageService.Write(configuration, ComponentGroupsDirectory, componentGroup.Uid, DefaultFilenames.Configuration);
 
                 foreach (var componentAssociation in componentGroup.Components)
                 {
-                    _storageService.Write(componentAssociation.Value.Settings, "ComponentGroups", componentGroup.Uid, "Components", componentAssociation.Key, DefaultFilenames.Settings);
+                    _storageService.Write(componentAssociation.Value.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Components", componentAssociation.Key, DefaultFilenames.Settings);
                 }
 
                 foreach (var componentAssociation in componentGroup.Macros)
                 {
-                    _storageService.Write(componentAssociation.Value.Settings, "ComponentGroups", componentGroup.Uid, "Macros", componentAssociation.Key, DefaultFilenames.Settings);
+                    _storageService.Write(componentAssociation.Value.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Macros", componentAssociation.Key, DefaultFilenames.Settings);
                 }
             }
         }

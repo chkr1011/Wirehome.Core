@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace Wirehome.Core.Model
 {
@@ -9,18 +10,34 @@ namespace Wirehome.Core.Model
 
         //}
 
-        //public static WirehomeDictionary FromJson(JObject json)
-        //{
-        //    if (json is JObject jsonObject)
-        //    {
-        //        var dictionary = new WirehomeDictionary();
-        //        foreach (var property in jsonObject.Properties())
-        //        {
-        //            dictionary[property.Name] = FromJson(property.Value);
-        //        }
+        public static object FromJson(JToken json)
+        {
+            if (json == null)
+            {
+                return null;
+            }
 
-        //        return dictionary;
-        //    }
-        //}
+            if (json is JObject jsonObject)
+            {
+                var dictionary = new WirehomeDictionary();
+                foreach (var property in jsonObject.Properties())
+                {
+                    dictionary[property.Name] = FromJson(property.Value);
+                }
+
+                return dictionary;
+            }
+
+            if (json is JArray jsonArray)
+            {
+                var list = new List<object>();
+                foreach (var item in jsonArray)
+                {
+                    list.Add(FromJson(item));
+                }
+            }
+
+            return json.ToObject<object>();
+        }
     }
 }

@@ -43,5 +43,10 @@ namespace Wirehome.Core.Model
         {
             return PythonConvert.ToPythonDictionary(this);
         }
+
+        public WirehomeDictionary ConvertToWirehomeDictionary()
+        {
+            return PythonConvert.ToPythonDictionary(this);
+        }
     }
 }

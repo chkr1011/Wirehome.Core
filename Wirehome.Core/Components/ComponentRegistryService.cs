@@ -21,7 +21,7 @@ namespace Wirehome.Core.Components
 
         private readonly Dictionary<string, Component> _components = new Dictionary<string, Component>();
 
-        private readonly ComponentRegistryMessageBusProxy _messageBusProxy;
+        private readonly ComponentRegistryMessageBusWrapper _messageBusWrapper;
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
         private readonly ComponentInitializerService _componentInitializerService;
@@ -39,7 +39,7 @@ namespace Wirehome.Core.Components
             _componentInitializerService = componentInitializerService ?? throw new ArgumentNullException(nameof(componentInitializerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _messageBusProxy = new ComponentRegistryMessageBusProxy(messageBusService);
+            _messageBusWrapper = new ComponentRegistryMessageBusWrapper(messageBusService);
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("component_registry.count", () => _components.Count);
@@ -82,10 +82,10 @@ namespace Wirehome.Core.Components
             _storageService.DeleteDirectory(ComponentsDirectory, uid);
         }
 
-        public void TryInitializeComponent(string uid)
+        public void InitializeComponent(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
-            
+
             try
             {
                 if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFilenames.Configuration))
@@ -99,11 +99,12 @@ namespace Wirehome.Core.Components
                     return;
                 }
 
-                if (!_storageService.TryRead(out WirehomeDictionary settings, ComponentsDirectory, uid, DefaultFilenames.Settings))
+                if (!_storageService.TryRead(out WirehomeDictionary settings, ComponentsDirectory, uid,
+                    DefaultFilenames.Settings))
                 {
                     settings = new WirehomeDictionary();
                 }
-                
+
                 var component = new Component(uid);
                 foreach (var setting in settings)
                 {
@@ -125,14 +126,28 @@ namespace Wirehome.Core.Components
 
                 _logger.LogInformation($"Component '{component.Uid}' initialized successfully.");
             }
-            catch (Exception exception)
+            catch
             {
-                _logger.LogError(exception, $"Error while initializing component '{uid}'.");
-
                 lock (_components)
                 {
                     _components.Remove(uid, out _);
                 }
+
+                throw;
+            }
+        }
+
+        public void TryInitializeComponent(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            try
+            {
+                InitializeComponent(uid);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, $"Error while initializing component '{uid}'.");
             }
         }
 
@@ -230,7 +245,7 @@ namespace Wirehome.Core.Components
                 return;
             }
 
-            _messageBusProxy.PublishStatusChangedBusMessage(component.Uid, statusUid, oldValue, value);
+            _messageBusWrapper.PublishStatusChangedBusMessage(component.Uid, statusUid, oldValue, value);
 
             _logger.LogDebug(
                 "Component '{0}' changed '{1}' ({2} -> {3}).",
@@ -287,8 +302,8 @@ namespace Wirehome.Core.Components
 
             component.Settings[settingUid] = value;
 
-            _storageService.Write(component.Settings, "Components", component.Uid, "Settings.json");
-            _messageBusProxy.PublishSettingChangedBusMessage(component.Uid, settingUid, oldValue, value);
+            _storageService.Write(component.Settings, ComponentsDirectory, component.Uid, DefaultFilenames.Settings);
+            _messageBusWrapper.PublishSettingChangedBusMessage(component.Uid, settingUid, oldValue, value);
         }
 
         public object RemoveComponentSetting(string componentUid, string settingUid)
@@ -299,8 +314,8 @@ namespace Wirehome.Core.Components
             var component = GetComponent(componentUid);
             component.Settings.Remove(settingUid, out var value);
 
-            _storageService.Write(component.Settings, "Components", component.Uid, "Settings.json");
-            _messageBusProxy.PublishSettingRemovedBusMessage(component.Uid, settingUid, value);
+            _storageService.Write(component.Settings, ComponentsDirectory, component.Uid, DefaultFilenames.Settings);
+            _messageBusWrapper.PublishSettingRemovedBusMessage(component.Uid, settingUid, value);
 
             return value;
         }
