@@ -1,4 +1,4 @@
-function createAppController($http, $scope, apiService, localizationService, componentService, notificationService) {
+function createAppController($http, $scope, apiService, localizationService, componentService, macroService, notificationService) {
     var c = this;
 
     extendAngularScope($scope);
@@ -10,6 +10,7 @@ function createAppController($http, $scope, apiService, localizationService, com
 
     c.notificationService = notificationService;
     c.componentService = componentService;
+    c.macroService = macroService;
     c.localizationService = localizationService;
     c.apiService = apiService;
 
@@ -42,6 +43,12 @@ function createAppController($http, $scope, apiService, localizationService, com
                     c.configureComponent(componentModel, updatedComponent, componentGroupModel)
                 }
             });
+
+            // $.each(componentGroupModel.macros, function (j, marcoModel) {
+            //     if (marcoModel.uid == updatedMacro.uid) {
+            //         c.configureMacro(marcoModel, updatedMacro, componentGroupModel)
+            //     }
+            // });
         });
     }
 
@@ -64,7 +71,8 @@ function createAppController($http, $scope, apiService, localizationService, com
 
                 var componentGroupModel = {
                     uid: componentGroup.uid,
-                    components: []
+                    components: [],
+                    macros: []
                 };
 
                 componentGroupModel.getSetting = function (uid, defaultValue) {
@@ -110,6 +118,25 @@ function createAppController($http, $scope, apiService, localizationService, com
                     componentGroupModel.components.push(componentModel);
                 });
 
+                $.each(componentGroup.macros, function (i) {
+                    var macroModel = {
+                        uid: i,
+                        source: {}
+                    }
+
+                    macroModel.hasSetting = function (uid) {
+                        var associationSettings = macroModel.source.macros[macroModel.uid].settings;
+                        return associationSettings.hasOwnProperty(uid) || macroModel.source.settings.hasOwnProperty(uid);
+                    }
+
+                    macroModel.getSetting = function (uid, defaultValue) {
+                        var associationSettings = componentGroupModel.source.macros[macroModel.uid].settings;
+                        return getEffectiveValue([associationSettings, macroModel.source.settings], uid, defaultValue);
+                    }
+
+                    componentGroupModel.macros.push(macroModel);
+                });
+
                 c.componentGroups.push(componentGroupModel);
             });
 
@@ -121,6 +148,7 @@ function createAppController($http, $scope, apiService, localizationService, com
         }
 
         console.log("Updating UI...");
+
         $.each(c.componentGroups, (i, componentGroupModel) => {
             var updatedComponentGroup = status.componentGroups.find(g => g.uid === componentGroupModel.uid);
             if (updatedComponentGroup === undefined) {
@@ -132,16 +160,27 @@ function createAppController($http, $scope, apiService, localizationService, com
 
         c.notifications = status.notifications;
         c.globalVariables = status.global_variables;
-
         c.isInitialized = true;
     };
+
+    c.configureMacro = function (model, source, componentGroupModel) {
+        model.source = source;
+
+        model.template = getValue(source.configuration, "app.view_source", null);
+        if (model.template == undefined || model.template == null) {
+            model.template = "views/viewMissingTemplateView.html";
+        }
+
+        var associationSettings = componentGroupModel.source.macros[model.uid].settings;
+        model.sortValue = getEffectiveValue([associationSettings, source.settings], "app.position_index", model.uid);
+    }
 
     c.configureComponent = function (model, source, componentGroupModel) {
         model.source = source;
 
         model.template = getValue(source.configuration, "app.view_source", null);
         if (model.template == undefined || model.template == null) {
-            model.template = "views/componentViewMissing.html";
+            model.template = "views/viewMissingTemplateView.html";
         }
 
         var associationSettings = componentGroupModel.source.components[model.uid].settings;

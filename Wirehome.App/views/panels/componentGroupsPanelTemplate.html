@@ -9,9 +9,11 @@
     <ul class="list-group" ng-show="ctrl.activePanel===componentGroup.uid">
         <li class="list-group-item" ng-repeat="component in componentGroup.components | orderBy:['sortValue']">
             <div class="clearfix">
-                <span class="component-icon" ng-style="{color: component.getSetting('app.image_color', '#427AB6')}" ng-class="component.getSetting('app.image_id', 'fas fa-square')"></span>
+                <span class="component-icon" ng-style="{color: component.getSetting('app.image_color', '#427AB6')}"
+                    ng-class="component.getSetting('app.image_id', 'fas fa-square')"></span>
                 <span class="component-caption">{{component.getSetting("app.caption", "#" + component.uid)}}</span>
             </div>
+
             <div class="clearfix" style="padding-top: 10px;" ng-include="component.template"></div>
 
             <div class="clearfix">
@@ -30,6 +32,11 @@
                 </span>
 
             </div>
+        </li>
+
+        <li class="list-group-item">
+            <div class="clearfix" style="padding-top: 10px;" ng-repeat="macro in componentGroup.macros | orderBy:['sortValue']"
+                ng-include="'views/macroTemplateView.html'"></div>
         </li>
     </ul>
 </div>

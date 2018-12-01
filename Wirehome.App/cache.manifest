@@ -1,22 +1,21 @@
 CACHE MANIFEST
-# version: 2.6.16
-
-appController.js
-module.js
+# version: 2.7.18
 
 icon.png
 touch-icon.png
 
-/contents/*
-/scripts/*
-/fonts/*
-/services/*
-/views/*
+scripts/angular.min.js
+scripts/angular-extensions.js
+scripts/bootstrap.min.js
+scripts/jquery-3.3.1.min.js
+
+contents/bootstrap.min.css
+contents/bootstrap-theme.min.css
+
+fonts/fontawesome/css/all.min.css
 
 NETWORK:
-/api/*
-/repository/*
-/customContent/*
+*
 
 CACHE:
  
