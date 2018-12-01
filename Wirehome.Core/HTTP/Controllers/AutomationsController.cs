@@ -111,7 +111,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostInitialize(string uid)
         {
-            _automationRegistryService.TryInitializeAutomation(uid);
+            _automationRegistryService.InitializeAutomation(uid);
         }
 
         [HttpPost]

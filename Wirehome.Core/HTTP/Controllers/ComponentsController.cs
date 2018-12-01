@@ -39,13 +39,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public Component GetComponent(string uid)
         {
-            if (!_componentRegistryService.TryGetComponent(uid, out var component))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
-
-            return component;
+            return _componentRegistryService.GetComponent(uid);
         }
 
         [HttpDelete]
@@ -85,7 +79,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostInitialize(string uid)
         {
-            _componentRegistryService.TryInitializeComponent(uid);
+            _componentRegistryService.InitializeComponent(uid);
         }
 
         [HttpPost]
@@ -94,14 +88,7 @@ namespace Wirehome.Core.HTTP.Controllers
         public WirehomeDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message)
         {
             var result = _componentRegistryService.ProcessComponentMessage(uid, message);
-
-            if (!_componentRegistryService.TryGetComponent(uid, out var component))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
-
-            result["component"] = component;
+            result["component"] = _componentRegistryService.GetComponent(uid);
             return result;
         }
 
@@ -110,13 +97,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public ConcurrentWirehomeDictionary GetSettingValues(string uid)
         {
-            if (!_componentRegistryService.TryGetComponent(uid, out var component))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
-
-            return component.Settings;
+            return _componentRegistryService.GetComponent(uid).Settings;
         }
 
         [HttpGet]
@@ -148,13 +129,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public ConcurrentWirehomeDictionary GetStatusValues(string uid)
         {
-            if (!_componentRegistryService.TryGetComponent(uid, out var component))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
-
-            return component.Status;
+            return _componentRegistryService.GetComponent(uid).Status;
         }
 
         [HttpGet]
@@ -162,11 +137,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public object GetStatusValue(string componentUid, string statusUid)
         {
-            if (!_componentRegistryService.TryGetComponent(componentUid, out var component))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
+            var component = _componentRegistryService.GetComponent(componentUid);
 
             if (!component.Status.TryGetValue(statusUid, out var value))
             {
@@ -182,13 +153,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostStatusValue(string componentUid, string statusUid, [FromBody] object value)
         {
-            if (!_componentRegistryService.TryGetComponent(componentUid, out var component))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return;
-            }
-
-            component.Status[statusUid] = value;
+            _componentRegistryService.SetComponentStatus(componentUid, statusUid, value);
         }
 
         [HttpGet]
@@ -196,13 +161,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public ConcurrentWirehomeDictionary GetConfigurationValues(string uid)
         {
-            if (!_componentRegistryService.TryGetComponent(uid, out var component))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
-
-            return component.Configuration;
+            return _componentRegistryService.GetComponent(uid).Configuration;
         }
 
         [HttpGet]
@@ -210,11 +169,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public object GetConfigurationValue(string componentUid, string configurationUid)
         {
-            if (!_componentRegistryService.TryGetComponent(componentUid, out var component))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
+            var component = _componentRegistryService.GetComponent(componentUid);
 
             if (!component.Configuration.TryGetValue(configurationUid, out var value))
             {

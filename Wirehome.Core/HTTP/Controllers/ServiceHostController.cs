@@ -79,7 +79,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostInitialize(string id)
         {
-            _serviceHostService.TryInitializeService(id);
+            _serviceHostService.InitializeService(id);
         }
 
         [HttpPost]

@@ -15,10 +15,26 @@ namespace Wirehome.Core.HTTP.Controllers
             _resourceService = resourceService ?? throw new ArgumentNullException(nameof(resourceService));
         }
 
+        //[HttpGet]
+        //[Route("api/v1/resource_groups/uids")]
+        //[ApiExplorerSettings(GroupName = "v1")]
+        //public IList<string> GetResourceGroupUids()
+        //{
+        //    return _resourceService.GetResourceGroupUids();
+        //}
+
+        //[HttpGet]
+        //[Route("api/v1/resource_groups/{uid}")]
+        //[ApiExplorerSettings(GroupName = "v1")]
+        //public IDictionary<string, string> GetResourcesFromGroup(string uid)
+        //{
+        //    return _resourceService.GetResourceByGroup(uid);
+        //}
+
         [HttpGet]
         [Route("api/v1/resources/uids")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IList<string> GetResUids()
+        public IList<string> GetResourceUids()
         {
             return _resourceService.GetResourceUids();
         }
