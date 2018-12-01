@@ -8,7 +8,6 @@ using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Diagnostics.Log;
 using Wirehome.Core.Discovery;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.FunctionPool;
@@ -52,8 +51,6 @@ namespace Wirehome.Core
                 _logger.LogInformation("Starting Wirehome.Core (c) Christian Kratky 2011 - 2018");
 
                 var serviceProvider = StartHttpServer();
-                _loggerFactory.AddProvider(
-                    new LogServiceLoggerProvider(serviceProvider.GetRequiredService<LogService>()));
 
                 _logger.LogDebug("Starting services...");
 
@@ -106,6 +103,7 @@ namespace Wirehome.Core
             catch (Exception exception)
             {
                 _logger.LogCritical(exception, "Startup failed.");
+                throw;
             }
         }
 
@@ -118,6 +116,7 @@ namespace Wirehome.Core
         {
             _logger.LogDebug("Starting HTTP server");
 
+            // TODO: Consider writing custom WebHostBuilder to fix this hack.
             WebStartup.OnServiceRegistration = RegisterServices;
 
             var host = WebHost.CreateDefaultBuilder()
