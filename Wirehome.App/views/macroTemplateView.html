@@ -1,0 +1,4 @@
+<button type="button" class="btn btn-default btn-block pull-left" style="text-align: left;" ng-click="ctrl.macroService.execute(macro)">
+    <span class="component-icon pull-left" ng-style="{color: macro.getSetting('app.image_color', '#427AB6')}" ng-class="macro.getSetting('app.image_id', 'fas fa-square')"></span>
+    <span>{{macro.getSetting("app.caption", "#" + macro.uid)}}</span>
+</button>
