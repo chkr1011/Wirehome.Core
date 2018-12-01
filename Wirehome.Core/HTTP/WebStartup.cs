@@ -10,8 +10,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Swagger;
+using Swashbuckle.AspNetCore.SwaggerUI;
+using Wirehome.Core.Diagnostics.Log;
 using Wirehome.Core.HTTP.Controllers;
-using Wirehome.Core.Repository;
+using Wirehome.Core.Packages;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
@@ -66,11 +68,20 @@ namespace Wirehome.Core.HTTP
         }
 
         // ReSharper disable once UnusedMember.Global
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, HttpServerService httpServerService)
+        public void Configure(
+            IApplicationBuilder app, 
+            IHostingEnvironment env, 
+            HttpServerService httpServerService, 
+            LogService logService, 
+            ILoggerFactory loggerFactory)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             if (env == null) throw new ArgumentNullException(nameof(env));
             if (httpServerService == null) throw new ArgumentNullException(nameof(httpServerService));
+            if (logService == null) throw new ArgumentNullException(nameof(logService));
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
+
+            loggerFactory.AddProvider(new LogServiceLoggerProvider(logService));
 
             if (env.IsDevelopment())
             {
@@ -159,7 +170,11 @@ namespace Wirehome.Core.HTTP
 
             app.UseSwaggerUI(o =>
             {
+                o.DocumentTitle = "Wirehome.Swagger";
                 o.SwaggerEndpoint("/api/v1/swagger.json", "Wirehome.Core API v1");
+                o.DisplayRequestDuration();
+                o.DocExpansion(DocExpansion.None);
+                o.DefaultModelRendering(ModelRendering.Model);
             });
         }
     }
