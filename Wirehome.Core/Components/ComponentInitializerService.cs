@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Components.Logic;
 using Wirehome.Core.Contracts;
+using Wirehome.Core.Packages;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repository;
 
 namespace Wirehome.Core.Components
 {

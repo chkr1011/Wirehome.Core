@@ -187,7 +187,7 @@ namespace Wirehome.Core.System.StartupScripts
             }
 
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
-            scriptHost.Initialize(scriptCode);
+            scriptHost.Compile(scriptCode);
 
             return new StartupScriptInstance(uid, configuration, scriptHost);
         }

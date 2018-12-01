@@ -47,6 +47,7 @@ namespace Wirehome.Core.FunctionPool
         public bool FunctionRegistered(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
+
             lock (_functions)
             {
                 return _functions.ContainsKey(uid);

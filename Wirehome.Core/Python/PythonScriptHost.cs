@@ -18,13 +18,9 @@ namespace Wirehome.Core.Python
             _scriptScope = scriptScope ?? throw new ArgumentNullException(nameof(scriptScope));
         }
 
-        public delegate PythonDictionary CallbackWithResultDelegate(PythonDictionary parameters);
-
-        public delegate void CallbackDelegate(PythonDictionary parameters);
-
         public IDictionary<string, object> WirehomeWrapper { get; }
 
-        public void Initialize(string scriptCode)
+        public void Compile(string scriptCode)
         {
             if (scriptCode == null) throw new ArgumentNullException(nameof(scriptCode));
 

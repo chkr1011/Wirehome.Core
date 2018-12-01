@@ -29,7 +29,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 }
 
                 var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(null);
-                scriptHost.Initialize(script);
+                scriptHost.Compile(script);
 
                 if (string.IsNullOrEmpty(function_name))
                 {

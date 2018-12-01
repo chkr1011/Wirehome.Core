@@ -4,8 +4,8 @@ using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Logic;
 using Wirehome.Core.Model;
+using Wirehome.Core.Packages;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repository;
 
 namespace Wirehome.Core.Components
 {
@@ -44,7 +44,7 @@ namespace Wirehome.Core.Components
             var adapterPackage = _packageManagerService.LoadPackage(configuration.Logic.Adapter.Uid);
 
             var adapter = new ScriptComponentAdapter(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentAdapterLogger);
-            adapter.Initialize(component.Uid, adapterPackage.Script);
+            adapter.Compile(component.Uid, adapterPackage.Script);
 
             if (configuration.Logic.Adapter.Variables != null)
             {
@@ -70,7 +70,7 @@ namespace Wirehome.Core.Components
                 adapter.MessagePublishedCallback = message => logic.ProcessAdapterMessage(message);
                 logic.AdapterMessagePublishedCallback = message => adapter.ProcessMessage(message);
 
-                logic.Initialize(component.Uid, logicPackage.Script);
+                logic.Compile(component.Uid, logicPackage.Script);
 
                 if (configuration.Logic.Variables != null)
                 {
@@ -87,12 +87,15 @@ namespace Wirehome.Core.Components
                 // TODO: Remove "scope" as soon as it is migrated.
                 logic.SetVariable("scope", context);
                 logic.SetVariable("context", context);
+                logic.WirehomeWrapper.Add("context", context);
+
                 component.SetLogic(logic);
             }
 
             // TODO: Remove "scope" as soon as it is migrated.
             adapter.SetVariable("scope", context);
             adapter.SetVariable("context", context);
+            adapter.WirehomeWrapper.Add("context", context);
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Wirehome.Core.Repository;
+using Wirehome.Core.Packages;
 
 namespace Wirehome.Core.Components.Configuration
 {

@@ -2,7 +2,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Wirehome.Core.Repository;
+using Wirehome.Core.Packages;
 
 namespace Wirehome.Core.HTTP.Controllers
 {

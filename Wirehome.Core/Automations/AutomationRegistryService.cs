@@ -6,8 +6,8 @@ using Wirehome.Core.Automations.Exceptions;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
+using Wirehome.Core.Packages;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repository;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Automations
@@ -174,8 +174,10 @@ namespace Wirehome.Core.Automations
             });
         }
 
-        public void TryInitializeAutomation(string uid)
+        public void InitializeAutomation(string uid)
         {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
             try
             {
                 if (!_storageService.TryRead(out AutomationConfiguration configuration, AutomationsDirectory, uid, DefaultFilenames.Configuration))
@@ -195,8 +197,8 @@ namespace Wirehome.Core.Automations
                 }
 
                 _logger.LogInformation($"Initializing automation '{uid}'.");
-                var automation = CreateAutomation(uid, configuration, settings);
-                automation.Initialize();
+                var automationInstance = CreateAutomation(uid, configuration, settings);
+                automationInstance.Initialize();
                 _logger.LogInformation($"Automation '{uid}' initialized.");
 
                 lock (_automations)
@@ -208,12 +210,31 @@ namespace Wirehome.Core.Automations
                         _logger.LogInformation($"Automation '{uid}' deactivated.");
                     }
 
-                    _automations[uid] = automation;
+                    _automations[uid] = automationInstance;
 
                     _logger.LogInformation($"Activating automation '{uid}'.");
-                    automation.Activate();
+                    automationInstance.Activate();
                     _logger.LogInformation($"Automation '{uid}' activated.");
                 }
+            }
+            catch
+            {
+                lock (_automations)
+                {
+                    _automations.Remove(uid);
+                }
+
+                throw;
+            }
+        }
+
+        public void TryInitializeAutomation(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            try
+            {
+                InitializeAutomation(uid);
             }
             catch (Exception exception)
             {
@@ -226,7 +247,7 @@ namespace Wirehome.Core.Automations
             var package = _packageManagerService.LoadPackage(configuration.Logic.Uid);
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger, new AutomationPythonProxy(uid, this));
 
-            scriptHost.Initialize(package.Script);
+            scriptHost.Compile(package.Script);
 
             var context = new WirehomeDictionary
             {

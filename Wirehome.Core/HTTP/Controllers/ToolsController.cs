@@ -3,10 +3,10 @@ using System.Collections;
 using System.Net;
 using IronPython.Runtime;
 using Microsoft.AspNetCore.Mvc;
+using Wirehome.Core.Packages;
+using Wirehome.Core.Packages.Exceptions;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
-using Wirehome.Core.Repository;
-using Wirehome.Core.Repository.Exceptions;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -38,7 +38,7 @@ namespace Wirehome.Core.HTTP.Controllers
             {
                 package = _packageManagerService.LoadPackage(PackageUid.Parse(uid));
             }
-            catch (WirehomeRepositoryPackageNotFoundException)
+            catch (WirehomePackageNotFoundException)
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return null;
@@ -47,7 +47,7 @@ namespace Wirehome.Core.HTTP.Controllers
             try
             {
                 var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(null);
-                scriptHost.Initialize(package.Script);
+                scriptHost.Compile(package.Script);
                 return scriptHost.InvokeFunction("main", parameters);
             }
             catch (Exception exception)

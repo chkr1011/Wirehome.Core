@@ -32,7 +32,7 @@ namespace Wirehome.Core.Python
             AddSearchPaths(_scriptEngine);
 
             var scriptHost = CreateScriptHost(new List<IPythonProxy>(), _logger);
-            scriptHost.Initialize("def test():\r\n    return 0");
+            scriptHost.Compile("def test():\r\n    return 0");
             scriptHost.InvokeFunction("test");
 
             _logger.LogInformation("Python engine started.");

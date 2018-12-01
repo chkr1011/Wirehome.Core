@@ -3,9 +3,9 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
+using IronPython.Runtime;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.FunctionPool
 {
@@ -27,19 +27,19 @@ namespace Wirehome.Core.FunctionPool
             return _functionPoolService.GetRegisteredFunctions().Contains(uid);
         }
 
-        public WirehomeDictionary invoke(string uid, WirehomeDictionary parameters)
+        public WirehomeDictionary invoke(string uid, PythonDictionary parameters)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             return _functionPoolService.InvokeFunction(uid, parameters);
         }
 
-        public void register(string uid, Func<WirehomeDictionary, WirehomeDictionary> function)
+        public void register(string uid, PythonDelegates.CallbackWithResultDelegate function)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (function == null) throw new ArgumentNullException(nameof(function));
 
-            _functionPoolService.RegisterFunction(uid, function);
+            _functionPoolService.RegisterFunction(uid, p => function(PythonConvert.ToWirehomeDictionary(p)));
         }
     }
 }
