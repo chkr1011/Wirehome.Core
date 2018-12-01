@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.ServiceHost.Configuration;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Packages;
 using Wirehome.Core.Python;
-using Wirehome.Core.Repository;
 using Wirehome.Core.ServiceHost.Exceptions;
 using Wirehome.Core.Storage;
 
@@ -86,10 +86,10 @@ namespace Wirehome.Core.ServiceHost
             }
         }
 
-        public void TryInitializeService(string id)
+        public void InitializeService(string id)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
-            
+
             try
             {
                 if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFilenames.Configuration))
@@ -122,7 +122,26 @@ namespace Wirehome.Core.ServiceHost
                     _logger.LogInformation($"Starting service '{id}'.");
                     serviceInstance.ExecuteFunction("start");
                     _logger.LogInformation($"Service '{id}' started.");
-                }               
+                }
+            }
+            catch
+            {
+                lock (_services)
+                {
+                    _services.Remove(id);
+                }
+
+                throw;
+            }
+        }
+
+        public void TryInitializeService(string id)
+        {
+            if (id == null) throw new ArgumentNullException(nameof(id));
+            
+            try
+            {
+                InitializeService(id);           
             }
             catch (Exception exception)
             {
@@ -154,7 +173,7 @@ namespace Wirehome.Core.ServiceHost
             var package = _repositoryService.LoadPackage(packageUid);
 
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
-            scriptHost.Initialize(package.Script);
+            scriptHost.Compile(package.Script);
 
             var serviceInstance = new ServiceInstance(id, configuration, scriptHost);
 
