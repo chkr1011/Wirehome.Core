@@ -1,10 +1,18 @@
-﻿{
-  "notifications.booted": {
-    "en": "System booted successfully.",
-    "de": "Das System wurde erfolgreich gestartet."
-  },
-  "notifications.reboot_initiated": {
-    "en": "Reboot initiated.",
-    "de": "Neustart initiiert."
-  }
+{
+    "app.label.temperature": {
+        "": "Temperature",
+        "de": "Temperatur"
+    },
+    "app.label.humidity": {
+        "": "Humidity",
+        "de": "Luftfeuchtigkeit"
+    },
+    "app.label.on": {
+        "": "ON",
+        "de": "AN"
+    },
+    "app.label.off": {
+        "": "OFF",
+        "de": "AUS"
+    }
 }

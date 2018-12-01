@@ -1,0 +1,10 @@
+﻿{
+  "notifications.booted": {
+    "": "System booted successfully.",
+    "de": "Das System wurde erfolgreich gestartet."
+  },
+  "notifications.reboot_initiated": {
+    "": "Reboot initiated.",
+    "de": "Neustart initiiert."
+  }
+}
