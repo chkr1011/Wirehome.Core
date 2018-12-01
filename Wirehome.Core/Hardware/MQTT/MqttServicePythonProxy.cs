@@ -15,7 +15,6 @@ using MQTTnet.Protocol;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
@@ -182,7 +181,7 @@ namespace Wirehome.Core.Hardware.MQTT
                 return i.Select(Convert.ToByte).ToArray();
             }
 
-            throw new NotSupportedException();
+            throw new NotSupportedException($"MQTT Payload format '{payload.GetType().Name}' is not supported.");
         }
     }
 }

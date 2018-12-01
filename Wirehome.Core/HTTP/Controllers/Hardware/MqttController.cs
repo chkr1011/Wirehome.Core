@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MQTTnet;
 using MQTTnet.Protocol;
+using MQTTnet.Server;
 using Wirehome.Core.Hardware.MQTT;
 using Wirehome.Core.HTTP.Controllers.Models;
 
@@ -63,6 +64,14 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         }
 
         [HttpGet]
+        [Route("api/v1/mqtt/clients")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public IList<IMqttClientSessionStatus> GetClients()
+        {
+            return _mqttService.GetClients();
+        }
+
+        [HttpGet]
         [Route("api/v1/mqtt/subscribers")]
         [ApiExplorerSettings(GroupName = "v1")]
         public Dictionary<string, MqttSubscriberModel> GetSubscriptions()
@@ -84,7 +93,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         [HttpGet]
         [Route("api/v1/mqtt/retained_messages")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<MqttApplicationMessage> GetRetainedMessages()
+        public IList<MqttApplicationMessage> GetRetainedMessages()
         {
             return _mqttService.GetRetainedMessages();
         }

@@ -124,11 +124,9 @@ namespace Wirehome.Core.Hardware.MQTT
             }
         }
 
-        public List<MqttApplicationMessage> GetRetainedMessages()
+        public IList<MqttApplicationMessage> GetRetainedMessages()
         {
-            // TODO: Update to new MQTTnet lib to expose this.
-            //return _mqttServer.GetRetainedMessages();
-            throw new NotImplementedException();
+            return _mqttServer.GetRetainedMessages();
         }
 
         public void DeleteRetainedMessages()
@@ -175,6 +173,11 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 _subscribers.Remove(uid);
             }
+        }
+
+        public IList<IMqttClientSessionStatus> GetClients()
+        {
+            return _mqttServer.GetClientSessionsStatus();
         }
 
         private void ProcessIncomingMqttMessages(CancellationToken cancellationToken)
