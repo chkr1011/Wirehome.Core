@@ -78,66 +78,73 @@ namespace Wirehome.Core.Components
             _storageService.DeleteDirectory(ComponentGroupsDirectory, uid);
         }
 
+        public void InitializeComponentGroup(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            if (!_storageService.TryRead(out ComponentGroupConfiguration configuration, ComponentGroupsDirectory, uid, DefaultFilenames.Configuration))
+            {
+                throw new ComponentGroupNotFoundException(uid);
+            }
+
+            if (!_storageService.TryRead(out WirehomeDictionary settings, ComponentGroupsDirectory, uid, DefaultFilenames.Settings))
+            {
+                settings = new WirehomeDictionary();
+            }
+
+            var componentGroup = new ComponentGroup(uid);
+            foreach (var setting in settings)
+            {
+                componentGroup.Settings[setting.Key] = setting.Value;
+            }
+
+            var associationUids = _storageService.EnumeratureDirectories("*", ComponentGroupsDirectory, uid, "Components");
+            foreach (var associationUid in associationUids)
+            {
+                if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Components", associationUid, DefaultFilenames.Settings))
+                {
+                    associationSettings = new WirehomeDictionary();
+                }
+
+                var componentAssociation = new ComponentGroupAssociation();
+                foreach (var associationSetting in associationSettings)
+                {
+                    componentAssociation.Settings[associationSetting.Key] = associationSetting.Value;
+                }
+
+                componentGroup.Components.TryAdd(associationUid, componentAssociation);
+            }
+
+            associationUids = _storageService.EnumeratureDirectories("*", ComponentGroupsDirectory, uid, "Macros");
+            foreach (var associationUid in associationUids)
+            {
+                if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Macros", associationUid, DefaultFilenames.Settings))
+                {
+                    associationSettings = new WirehomeDictionary();
+                }
+
+                var componentAssociation = new ComponentGroupAssociation();
+                foreach (var associationSetting in associationSettings)
+                {
+                    componentAssociation.Settings[associationSetting.Key] = associationSetting.Value;
+                }
+
+                componentGroup.Macros.TryAdd(associationUid, componentAssociation);
+            }
+
+            lock (_componentGroups)
+            {
+                _componentGroups[uid] = componentGroup;
+            }
+        }
+
         public void TryInitializeComponentGroup(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             try
             {
-                if (!_storageService.TryRead(out ComponentGroupConfiguration configuration, ComponentGroupsDirectory, uid, DefaultFilenames.Configuration))
-                {
-                    throw new ComponentGroupNotFoundException(uid);
-                }
-
-                if (!_storageService.TryRead(out WirehomeDictionary settings, ComponentGroupsDirectory, uid, DefaultFilenames.Settings))
-                {
-                    settings = new WirehomeDictionary();
-                }
-
-                var componentGroup = new ComponentGroup(uid);
-                foreach (var setting in settings)
-                {
-                    componentGroup.Settings[setting.Key] = setting.Value;
-                }
-
-                var associationUids = _storageService.EnumeratureDirectories("*", ComponentGroupsDirectory, uid, "Components");
-                foreach (var associationUid in associationUids)
-                {
-                    if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Components", associationUid, DefaultFilenames.Settings))
-                    {
-                        associationSettings = new WirehomeDictionary();
-                    }
-
-                    var componentAssociation = new ComponentGroupAssociation();
-                    foreach (var associationSetting in associationSettings)
-                    {
-                        componentAssociation.Settings[associationSetting.Key] = associationSetting.Value;
-                    }
-
-                    componentGroup.Components.TryAdd(associationUid, componentAssociation);
-                }
-
-                associationUids = _storageService.EnumeratureDirectories("*", ComponentGroupsDirectory, uid, "Macros");
-                foreach (var associationUid in associationUids)
-                {
-                    if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Macros", associationUid, DefaultFilenames.Settings))
-                    {
-                        associationSettings = new WirehomeDictionary();
-                    }
-
-                    var componentAssociation = new ComponentGroupAssociation();
-                    foreach (var associationSetting in associationSettings)
-                    {
-                        componentAssociation.Settings[associationSetting.Key] = associationSetting.Value;
-                    }
-
-                    componentGroup.Macros.TryAdd(associationUid, componentAssociation);
-                }
-
-                lock (_componentGroups)
-                {
-                    _componentGroups[uid] = componentGroup;
-                }
+                InitializeComponentGroup(uid);
             }
             catch (Exception exception)
             {
@@ -185,17 +192,12 @@ namespace Wirehome.Core.Components
 
             lock (_componentGroups)
             {
-                if (!_componentGroups.TryGetValue(componentGroupUid, out var componentGroup))
-                {
-                    throw new ComponentGroupNotFoundException(componentUid);
-                }
+                var componentGroup = GetComponentGroup(componentGroupUid);
 
-                if (componentGroup.Components.ContainsKey(componentUid))
+                if (!componentGroup.Components.TryAdd(componentUid, new ComponentGroupAssociation()))
                 {
                     return;
                 }
-
-                componentGroup.Components[componentUid] = new ComponentGroupAssociation();
 
                 Save();
             }
@@ -208,12 +210,45 @@ namespace Wirehome.Core.Components
 
             lock (_componentGroups)
             {
-                if (!_componentGroups.TryGetValue(componentGroupUid, out var componentGroup))
-                {
-                    throw new ComponentGroupNotFoundException(componentUid);
-                }
+                var componentGroup = GetComponentGroup(componentGroupUid);
 
                 if (!componentGroup.Components.Remove(componentUid, out _))
+                {
+                    return;
+                }
+
+                Save();
+            }
+        }
+
+        public void AssignMacro(string componentGroupUid, string macroUid)
+        {
+            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
+            if (macroUid == null) throw new ArgumentNullException(nameof(macroUid));
+
+            lock (_componentGroups)
+            {
+                var componentGroup = GetComponentGroup(componentGroupUid);
+
+                if (!componentGroup.Macros.TryAdd(macroUid, new ComponentGroupAssociation()))
+                {
+                    return;
+                }
+
+                Save();
+            }
+        }
+
+        public void UnassignMacro(string componentGroupUid, string macroUid)
+        {
+            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
+            if (macroUid == null) throw new ArgumentNullException(nameof(macroUid));
+
+            lock (_componentGroups)
+            {
+                var componentGroup = GetComponentGroup(componentGroupUid);
+
+                if (!componentGroup.Macros.Remove(macroUid, out _))
                 {
                     return;
                 }

@@ -70,17 +70,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostComponent(string componentGroupUid, string componentUid)
         {
-            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-
-            try
-            {
-                _componentGroupRegistryService.AssignComponent(componentGroupUid, componentUid);
-            }
-            catch (ComponentGroupNotFoundException)
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
+            _componentGroupRegistryService.AssignComponent(componentGroupUid, componentUid);
         }
 
         [HttpDelete]
@@ -88,17 +78,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteComponent(string componentGroupUid, string componentUid)
         {
-            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-
-            try
-            {
-                _componentGroupRegistryService.UnassignComponent(componentGroupUid, componentUid);
-            }
-            catch (ComponentGroupNotFoundException)
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
+            _componentGroupRegistryService.UnassignComponent(componentGroupUid, componentUid);
         }
 
         [HttpGet]
@@ -106,18 +86,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public object GetComponentAssociationSetting(string componentGroupUid, string componentUid, string settingUid)
         {
-            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-
-            try
-            {
-                return _componentGroupRegistryService.GetComponentAssociationSetting(componentGroupUid, componentUid, settingUid);
-            }
-            catch (ComponentGroupNotFoundException)
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
+            return _componentGroupRegistryService.GetComponentAssociationSetting(componentGroupUid, componentUid, settingUid);
         }
 
         [HttpPost]
@@ -125,17 +94,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostComponentAssociationSetting(string componentGroupUid, string componentUid, string settingUid, [FromBody] object settingValue)
         {
-            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-
-            try
-            {
-                _componentGroupRegistryService.SetComponentAssociationSetting(componentGroupUid, componentUid, settingUid, settingValue);
-            }
-            catch (ComponentGroupNotFoundException)
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
+            _componentGroupRegistryService.SetComponentAssociationSetting(componentGroupUid, componentUid, settingUid, settingValue);
         }
 
         [HttpDelete]
@@ -143,54 +102,24 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteComponentAssociationSetting(string componentGroupUid, string componentUid, string settingUid)
         {
-            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-
-            try
-            {
-                _componentGroupRegistryService.RemoveComponentAssociationSetting(componentGroupUid, componentUid, settingUid);
-            }
-            catch (ComponentGroupNotFoundException)
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
+            _componentGroupRegistryService.RemoveComponentAssociationSetting(componentGroupUid, componentUid, settingUid);
         }
 
-        //[HttpPost]
-        //[Route("api/v1/component_groups/{componentGroupUid}/macros/{macroUid}")]
-        //[ApiExplorerSettings(GroupName = "v1")]
-        //public void PostMacro(string componentGroupUid, string macroUid)
-        //{
-        //    if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
-        //    if (macroUid == null) throw new ArgumentNullException(nameof(macroUid));
+        [HttpPost]
+        [Route("api/v1/component_groups/{componentGroupUid}/macros/{macroUid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostMacro(string componentGroupUid, string macroUid)
+        {
+            _componentGroupRegistryService.AssignMacro(componentGroupUid, macroUid);
+        }
 
-        //    if (!_componentGroupRegistryService.TryGetComponentGroup(componentGroupUid, out var componentGroup))
-        //    {
-        //        HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-        //        return;
-        //    }
-
-        //    componentGroup.Components.Add(macroUid);
-        //    _componentGroupRegistryService.Save();
-        //}
-
-        //[HttpDelete]
-        //[Route("api/v1/component_groups/{componentGroupUid}/macros/{macroUid}")]
-        //[ApiExplorerSettings(GroupName = "v1")]
-        //public void DeleteMacro(string componentGroupUid, string macroUid)
-        //{
-        //    if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
-        //    if (macroUid == null) throw new ArgumentNullException(nameof(macroUid));
-
-        //    if (!_componentGroupRegistryService.TryGetComponentGroup(componentGroupUid, out var componentGroup))
-        //    {
-        //        HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-        //        return;
-        //    }
-
-        //    componentGroup.Macros.Remove(macroUid);
-        //    _componentGroupRegistryService.Save();
-        //}
+        [HttpDelete]
+        [Route("api/v1/component_groups/{componentGroupUid}/macros/{macroUid}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteMacro(string componentGroupUid, string macroUid)
+        {
+            _componentGroupRegistryService.UnassignMacro(componentGroupUid, macroUid);
+        }
 
         [HttpGet]
         [Route("/api/v1/component_groups/{uid}/status")]
@@ -242,6 +171,14 @@ namespace Wirehome.Core.HTTP.Controllers
         public object DeleteSetting(string componentGroupUid, string settingUid)
         {
             return _componentGroupRegistryService.RemoveComponentGroupSetting(componentGroupUid, settingUid);
+        }
+
+        [HttpPost]
+        [Route("/api/v1/component_groups/{uid}/initialize")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostInitialize(string uid)
+        {
+            _componentGroupRegistryService.InitializeComponentGroup(uid);
         }
     }
 }
