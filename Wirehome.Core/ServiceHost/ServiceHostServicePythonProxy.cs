@@ -18,12 +18,9 @@ namespace Wirehome.Core.ServiceHost
 
         public string ModuleName { get; } = "services";
 
-        public object invoke(string serviceId, string functionName, params object[] parameters)
+        public object invoke(string service_id, string function_name, params object[] parameters)
         {
-            if (serviceId == null) throw new ArgumentNullException(nameof(serviceId));
-            if (functionName == null) throw new ArgumentNullException(nameof(functionName));
-
-            return _serviceHostService.InvokeFunction(serviceId, functionName, parameters);
+            return PythonConvert.ToPython(_serviceHostService.InvokeFunction(service_id, function_name, parameters));
         }
     }
 }
