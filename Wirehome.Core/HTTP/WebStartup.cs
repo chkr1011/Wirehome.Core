@@ -13,6 +13,7 @@ using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using Wirehome.Core.Diagnostics.Log;
 using Wirehome.Core.HTTP.Controllers;
+using Wirehome.Core.HTTP.Filters;
 using Wirehome.Core.Packages;
 using Wirehome.Core.Storage;
 
@@ -34,7 +35,8 @@ namespace Wirehome.Core.HTTP
         {
             if (services == null) throw new ArgumentNullException(nameof(services));
 
-            services.AddMvc().ConfigureApplicationPartManager(manager =>
+            var mvcBuilder = services.AddMvc(config => config.Filters.Add(new NotFoundExceptionFilter()));
+            mvcBuilder.ConfigureApplicationPartManager(manager =>
             {
                 manager.FeatureProviders.Remove(manager.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
                 manager.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(ComponentsController).Namespace));
@@ -69,10 +71,10 @@ namespace Wirehome.Core.HTTP
 
         // ReSharper disable once UnusedMember.Global
         public void Configure(
-            IApplicationBuilder app, 
-            IHostingEnvironment env, 
-            HttpServerService httpServerService, 
-            LogService logService, 
+            IApplicationBuilder app,
+            IHostingEnvironment env,
+            HttpServerService httpServerService,
+            LogService logService,
             ILoggerFactory loggerFactory)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
