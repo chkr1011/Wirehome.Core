@@ -142,9 +142,10 @@ publish/
 *.publishproj
 
 # NuGet Packages
+# Wirehome also uses a namespace "Packages". Therefore it must be removed here.
 *.nupkg
 # The packages folder can be ignored because of Package Restore
-**/packages/*
+# **/packages/*
 # except build/, which is used as an MSBuild target.
 !**/packages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
