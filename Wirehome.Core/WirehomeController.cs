@@ -120,7 +120,14 @@ namespace Wirehome.Core
             WebStartup.OnServiceRegistration = RegisterServices;
 
             var host = WebHost.CreateDefaultBuilder()
-                .UseKestrel()
+                .UseKestrel(kestrelOptions =>
+                {
+                    kestrelOptions.ListenAnyIP(80, 
+                        listenOptions =>
+                        {
+                            listenOptions.NoDelay = true;
+                        });
+                })
                 .UseStartup<WebStartup>()
                 .UseUrls("http://*:80")
                 .Build();
