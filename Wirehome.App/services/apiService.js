@@ -20,20 +20,21 @@
                 { type: "component_registry.event.status_changed" },
                 { type: "component_registry.event.setting_changed" }
             ]
-        }
+        };
 
         $http(parameters).then(function (response) {
             srv.pollStatus();
-        }, function () {
-            srv.pollStatus();
-        })
-    }
+        },
+            function () {
+                srv.pollStatus();
+            });
+    };
 
     srv.pollStatus = function () {
         var successHandler = function (status) {
             srv.apiStatus.isReachable = true;
 
-            if (srv.newStatusReceivedCallback != null) {
+            if (srv.newStatusReceivedCallback !== null) {
                 srv.newStatusReceivedCallback(status);
             }
 
@@ -98,27 +99,23 @@
         Promise.all(promises).then(
             function () { successHandler(status); },
             function () { errorHandler(); });
-    }
+    };
 
     srv.executePost = function (uri, data, successCallback) {
         $http.post(uri, data).then(function (response) {
-            if (successCallback != undefined) {
+            if (successCallback !== undefined) {
                 successCallback(response.data);
             }
         });
-    }
+    };
 
     srv.executeDelete = function (uri, data, successCallback) {
         $http.delete(uri, data).then(function (response) {
-            if (successCallback != undefined) {
+            if (successCallback !== undefined) {
                 successCallback(response.data);
             }
         });
-    }
-
-    srv.deleteNotification = function (uid) {
-        $http.delete("/api/v1/notifications/" + uid);
-    }
+    };
 
     return this;
 }
