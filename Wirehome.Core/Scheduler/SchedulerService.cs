@@ -21,7 +21,6 @@ namespace Wirehome.Core.Scheduler
         private readonly Dictionary<string, DefaultTimerSubscriber> _defaultTimerSubscribers = new Dictionary<string, DefaultTimerSubscriber>();
 
         private readonly ILogger _logger;
-        //private readonly IScheduler _scheduler;
         private readonly SystemCancellationToken _systemCancellationToken;
         private readonly StorageService _storageService;
 
@@ -43,11 +42,6 @@ namespace Wirehome.Core.Scheduler
         public void Start()
         {
             Task.Factory.StartNew(ScheduleTasks, _systemCancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-
-            //LogProvider.SetCurrentLogProvider(new QuartzLogBridge(_logger));
-
-            //GlobalConfiguration.Configuration.UseStorage()
-            //_backgroundJobServer = new BackgroundJobServer();
         }
 
         public string AttachToDefaultTimer(string uid, Action<TimerTickCallbackParameters> callback, object state = null)
@@ -111,7 +105,7 @@ namespace Wirehome.Core.Scheduler
             return uid;
         }
 
-        public void StopTimer(string uid)
+        public bool StopTimer(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
@@ -123,7 +117,7 @@ namespace Wirehome.Core.Scheduler
                     activeTimer.Dispose();
                 }
 
-                _activeTimers.Remove(uid);
+                return _activeTimers.Remove(uid);
             }
         }
 
@@ -165,13 +159,13 @@ namespace Wirehome.Core.Scheduler
             return uid;
         }
 
-        public void StopCountdown(string uid)
+        public bool StopCountdown(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             lock (_activeCountdowns)
             {
-                _activeCountdowns.Remove(uid);
+                return _activeCountdowns.Remove(uid);
             }
         }
 
@@ -225,7 +219,7 @@ namespace Wirehome.Core.Scheduler
             return uid;
         }
 
-        public void StopThread(string uid)
+        public bool StopThread(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
@@ -237,6 +231,8 @@ namespace Wirehome.Core.Scheduler
                     {
                         activeThread.Stop();
                         activeThread.Dispose();
+
+                        return true;
                     }
                 }
             }
@@ -244,6 +240,8 @@ namespace Wirehome.Core.Scheduler
             {
                 _logger.Log(LogLevel.Error, exception, $"Error while stopping thread '{uid}'.");
             }
+
+            return false;
         }
 
         public IList<ActiveThread> GetActiveThreads()
@@ -251,6 +249,16 @@ namespace Wirehome.Core.Scheduler
             lock (_activeThreads)
             {
                 return _activeThreads.Values.ToList();
+            }
+        }
+
+        public bool ThreadExists(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            lock (_activeThreads)
+            {
+                return _activeThreads.ContainsKey(uid);
             }
         }
 

@@ -24,9 +24,14 @@ namespace Wirehome.Core.Scheduler
             return _schedulerService.StartThread(uid, p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
-        public void stop_thread(string uid)
+        public bool stop_thread(string uid)
         {
-            _schedulerService.StopThread(uid);
+            return _schedulerService.StopThread(uid);
+        }
+
+        public bool thread_exists(string uid)
+        {
+            return _schedulerService.ThreadExists(uid);
         }
 
         public string start_timer(string uid, int interval, Action<PythonDictionary> callback, object state = null)
@@ -34,9 +39,9 @@ namespace Wirehome.Core.Scheduler
             return _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
-        public void stop_timer(string uid)
+        public bool stop_timer(string uid)
         {
-            _schedulerService.StopTimer(uid);
+            return  _schedulerService.StopTimer(uid);
         }
 
         public bool timer_exists(string uid)
@@ -59,9 +64,9 @@ namespace Wirehome.Core.Scheduler
             return _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), p => callback(PythonConvert.ToPythonDictionary(p)), state);
         }
 
-        public void stop_countdown(string uid)
+        public bool stop_countdown(string uid)
         {
-            _schedulerService.StopCountdown(uid);
+            return _schedulerService.StopCountdown(uid);
         }
 
         public bool countdown_exists(string uid)
