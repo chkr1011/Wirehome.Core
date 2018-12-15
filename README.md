@@ -4,6 +4,7 @@
 <br/>
 </p>
 
+[![Build status](https://ci.appveyor.com/api/projects/status/8mcith0f2hueuhhe/branch/master?svg=true)](https://ci.appveyor.com/project/chkr1011/wirehome-core/branch/master)
 [![BCH compliance](https://bettercodehub.com/edge/badge/chkr1011/MQTTnet?branch=master)](https://bettercodehub.com/)
 
 # Wirehome.Core
