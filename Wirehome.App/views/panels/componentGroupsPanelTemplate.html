@@ -34,7 +34,7 @@
             </div>
         </li>
 
-        <li class="list-group-item">
+        <li class="list-group-item" ng-show="componentGroup.macros.length > 0">
             <div class="clearfix" style="padding-top: 10px;" ng-repeat="macro in componentGroup.macros | orderBy:['sortValue']"
                 ng-include="'views/macroTemplateView.html'"></div>
         </li>
