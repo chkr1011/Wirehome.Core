@@ -24,7 +24,14 @@ namespace Wirehome.Core.Diagnostics
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _values[uid] = value ?? throw new ArgumentNullException(nameof(value));
+            if (value == null)
+            {
+                _values[uid] = null;
+            }
+            else
+            {
+                _values[uid] = value;
+            }
         }
 
         public object Get(string uid)

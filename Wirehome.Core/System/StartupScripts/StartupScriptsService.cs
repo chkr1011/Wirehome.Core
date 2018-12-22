@@ -18,10 +18,17 @@ namespace Wirehome.Core.System.StartupScripts
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         
         public StartupScriptsService(
-            StorageService storageService, 
+            StorageService storageService,
+            SystemService systemService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService, 
             ILogger<StartupScriptsService> logger)
         {
+            if (systemService == null) throw new ArgumentNullException(nameof(systemService));
+            systemService.StartupCompleted += (s, e) =>
+            {
+                OnStartupCompleted();
+            };
+
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -95,7 +102,7 @@ namespace Wirehome.Core.System.StartupScripts
             throw new StartupScriptNotFoundException(uid);
         }
 
-        public void OnServicesInitialized()
+        private void OnServicesInitialized()
         {
             lock (_scripts)
             {
@@ -103,7 +110,7 @@ namespace Wirehome.Core.System.StartupScripts
             }
         }
 
-        public void OnConfigurationLoaded()
+        private void OnConfigurationLoaded()
         {
             lock (_scripts)
             {
@@ -111,7 +118,7 @@ namespace Wirehome.Core.System.StartupScripts
             }
         }
 
-        public void OnStartupCompleted()
+        private void OnStartupCompleted()
         {
             lock (_scripts)
             {

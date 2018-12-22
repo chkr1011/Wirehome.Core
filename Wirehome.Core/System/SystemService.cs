@@ -40,10 +40,14 @@ namespace Wirehome.Core.System
             _creationTimestamp = DateTime.Now;
         }
 
+        public event EventHandler ServicesInitialized;
+        public event EventHandler ConfigurationLoaded;
+        public event EventHandler StartupCompleted;
+        
         public void Start()
         {
             _systemStatusService.Set("startup.timestamp", _creationTimestamp);
-            _systemStatusService.Set("startup.duration", DateTime.Now - _creationTimestamp);
+            _systemStatusService.Set("startup.duration", null);
 
             _systemStatusService.Set("framework.description", RuntimeInformation.FrameworkDescription);
 
@@ -62,7 +66,6 @@ namespace Wirehome.Core.System
 
             AddOSInformation();
             AddThreadPoolInformation();
-            PublishBootedNotification();
         }
 
         public void Reboot(int waitTime)
@@ -88,11 +91,35 @@ namespace Wirehome.Core.System
             }, CancellationToken.None);
         }
 
+        public void OnServicesInitialized()
+        {
+            ServicesInitialized?.Invoke(this, EventArgs.Empty);
+
+            _logger.LogInformation("Service startup completed.");
+        }
+
+        public void OnConfigurationLoaded()
+        {
+            ConfigurationLoaded?.Invoke(this, EventArgs.Empty);
+
+            _logger.LogInformation("Configuration loaded.");
+        }
+
+        public void OnStartupCompleted()
+        {
+            _systemStatusService.Set("startup.duration", DateTime.Now - _creationTimestamp);
+
+            PublishBootedNotification();
+
+            StartupCompleted?.Invoke(this, EventArgs.Empty);
+
+            _logger.LogInformation("Startup completed.");
+        }
+
         private void PublishBootedNotification()
         {
-            _logger.LogInformation("Startup completed.");
-
             _messageBusService.Publish(new WirehomeDictionary().WithType("system.booted"));
+
             _notificationsService.PublishFromResource(new PublishFromResourceParameters
             {
                 Type = NotificationType.Information,

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Automations;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
@@ -34,77 +33,59 @@ namespace Wirehome.Core
     {
         private readonly SystemCancellationToken _systemCancellationToken = new SystemCancellationToken();
         private readonly SystemLaunchArguments _systemLaunchArguments;
-        private readonly ILoggerFactory _loggerFactory;
-        private ILogger _logger;
-
-        public WirehomeController(ILoggerFactory loggerFactory, string[] arguments)
+        
+        public WirehomeController(string[] arguments)
         {
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _systemLaunchArguments = new SystemLaunchArguments(arguments ?? new string[0]);
         }
 
         public void Start()
         {
-            try
-            {
-                _logger = _loggerFactory.CreateLogger<WirehomeController>();
-                _logger.LogInformation("Starting Wirehome.Core (c) Christian Kratky 2011 - 2018");
+            var serviceProvider = StartHttpServer();
 
-                var serviceProvider = StartHttpServer();
+            var systemService = serviceProvider.GetRequiredService<SystemService>();
+            systemService.Start();
 
-                _logger.LogDebug("Starting services...");
+            serviceProvider.GetRequiredService<StorageService>().Start();
+            serviceProvider.GetRequiredService<DiagnosticsService>().Start();
+            serviceProvider.GetRequiredService<MessageBusService>().Start();
 
-                serviceProvider.GetRequiredService<StorageService>().Start();
-                serviceProvider.GetRequiredService<DiagnosticsService>().Start();
-                serviceProvider.GetRequiredService<MessageBusService>().Start();
+            serviceProvider.GetRequiredService<ResourceService>().Start();
+            serviceProvider.GetRequiredService<GlobalVariablesService>().Start();
+            serviceProvider.GetRequiredService<CloudService>().Start();
 
-                serviceProvider.GetRequiredService<ResourceService>().Start();
-                serviceProvider.GetRequiredService<GlobalVariablesService>().Start();
-                serviceProvider.GetRequiredService<CloudService>().Start();
+            serviceProvider.GetRequiredService<SchedulerService>().Start();
 
-                serviceProvider.GetRequiredService<SchedulerService>().Start();
+            // Start hardware related services.
+            serviceProvider.GetRequiredService<GpioRegistryService>().Start();
+            serviceProvider.GetRequiredService<I2CBusService>().Start();
+            serviceProvider.GetRequiredService<MqttService>().Start();
+            serviceProvider.GetRequiredService<HttpServerService>().Start();
+            serviceProvider.GetRequiredService<DiscoveryService>().Start();
 
-                // Start hardware related services.
-                serviceProvider.GetRequiredService<GpioRegistryService>().Start();
-                serviceProvider.GetRequiredService<I2CBusService>().Start();
-                serviceProvider.GetRequiredService<MqttService>().Start();
-                serviceProvider.GetRequiredService<HttpServerService>().Start();
-                serviceProvider.GetRequiredService<DiscoveryService>().Start();
+            serviceProvider.GetRequiredService<PythonEngineService>().Start();
 
-                serviceProvider.GetRequiredService<PythonEngineService>().Start();
+            var startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
+            startupScriptsService.Start();
 
-                var startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
-                startupScriptsService.Start();
+            serviceProvider.GetRequiredService<FunctionPoolService>().Start();
+            serviceProvider.GetRequiredService<ServiceHostService>().Start();
 
-                serviceProvider.GetRequiredService<FunctionPoolService>().Start();
-                serviceProvider.GetRequiredService<ServiceHostService>().Start();
+            serviceProvider.GetRequiredService<NotificationsService>().Start();
 
-                serviceProvider.GetRequiredService<NotificationsService>().Start();
+            serviceProvider.GetRequiredService<HistoryService>().Start();
 
-                serviceProvider.GetRequiredService<HistoryService>().Start();
+            systemService.OnServicesInitialized();
 
-                startupScriptsService.OnServicesInitialized();
+            // Start data related services.
+            serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
+            serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
+            serviceProvider.GetRequiredService<AutomationRegistryService>().Start();
+            serviceProvider.GetRequiredService<MacroRegistryService>().Start();
 
-                // Start data related services.
-                serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
-                serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
-                serviceProvider.GetRequiredService<AutomationRegistryService>().Start();
-                serviceProvider.GetRequiredService<MacroRegistryService>().Start();
+            systemService.OnConfigurationLoaded();
 
-                _logger.LogDebug("Service startup completed.");
-
-                startupScriptsService.OnConfigurationLoaded();
-
-                var systemService = serviceProvider.GetRequiredService<SystemService>();
-                systemService.Start();
-
-                startupScriptsService.OnStartupCompleted();
-            }
-            catch (Exception exception)
-            {
-                _logger.LogCritical(exception, "Startup failed.");
-                throw;
-            }
+            systemService.OnStartupCompleted();
         }
 
         public void Stop()
@@ -114,8 +95,6 @@ namespace Wirehome.Core
 
         private IServiceProvider StartHttpServer()
         {
-            _logger.LogDebug("Starting HTTP server");
-
             // TODO: Consider writing custom WebHostBuilder to fix this hack.
             WebStartup.OnServiceRegistration = RegisterServices;
 
@@ -129,19 +108,15 @@ namespace Wirehome.Core
                         });
                 })
                 .UseStartup<WebStartup>()
-                .UseUrls("http://*:80")
                 .Build();
 
             host.Start();
-
-            _logger.LogDebug("HTTP server started.");
 
             return WebStartup.ServiceProvider;
         }
 
         private void RegisterServices(IServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton(_loggerFactory);
             serviceCollection.AddSingleton(_systemLaunchArguments);
             serviceCollection.AddSingleton(_systemCancellationToken);
 

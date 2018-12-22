@@ -4,7 +4,6 @@
 
 using System;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.Diagnostics
 {
