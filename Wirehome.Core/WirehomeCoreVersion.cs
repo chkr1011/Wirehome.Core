@@ -2,6 +2,6 @@
 {
     public static class WirehomeCoreVersion
     {
-        public static string Version => "1.0.0-alpha7";
+        public static string Version => "1.0.0-alpha8";
     }
 }
