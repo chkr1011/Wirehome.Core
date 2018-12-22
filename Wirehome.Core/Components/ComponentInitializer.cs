@@ -87,7 +87,7 @@ namespace Wirehome.Core.Components
                 // TODO: Remove "scope" as soon as it is migrated.
                 logic.SetVariable("scope", context);
                 logic.SetVariable("context", context);
-                logic.WirehomeWrapper.Add("context", context);
+                logic.AddToWirehomeWrapper("context", context);
 
                 component.SetLogic(logic);
             }
@@ -95,7 +95,7 @@ namespace Wirehome.Core.Components
             // TODO: Remove "scope" as soon as it is migrated.
             adapter.SetVariable("scope", context);
             adapter.SetVariable("context", context);
-            adapter.WirehomeWrapper.Add("context", context);
+            adapter.AddToWirehomeWrapper("context", context);
         }
     }
 }

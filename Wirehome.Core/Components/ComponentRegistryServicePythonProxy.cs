@@ -10,11 +10,11 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
-    public class MacroRegistryServicePythonProxy : IInjectedPythonProxy
+    public class ComponentRegistryServicePythonProxy : IInjectedPythonProxy
     {
         private readonly ComponentRegistryService _componentRegistryService;
 
-        public MacroRegistryServicePythonProxy(ComponentRegistryService componentRegistryService)
+        public ComponentRegistryServicePythonProxy(ComponentRegistryService componentRegistryService)
         {
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
         }
@@ -30,6 +30,21 @@ namespace Wirehome.Core.Components
             }
 
             return result;
+        }
+
+        public bool add_tag(string component_uid, string tag)
+        {
+            return _componentRegistryService.AddComponentTag(component_uid, tag);
+        }
+
+        public bool remove_tag(string component_uid, string tag)
+        {
+            return _componentRegistryService.RemoveComponentTag(component_uid, tag);
+        }
+
+        public bool has_tag(string component_uid, string tag)
+        {
+            return _componentRegistryService.ComponentHasTag(component_uid, tag);
         }
 
         public bool has_status(string component_uid, string status_uid)

@@ -21,6 +21,8 @@ namespace Wirehome.Core.Components
 
         public ConcurrentWirehomeDictionary Status { get; } = new ConcurrentWirehomeDictionary();
 
+        public ConcurrentWirehomeHashSet<string> Tags { get; } = new ConcurrentWirehomeHashSet<string>();
+
         public WirehomeDictionary ProcessMessage(WirehomeDictionary message)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));

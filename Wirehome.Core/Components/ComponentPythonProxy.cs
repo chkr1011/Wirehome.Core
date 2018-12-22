@@ -25,6 +25,21 @@ namespace Wirehome.Core.Components
             return _componentUid;
         }
 
+        public bool add_tag(string tag)
+        {
+            return _componentRegistryService.AddComponentTag(_componentUid, tag);
+        }
+
+        public bool remove_tag(string tag)
+        {
+            return _componentRegistryService.RemoveComponentTag(_componentUid, tag);
+        }
+
+        public bool has_tag(string tag)
+        {
+            return _componentRegistryService.ComponentHasTag(_componentUid, tag);
+        }
+
         public bool has_status(string status_uid)
         {
             return _componentRegistryService.ComponentHasStatus(_componentUid, status_uid);

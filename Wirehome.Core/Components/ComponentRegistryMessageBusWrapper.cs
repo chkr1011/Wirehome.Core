@@ -13,7 +13,33 @@ namespace Wirehome.Core.Components
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
         }
 
-        public void PublishStatusChangedBusMessage(string componentUid, string statusUid, object oldValue, object newValue)
+        public void PublishTagAddedEvent(string componentUid, string tag)
+        {
+            var message = new WirehomeDictionary
+            {
+                ["type"] = "component_registry.event.tag_added",
+                ["component_uid"] = componentUid,
+                ["tag"] = tag,
+                ["timestamp"] = DateTime.Now.ToString("O")
+            };
+
+            _messageBusService.Publish(message);
+        }
+
+        public void PublishTagRemovedEvent(string componentUid, string tag)
+        {
+            var message = new WirehomeDictionary
+            {
+                ["type"] = "component_registry.event.tag_removed",
+                ["component_uid"] = componentUid,
+                ["tag"] = tag,
+                ["timestamp"] = DateTime.Now.ToString("O")
+            };
+
+            _messageBusService.Publish(message);
+        }
+
+        public void PublishStatusChangedEvent(string componentUid, string statusUid, object oldValue, object newValue)
         {
             var message = new WirehomeDictionary
             {
@@ -28,7 +54,7 @@ namespace Wirehome.Core.Components
             _messageBusService.Publish(message);
         }
 
-        public void PublishSettingChangedBusMessage(string componentUid, string settingUid, object oldValue, object newValue)
+        public void PublishSettingChangedEvent(string componentUid, string settingUid, object oldValue, object newValue)
         {
             var message = new WirehomeDictionary
             {
@@ -43,7 +69,7 @@ namespace Wirehome.Core.Components
             _messageBusService.Publish(message);
         }
 
-        public void PublishSettingRemovedBusMessage(string componentUid, string settingUid, object value)
+        public void PublishSettingRemovedEvent(string componentUid, string settingUid, object value)
         {
             var message = new WirehomeDictionary
             {

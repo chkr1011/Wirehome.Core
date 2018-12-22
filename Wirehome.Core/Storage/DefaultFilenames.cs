@@ -6,6 +6,8 @@
 
         public const string Settings = "Settings.json";
 
+        public const string Tags = "Tags.json";
+
         public const string Script = "script.py";
     }
 }

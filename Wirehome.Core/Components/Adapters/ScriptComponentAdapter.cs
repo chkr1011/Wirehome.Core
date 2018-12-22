@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Model;
@@ -31,18 +30,23 @@ namespace Wirehome.Core.Components.Adapters
 
             _scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger, new ComponentPythonProxy(componentUid, _componentRegistryService));
             _scriptHost.SetVariable("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnMessageReceived);
-            _scriptHost.WirehomeWrapper.Add("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnMessageReceived);
+            _scriptHost.AddToWirehomeWrapper("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnMessageReceived);
 
             _scriptHost.Compile(script);
         }
-
-        public IDictionary<string, object> WirehomeWrapper => _scriptHost.WirehomeWrapper;
-
+        
         public void SetVariable(string name, object value)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
             _scriptHost.SetVariable(name, value);
+        }
+
+        public void AddToWirehomeWrapper(string name, object value)
+        {
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
+            _scriptHost.AddToWirehomeWrapper(name, value);
         }
 
         public WirehomeDictionary ProcessMessage(WirehomeDictionary message)
