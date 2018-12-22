@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.ServiceHost.Configuration;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Model;
 using Wirehome.Core.Packages;
 using Wirehome.Core.Python;
 using Wirehome.Core.ServiceHost.Exceptions;
 using Wirehome.Core.Storage;
+using Wirehome.Core.System;
 
 namespace Wirehome.Core.ServiceHost
 {
@@ -26,6 +29,7 @@ namespace Wirehome.Core.ServiceHost
             StorageService storageService,
             PackageManagerService repositoryService,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
+            SystemService systemService,
             SystemStatusService systemStatusService,
             ILogger<ServiceHostService> logger)
         {
@@ -36,13 +40,19 @@ namespace Wirehome.Core.ServiceHost
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("service_host.service_count", () => _services.Count);
+
+            if (systemService == null) throw new ArgumentNullException(nameof(systemService));
+            systemService.StartupCompleted += (s, e) =>
+            {
+                StartDelayedServices();
+            };
         }
 
         public void Start()
         {
             foreach (var serviceUid in GetServiceUids())
             {
-                TryInitializeService(serviceUid);
+                TryInitializeService(serviceUid, new ServiceInitializationOptions { SkipIfDelayed = true });
             }
         }
 
@@ -74,7 +84,7 @@ namespace Wirehome.Core.ServiceHost
         public void DeleteService(string id)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
-            
+
             _storageService.DeleteDirectory(ServicesDirectory, id);
         }
 
@@ -86,9 +96,10 @@ namespace Wirehome.Core.ServiceHost
             }
         }
 
-        public void InitializeService(string id)
+        public void InitializeService(string id, ServiceInitializationOptions options)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
+            if (options == null) throw new ArgumentNullException(nameof(options));
 
             try
             {
@@ -100,6 +111,16 @@ namespace Wirehome.Core.ServiceHost
                 if (!configuration.IsEnabled)
                 {
                     _logger.LogInformation($"Service '{id}' not initialized because it is disabled.");
+                    return;
+                }
+
+                if (configuration.DelayedStart && options.SkipIfDelayed)
+                {
+                    return;
+                }
+
+                if (!configuration.DelayedStart && options.SkipIfNotDelayed)
+                {
                     return;
                 }
 
@@ -135,13 +156,14 @@ namespace Wirehome.Core.ServiceHost
             }
         }
 
-        public void TryInitializeService(string id)
+        public void TryInitializeService(string id, ServiceInitializationOptions options)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
-            
+            if (options == null) throw new ArgumentNullException(nameof(options));
+
             try
             {
-                InitializeService(id);           
+                InitializeService(id, options);
             }
             catch (Exception exception)
             {
@@ -167,6 +189,16 @@ namespace Wirehome.Core.ServiceHost
             return serviceInstance.ExecuteFunction(functionName, parameters);
         }
 
+        private void StartDelayedServices()
+        {
+            _logger.LogInformation("Starting delayed services.");
+
+            foreach (var serviceUid in GetServiceUids())
+            {
+                TryInitializeService(serviceUid, new ServiceInitializationOptions { SkipIfNotDelayed = true });
+            }
+        }
+
         private ServiceInstance CreateServiceInstance(string id, ServiceConfiguration configuration)
         {
             var packageUid = new PackageUid(id, configuration.Version);
@@ -174,6 +206,14 @@ namespace Wirehome.Core.ServiceHost
 
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
             scriptHost.Compile(package.Script);
+
+            var context = new WirehomeDictionary
+            {
+                ["service_id"] = id,
+                [ "service_version" ] = configuration.Version
+            };
+
+            scriptHost.AddToWirehomeWrapper("context", context);
 
             var serviceInstance = new ServiceInstance(id, configuration, scriptHost);
 
