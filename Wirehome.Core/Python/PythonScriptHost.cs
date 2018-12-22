@@ -11,14 +11,20 @@ namespace Wirehome.Core.Python
     public class PythonScriptHost
     {
         private readonly ScriptScope _scriptScope;
+        private readonly IDictionary<string, object> _wirehomeWrapper;
         
         public PythonScriptHost(ScriptScope scriptScope, IDictionary<string, object> wirehomeWrapper)
         {
-            WirehomeWrapper = wirehomeWrapper ?? throw new ArgumentNullException(nameof(wirehomeWrapper));
             _scriptScope = scriptScope ?? throw new ArgumentNullException(nameof(scriptScope));
+            _wirehomeWrapper = wirehomeWrapper ?? throw new ArgumentNullException(nameof(wirehomeWrapper));
         }
 
-        public IDictionary<string, object> WirehomeWrapper { get; }
+        public void AddToWirehomeWrapper(string name, object value)
+        {
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
+            _wirehomeWrapper.Add(name, value);
+        }
 
         public void Compile(string scriptCode)
         {

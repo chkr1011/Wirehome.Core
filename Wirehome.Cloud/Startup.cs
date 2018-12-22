@@ -90,7 +90,7 @@ namespace Wirehome.Cloud
         {
             app.UseMvc(config =>
             {
-                config.MapRoute("default", "api/{controller}/{action}/{id?}", null, null, null);
+                config.MapRoute("default", "cloud/{controller}/{action=Index}/{id?}", null, null, null);
             });
         }
 

@@ -1,0 +1,26 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Login - Wirehome.Cloud</title>
+</head>
+<body>
+
+<img src="~/Cloud/Images/Banner.png" height="64px"/>
+<form action="/Cloud/Account/Login" method="post">
+    User:<br>
+    <input type="text" name="user"><br>
+    Password:<br>
+    <input type="password" name="password"><br>
+    Channel:<br>
+    <input type="text" name="channel" value="default"><br>
+    <input type="submit" value="Login">
+</form>
+</body>
+</html>

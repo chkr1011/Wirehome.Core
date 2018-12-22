@@ -9,7 +9,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using IronPython.Runtime;
-using Newtonsoft.Json.Linq;
 
 namespace Wirehome.Core.Python.Proxies
 {
@@ -98,15 +97,6 @@ namespace Wirehome.Core.Python.Proxies
             }
 
             return new List { PythonConvert.ToPython(value) };
-        }
-
-        // TODO: Move to "JsonPythonProxy (deserialize(json), serialize(source))
-        [Obsolete]
-        public object deserialize_json(object source)
-        {
-            var jsonText = to_string(source);
-            var json = JToken.Parse(jsonText);
-            return PythonConvert.ToPython(json);
         }
 
         public List ulong_to_list(ulong buffer, int length)

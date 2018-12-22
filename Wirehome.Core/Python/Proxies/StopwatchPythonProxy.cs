@@ -62,7 +62,7 @@ namespace Wirehome.Core.Python.Proxies
             }
         }
 
-        public object get_elapsed_millies(string uid)
+        public object get_elapsed_millis(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 

@@ -76,6 +76,11 @@ namespace Wirehome.Core.Python
                 return value;
             }
 
+            if (value is MulticastDelegate)
+            {
+                return value;
+            }
+
             if (value is IPythonConvertible pythonConvertible)
             {
                 return pythonConvertible.ConvertToPython();

@@ -25,7 +25,7 @@ namespace Wirehome.Cloud.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<JToken> GetPing()
         {
-            var authorizationContext = _authorizationService.AuthorizeBasic(HttpContext);
+            var authorizationContext = _authorizationService.AuthorizeHttpCall(HttpContext);
 
             var request = new CloudMessage
             {
@@ -43,7 +43,7 @@ namespace Wirehome.Cloud.Controllers
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
 
-            var authorizationContext = _authorizationService.AuthorizeBasic(HttpContext);
+            var authorizationContext = _authorizationService.AuthorizeHttpCall(HttpContext);
 
             var request = new CloudMessage
             {

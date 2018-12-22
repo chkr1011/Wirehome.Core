@@ -61,6 +61,7 @@ namespace Wirehome.Core.Python
             }
 
             scriptScope.SetVariable("wirehome", wirehomeWrapper);
+
             return new PythonScriptHost(scriptScope, wirehomeWrapper);
         }
 

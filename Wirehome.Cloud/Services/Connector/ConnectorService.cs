@@ -93,7 +93,7 @@ namespace Wirehome.Cloud.Services.Connector
             {
                 context.Response.Headers.Add("Wirehome-Cloud-Enter", new StringValues(DateTime.UtcNow.ToString("O")));
 
-                var authorizationContext = _authorizationService.AuthorizeBasic(context);
+                var authorizationContext = _authorizationService.AuthorizeHttpCall(context);
 
                 var requestContent = new HttpRequestMessageContent
                 {

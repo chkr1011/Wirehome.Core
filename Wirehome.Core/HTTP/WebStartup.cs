@@ -35,6 +35,13 @@ namespace Wirehome.Core.HTTP
         {
             if (services == null) throw new ArgumentNullException(nameof(services));
 
+            services.AddLogging(options =>
+            {
+                options.AddFilter("Wirehome", LogLevel.Trace);
+                options.AddFilter("Microsoft", LogLevel.Warning);
+                options.AddConsole();
+            });
+
             var mvcBuilder = services.AddMvc(config => config.Filters.Add(new NotFoundExceptionFilter()));
             mvcBuilder.ConfigureApplicationPartManager(manager =>
             {

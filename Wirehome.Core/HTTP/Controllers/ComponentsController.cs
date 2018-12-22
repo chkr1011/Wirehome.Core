@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Components;
@@ -178,6 +179,57 @@ namespace Wirehome.Core.HTTP.Controllers
             }
 
             return value;
+        }
+
+        [HttpGet]
+        [Route("/api/v1/components/{componentUid}/tags")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<string> GetTags(string componentUid)
+        {
+            var component = _componentRegistryService.GetComponent(componentUid);
+            return component.Tags.ToList();
+        }
+
+        [HttpGet]
+        [Route("/api/v1/components/{componentUid}/tags/{tag}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public string GetTag(string componentUid, string tag)
+        {
+            var component = _componentRegistryService.GetComponent(componentUid);
+            if (!component.Tags.Contains(tag))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
+
+            return tag;
+        }
+
+        [HttpGet]
+        [Route("/api/v1/tags/{tag}/components")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<string> GetComponentsWithTag(string componentUid, string tag)
+        {
+            var components = _componentRegistryService.GetComponentsWithTag(tag);
+            return components.Select(c => c.Uid).ToList();
+        }
+
+        [HttpPost]
+        [Route("/api/v1/components/{componentUid}/tags/{tag}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void AddTag(string componentUid, string tag)
+        {
+            var component = _componentRegistryService.GetComponent(componentUid);
+            component.Tags.Add(tag);
+        }
+
+        [HttpDelete]
+        [Route("/api/v1/components/{componentUid}/tags/{tag}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteTag(string componentUid, string tag)
+        {
+            var component = _componentRegistryService.GetComponent(componentUid);
+            component.Tags.Remove(tag);
         }
     }
 }

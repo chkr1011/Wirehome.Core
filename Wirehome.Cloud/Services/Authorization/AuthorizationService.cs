@@ -20,7 +20,7 @@ namespace Wirehome.Cloud.Services.Authorization
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
         }
 
-        public AuthorizationContext AuthorizeBasic(HttpContext httpContext)
+        public AuthorizationContext AuthorizeHttpCall(HttpContext httpContext)
         {
             if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 

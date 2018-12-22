@@ -43,7 +43,7 @@ namespace Wirehome.Core.HTTP
 
             try
             {
-                var result = _handler(arguments);
+                var result = _handler(arguments) ?? new WirehomeDictionary();
                 converter.UnwrapContext(result, context);
                 return true;
             }
