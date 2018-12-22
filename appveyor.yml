@@ -4,7 +4,9 @@ configuration: Release
 before_build:
 - cmd: >-
     msbuild /t:restore Wirehome.sln
+    
     cd Wirehome.Configurator
+    
     npm install
 build:
   project: Wirehome.sln
