@@ -179,7 +179,7 @@ namespace Wirehome.Core.HTTP
 
             app.UseSwaggerUI(o =>
             {
-                o.DocumentTitle = "Wirehome.Swagger";
+                o.DocumentTitle = "Wirehome.API";
                 o.SwaggerEndpoint("/api/v1/swagger.json", "Wirehome.Core API v1");
                 o.DisplayRequestDuration();
                 o.DocExpansion(DocExpansion.None);
