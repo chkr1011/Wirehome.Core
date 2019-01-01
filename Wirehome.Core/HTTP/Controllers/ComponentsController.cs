@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Components;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Exceptions;
+using Wirehome.Core.Constants;
 using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
@@ -84,6 +85,22 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpPost]
+        [Route("api/v1/components/{uid}/enable")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public WirehomeDictionary PostEnable(string uid)
+        {
+            return _componentRegistryService.EnableComponent(uid);
+        }
+
+        [HttpPost]
+        [Route("api/v1/components/{uid}/disable")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public WirehomeDictionary PostDisable(string uid)
+        {
+            return _componentRegistryService.DisableComponent(uid);
+        }
+
+        [HttpPost]
         [Route("/api/v1/components/{uid}/process_message")]
         [ApiExplorerSettings(GroupName = "v1")]
         public WirehomeDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message)
@@ -131,6 +148,15 @@ namespace Wirehome.Core.HTTP.Controllers
         public ConcurrentWirehomeDictionary GetStatusValues(string uid)
         {
             return _componentRegistryService.GetComponent(uid).Status;
+        }
+
+
+        [HttpGet]
+        [Route("/api/v1/components/{uid}/debug_information")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public WirehomeDictionary GetDebugInformation(string uid, [FromBody] WirehomeDictionary parameters)
+        {
+            return _componentRegistryService.GetComponent(uid).GetDebugInformation(parameters);
         }
 
         [HttpGet]

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Wirehome.Core.Automations;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
 using Wirehome.Core.Contracts;
@@ -80,7 +79,6 @@ namespace Wirehome.Core
             // Start data related services.
             serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
             serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
-            serviceProvider.GetRequiredService<AutomationRegistryService>().Start();
             serviceProvider.GetRequiredService<MacroRegistryService>().Start();
 
             systemService.OnConfigurationLoaded();

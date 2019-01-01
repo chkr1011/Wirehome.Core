@@ -27,12 +27,14 @@ namespace Wirehome.Core.Components
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
-            if (_logic == null)
-            {
-                throw new InvalidOperationException("A component requires a logic to process messages.");
-            }
-
+            ThrowIfLogicNotSet();
             return _logic.ProcessMessage(message);
+        }
+
+        public WirehomeDictionary GetDebugInformation(WirehomeDictionary parameters)
+        {
+            ThrowIfLogicNotSet();
+            return _logic.GetDebugInformation(parameters);
         }
 
         public void SetLogic(IComponentLogic logic)
@@ -43,6 +45,14 @@ namespace Wirehome.Core.Components
             }
 
             _logic = logic ?? throw new ArgumentNullException(nameof(logic));
+        }
+
+        private void ThrowIfLogicNotSet()
+        {
+            if (_logic == null)
+            {
+                throw new InvalidOperationException("A component requires a logic to process messages.");
+            }
         }
     }
 }

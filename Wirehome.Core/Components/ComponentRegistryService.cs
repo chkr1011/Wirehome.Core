@@ -83,6 +83,26 @@ namespace Wirehome.Core.Components
             _storageService.DeleteDirectory(ComponentsDirectory, uid);
         }
 
+        public WirehomeDictionary EnableComponent(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            var result = ProcessComponentMessage(uid, new WirehomeDictionary().WithType(ControlType.Enable));
+            _messageBusWrapper.PublishEnabledEvent(uid);
+
+            return result;
+        }
+
+        public WirehomeDictionary DisableComponent(string uid)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            var result = ProcessComponentMessage(uid, new WirehomeDictionary().WithType(ControlType.Enable));
+            _messageBusWrapper.PublishDisabledEvent(uid);
+
+            return result;
+        }
+
         public void InitializeComponent(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
@@ -405,7 +425,7 @@ namespace Wirehome.Core.Components
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (message == null) throw new ArgumentNullException(nameof(message));
 
-            Component component = GetComponent(componentUid);
+            var component = GetComponent(componentUid);
 
             try
             {

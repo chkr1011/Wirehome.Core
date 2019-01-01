@@ -5,11 +5,11 @@ using Wirehome.Core.Model;
 
 namespace Wirehome.Core.Components.Logic
 {
-    public class EmptyLogic : IComponentLogic
+    public class EmptyComponentLogic : IComponentLogic
     {
         private readonly IComponentAdapter _adapter;
 
-        public EmptyLogic(IComponentAdapter adapter)
+        public EmptyComponentLogic(IComponentAdapter adapter)
         {
             _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         }
@@ -19,10 +19,8 @@ namespace Wirehome.Core.Components.Logic
             return _adapter.ProcessMessage(parameters);
         }
 
-        public WirehomeDictionary ProcessAdapterMessage(WirehomeDictionary parameters)
+        public WirehomeDictionary GetDebugInformation(WirehomeDictionary parameters)
         {
-            // The empty logic has no logic. So it cannot do anything with incoming messages
-            // from the adapter.
             return new WirehomeDictionary().WithType(ControlType.NotSupportedException);
         }
     }

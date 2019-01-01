@@ -13,6 +13,30 @@ namespace Wirehome.Core.Components
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
         }
 
+        public void PublishEnabledEvent(string componentUid)
+        {
+            var message = new WirehomeDictionary
+            {
+                ["type"] = "component_registry.event.enabled",
+                ["component_uid"] = componentUid,
+                ["timestamp"] = DateTime.Now.ToString("O")
+            };
+
+            _messageBusService.Publish(message);
+        }
+
+        public void PublishDisabledEvent(string componentUid)
+        {
+            var message = new WirehomeDictionary
+            {
+                ["type"] = "component_registry.event.disabled",
+                ["component_uid"] = componentUid,
+                ["timestamp"] = DateTime.Now.ToString("O")
+            };
+
+            _messageBusService.Publish(message);
+        }
+
         public void PublishTagAddedEvent(string componentUid, string tag)
         {
             var message = new WirehomeDictionary

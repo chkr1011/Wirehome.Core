@@ -50,6 +50,7 @@ namespace Wirehome.Core.Cloud
             using (var streamWriter = new StreamWriter(messageBuffer))
             {
                 _serializer.Serialize(streamWriter, message);
+
                 await streamWriter.FlushAsync().ConfigureAwait(false);
                 messageBuffer.Position = 0;
 
@@ -83,7 +84,7 @@ namespace Wirehome.Core.Cloud
 
                     if (result.Count > 0)
                     {
-                        messageBuffer.Write(_receiveBuffer.Array, 0, result.Count);
+                        await messageBuffer.WriteAsync(_receiveBuffer.Array, 0, result.Count, cancellationToken).ConfigureAwait(false);
                     }
                 } while (!result.EndOfMessage && _webSocket.State == WebSocketState.Open);
 

@@ -35,6 +35,10 @@
     border: 0 !important;
 }
 
+.action-button {
+    min-width: 60px;
+}
+
 * {
     border-radius: 0 !important;
 }
@@ -48,13 +52,6 @@ body {
 .no-component-view-found {
     font-size: 12pt;
     text-align: center;
-}
-
-.display {
-    padding: 10px; 
-    background: navy; 
-    color: white; 
-    font-family: 'Courier New', Courier, monospace
 }
 
 .component-status-text {
@@ -74,10 +71,6 @@ body {
 .slider-legend {
     height: 16px;
     width: 100%;
-}
-
-.action-button {
-    min-width: 60px;
 }
 
 .version-text {
@@ -101,11 +94,6 @@ body {
     vertical-align: text-bottom;
 }
 
-.weather-station-icon {
-    font-size: 22px;
-    color: #427AB6;
-}
-
 .ui-content {
     margin-top: 0;
     padding-top: 0;
@@ -115,36 +103,6 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.status-icon {
-    font-size: 18px;
-    margin-top: 7px;
-}
-
-.status-icon-ok {
-    color: #5cb85c;
-}
-
-.status-icon-warning {
-    color: #f0ad4e;
-}
-
-.status-icon-danger {
-    color: #d9534f;
-}
-
-.status-icon-default {
-    color: lightgray;
-}
-
-.window-status {
-    font-size: 12px;
-    min-width: 125px;
-}
-
-.window-status-icon {
-    margin-right: 10px;
 }
 
 .loading-body{
@@ -184,22 +142,6 @@ body {
 
 .pointer {
     cursor: pointer;
-}
-
-.sensor-value {
-    font-size: 18px;
-    margin-left: 10px;
-    float: right
-}
-
-.weather-condition-text {
-    font-size: 12pt;
-    vertical-align: middle;
-}
-
-.weather-condition-image {
-    width: 64px;
-    height: 64px;
 }
 
 .loadingAnimation {

@@ -1,6 +1,7 @@
 ﻿using System;
 using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Constants;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
 
@@ -8,6 +9,10 @@ namespace Wirehome.Core.Components.Logic
 {
     public class ScriptComponentLogic : IComponentLogic
     {
+        private const string ProcessLogicMessageFunctionName = "process_logic_message";
+        private const string ProcessAdapterMessageFunctionName = "process_adapter_message";
+        private const string GetDebugInformationFunctionName = "get_debug_information";
+
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         private readonly ComponentRegistryService _componentRegistryService;
         private readonly ILogger _logger;
@@ -24,7 +29,7 @@ namespace Wirehome.Core.Components.Logic
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Func<WirehomeDictionary, WirehomeDictionary> AdapterMessagePublishedCallback { get; set; }
+        public PythonDelegates.CallbackWithResultDelegate AdapterMessagePublishedCallback { get; set; }
 
         public void Compile(string componentUid, string script)
         {
@@ -34,6 +39,8 @@ namespace Wirehome.Core.Components.Logic
             _scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger, new ComponentPythonProxy(componentUid, _componentRegistryService));
             _scriptHost.SetVariable("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnAdapterMessagePublished);
             _scriptHost.AddToWirehomeWrapper("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnAdapterMessagePublished);
+
+            // TODO: Consider adding debugger here and move enable/disable/getTrace to IComponentLogic and enable via HTTP API.
 
             _scriptHost.Compile(script);
         }
@@ -54,13 +61,28 @@ namespace Wirehome.Core.Components.Logic
 
         public WirehomeDictionary ProcessMessage(WirehomeDictionary message)
         {
-            var result = _scriptHost.InvokeFunction("process_logic_message", message);
+            var result = _scriptHost.InvokeFunction(ProcessLogicMessageFunctionName, message);
             return result as WirehomeDictionary ?? new WirehomeDictionary();
+        }
+
+        public WirehomeDictionary GetDebugInformation(WirehomeDictionary parameters)
+        {
+            if (!_scriptHost.FunctionExists(GetDebugInformationFunctionName))
+            {
+                return new WirehomeDictionary().WithType(ControlType.NotSupportedException);
+            }
+
+            if (!(_scriptHost.InvokeFunction(GetDebugInformationFunctionName, parameters) is WirehomeDictionary result))
+            {
+                return new WirehomeDictionary().WithType(ControlType.ReturnValueTypeMismatchException);
+            }
+
+            return result;
         }
 
         public WirehomeDictionary ProcessAdapterMessage(WirehomeDictionary message)
         {
-            var result = _scriptHost.InvokeFunction("process_adapter_message", message);
+            var result = _scriptHost.InvokeFunction(ProcessAdapterMessageFunctionName, message);
             return result as WirehomeDictionary ?? new WirehomeDictionary();
         }
 

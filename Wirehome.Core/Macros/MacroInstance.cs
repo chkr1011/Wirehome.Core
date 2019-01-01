@@ -73,7 +73,11 @@ namespace Wirehome.Core.Macros
             {
                 try
                 {
-                    _scriptHost.InvokeFunction("execute");
+                    var scriptResult = _scriptHost.InvokeFunction("execute");
+                    if (scriptResult is WirehomeDictionary wirehomeDictionary)
+                    {
+                        return wirehomeDictionary;
+                    }
                 }
                 catch (Exception exception)
                 {

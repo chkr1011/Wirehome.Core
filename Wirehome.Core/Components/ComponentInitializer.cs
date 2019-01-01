@@ -41,26 +41,39 @@ namespace Wirehome.Core.Components
                 ["component_uid"] = component.Uid
             };
 
-            var adapterPackage = _packageManagerService.LoadPackage(configuration.Logic.Adapter.Uid);
+            Package adapterPackage = null;
+            IComponentAdapter adapter;
+            ScriptComponentAdapter scriptAdapter = null;
 
-            var adapter = new ScriptComponentAdapter(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentAdapterLogger);
-            adapter.Compile(component.Uid, adapterPackage.Script);
-
-            if (configuration.Logic.Adapter.Variables != null)
+            if (configuration.Logic?.Adapter?.Uid != null)
             {
-                foreach (var parameter in configuration.Logic.Adapter.Variables)
+                adapterPackage = _packageManagerService.LoadPackage(configuration.Logic.Adapter.Uid);
+
+                scriptAdapter = new ScriptComponentAdapter(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentAdapterLogger);
+                scriptAdapter.Compile(component.Uid, adapterPackage.Script);
+
+                if (configuration.Logic.Adapter.Variables != null)
                 {
-                    adapter.SetVariable(parameter.Key, parameter.Value);
+                    foreach (var parameter in configuration.Logic.Adapter.Variables)
+                    {
+                        scriptAdapter.SetVariable(parameter.Key, parameter.Value);
+                    }
                 }
+
+                adapter = scriptAdapter;
             }
-
-            context["adapter_uid"] = adapterPackage.Uid.ToString();
-            context["adapter_id"] = adapterPackage.Uid.Id;
-            context["adapter_version"] = adapterPackage.Uid.Version;
-
-            if (string.IsNullOrEmpty(configuration.Logic.Uid?.Id))
+            else
             {
-                component.SetLogic(new EmptyLogic(adapter));
+                adapter = new EmptyComponentAdapter();
+            }
+            
+            context["adapter_uid"] = adapterPackage?.Uid?.ToString();
+            context["adapter_id"] = adapterPackage?.Uid?.Id;
+            context["adapter_version"] = adapterPackage?.Uid?.Version;
+
+            if (string.IsNullOrEmpty(configuration.Logic?.Uid?.Id))
+            {
+                component.SetLogic(new EmptyComponentLogic(adapter));
             }
             else
             {
@@ -84,18 +97,12 @@ namespace Wirehome.Core.Components
                 context["logic_id"] = logicPackage.Uid.Id;
                 context["logic_version"] = logicPackage.Uid.Version;
 
-                // TODO: Remove "scope" as soon as it is migrated.
-                logic.SetVariable("scope", context);
-                logic.SetVariable("context", context);
                 logic.AddToWirehomeWrapper("context", context);
 
                 component.SetLogic(logic);
             }
 
-            // TODO: Remove "scope" as soon as it is migrated.
-            adapter.SetVariable("scope", context);
-            adapter.SetVariable("context", context);
-            adapter.AddToWirehomeWrapper("context", context);
+            scriptAdapter?.AddToWirehomeWrapper("context", context);
         }
     }
 }

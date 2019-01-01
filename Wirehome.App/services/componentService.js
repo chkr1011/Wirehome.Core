@@ -1,22 +1,6 @@
 ﻿function createComponentService(apiService, modalService) {
     var srv = this;
 
-    srv.enable = function (component) {
-        apiService.executePost("/api/v1/components/" + component.uid + "/settings/is_enabled", true);
-    };
-
-    srv.disable = function (component) {
-        apiService.executePost("/api/v1/components/" + component.uid + "/settings/is_enabled", false);
-    };
-
-    srv.toggleIsEnabled = function (component) {
-        if (component.getSetting("is_enabled", true) === true) {
-            srv.disable(component);
-        } else {
-            srv.enable(component);
-        }
-    };
-
     srv.sendMessage = function (componentUid, message) {
         apiService.executePost(
             "/api/v1/components/" + componentUid + "/process_message",
@@ -27,6 +11,10 @@
                     modalService.show("Processing component message failed!", JSON.stringify(response));
 
                     return;
+                }
+
+                if (response["message"] !== undefined) {
+                    modalService.show("Command executed", response["message"]);
                 }
 
                 if (srv.componentUpdatedCallback !== undefined) {

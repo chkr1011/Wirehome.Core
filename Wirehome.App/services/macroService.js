@@ -9,6 +9,10 @@
                     modalService.show("Executing macro failed!", JSON.stringify(response));
                     return;
                 }
+
+                if (response["message"] !== undefined) {
+                    modalService.show("Macro executed", response["message"]);
+                }
             });
     };
 
