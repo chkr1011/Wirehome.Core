@@ -12,7 +12,7 @@ namespace Wirehome.Core.Python.Proxies.OS
     {
         public static implicit operator LaunchParamters(PythonDictionary pythonDictionary)
         {
-            return Create<LaunchParamters>(pythonDictionary);
+            return PythonConvert.CreateModel<LaunchParamters>(pythonDictionary);
         }
 
         public string FileName { get; set; }

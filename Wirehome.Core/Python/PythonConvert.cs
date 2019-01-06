@@ -13,6 +13,31 @@ namespace Wirehome.Core.Python
 {
     public static class PythonConvert
     {
+        public static TModel CreateModel<TModel>(PythonDictionary pythonDictionary) where TModel : class, new()
+        {
+            if (pythonDictionary == null)
+            {
+                return null;
+            }
+
+            var model = Activator.CreateInstance<TModel>();
+
+            var properties = typeof(TModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var property in properties)
+            {
+                var key = PythonfyPropertyName(property.Name);
+                if (!pythonDictionary.TryGetValue(key, out var value))
+                {
+                    continue;
+                }
+
+                value = Convert.ChangeType(value, property.PropertyType);
+                property.SetValue(model, value);
+            }
+
+            return model;
+        }
+
         public static JToken FromPythonToJson(object value)
         {
             if (value is PythonDictionary d)

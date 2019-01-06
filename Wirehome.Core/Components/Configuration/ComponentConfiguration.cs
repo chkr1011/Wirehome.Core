@@ -7,7 +7,7 @@ namespace Wirehome.Core.Components.Configuration
 
         public string Description { get; set; }
         
-        public bool DelayedStart { get; set; }
+        public int InitializationPhase { get; set; }
 
         public ComponentLogicConfiguration Logic { get; set; }
     }

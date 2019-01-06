@@ -96,6 +96,17 @@
                 });
         }));
 
+        promises.push(new Promise(function (resolve, reject) {
+            $http.get("/api/v1/app/panels").then(
+                function (response) {
+                    status.panels = response.data;
+                    resolve();
+                },
+                function () {
+                    reject();
+                });
+        }));
+
         Promise.all(promises).then(
             function () { successHandler(status); },
             function () { errorHandler(); });

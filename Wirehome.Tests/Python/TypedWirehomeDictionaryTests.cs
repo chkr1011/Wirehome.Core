@@ -1,6 +1,7 @@
 ﻿using IronPython.Runtime;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Wirehome.Core.Model;
+using Wirehome.Core.Python;
 
 namespace Wirehome.Tests.Python
 {
@@ -11,7 +12,7 @@ namespace Wirehome.Tests.Python
         {
             public static implicit operator TestModel(PythonDictionary pythonDictionary)
             {
-                return Create<TestModel>(pythonDictionary);
+                return PythonConvert.CreateModel<TestModel>(pythonDictionary);
             }
 
             public string AString { get; set; } = "Hello";

@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE HTML>
-<html manifest="cache.manifest">
+<html>
 
 <head>
     <meta charset="utf-8">
@@ -30,10 +30,11 @@
     <div ng-include="'views/modalTemplate.html'"></div>
 
     <div class="container-fluid" id="content" ng-show="ctrl.isInitialized">
-        <div ng-include="'views/panels/notificationsPanelTemplate.html'"></div>
-        <div ng-include="'views/panels/weatherStationPanelTemplate.html'"></div>
-        <div ng-include="'views/panels/componentGroupsPanelTemplate.html'"></div>
-        <div ng-include="'views/panels/footerPanelTemplate.html'"></div>
+        <div ng-include="'views/notificationsContainerTemplate.html'"></div>
+        
+        <div ng-repeat="panel in ctrl.panels | orderBy:['positionIndex']" ng-include="panel.viewSource"></div>
+
+        <div ng-include="'views/footerContainerTemplate.html'"></div>
     </div>
 
     <link rel="stylesheet" type="text/css" href="contents/bootstrap.min.css" />

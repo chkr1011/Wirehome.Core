@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using IronPython.Runtime;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.ServiceHost.Configuration;
@@ -50,9 +50,9 @@ namespace Wirehome.Core.ServiceHost
 
         public void Start()
         {
-            foreach (var serviceUid in GetServiceUids())
+            foreach (var serviceUid in ReadServiceConfigurations().Where(i => !i.Value.DelayedStart).Select(i => i.Key))
             {
-                TryInitializeService(serviceUid, new ServiceInitializationOptions { SkipIfDelayed = true });
+                TryInitializeService(serviceUid);
             }
         }
 
@@ -96,10 +96,9 @@ namespace Wirehome.Core.ServiceHost
             }
         }
 
-        public void InitializeService(string id, ServiceInitializationOptions options)
+        public void InitializeService(string id)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
-            if (options == null) throw new ArgumentNullException(nameof(options));
 
             try
             {
@@ -111,16 +110,6 @@ namespace Wirehome.Core.ServiceHost
                 if (!configuration.IsEnabled)
                 {
                     _logger.LogInformation($"Service '{id}' not initialized because it is disabled.");
-                    return;
-                }
-
-                if (configuration.DelayedStart && options.SkipIfDelayed)
-                {
-                    return;
-                }
-
-                if (!configuration.DelayedStart && options.SkipIfNotDelayed)
-                {
                     return;
                 }
 
@@ -156,14 +145,13 @@ namespace Wirehome.Core.ServiceHost
             }
         }
 
-        public void TryInitializeService(string id, ServiceInitializationOptions options)
+        public void TryInitializeService(string id)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
-            if (options == null) throw new ArgumentNullException(nameof(options));
 
             try
             {
-                InitializeService(id, options);
+                InitializeService(id);
             }
             catch (Exception exception)
             {
@@ -193,10 +181,24 @@ namespace Wirehome.Core.ServiceHost
         {
             _logger.LogInformation("Starting delayed services.");
 
+            foreach (var serviceUid in ReadServiceConfigurations().Where(i => i.Value.DelayedStart).Select(i => i.Key))
+            {
+                TryInitializeService(serviceUid);
+            }
+        }
+
+        private Dictionary<string, ServiceConfiguration> ReadServiceConfigurations()
+        {
+            var serviceConfigurations = new Dictionary<string, ServiceConfiguration>();
             foreach (var serviceUid in GetServiceUids())
             {
-                TryInitializeService(serviceUid, new ServiceInitializationOptions { SkipIfNotDelayed = true });
+                if (_storageService.TryRead(out ServiceConfiguration serviceConfiguration, ServicesDirectory, serviceUid, DefaultFilenames.Configuration))
+                {
+                    serviceConfigurations.Add(serviceUid, serviceConfiguration);
+                }
             }
+
+            return serviceConfigurations;
         }
 
         private ServiceInstance CreateServiceInstance(string id, ServiceConfiguration configuration)
@@ -210,7 +212,8 @@ namespace Wirehome.Core.ServiceHost
             var context = new WirehomeDictionary
             {
                 ["service_id"] = id,
-                [ "service_version" ] = configuration.Version
+                ["service_version" ] = configuration.Version,
+                ["service_uid"] = new PackageUid(id, configuration.Version).ToString()
             };
 
             scriptHost.AddToWirehomeWrapper("context", context);

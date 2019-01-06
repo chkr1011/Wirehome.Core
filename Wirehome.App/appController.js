@@ -5,9 +5,10 @@ function createAppController($http, $scope, apiService, localizationService, com
 
     c.version = "-";
     c.notifications = [];
+    c.panels = [];
     c.componentGroups = [];
     c.globalVariables = {};
-
+    
     c.notificationService = notificationService;
     c.componentService = componentService;
     c.macroService = macroService;
@@ -168,15 +169,22 @@ function createAppController($http, $scope, apiService, localizationService, com
 
         c.notifications = status.notifications;
         c.globalVariables = status.global_variables;
+        c.panels = status.panels;
+        c.panels.push({
+            uid: "componentGroups",
+            positionIndex: 0,
+            viewSource: "views/componentGroupsPanelTemplate.html"
+        });
+
         c.isInitialized = true;
     };
 
     c.configureMacro = function (model, source, componentGroupModel) {
         model.source = source;
 
-        model.template = getValue(source.configuration, "app.view_source", null);
-        if (model.template === undefined || model.template === null) {
-            model.template = "views/viewMissingTemplateView.html";
+        model.viewSource = getValue(source.configuration, "app.view_source", null);
+        if (model.viewSource === undefined || model.viewSource === null) {
+            model.viewSource = "views/viewMissingTemplateView.html";
         }
 
         var associationSettings = componentGroupModel.source.macros[model.uid].settings;
@@ -186,9 +194,9 @@ function createAppController($http, $scope, apiService, localizationService, com
     c.configureComponent = function (model, source, componentGroupModel) {
         model.source = source;
 
-        model.template = getValue(source.configuration, "app.view_source", null);
-        if (model.template === undefined || model.template === null) {
-            model.template = "views/viewMissingTemplateView.html";
+        model.viewSource = getValue(source.configuration, "app.view_source", null);
+        if (model.viewSource === undefined || model.viewSource === null) {
+            model.viewSource = "views/viewMissingTemplateView.html";
         }
 
         var associationSettings = componentGroupModel.source.components[model.uid].settings;
@@ -211,11 +219,8 @@ function createAppController($http, $scope, apiService, localizationService, com
             });
     };
 
-    $http.get("cache.manifest").then(function (response) {
-        var parser = new RegExp("# version: ([0-9|.]*)", "");
-        var results = parser.exec(response.data);
-
-        c.version = results[1];
+    $http.get("version.txt").then(function (response) {
+        c.version = response.data;
     });
 
     componentService.componentUpdatedCallback = c.applyNewComponentStatus;

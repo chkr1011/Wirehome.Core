@@ -117,6 +117,21 @@ namespace Wirehome.Core.Storage
             return true;
         }
 
+        public bool TryReadBinText(out string value, params string[] path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            var filename = Path.Combine(BinPath, Path.Combine(path));
+            if (!File.Exists(filename))
+            {
+                value = null;
+                return false;
+            }
+
+            value = File.ReadAllText(filename, Encoding.UTF8);
+            return true;
+        }
+
         public bool TryReadRaw(out byte[] content, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));

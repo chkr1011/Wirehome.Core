@@ -48,9 +48,15 @@ namespace Wirehome.Core.Components
 
         public void Start()
         {
-            foreach (var componentUid in GetComponentUids())
+            var componentConfigurations = ReadComponentConfigurations();
+            var initializationPhases = componentConfigurations.GroupBy(i => i.Value.InitializationPhase).OrderBy(p => p.Key);
+
+            foreach (var initializationPhase in initializationPhases)
             {
-                TryInitializeComponent(componentUid);
+                foreach (var componentUid in initializationPhase)
+                {
+                    TryInitializeComponent(componentUid.Key);
+                }
             }
 
             AttachToMessageBus();
@@ -446,6 +452,20 @@ namespace Wirehome.Core.Components
         {
             var filter = new WirehomeDictionary().WithType("component_registry.process_message");
             _messageBusService.Subscribe("component_registry.process_message", filter, OnBusMessageExecuteCommand);
+        }
+
+        private Dictionary<string, ComponentConfiguration> ReadComponentConfigurations()
+        {
+            var componentConfigurations = new Dictionary<string, ComponentConfiguration>();
+            foreach (var componentUid in GetComponentUids())
+            {
+                if (_storageService.TryRead(out ComponentConfiguration componentConfiguration, ComponentsDirectory, componentUid, DefaultFilenames.Configuration))
+                {
+                    componentConfigurations.Add(componentUid, componentConfiguration);
+                }
+            }
+
+            return componentConfigurations;
         }
 
         private void OnBusMessageExecuteCommand(MessageBusMessage busMessage)
