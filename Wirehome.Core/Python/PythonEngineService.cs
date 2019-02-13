@@ -54,9 +54,6 @@ namespace Wirehome.Core.Python
 
             foreach (var pythonProxy in pythonProxies)
             {
-                // TODO: Remove this as soon as all entities are migrated.
-                scriptScope.SetVariable(pythonProxy.ModuleName, pythonProxy);
-
                 wirehomeWrapper.Add(pythonProxy.ModuleName, pythonProxy);
             }
 
@@ -67,6 +64,8 @@ namespace Wirehome.Core.Python
 
         private static void AddSearchPaths(ScriptEngine scriptEngine)
         {
+            // TODO: Consider adding custom paths via Settings file.
+
             var storagePaths = new StoragePaths();
 
             var librariesPath = Path.Combine(storagePaths.DataPath, "PythonLibraries");

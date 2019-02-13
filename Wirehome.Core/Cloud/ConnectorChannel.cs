@@ -79,6 +79,7 @@ namespace Wirehome.Core.Cloud
                     result = await _webSocket.ReceiveAsync(_receiveBuffer, cancellationToken).ConfigureAwait(false);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
+                        await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, cancellationToken).ConfigureAwait(false);
                         return new ConnectorChannelReceiveResult(null, true);
                     }
 

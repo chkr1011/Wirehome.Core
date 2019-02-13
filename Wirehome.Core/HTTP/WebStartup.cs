@@ -1,37 +1,48 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using Wirehome.Core.Cloud;
+using Wirehome.Core.Components;
+using Wirehome.Core.Contracts;
+using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Diagnostics.Log;
+using Wirehome.Core.Discovery;
+using Wirehome.Core.Extensions;
+using Wirehome.Core.FunctionPool;
+using Wirehome.Core.GlobalVariables;
+using Wirehome.Core.Hardware.GPIO;
+using Wirehome.Core.Hardware.I2C;
+using Wirehome.Core.Hardware.MQTT;
+using Wirehome.Core.History;
 using Wirehome.Core.HTTP.Controllers;
 using Wirehome.Core.HTTP.Filters;
+using Wirehome.Core.Macros;
+using Wirehome.Core.MessageBus;
+using Wirehome.Core.Notifications;
 using Wirehome.Core.Packages;
+using Wirehome.Core.Python;
+using Wirehome.Core.Resources;
+using Wirehome.Core.Scheduler;
+using Wirehome.Core.ServiceHost;
 using Wirehome.Core.Storage;
+using Wirehome.Core.System;
+using Wirehome.Core.System.StartupScripts;
 
 namespace Wirehome.Core.HTTP
 {
-    // ReSharper disable once ClassNeverInstantiated.Global
     public class WebStartup
     {
-        // ReSharper disable once UnusedParameter.Local
-        public WebStartup(IConfiguration configuration)
-        {
-        }
-
-        public static Action<IServiceCollection> OnServiceRegistration { get; set; }
-        public static IServiceProvider ServiceProvider { get; set; }
-
         // ReSharper disable once UnusedMember.Global
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
             if (services == null) throw new ArgumentNullException(nameof(services));
 
@@ -42,7 +53,7 @@ namespace Wirehome.Core.HTTP
                 options.AddConsole();
             });
 
-            var mvcBuilder = services.AddMvc(config => config.Filters.Add(new NotFoundExceptionFilter()));
+            IMvcBuilder mvcBuilder = services.AddMvc(config => config.Filters.Add(new NotFoundExceptionFilter()));
             mvcBuilder.ConfigureApplicationPartManager(manager =>
             {
                 manager.FeatureProviders.Remove(manager.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
@@ -55,7 +66,7 @@ namespace Wirehome.Core.HTTP
                 {
                     Title = "Wirehome.Core API",
                     Version = "v1",
-                    Description = "This is the public API for the Wirehome.Core service.",
+                    Description = "The public API for the Wirehome.Core service.",
                     License = new License
                     {
                         Name = "Apache-2.0",
@@ -70,10 +81,15 @@ namespace Wirehome.Core.HTTP
                 });
             });
 
-            OnServiceRegistration(services);
+            foreach (Type singletonService in Reflection.GetClassesImplementingInterface<IService>())
+            {
+                services.AddSingleton(singletonService);
+            }
 
-            ServiceProvider = services.BuildServiceProvider();
-            return ServiceProvider;
+            foreach (Type pythonProxy in Reflection.GetClassesImplementingInterface<IInjectedPythonProxy>())
+            {
+                services.AddSingleton(typeof(IPythonProxy), pythonProxy);
+            }
         }
 
         // ReSharper disable once UnusedMember.Global
@@ -82,7 +98,8 @@ namespace Wirehome.Core.HTTP
             IHostingEnvironment env,
             HttpServerService httpServerService,
             LogService logService,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            IServiceProvider serviceProvider)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             if (env == null) throw new ArgumentNullException(nameof(env));
@@ -102,6 +119,54 @@ namespace Wirehome.Core.HTTP
             ConfigureMvc(app);
 
             app.Run(httpServerService.HandleRequestAsync);
+
+            StartServices(serviceProvider);
+        }
+
+        private void StartServices(IServiceProvider serviceProvider)
+        {
+            SystemService systemService = serviceProvider.GetRequiredService<SystemService>();
+            systemService.Start();
+
+            serviceProvider.GetRequiredService<StorageService>().Start();
+            serviceProvider.GetRequiredService<DiagnosticsService>().Start();
+            serviceProvider.GetRequiredService<MessageBusService>().Start();
+
+            serviceProvider.GetRequiredService<ResourceService>().Start();
+            serviceProvider.GetRequiredService<GlobalVariablesService>().Start();
+            serviceProvider.GetRequiredService<CloudService>().Start();
+
+            serviceProvider.GetRequiredService<SchedulerService>().Start();
+
+            // Start hardware related services.
+            serviceProvider.GetRequiredService<GpioRegistryService>().Start();
+            serviceProvider.GetRequiredService<I2CBusService>().Start();
+            serviceProvider.GetRequiredService<MqttService>().Start();
+            serviceProvider.GetRequiredService<HttpServerService>().Start();
+            serviceProvider.GetRequiredService<DiscoveryService>().Start();
+
+            serviceProvider.GetRequiredService<PythonEngineService>().Start();
+
+            StartupScriptsService startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
+            startupScriptsService.Start();
+
+            serviceProvider.GetRequiredService<FunctionPoolService>().Start();
+            serviceProvider.GetRequiredService<ServiceHostService>().Start();
+
+            serviceProvider.GetRequiredService<NotificationsService>().Start();
+
+            serviceProvider.GetRequiredService<HistoryService>().Start();
+
+            systemService.OnServicesInitialized();
+
+            // Start data related services.
+            serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
+            serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
+            serviceProvider.GetRequiredService<MacroRegistryService>().Start();
+
+            systemService.OnConfigurationLoaded();
+
+            systemService.OnStartupCompleted();
         }
 
         private static void ConfigureMvc(IApplicationBuilder app)

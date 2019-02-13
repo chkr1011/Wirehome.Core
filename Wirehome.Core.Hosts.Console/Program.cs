@@ -4,8 +4,6 @@ namespace Wirehome.Core.Hosts.Console
 {
     public static class Program
     {
-        private static WirehomeController _controller;
-
         public static void Main(string[] arguments)
         {
             var logo = $@"
@@ -17,26 +15,24 @@ namespace Wirehome.Core.Hosts.Console
 
       {WirehomeCoreVersion.Version}
 
-      (c) Christian Kratky 2011 - 2018
+      (c) Christian Kratky 2011 - 2019
       https://github.com/chkr1011/Wirehome.Core
                                                                         
 ";
-
             try
             {
                 global::System.Console.WriteLine(logo);
-                
-                _controller = new WirehomeController(arguments);
-                _controller.Start();
+
+                WirehomeCoreHost.Start(arguments);
 
                 global::System.Console.WriteLine("Press <Enter> to exit.");
                 global::System.Console.ReadLine();
 
-                _controller?.Stop();
+                WirehomeCoreHost.Stop();
             }
             catch (Exception exception)
             {
-                global::System.Console.WriteLine("ERROR: " + exception);
+                global::System.Console.WriteLine(exception);
             }
         }
     }
