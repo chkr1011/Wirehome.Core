@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -35,6 +36,21 @@ namespace Wirehome.Cloud
             {
                 o.LoginPath = "/Cloud/Account/Login";
                 o.LogoutPath = "/Cloud/Account/Logout";
+                o.Events.OnRedirectToLogin = context =>
+                {
+                    // This ensures that API calls are not forwarded to the login
+                    // page. They will only return 401 instead.
+                    if (context.Request.Path.StartsWithSegments("/api") && context.Response.StatusCode == (int)HttpStatusCode.OK)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    }
+                    else
+                    {
+                        context.Response.Redirect(context.RedirectUri);
+                    }
+
+                    return Task.CompletedTask;
+                };
             });
 
             services.AddMvc(config =>
