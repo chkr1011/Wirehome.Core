@@ -22,7 +22,8 @@ namespace Wirehome.Core.Cloud
             },
             Formatting = Formatting.None,
             DateParseHandling = DateParseHandling.None,
-            TypeNameHandling = TypeNameHandling.All
+            TypeNameHandling = TypeNameHandling.All,
+            DefaultValueHandling = DefaultValueHandling.Ignore
         };
 
         private readonly JsonSerializer _serializer;
@@ -31,6 +32,18 @@ namespace Wirehome.Core.Cloud
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private readonly WebSocket _webSocket;
         private readonly ILogger _logger;
+        private readonly DateTime _connected = DateTime.UtcNow;
+
+        private long _bytesSent;
+        private long _bytesReceived;
+        private long _malformedMessagesReceived;
+        private long _messagesSent;
+        private long _messagesReceived;
+        private long _receiveErrors;
+        private long _sendErrors;
+        private DateTime _statisticsReset = DateTime.UtcNow;
+        private DateTime? _lastMessageSent;
+        private DateTime? _lastMessageReceived;
 
         public ConnectorChannel(WebSocket webSocket, ILogger logger)
         {
@@ -46,64 +59,123 @@ namespace Wirehome.Core.Cloud
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
-            using (var messageBuffer = new MemoryStream())
-            using (var streamWriter = new StreamWriter(messageBuffer))
+            try
             {
-                _serializer.Serialize(streamWriter, message);
-
-                await streamWriter.FlushAsync().ConfigureAwait(false);
-                messageBuffer.Position = 0;
-
-                var compressedBuffer = Compress(messageBuffer);
-
-                await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                try
+                using (var messageBuffer = new MemoryStream())
+                using (var streamWriter = new StreamWriter(messageBuffer))
                 {
-                    var sendBuffer = new ArraySegment<byte>(compressedBuffer.GetBuffer(), 0, (int)compressedBuffer.Length);
-                    await _webSocket.SendAsync(sendBuffer, WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
+                    _serializer.Serialize(streamWriter, message);
+
+                    await streamWriter.FlushAsync().ConfigureAwait(false);
+                    messageBuffer.Position = 0;
+
+                    var compressedBuffer = Compress(messageBuffer);
+
+                    await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        var sendBuffer = new ArraySegment<byte>(compressedBuffer.GetBuffer(), 0, (int)compressedBuffer.Length);
+                        await _webSocket.SendAsync(sendBuffer, WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
+
+                        Interlocked.Add(ref _bytesSent, sendBuffer.Count);
+                        Interlocked.Increment(ref _messagesSent);
+                        _lastMessageSent = DateTime.UtcNow;
+                    }
+                    finally
+                    {
+                        _semaphore.Release();
+                    }
                 }
-                finally
-                {
-                    _semaphore.Release();
-                }
+            }
+            catch
+            {
+                Interlocked.Increment(ref _sendErrors);
+
+                throw;
             }
         }
 
         public async Task<ConnectorChannelReceiveResult> ReceiveMessageAsync(CancellationToken cancellationToken)
         {
-            using (var messageBuffer = new MemoryStream())
+            try
             {
-                WebSocketReceiveResult result;
-                do
+                using (var messageBuffer = new MemoryStream())
                 {
-                    result = await _webSocket.ReceiveAsync(_receiveBuffer, cancellationToken).ConfigureAwait(false);
-                    if (result.MessageType == WebSocketMessageType.Close)
+                    WebSocketReceiveResult result;
+                    do
                     {
-                        await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, cancellationToken).ConfigureAwait(false);
+                        result = await _webSocket.ReceiveAsync(_receiveBuffer, cancellationToken).ConfigureAwait(false);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, cancellationToken).ConfigureAwait(false);
+                            return new ConnectorChannelReceiveResult(null, true);
+                        }
+
+                        if (result.Count > 0)
+                        {
+                            await messageBuffer.WriteAsync(_receiveBuffer.Array, 0, result.Count, cancellationToken).ConfigureAwait(false);
+                        }
+                    } while (!result.EndOfMessage && _webSocket.State == WebSocketState.Open);
+
+                    if (_webSocket.State != WebSocketState.Open)
+                    {
                         return new ConnectorChannelReceiveResult(null, true);
                     }
 
-                    if (result.Count > 0)
+                    Interlocked.Add(ref _bytesReceived, messageBuffer.Length);
+                    Interlocked.Increment(ref _messagesReceived);
+                    _lastMessageReceived = DateTime.UtcNow;
+
+                    messageBuffer.Position = 0;
+                    var decompressedBuffer = Decompress(messageBuffer);
+
+                    if (!TryParseCloudMessage(decompressedBuffer, out var cloudMessage))
                     {
-                        await messageBuffer.WriteAsync(_receiveBuffer.Array, 0, result.Count, cancellationToken).ConfigureAwait(false);
+                        return new ConnectorChannelReceiveResult(null, true);
                     }
-                } while (!result.EndOfMessage && _webSocket.State == WebSocketState.Open);
 
-                if (_webSocket.State != WebSocketState.Open)
-                {
-                    return new ConnectorChannelReceiveResult(null, true);
+                    return new ConnectorChannelReceiveResult(cloudMessage, false);
                 }
-
-                messageBuffer.Position = 0;
-                var decompressedBuffer = Decompress(messageBuffer);
-
-                if (!TryParseCloudMessage(decompressedBuffer, out var cloudMessage))
-                {
-                    return new ConnectorChannelReceiveResult(null, true);
-                }
-
-                return new ConnectorChannelReceiveResult(cloudMessage, false);
             }
+            catch
+            {
+                Interlocked.Increment(ref _receiveErrors);
+
+                throw;
+            }
+        }
+
+        public ConnectorChannelStatistics GetStatistics()
+        {
+            return new ConnectorChannelStatistics
+            {
+                BytesReceived = Interlocked.Read(ref _bytesReceived),
+                BytesSent = Interlocked.Read(ref _bytesSent),
+                MalformedMessagesReceived = Interlocked.Read(ref _malformedMessagesReceived),
+                MessagesReceived = Interlocked.Read(ref _messagesReceived),
+                MessagesSent = Interlocked.Read(ref _messagesSent),
+                ReceiveErrors = Interlocked.Read(ref _receiveErrors),
+                SendErrors = Interlocked.Read(ref _sendErrors),
+                LastMessageReceived = _lastMessageReceived,
+                LastMessageSent = _lastMessageSent,
+                StatisticsReset = _statisticsReset,
+                Connected = _connected,
+                UpTime = DateTime.UtcNow - _connected
+            };
+        }
+
+        public void ResetStatistics()
+        {
+            Interlocked.Exchange(ref _bytesReceived, 0);
+            Interlocked.Exchange(ref _bytesSent, 0);
+            Interlocked.Exchange(ref _malformedMessagesReceived, 0);
+            Interlocked.Exchange(ref _messagesReceived, 0);
+            Interlocked.Exchange(ref _messagesSent, 0);
+            Interlocked.Exchange(ref _receiveErrors, 0);
+            Interlocked.Exchange(ref _sendErrors, 0);
+            _lastMessageReceived = null;
+            _lastMessageSent = null;
+            _statisticsReset = DateTime.UtcNow;
         }
 
         private bool TryParseCloudMessage(Stream buffer, out CloudMessage cloudMessage)
@@ -118,6 +190,8 @@ namespace Wirehome.Core.Cloud
             }
             catch (Exception exception)
             {
+                Interlocked.Increment(ref _malformedMessagesReceived);
+
                 _logger.LogWarning(exception, "Error while parsing cloud message.");
 
                 cloudMessage = null;

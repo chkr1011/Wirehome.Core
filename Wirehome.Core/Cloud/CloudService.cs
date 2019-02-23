@@ -40,6 +40,16 @@ namespace Wirehome.Core.Cloud
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("cloud.is_connected", () => _isConnected);
+            systemStatusService.Set("cloud.bytes_sent", () => _channel.GetStatistics().BytesSent);
+            systemStatusService.Set("cloud.bytes_received", () => _channel.GetStatistics().BytesReceived);
+            systemStatusService.Set("cloud.connected", () => _channel.GetStatistics().Connected.ToString("O"));
+            systemStatusService.Set("cloud.last_message_received", () => _channel.GetStatistics().LastMessageReceived?.ToString("O"));
+            systemStatusService.Set("cloud.last_message_sent", () => _channel.GetStatistics().LastMessageSent?.ToString("O"));
+            systemStatusService.Set("cloud.messages_received", () => _channel.GetStatistics().MessagesReceived);
+            systemStatusService.Set("cloud.messages_sent", () => _channel.GetStatistics().LastMessageSent);
+            systemStatusService.Set("cloud.malformed_messages_received", () => _channel.GetStatistics().MalformedMessagesReceived);
+            systemStatusService.Set("cloud.receive_errors", () => _channel.GetStatistics().ReceiveErrors);
+            systemStatusService.Set("cloud.send_errors", () => _channel.GetStatistics().SendErrors);
 
             _httpClient.BaseAddress = new Uri("http://127.0.0.1:80");
         }
@@ -128,7 +138,7 @@ namespace Wirehome.Core.Cloud
         {
             try
             {
-                CloudMessage response;
+                CloudMessage response = null;
                 if (message.Type == CloudMessageType.Ping)
                 {
                     response = InvokePingRequest(message);
@@ -141,12 +151,11 @@ namespace Wirehome.Core.Cloud
                 {
                     response = InvokeRawRequest(message);
                 }
-                else
-                {
-                    response = _messageFactory.CreateMessage(ControlType.NotSupportedException, null);
-                }
 
-                await SendMessageAsync(response, cancellationToken).ConfigureAwait(false);
+                if (response != null)
+                {
+                    await SendMessageAsync(response, cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -159,12 +168,7 @@ namespace Wirehome.Core.Cloud
 
         private CloudMessage InvokePingRequest(CloudMessage message)
         {
-            return _messageFactory.CreateResponseMessage(message, new PongCloudMessageContent
-            {
-                Timestamp = DateTime.Now.ToString("O"),
-                Message = "pong",
-                Version = WirehomeCoreVersion.Version
-            });
+            return _messageFactory.CreateResponseMessage(message, new CloudMessage());
         }
 
         private CloudMessage InvokeRawRequest(CloudMessage requestMessage)
