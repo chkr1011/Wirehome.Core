@@ -2,14 +2,13 @@
 
 namespace Wirehome.Cloud.Services.Authorization
 {
-    public class AuthorizationContext
+    public class DeviceAuthorizationContext
     {
-        public AuthorizationContext(string identityUid, string channelUid)
+        public DeviceAuthorizationContext(string identityUid, string channelUid)
         {
             IdentityUid = identityUid ?? throw new ArgumentNullException(nameof(identityUid));
-            ChannelUid = channelUid ?? throw new ArgumentNullException(nameof(channelUid));
 
-            IdentityUid = IdentityUid.ToLowerInvariant();
+            ChannelUid = channelUid;
         }
 
         public string IdentityUid { get; }
@@ -18,7 +17,7 @@ namespace Wirehome.Cloud.Services.Authorization
 
         public override string ToString()
         {
-            return $"{IdentityUid}/{ChannelUid}";
+            return IdentityUid;
         }
     }
 }

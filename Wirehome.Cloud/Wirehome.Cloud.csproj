@@ -6,6 +6,82 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="wwwroot\semantic-ui\components\**" />
+    <Content Remove="wwwroot\semantic-ui\components\**" />
+    <EmbeddedResource Remove="wwwroot\semantic-ui\components\**" />
+    <None Remove="wwwroot\semantic-ui\components\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\app\icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\app\isCloud.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\app\touch-icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\images\Banner.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\LICENSE">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.eot">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.woff">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.woff2">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.eot">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.otf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.woff">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.woff2">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.eot">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.woff">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.woff2">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="wwwroot\semantic-ui\themes\default\assets\images\flags.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
@@ -18,15 +94,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="StaticFiles\app\icon.png">
+    <Content Update="wwwroot\app\icon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="StaticFiles\app\touch-icon.png">
+    </Content>
+    <Content Update="wwwroot\app\isCloud.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="StaticFiles\Cloud\Images\Banner.png">
+    </Content>
+    <Content Update="wwwroot\app\touch-icon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
 
 </Project>

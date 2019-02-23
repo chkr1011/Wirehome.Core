@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
-using Microsoft.EntityFrameworkCore.Internal;
 using Wirehome.Cloud.Services.Repository;
 
 namespace Wirehome.Cloud.Services.Authorization
@@ -20,39 +19,7 @@ namespace Wirehome.Cloud.Services.Authorization
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
         }
 
-        public AuthorizationContext AuthorizeHttpCall(HttpContext httpContext)
-        {
-            if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
-
-            if (!httpContext.Request.Headers.TryGetValue("Authorization", out var authorizationValues))
-            {
-                httpContext.Response.Headers.TryAdd("WWW-Authenticate", "Basic");
-                throw new UnauthorizedAccessException();
-            }
-
-            var authorizationValue = authorizationValues.FirstOr(string.Empty);
-            if (!authorizationValue.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new UnauthorizedAccessException();
-            }
-
-            authorizationValue = authorizationValue.Substring("Basic ".Length);
-            authorizationValue = Encoding.UTF8.GetString(Convert.FromBase64String(authorizationValue));
-
-            var identityUid = authorizationValue.Substring(0, authorizationValue.IndexOf(":", StringComparison.Ordinal));
-            identityUid = identityUid.ToLowerInvariant();
-            var password = authorizationValue.Substring(identityUid.Length + 1);
-            
-            var channelUid = "default";
-            if (httpContext.Request.Headers.TryGetValue("Wirehome-ChannelUid", out var channelUidValues))
-            {
-                channelUid = channelUidValues.ToString();
-            }
-
-            return Authorize(identityUid, password, channelUid);
-        }
-
-        public AuthorizationContext AuthorizeConnector(HttpContext httpContext)
+        public DeviceAuthorizationContext AuthorizeDevice(HttpContext httpContext)
         {
             if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 
@@ -70,13 +37,19 @@ namespace Wirehome.Cloud.Services.Authorization
             var channelUid = Convert.ToString(values["channelUid"]);
             var passwordHash = httpContext.Request.Query["password"];
 
-            return Authorize(identityUid, passwordHash, channelUid);
+            Authorize(identityUid, passwordHash);
+            return new DeviceAuthorizationContext(identityUid.ToLowerInvariant(), channelUid);
         }
 
-        private AuthorizationContext Authorize(string identityUid, string password, string channelUid)
+        public List<Claim> Authorize(string identityUid, string password)
         {
-            identityUid = identityUid.ToLowerInvariant();
+            if (string.IsNullOrEmpty(identityUid) || string.IsNullOrEmpty(password))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
+            identityUid = identityUid.ToLowerInvariant();
+            
             if (!_repositoryService.TryGetIdentityConfiguration(identityUid, out var identityConfiguration))
             {
                 throw new UnauthorizedAccessException();
@@ -86,18 +59,23 @@ namespace Wirehome.Cloud.Services.Authorization
             {
                 throw new UnauthorizedAccessException();
             }
-
-            if (!identityConfiguration.Channels.TryGetValue(channelUid, out _))
-            {
-                throw new UnauthorizedAccessException();
-            }
-
+            
             if (_passwordHasher.VerifyHashedPassword(identityUid, identityConfiguration.PasswordHash, password) != PasswordVerificationResult.Success)
             {
                 throw new UnauthorizedAccessException();
             }
 
-            return new AuthorizationContext(identityUid, channelUid);
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, identityUid)
+            };
+
+            if (identityConfiguration.IsAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Administrator"));
+            }
+
+            return claims;
         }
     }
 }

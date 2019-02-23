@@ -1,21 +1,34 @@
 ﻿using System;
 using System.Net;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Wirehome.Cloud.Services.DeviceConnector;
 
 namespace Wirehome.Cloud.Filters
 {
     public class DefaultExceptionFilter : ExceptionFilterAttribute
     {
-        public override void OnException(ExceptionContext context)
+        public override void OnException(ExceptionContext exceptionContext)
         {
-            if (context.Exception is UnauthorizedAccessException)
+            exceptionContext.ExceptionHandled = HandleException(exceptionContext.Exception, exceptionContext.HttpContext);
+            base.OnException(exceptionContext);
+        }
+
+        public static bool HandleException(Exception exception, HttpContext httpContext)
+        {
+            if (exception is UnauthorizedAccessException)
             {
-                context.HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                context.ExceptionHandled = true;
-                return;
+                httpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                return true;
             }
 
-            base.OnException(context);
+            if (exception is DeviceSessionNotFoundException)
+            {
+                httpContext.Response.Redirect("/Cloud/Channel/DeviceNotConnected");
+                return true;
+            }
+
+            return false;
         }
     }
 }

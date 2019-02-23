@@ -1,28 +1,36 @@
 ﻿using System;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Wirehome.Cloud.Services.Authorization;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Cloud.Messages;
 
-namespace Wirehome.Cloud.Services.Connector
+namespace Wirehome.Cloud.Services.DeviceConnector
 {
-    public class Session
+    public class DeviceSession
     {
+        private readonly DeviceSessionIdentifier _identifier;
         private readonly ConnectorChannel _channel;
-        private readonly AuthorizationContext _authorizationContext;
         private readonly ILogger _logger;
-
-        public Session(ConnectorChannel channel, AuthorizationContext authorizationContext, ILogger logger)
+        
+        public DeviceSession(DeviceSessionIdentifier identifier, ConnectorChannel channel, ILogger logger)
         {
+            _identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
             _channel = channel ?? throw new ArgumentNullException(nameof(channel));
-            _authorizationContext = authorizationContext ?? throw new ArgumentNullException(nameof(authorizationContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public event EventHandler<MessageReceivedEventArgs> MessageReceived;
+
+        public ConnectorChannelStatistics GetStatistics()
+        {
+            return _channel.GetStatistics();
+        }
+
+        public void ResetStatistics()
+        {
+            _channel.ResetStatistics();
+        }
 
         public Task SendMessageAsync(CloudMessage message, CancellationToken cancellationToken)
         {
@@ -31,7 +39,7 @@ namespace Wirehome.Cloud.Services.Connector
             return _channel.SendMessageAsync(message, cancellationToken);
         }
 
-        public async Task ListenAsync(CancellationToken cancellationToken)
+        public async Task RunAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -45,17 +53,6 @@ namespace Wirehome.Cloud.Services.Connector
 
                     if (receiveResult.Message == null)
                     {
-                        continue;
-                    }
-
-                    if (!DateTime.TryParseExact(receiveResult.Message.Timestamp, "O", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var timestamp))
-                    {
-                        continue;
-                    }
-
-                    if (DateTime.UtcNow - timestamp > TimeSpan.FromMinutes(10))
-                    {
-                        _logger.LogWarning("Truncated expired cloud message.");
                         continue;
                     }
 
@@ -77,7 +74,7 @@ namespace Wirehome.Cloud.Services.Connector
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogError(exception, $"Error while processing message of session '{_authorizationContext}'.");
+                    _logger.LogError(exception, $"Error while processing message of session '{_identifier}'.");
                 }
             }
         }

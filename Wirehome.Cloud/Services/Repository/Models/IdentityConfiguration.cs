@@ -8,6 +8,8 @@ namespace Wirehome.Cloud.Services.Repository.Models
 
         public bool IsLocked { get; set; }
 
+        public bool IsAdmin { get; set; }
+
         public Dictionary<string, ChannelConfiguration> Channels { get; set; } = new Dictionary<string, ChannelConfiguration>();
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -9,9 +10,9 @@ using Swashbuckle.AspNetCore.Swagger;
 using Wirehome.Cloud.Controllers;
 using Wirehome.Cloud.Filters;
 using Wirehome.Cloud.Services.Authorization;
-using Wirehome.Cloud.Services.Connector;
+using Wirehome.Cloud.Services.DeviceConnector;
 using Wirehome.Cloud.Services.Repository;
-using Wirehome.Cloud.Services.StaticFiles;
+using Wirehome.Core.Cloud;
 using Wirehome.Core.HTTP.Controllers;
 
 namespace Wirehome.Cloud
@@ -24,10 +25,17 @@ namespace Wirehome.Cloud
         {
             if (services == null) throw new ArgumentNullException(nameof(services));
 
-            services.AddSingleton<ConnectorService>();
+            services.AddSingleton<DeviceConnectorService>();
             services.AddSingleton<AuthorizationService>();
             services.AddSingleton<RepositoryService>();
-            services.AddSingleton<StaticFilesService>();
+            services.AddSingleton<CloudMessageFactory>();
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(o => 
+            {
+                o.LoginPath = "/Cloud/Account/Login";
+                o.LogoutPath = "/Cloud/Account/Logout";
+            });
 
             services.AddMvc(config =>
             {
@@ -36,7 +44,7 @@ namespace Wirehome.Cloud
             .ConfigureApplicationPartManager(config =>
             {
                 config.FeatureProviders.Remove(config.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
-                config.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(FunctionsController).Namespace));
+                config.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(CloudController).Namespace));
             });
 
             ConfigureSwaggerServices(services);
@@ -47,33 +55,30 @@ namespace Wirehome.Cloud
             IApplicationBuilder app,
             IHostingEnvironment env,
             AuthorizationService authorizationService,
-            ConnectorService connectorService,
-            StaticFilesService staticFilesService)
+            DeviceConnectorService deviceConnectorService)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             if (env == null) throw new ArgumentNullException(nameof(env));
             if (authorizationService == null) throw new ArgumentNullException(nameof(authorizationService));
-            if (connectorService == null) throw new ArgumentNullException(nameof(connectorService));
-            if (staticFilesService == null) throw new ArgumentNullException(nameof(staticFilesService));
+            if (deviceConnectorService == null) throw new ArgumentNullException(nameof(deviceConnectorService));
 
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseAuthentication();
+            app.UseStaticFiles();
+
             ConfigureMvc(app);
             ConfigureSwagger(app);
-            ConfigureConnector(app, connectorService, authorizationService);
+            ConfigureConnector(app, deviceConnectorService, authorizationService);
+            ConfigureHttpReverseProxy(app, deviceConnectorService);
+        }
 
-            app.Run(async context =>
-            {
-                if (await staticFilesService.HandleRequestAsync(context))
-                {
-                    return;
-                }
-
-                await connectorService.ForwardHttpRequestAsync(context);
-            });
+        private static void ConfigureHttpReverseProxy(IApplicationBuilder app, DeviceConnectorService deviceConnectorService)
+        {
+            app.Run(deviceConnectorService.TryDispatchHttpRequestAsync);
         }
 
         private static void ConfigureSwagger(IApplicationBuilder app)
@@ -82,6 +87,8 @@ namespace Wirehome.Cloud
 
             app.UseSwaggerUI(o =>
             {
+                o.RoutePrefix = "api";
+                o.DocumentTitle = "Wirehome.Cloud.API";
                 o.SwaggerEndpoint("/api/v1/swagger.json", "Wirehome.Cloud API v1");
             });
         }
@@ -94,14 +101,14 @@ namespace Wirehome.Cloud
             });
         }
 
-        private static void ConfigureConnector(IApplicationBuilder app, ConnectorService connectorService, AuthorizationService authorizationService)
+        private static void ConfigureConnector(IApplicationBuilder app, DeviceConnectorService connectorService, AuthorizationService authorizationService)
         {
             app.Map("/Connectors", config =>
             {
                 config.UseWebSockets(new WebSocketOptions
                 {
-                    KeepAliveInterval = TimeSpan.FromSeconds(30),
-                    ReceiveBufferSize = 1024
+                    KeepAliveInterval = TimeSpan.FromMinutes(2),
+                    ReceiveBufferSize = 4096
                 });
 
                 config.Use(async (context, next) =>
@@ -114,11 +121,16 @@ namespace Wirehome.Cloud
 
                     try
                     {
-                        var authorizationContext = authorizationService.AuthorizeConnector(context);
+                        var authorizationContext = authorizationService.AuthorizeDevice(context);
+
+                        var deviceSessionIdentifier = new DeviceSessionIdentifier(
+                            authorizationContext.IdentityUid,
+                            authorizationContext.ChannelUid);
 
                         using (var webSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false))
                         {
-                            await connectorService.RunAsync(webSocket, authorizationContext, context.RequestAborted).ConfigureAwait(false);
+                            await connectorService.RunAsync(deviceSessionIdentifier, webSocket, context.RequestAborted).ConfigureAwait(false);
+                            context.Abort();
                         }
                     }
                     catch (UnauthorizedAccessException)

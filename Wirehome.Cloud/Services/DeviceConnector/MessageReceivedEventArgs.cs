@@ -1,7 +1,7 @@
 ﻿using System;
 using Wirehome.Core.Cloud.Messages;
 
-namespace Wirehome.Cloud.Services.Connector
+namespace Wirehome.Cloud.Services.DeviceConnector
 {
     public class MessageReceivedEventArgs : EventArgs
     {
