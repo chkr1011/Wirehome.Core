@@ -129,7 +129,7 @@ namespace Wirehome.Core.Cloud
                 }
                 finally
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(_options.ReconnectDelay, cancellationToken).ConfigureAwait(false);
                 }
             }
         }

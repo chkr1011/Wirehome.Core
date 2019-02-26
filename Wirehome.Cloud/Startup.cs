@@ -99,13 +99,13 @@ namespace Wirehome.Cloud
 
         private static void ConfigureSwagger(IApplicationBuilder app)
         {
-            app.UseSwagger(o => o.RouteTemplate = "/api/{documentName}/swagger.json");
+            app.UseSwagger(o => o.RouteTemplate = "/cloud/api/{documentName}/swagger.json");
 
             app.UseSwaggerUI(o =>
             {
-                o.RoutePrefix = "api";
+                o.RoutePrefix = "cloud/api";
                 o.DocumentTitle = "Wirehome.Cloud.API";
-                o.SwaggerEndpoint("/api/v1/swagger.json", "Wirehome.Cloud API v1");
+                o.SwaggerEndpoint("/cloud/api/v1/swagger.json", "Wirehome.Cloud API v1");
             });
         }
 
