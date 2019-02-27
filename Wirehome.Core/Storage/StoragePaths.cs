@@ -18,6 +18,10 @@ namespace Wirehome.Core.Storage
             {
                 DataPath = Path.Combine("/etc/wirehome");
             }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+
+                DataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".wirehome");
+            }
             else
             {
                 throw new NotSupportedException();
