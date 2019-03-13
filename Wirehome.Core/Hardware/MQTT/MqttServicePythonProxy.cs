@@ -161,6 +161,11 @@ namespace Wirehome.Core.Hardware.MQTT
                 return new byte[0];
             }
 
+            if (payload is ByteArray byteArray)
+            {
+                return byteArray.ToArray();
+            }
+
             if (payload is byte[] bytes)
             {
                 return bytes;
@@ -175,7 +180,7 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 return b.ToArray();
             }
-
+            
             if (payload is IEnumerable<int> i)
             {
                 return i.Select(Convert.ToByte).ToArray();

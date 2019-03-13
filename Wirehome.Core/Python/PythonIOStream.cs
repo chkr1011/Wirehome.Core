@@ -42,7 +42,7 @@ namespace Wirehome.Core.Python
 
             if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
-            var text = Encoding.UTF8.GetString(buffer, 0, count);
+            var text = Encoding.UTF8.GetString(buffer, offset, count);
             if (text.Equals(Environment.NewLine))
             {
                 return;
@@ -54,7 +54,7 @@ namespace Wirehome.Core.Python
         public override bool CanRead { get; } = false;
         public override bool CanSeek { get; } = false;
         public override bool CanWrite { get; } = true;
-        public override long Length { get; }
+        public override long Length { get; } = 0;
 
         public override long Position
         {

@@ -25,7 +25,7 @@ namespace Wirehome.Core.Python
         public void Start()
         {
             _logger.LogInformation("Starting Python engine...");
-            
+
             _scriptEngine = IronPython.Hosting.Python.CreateEngine();
             _scriptEngine.Runtime.IO.SetOutput(new PythonIOToLogStream(_logger), Encoding.UTF8);
 
@@ -62,33 +62,34 @@ namespace Wirehome.Core.Python
             return new PythonScriptHost(scriptScope, wirehomeWrapper);
         }
 
-        private static void AddSearchPaths(ScriptEngine scriptEngine)
+        private void AddSearchPaths(ScriptEngine scriptEngine)
         {
-            // TODO: Consider adding custom paths via Settings file.
-
             var storagePaths = new StoragePaths();
 
-            var librariesPath = Path.Combine(storagePaths.DataPath, "PythonLibraries");
-            if (!Directory.Exists(librariesPath))
+            var paths = new List<string>
             {
-                Directory.CreateDirectory(librariesPath);
-            }
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Lib"),
+                Path.Combine(storagePaths.DataPath, "PythonLibraries"),
+                "/usr/lib/python2.7",
+                @"C:\Python27\Lib"
+            };
 
+            AddSearchPaths(scriptEngine, paths);
+        }
+
+        private void AddSearchPaths(ScriptEngine scriptEngine, IEnumerable<string> paths)
+        {
             var searchPaths = scriptEngine.GetSearchPaths();
 
-            const string LinuxLibsPath = "/usr/lib/python2.7";
-            if (Directory.Exists(LinuxLibsPath))
+            foreach (var path in paths)
             {
-                searchPaths.Add(LinuxLibsPath);
+                if (Directory.Exists(path))
+                {
+                    searchPaths.Add(path);
+                    _logger.LogInformation($"Added Python lib path: {path}");
+                }
             }
 
-            const string WindowsLibsPath = @"C:\Python27\Lib";
-            if (Directory.Exists(WindowsLibsPath))
-            {
-                searchPaths.Add(WindowsLibsPath);
-            }
-
-            searchPaths.Add(librariesPath);
             scriptEngine.SetSearchPaths(searchPaths);
         }
     }
