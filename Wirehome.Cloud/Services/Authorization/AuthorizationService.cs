@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
@@ -19,7 +20,7 @@ namespace Wirehome.Cloud.Services.Authorization
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
         }
 
-        public DeviceAuthorizationContext AuthorizeDevice(HttpContext httpContext)
+        public async Task<DeviceAuthorizationContext> AuthorizeDeviceAsync(HttpContext httpContext)
         {
             if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 
@@ -37,11 +38,11 @@ namespace Wirehome.Cloud.Services.Authorization
             var channelUid = Convert.ToString(values["channelUid"]);
             var passwordHash = httpContext.Request.Query["password"];
 
-            Authorize(identityUid, passwordHash);
+            await AuthorizeAsync(identityUid, passwordHash).ConfigureAwait(false);
             return new DeviceAuthorizationContext(identityUid.ToLowerInvariant(), channelUid);
         }
 
-        public List<Claim> Authorize(string identityUid, string password)
+        public async Task<List<Claim>> AuthorizeAsync(string identityUid, string password)
         {
             if (string.IsNullOrEmpty(identityUid) || string.IsNullOrEmpty(password))
             {
@@ -49,8 +50,10 @@ namespace Wirehome.Cloud.Services.Authorization
             }
 
             identityUid = identityUid.ToLowerInvariant();
-            
-            if (!_repositoryService.TryGetIdentityConfiguration(identityUid, out var identityConfiguration))
+
+            var identityConfiguration = await _repositoryService.TryGetIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
+
+            if (identityConfiguration == null)
             {
                 throw new UnauthorizedAccessException();
             }
@@ -76,6 +79,11 @@ namespace Wirehome.Cloud.Services.Authorization
             }
 
             return claims;
+        }
+
+        public Task SetPasswordAsync(string identityUid, string newPassword)
+        {
+            return _repositoryService.SetPasswordAsync(identityUid, newPassword);
         }
     }
 }

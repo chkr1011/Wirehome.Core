@@ -103,16 +103,18 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             try
             {
                 session.MessageReceived += messageReceived;
-                cancellationToken.Register(() =>
+
+                using (cancellationToken.Register(() =>
                 {
                     if (!result.Task.IsCompleted && !result.Task.IsFaulted && !result.Task.IsCanceled)
                     {
                         result.TrySetCanceled();
                     }
-                });
-
-                await session.SendMessageAsync(requestMessage, cancellationToken).ConfigureAwait(false);
-                return await result.Task.ConfigureAwait(false);
+                }))
+                {
+                    await session.SendMessageAsync(requestMessage, cancellationToken).ConfigureAwait(false);
+                    return await result.Task.ConfigureAwait(false);
+                }                
             }
             finally
             {

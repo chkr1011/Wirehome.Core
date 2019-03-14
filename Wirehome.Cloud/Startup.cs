@@ -137,7 +137,7 @@ namespace Wirehome.Cloud
 
                     try
                     {
-                        var authorizationContext = authorizationService.AuthorizeDevice(context);
+                        var authorizationContext = await authorizationService.AuthorizeDeviceAsync(context).ConfigureAwait(false);
 
                         var deviceSessionIdentifier = new DeviceSessionIdentifier(
                             authorizationContext.IdentityUid,
@@ -146,12 +146,15 @@ namespace Wirehome.Cloud
                         using (var webSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false))
                         {
                             await connectorService.RunAsync(deviceSessionIdentifier, webSocket, context.RequestAborted).ConfigureAwait(false);
-                            context.Abort();
                         }
                     }
                     catch (UnauthorizedAccessException)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    }
+                    finally
+                    {
+                        context.Abort();
                     }
                 });
             });
@@ -161,6 +164,7 @@ namespace Wirehome.Cloud
         {
             services.AddSwaggerGen(c =>
             {
+                c.DescribeAllEnumsAsStrings();
                 c.SwaggerDoc("v1", new Info
                 {
                     Title = "Wirehome.Cloud API",

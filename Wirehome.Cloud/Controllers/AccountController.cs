@@ -13,7 +13,7 @@ namespace Wirehome.Cloud.Controllers
     public class AccountController : Controller
     {
         private readonly AuthorizationService _authorizationService;
-        
+
         public AccountController(AuthorizationService authorizationService)
         {
             _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
@@ -28,7 +28,7 @@ namespace Wirehome.Cloud.Controllers
         [HttpGet]
         public IActionResult Login(string returnUrl)
         {
-            return View(nameof(Index), new LoginModel { ReturnUrl = returnUrl });
+            return View(nameof(Index), new LoginModel {ReturnUrl = returnUrl});
         }
 
         [HttpPost]
@@ -44,8 +44,8 @@ namespace Wirehome.Cloud.Controllers
         {
             try
             {
-                var claims = _authorizationService.Authorize(model.IdentityUid, model.Password);
-                
+                var claims = await _authorizationService.AuthorizeAsync(model.IdentityUid, model.Password).ConfigureAwait(false);
+
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
                 var authenticationProperties = new AuthenticationProperties
@@ -73,6 +73,14 @@ namespace Wirehome.Cloud.Controllers
             }
 
             return Redirect(nameof(Index));
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> SetPassword(string newPassword)
+        {
+            await _authorizationService.SetPasswordAsync(User.Identity.Name, newPassword).ConfigureAwait(false);
+            return await Logout();
         }
     }
 }
