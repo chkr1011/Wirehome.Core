@@ -357,14 +357,7 @@ namespace Wirehome.Core.Components
             if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
-            ComponentGroup componentGroup;
-            lock (_componentGroups)
-            {
-                if (!_componentGroups.TryGetValue(componentGroupUid, out componentGroup))
-                {
-                    return;
-                }
-            }
+            var componentGroup = GetComponentGroup(componentGroupUid);
 
             componentGroup.Settings.TryGetValue(settingUid, out var oldValue);
             if (Equals(oldValue, value))
@@ -391,23 +384,16 @@ namespace Wirehome.Core.Components
                 .WithValue("new_value", oldValue));
         }
 
-        public void RemoveComponentGroupSetting(string componentGroupUid, string settingUid)
+        public object RemoveComponentGroupSetting(string componentGroupUid, string settingUid)
         {
             if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
-            ComponentGroup componentGroup;
-            lock (_componentGroups)
-            {
-                if (!_componentGroups.TryGetValue(componentGroupUid, out componentGroup))
-                {
-                    return;
-                }
-            }
+            var componentGroup = GetComponentGroup(componentGroupUid);
 
             if (!componentGroup.Settings.TryRemove(settingUid, out var oldValue))
             {
-                return;
+                return null;
             }
 
             _storageService.Write(componentGroup.Settings, ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
@@ -424,6 +410,8 @@ namespace Wirehome.Core.Components
                 .WithValue("component_group_uid", componentGroupUid)
                 .WithValue("setting_uid", settingUid)
                 .WithValue("old_value", oldValue));
+
+            return oldValue;
         }
 
         private void Save()
