@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Internal;
 using Wirehome.Core.History.Repository;
+using Wirehome.Core.History.Repository.Entities;
 
 namespace Wirehome.Core.History.Extract
 {
@@ -14,12 +19,20 @@ namespace Wirehome.Core.History.Extract
             _repository = historyRepository ?? throw new ArgumentNullException(nameof(historyRepository));
         }
 
-        public HistoryExtract Build(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
+        public async Task<HistoryExtract> BuildAsync(
+            string componentUid,
+            string statusUid,
+            DateTime rangeStart,
+            DateTime rangeEnd,
+            TimeSpan? interval,
+            HistoryExtractDataType dataType,
+            int maxRowCount,
+            CancellationToken cancellationToken)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
-            var entities = _repository.GetComponentStatusValues(componentUid, statusUid, rangeStart, rangeEnd);
+            var entities = await _repository.GetComponentStatusValuesAsync(componentUid, statusUid, rangeStart, rangeEnd, maxRowCount, cancellationToken).ConfigureAwait(false);
 
             var historyExtract = new HistoryExtract
             {
@@ -28,32 +41,167 @@ namespace Wirehome.Core.History.Extract
                 EntityCount = entities.Count
             };
 
+            if (dataType == HistoryExtractDataType.Text)
+            {
+                historyExtract.DataPoints.AddRange(GenerateTextBasedDataPoints(entities, rangeStart, rangeEnd));
+            }
+            else if (dataType == HistoryExtractDataType.Number)
+            {
+                historyExtract.DataPoints.AddRange(GenerateNumberBasedDataPoints(entities, rangeStart, rangeEnd, interval));
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+            return historyExtract;
+        }
+
+        private static List<HistoryExtractDataPoint> GenerateTextBasedDataPoints(List<ComponentStatusEntity> entities, in DateTime rangeStart, in DateTime rangeEnd)
+        {
+            var dataPoints = new List<HistoryExtractDataPoint>();
+
+            foreach (var entity in entities)
+            {
+                var @break = false;
+
+                var timestamp = entity.RangeStart;
+
+                if (timestamp <= rangeStart)
+                {
+                    // This value is outside of the range (too old). But the value is still the same when our range begins.
+                    // So we adopt the value from that range and treat it as our initial value.
+                    timestamp = rangeStart;
+                }
+
+                if (entity.RangeEnd >= rangeEnd)
+                {
+                    // The value is still valid after the requested range. So we treat it as our last value.
+                    // Also there is no further data point needed because we already reached the end.
+                    timestamp = rangeEnd;
+                    @break = true;
+                }
+
+                var dataPoint = new HistoryExtractDataPoint
+                {
+                    Timestamp = timestamp,
+                    Value = entity.Value
+                };
+
+                dataPoints.Add(dataPoint);
+
+                if (@break)
+                {
+                    break;
+                }
+            }
+
+            return dataPoints;
+        }
+
+        private static IEnumerable<HistoryExtractDataPoint> GenerateNumberBasedDataPoints(
+            List<ComponentStatusEntity> entities,
+            DateTime rangeStart,
+            DateTime rangeEnd,
+            TimeSpan? interval)
+        {
+            if (!interval.HasValue)
+            {
+                var dataPoints = GenerateTextBasedDataPoints(entities, rangeStart, rangeEnd);
+
+                foreach (var dataPoint in dataPoints)
+                {
+                    if (double.TryParse(dataPoint.Value as string,
+                        NumberStyles.Float,
+                        CultureInfo.InvariantCulture,
+                        out var numberValue))
+                    {
+                        dataPoint.Value = numberValue;
+                    }
+                }
+
+                return dataPoints;
+            }
+
+            var intervalDataPoints = new List<HistoryExtractDataPoint>();
+
             while (rangeStart <= rangeEnd)
             {
-                var dataPoint = new HistoryExtractDataPoint
+                // Start (real) value
+                var dataPointStart = new HistoryExtractDataPoint
                 {
                     Timestamp = rangeStart
                 };
 
-                var entity = entities.FirstOrDefault(e => e.RangeStart <= dataPoint.Timestamp && e.RangeEnd >= dataPoint.Timestamp);
-                if (entity != null)
+                dataPointStart.Value = GetValue(entities, dataPointStart.Timestamp);
+
+                // End (real) value
+                var dataPointEnd = new HistoryExtractDataPoint
                 {
-                    if (dataType == HistoryExtractDataType.Number)
-                    {
-                        dataPoint.Value = Convert.ToDouble(entity.Value, CultureInfo.InvariantCulture);
-                    }
-                    else
-                    {
-                        dataPoint.Value = entity.Value;
-                    }
+                    Timestamp = rangeStart.Add(interval.Value * 2)
+                };
+
+                dataPointEnd.Value = GetValue(entities, dataPointEnd.Timestamp);
+
+                // Middle (average) value
+                var dataPointMiddle = new HistoryExtractDataPoint
+                {
+                    Timestamp = rangeStart.Add(interval.Value),
+                    Value = GetAverageValue(entities, dataPointStart.Timestamp, dataPointEnd.Timestamp)
+                };
+
+                if (!intervalDataPoints.Any())
+                {
+                    intervalDataPoints.Add(dataPointStart);
                 }
 
-                historyExtract.DataPoints.Add(dataPoint);
+                intervalDataPoints.Add(dataPointMiddle);
+                intervalDataPoints.Add(dataPointEnd);
 
-                rangeStart += interval;
+                rangeStart += interval.Value * 3;
             }
 
-            return historyExtract;
+            return intervalDataPoints;
+        }
+
+        private static double? GetAverageValue(List<ComponentStatusEntity> entities, DateTime rangeStart, DateTime rangeEnd)
+        {
+            var value = 0D;
+            var counter = 0;
+
+            while (rangeStart < rangeEnd)
+            {
+                var timestampValue = GetValue(entities, rangeStart);
+                if (timestampValue.HasValue)
+                {
+                    value += timestampValue.Value;
+                    counter++;
+                }
+
+                // Use one second to allow calculation of a proper average. There is is maybe only one
+                // or two real ranges with a different value. So the "larger" range must have more impact
+                // than the "smaller" one. One way is to calculate percentage first or generate lots of 
+                // of small second based values.
+                rangeStart = rangeStart.AddSeconds(1);
+            }
+
+            if (counter == 0)
+            {
+                return null;
+            }
+
+            return value / counter;
+        }
+
+        private static double? GetValue(List<ComponentStatusEntity> entities, DateTime timestamp)
+        {
+            var entity = entities.FirstOrDefault(e => e.RangeStart <= timestamp && e.RangeEnd >= timestamp);
+            if (entity == null)
+            {
+                return null;
+            }
+
+            return Convert.ToDouble(entity.Value, CultureInfo.InvariantCulture);
         }
     }
 }

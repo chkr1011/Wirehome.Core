@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Wirehome.Core.History;
@@ -12,15 +14,15 @@ namespace Wirehome.Tests.History
     public class HistoryRepositoryTests
     {
         [TestMethod]
-        public void ComponentStatusValue_Create_First_Entity()
+        public async Task ComponentStatusValue_Create_First_Entity()
         {
             var repo = CreateRepository();
             try
             {
                 var componentStatusValue = CreateComponentStatusValue("0", DateTime.UtcNow);
 
-                repo.UpdateComponentStatusValue(componentStatusValue);
-                var entities = repo.GetComponentStatusValues("c1", "s1");
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
+                var entities = await repo.GetComponentStatusValuesAsync("c1", "s1", 1000, CancellationToken.None);
 
                 Assert.AreEqual(1, entities.Count);
 
@@ -39,7 +41,7 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Update_Existing()
+        public async Task ComponentStatusValue_Update_Existing()
         {
             var repo = CreateRepository();
             try
@@ -47,11 +49,11 @@ namespace Wirehome.Tests.History
                 var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("0", startDateTime.AddSeconds(59));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
-                var entities = repo.GetComponentStatusValues("c1", "s1");
+                var entities = await repo.GetComponentStatusValuesAsync("c1", "s1", 1000, CancellationToken.None);
                 Assert.AreEqual(1, entities.Count);
                 var entity = entities.First();
 
@@ -68,7 +70,7 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Create_New_Due_To_Outdated_Existing()
+        public async Task ComponentStatusValue_Create_New_Due_To_Outdated_Existing()
         {
             var repo = CreateRepository();
             repo.ComponentStatusOutdatedTimeout = TimeSpan.FromMinutes(1);
@@ -77,12 +79,12 @@ namespace Wirehome.Tests.History
                 var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
                 componentStatusValue = CreateComponentStatusValue("0", startDateTime.AddSeconds(61));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
-                var entities = repo.GetComponentStatusValues("c1", "s1");
+                var entities = await repo.GetComponentStatusValuesAsync("c1", "s1", 1000, CancellationToken.None);
                 Assert.AreEqual(2, entities.Count);
                 var entity = entities.Skip(1).First();
 
@@ -99,7 +101,7 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Create_New_Due_To_Different_Value()
+        public async Task ComponentStatusValue_Create_New_Due_To_Different_Value()
         {
             var repo = CreateRepository();
             try
@@ -107,12 +109,12 @@ namespace Wirehome.Tests.History
                 var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
                 componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddSeconds(5));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
-                var entities = repo.GetComponentStatusValues("c1", "s1");
+                var entities = await repo.GetComponentStatusValuesAsync("c1", "s1", 1000, CancellationToken.None);
                 Assert.AreEqual(2, entities.Count);
                 var entity = entities.Skip(1).First();
 
@@ -129,7 +131,7 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Assign_Previous_And_Next()
+        public async Task ComponentStatusValue_Assign_Previous_And_Next()
         {
             var repo = CreateRepository();
             try
@@ -137,12 +139,12 @@ namespace Wirehome.Tests.History
                 var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
                 componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddDays(5));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
-                var entities = repo.GetComponentStatusValues("c1", "s1").OrderBy(e => e.RangeStart).ToList();
+                var entities = (await repo.GetComponentStatusValuesAsync("c1", "s1", 1000, CancellationToken.None)).OrderBy(e => e.RangeStart).ToList();
                 Assert.AreEqual(2, entities.Count);
 
                 Assert.IsNull(entities[0].PreviousEntityID);
@@ -158,7 +160,7 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Load_Full_Range()
+        public async Task ComponentStatusValue_Load_Full_Range()
         {
             var repo = CreateRepository();
             try
@@ -166,26 +168,28 @@ namespace Wirehome.Tests.History
                 var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddHours(1));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("2", startDateTime.AddHours(2));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("3", startDateTime.AddHours(3));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("4", startDateTime.AddHours(4));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("5", startDateTime.AddHours(5));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
-                var entities = repo.GetComponentStatusValues("c1", "s1");
+                var entities = await repo.GetComponentStatusValuesAsync("c1", "s1", 1000, CancellationToken.None);
                 Assert.AreEqual(6, entities.Count);
 
-                entities = repo.GetComponentStatusValues(
+                entities = await repo.GetComponentStatusValuesAsync(
                     "c1",
                     "s1",
                     startDateTime, 
-                    startDateTime.AddHours(5));
+                    startDateTime.AddHours(5),
+                    1000,
+                    CancellationToken.None);
 
                 Assert.AreEqual(6, entities.Count);
 
@@ -203,7 +207,7 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Load_Middle_Range()
+        public async Task ComponentStatusValue_Load_Middle_Range()
         {
             var repo = CreateRepository();
             try
@@ -211,26 +215,28 @@ namespace Wirehome.Tests.History
                 var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddHours(1));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("2", startDateTime.AddHours(2));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("3", startDateTime.AddHours(3));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("4", startDateTime.AddHours(4));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("5", startDateTime.AddHours(5));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
-                var entities = repo.GetComponentStatusValues("c1", "s1");
+                var entities = await repo.GetComponentStatusValuesAsync("c1", "s1", 1000, CancellationToken.None);
                 Assert.AreEqual(6, entities.Count);
 
-                entities = repo.GetComponentStatusValues(
+                entities = await repo.GetComponentStatusValuesAsync(
                     "c1",
                     "s1",
                     startDateTime.AddHours(2),
-                    startDateTime.AddHours(4));
+                    startDateTime.AddHours(4),
+                    1000,
+                    CancellationToken.None);
 
                 Assert.AreEqual(3, entities.Count);
 
@@ -245,7 +251,7 @@ namespace Wirehome.Tests.History
         }
 
         [TestMethod]
-        public void ComponentStatusValue_Build_Ranges()
+        public async Task ComponentStatusValue_Build_Ranges()
         {
             var repo = CreateRepository();
             repo.ComponentStatusOutdatedTimeout = TimeSpan.FromHours(2);
@@ -254,43 +260,45 @@ namespace Wirehome.Tests.History
                 var startDateTime = DateTime.UtcNow;
 
                 var componentStatusValue = CreateComponentStatusValue("0", startDateTime);
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("0", startDateTime.AddHours(0.99));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
                 componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddHours(1));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("1", startDateTime.AddHours(1.99));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
                 componentStatusValue = CreateComponentStatusValue("2", startDateTime.AddHours(2));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("2", startDateTime.AddHours(2.99));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
                 componentStatusValue = CreateComponentStatusValue("3", startDateTime.AddHours(3));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("3", startDateTime.AddHours(3.99));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
                 componentStatusValue = CreateComponentStatusValue("4", startDateTime.AddHours(4));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("4", startDateTime.AddHours(4.99));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
                 componentStatusValue = CreateComponentStatusValue("5", startDateTime.AddHours(5));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
                 componentStatusValue = CreateComponentStatusValue("5", startDateTime.AddHours(5.99));
-                repo.UpdateComponentStatusValue(componentStatusValue);
+                await repo.UpdateComponentStatusValueAsync(componentStatusValue, CancellationToken.None);
 
-                var entities = repo.GetComponentStatusValues("c1", "s1");
+                var entities = await repo.GetComponentStatusValuesAsync("c1", "s1", 1000, CancellationToken.None);
                 Assert.AreEqual(6, entities.Count);
 
-                entities = repo.GetComponentStatusValues(
+                entities = await repo.GetComponentStatusValuesAsync(
                     "c1",
                     "s1",
                     startDateTime,
-                    startDateTime.AddHours(5));
+                    startDateTime.AddHours(5),
+                    1000,
+                    CancellationToken.None);
 
                 Assert.AreEqual(6, entities.Count);
 

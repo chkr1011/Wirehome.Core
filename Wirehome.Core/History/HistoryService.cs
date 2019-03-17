@@ -20,8 +20,7 @@ namespace Wirehome.Core.History
 {
     public class HistoryService : IService
     {
-        private readonly BlockingCollection<ComponentStatusValue> _pendingComponentStatusValues =
-            new BlockingCollection<ComponentStatusValue>();
+        private readonly BlockingCollection<ComponentStatusValue> _pendingComponentStatusValues = new BlockingCollection<ComponentStatusValue>();
 
         private readonly ComponentRegistryService _componentRegistryService;
         private readonly StorageService _storageService;
@@ -60,7 +59,7 @@ namespace Wirehome.Core.History
 
         public void Start()
         {
-            _storageService.TryReadOrCreate(out _options, "HistoryServiceConfiguration.json");
+            _storageService.TryReadOrCreate(out _options, HistoryServiceOptions.Filename);
 
             if (!_options.IsEnabled)
             {
@@ -90,15 +89,43 @@ namespace Wirehome.Core.History
                 _systemCancellationToken.Token);
         }
 
-        public HistoryExtract BuildHistoryExtract(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, TimeSpan interval, HistoryExtractDataType dataType)
+        public Task<HistoryExtract> BuildHistoryExtractAsync(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, TimeSpan? interval, HistoryExtractDataType dataType, int maxRowCount, CancellationToken cancellationToken)
         {
-            var historyExtract = new HistoryExtractBuilder(_repository).Build(componentUid, statusUid, rangeStart, rangeEnd, interval, dataType);
-            for (var i = historyExtract.DataPoints.Count - 1; i > 0; i--)
-            {
+            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
+            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
+            return new HistoryExtractBuilder(_repository).BuildAsync(componentUid, statusUid, rangeStart, rangeEnd, interval, dataType, maxRowCount, cancellationToken);
+        }
+
+        public Task DeleteComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
+        {
+            return _repository.DeleteComponentStatusHistoryAsync(componentUid, statusUid, rangeStart, rangeEnd, cancellationToken);
+        }
+
+        public Task<int> GetRowCountForComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
+        {
+            return _repository.GetRowCountForComponentStatusHistoryAsync(componentUid, statusUid, rangeStart, rangeEnd, cancellationToken);
+        }
+
+        private object GetComponentStatusHistorySetting(string componentUid, string statusUid, string settingUid)
+        {
+            if (_componentRegistryService.TryGetComponent(componentUid, out var component))
+            {
+                if (component.Settings.TryGetValue(settingUid, out var value))
+                {
+                    return value;
+                }
             }
 
-            return historyExtract;
+            if (_options.ComponentStatusDefaultSettings.TryGetValue(statusUid, out var defaultSettings))
+            {
+                if (defaultSettings.TryGetValue(settingUid, out var value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
         }
 
         private bool TryInitializeRepository()
@@ -191,7 +218,7 @@ namespace Wirehome.Core.History
                     }
                 }
 
-                _repository.UpdateComponentStatusValue(componentStatusValue);
+                _repository.UpdateComponentStatusValueAsync(componentStatusValue, cancellationToken).GetAwaiter().GetResult();
 
                 stopwatch.Stop();
                 _componentStatusUpdateDuration = stopwatch.ElapsedMilliseconds;
@@ -287,27 +314,6 @@ namespace Wirehome.Core.History
             }
 
             return false;
-        }
-
-        private object GetComponentStatusHistorySetting(string componentUid, string statusUid, string settingUid)
-        {
-            if (_componentRegistryService.TryGetComponent(componentUid, out var component))
-            {
-                if (component.Settings.TryGetValue(settingUid, out var value))
-                {
-                    return value;
-                }
-            }
-
-            if (_options.ComponentStatusDefaultSettings.TryGetValue(statusUid, out var defaultSettings))
-            {
-                if (defaultSettings.TryGetValue(settingUid, out var value))
-                {
-                    return value;
-                }
-            }
-
-            return null;
         }
     }
 }

@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
+using System.Threading;
+using System.Threading.Tasks;
 using Wirehome.Core.History.Repository.Entities;
 
 namespace Wirehome.Core.History.Repository
@@ -38,20 +40,20 @@ namespace Wirehome.Core.History.Repository
             }
         }
 
-        public void UpdateComponentStatusValue(ComponentStatusValue componentStatusValue)
+        public async Task UpdateComponentStatusValueAsync(ComponentStatusValue componentStatusValue, CancellationToken cancellationToken)
         {
             if (componentStatusValue == null) throw new ArgumentNullException(nameof(componentStatusValue));
 
             using (var databaseContext = CreateDatabaseContext())
             {
-                var latestEntities = databaseContext.ComponentStatus
-                    .Where(s => 
+                var latestEntities = await databaseContext.ComponentStatus
+                    .Where(s =>
                         s.ComponentUid == componentStatusValue.ComponentUid &&
                         s.StatusUid == componentStatusValue.StatusUid &&
                         s.NextEntityID == null)
                     .OrderByDescending(s => s.RangeEnd)
                     .ThenByDescending(s => s.RangeStart)
-                    .ToList();
+                    .ToListAsync(cancellationToken);
 
                 var latestEntity = latestEntities.FirstOrDefault();
 
@@ -100,27 +102,44 @@ namespace Wirehome.Core.History.Repository
                     }
                 }
 
-                databaseContext.SaveChanges();
+                await databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
-        public List<ComponentStatusEntity> GetComponentStatusValues(string componentUid, string statusUid)
+        public async Task DeleteComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
+        {
+            using (var databaseContext = CreateDatabaseContext())
+            {
+                var query = BuildQuery(databaseContext, componentUid, statusUid, rangeStart, rangeEnd);
+                databaseContext.ComponentStatus.RemoveRange(query);
+                await databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        public async Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(string componentUid, string statusUid, int maxRowsCount, CancellationToken cancellationToken)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
             using (var databaseContext = CreateDatabaseContext())
             {
-                return databaseContext.ComponentStatus
+                return await databaseContext.ComponentStatus
                     .AsNoTracking()
                     .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
                     .OrderBy(s => s.RangeStart)
                     .ThenBy(s => s.RangeEnd)
-                    .ToList();
+                    .Take(maxRowsCount)
+                    .ToListAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
-        public List<ComponentStatusEntity> GetComponentStatusValues(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd)
+        public async Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(
+            string componentUid, 
+            string statusUid, 
+            DateTime rangeStart, 
+            DateTime rangeEnd, 
+            int maxRowsCount, 
+            CancellationToken cancellationToken)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
@@ -128,19 +147,77 @@ namespace Wirehome.Core.History.Repository
 
             using (var databaseContext = CreateDatabaseContext())
             {
-                return databaseContext.ComponentStatus
+                return await databaseContext.ComponentStatus
                     .AsNoTracking()
                     .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
                     .Where(s => (s.RangeStart <= rangeEnd && s.RangeEnd >= rangeStart))
                     .OrderBy(s => s.RangeStart)
                     .ThenBy(s => s.RangeEnd)
-                    .ToList();
+                    .Take(maxRowsCount)
+                    .ToListAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
+        public async Task<int> GetRowCountForComponentStatusHistoryAsync(
+            string componentUid, 
+            string statusUid, 
+            DateTime? rangeStart, 
+            DateTime? rangeEnd, 
+            CancellationToken cancellationToken)
+        {
+            using (var databaseContext = CreateDatabaseContext())
+            {
+                var query = BuildQuery(databaseContext, componentUid, statusUid, rangeStart, rangeEnd);
+                return await query.CountAsync(cancellationToken);
+            }
+        }
+
+        private static IQueryable<ComponentStatusEntity> BuildQuery(
+            HistoryDatabaseContext databaseContext,
+            string componentUid, 
+            string statusUid,
+            DateTime? rangeStart,
+            DateTime? rangeEnd)
+        {
+            var query = databaseContext.ComponentStatus.AsQueryable();
+
+            if (!string.IsNullOrEmpty(componentUid))
+            {
+                query = query.Where(c => c.ComponentUid == componentUid);
+            }
+
+            if (!string.IsNullOrEmpty(statusUid))
+            {
+                query = query.Where(c => c.StatusUid == statusUid);
+            }
+
+            if (rangeStart.HasValue)
+            {
+                query = query.Where(c => c.RangeEnd >= rangeStart);
+            }
+
+            if (rangeEnd.HasValue)
+            {
+                query = query.Where(c => c.RangeStart <= rangeEnd);
+            }
+
+            return query;
+        }
+        
         private HistoryDatabaseContext CreateDatabaseContext()
         {
-            return new HistoryDatabaseContext(_dbContextOptions);
+            var databaseContext = new HistoryDatabaseContext(_dbContextOptions);
+
+            try
+            {
+                databaseContext.Database.SetCommandTimeout(TimeSpan.FromSeconds(120));
+            }
+            catch (InvalidOperationException)
+            {
+                // This exception is thrown in UnitTests.
+            }
+            
+            return databaseContext;
         }
 
         private static ComponentStatusEntity CreateComponentStatusEntity(
