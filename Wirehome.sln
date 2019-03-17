@@ -34,6 +34,8 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Wirehome.App", "Wirehome.Ap
 		SlnRelativePath = "Wirehome.App\"
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wirehome.Core.Setup", "Wirehome.Core.Setup\Wirehome.Core.Setup.csproj", "{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -64,6 +66,10 @@ Global
 		{5A5D2DAE-5DB9-4CCF-953B-D3361259AD48}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A5D2DAE-5DB9-4CCF-953B-D3361259AD48}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{5A5D2DAE-5DB9-4CCF-953B-D3361259AD48}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
