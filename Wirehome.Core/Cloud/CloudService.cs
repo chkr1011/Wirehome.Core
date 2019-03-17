@@ -108,6 +108,7 @@ namespace Wirehome.Core.Cloud
                             var receiveResult = await _channel.ReceiveMessageAsync(cancellationToken).ConfigureAwait(false);
                             if (receiveResult.CloseConnection || cancellationToken.IsCancellationRequested)
                             {
+                                webSocketClient.Abort();
                                 break;
                             }
 
@@ -122,13 +123,13 @@ namespace Wirehome.Core.Cloud
                 }
                 catch (Exception exception)
                 {
-                    _isConnected = false;
-                    _channel = null;
-
                     _logger.LogError(exception, $"Error while connecting with Wirehome.Cloud service at host '{_options.Host}'.");
                 }
                 finally
                 {
+                    _isConnected = false;
+                    _channel = null;
+
                     await Task.Delay(_options.ReconnectDelay, cancellationToken).ConfigureAwait(false);
                 }
             }

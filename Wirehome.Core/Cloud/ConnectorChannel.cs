@@ -199,16 +199,6 @@ namespace Wirehome.Core.Cloud
             }
         }
 
-        public Task CloseAsync()
-        {
-            if (_webSocket.State == WebSocketState.Open)
-            {
-                return _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-            }
-
-            return Task.CompletedTask;
-        }
-
         private static MemoryStream Compress(Stream data)
         {
             var result = new MemoryStream((int)data.Length / 2);
