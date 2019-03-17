@@ -61,7 +61,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public string GetResourceValue(string resourceUid, string languageCode)
         {
-            var value = _resourceService.GetResourceValue(resourceUid, languageCode, null);
+            var value = _resourceService.GetLanguageResourceValue(resourceUid, languageCode, null);
             if (value == null)
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;

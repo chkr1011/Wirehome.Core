@@ -78,7 +78,7 @@ namespace Wirehome.Core.Notifications
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var message = _resourcesService.GetResourceValueInSystemLanguage(parameters.ResourceUid);
+            var message = _resourcesService.GetResourceValue(parameters.ResourceUid);
             message = _resourcesService.FormatValue(message, parameters.Parameters);
 
             Publish(parameters.Type, message, parameters.TimeToLive);

@@ -44,7 +44,12 @@ namespace Wirehome.Core.Resources
             {
                 TryLoadResource(resourceUid);
             }
-            TryLoadDefaultResources();
+
+            var filename = Path.Combine(_storageService.BinPath, "Resources.json");
+            TryRegisterDefaultResources(filename);
+
+            filename = Path.Combine(_storageService.BinPath, "WebApp", "resources.json");
+            TryRegisterDefaultResources(filename);
         }
 
         public IList<string> GetResourceUids()
@@ -96,7 +101,7 @@ namespace Wirehome.Core.Resources
             return message;
         }
 
-        public void RegisterResource(string uid, string languageCode, string value)
+        public bool RegisterResource(string uid, string languageCode, string value)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (languageCode == null) throw new ArgumentNullException(nameof(languageCode));
@@ -108,11 +113,12 @@ namespace Wirehome.Core.Resources
                 {
                     if (resource.ContainsKey(languageCode))
                     {
-                        return;
+                        return false;
                     }
                 }
 
                 SetResourceValue(uid, languageCode, value);
+                return true;
             }
         }
 
@@ -144,7 +150,7 @@ namespace Wirehome.Core.Resources
             }
         }
 
-        public string GetResourceValue(string uid, string languageCode, string defaultValue = "")
+        public string GetLanguageResourceValue(string uid, string languageCode, string defaultValue = "")
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (languageCode == null) throw new ArgumentNullException(nameof(languageCode));
@@ -157,18 +163,23 @@ namespace Wirehome.Core.Resources
                     {
                         return value;
                     }
+
+                    if (resource.TryGetValue("", out value))
+                    {
+                        return value;
+                    }
                 }
 
                 return defaultValue;
             }
         }
 
-        public string GetResourceValueInSystemLanguage(string uid, string defaultValue = "")
+        public string GetResourceValue(string uid, string defaultValue = "")
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             var systemLanguageCode = _globalVariablesService.GetValue(GlobalVariableUids.LanguageCode) as string;
-            return GetResourceValue(uid, systemLanguageCode, defaultValue);
+            return GetLanguageResourceValue(uid, systemLanguageCode, defaultValue);
         }
 
         private string ConvertValue(object value)
@@ -197,9 +208,8 @@ namespace Wirehome.Core.Resources
             }
         }
 
-        private void TryLoadDefaultResources()
+        private void TryRegisterDefaultResources(string filename)
         {
-            var filename = Path.Combine(_storageService.BinPath, "WebApp", "resources.json");
             if (!_jsonSerializerService.TryDeserializeFile(filename, out Dictionary<string, Dictionary<string, string>> defaultResources))
             {
                 return;

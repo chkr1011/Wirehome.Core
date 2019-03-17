@@ -43,4 +43,10 @@
     <PackageReference Include="System.Net.WebSockets.Client" Version="4.3.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Resources.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
