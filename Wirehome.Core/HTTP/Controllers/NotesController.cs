@@ -7,6 +7,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class NotesController : Controller
     {
         private const string NotesDirectory = "Notes";

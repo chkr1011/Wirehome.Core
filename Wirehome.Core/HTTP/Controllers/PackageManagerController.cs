@@ -6,6 +6,7 @@ using Wirehome.Core.Packages;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class PackageManagerController : Controller
     {
         private readonly PackageManagerService _packageManagerService;

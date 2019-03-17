@@ -4,6 +4,7 @@ using Wirehome.Core.Hardware.I2C;
 
 namespace Wirehome.Core.HTTP.Controllers.Hardware
 {
+    [ApiController]
     public class I2CController : Controller
     {
         private readonly I2CBusService _i2CBusService;

@@ -5,6 +5,7 @@ using Wirehome.Core.Diagnostics.Log;
 
 namespace Wirehome.Core.HTTP.Controllers.Diagnostics
 {
+    [ApiController]
     public class LogController : Controller
     {
         private readonly LogService _logService;

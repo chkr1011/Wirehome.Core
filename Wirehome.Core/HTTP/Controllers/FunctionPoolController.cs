@@ -6,6 +6,7 @@ using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class FunctionPoolController : Controller
     {
         private readonly FunctionPoolService _functionPoolService;

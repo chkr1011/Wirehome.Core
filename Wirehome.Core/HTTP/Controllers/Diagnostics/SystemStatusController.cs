@@ -6,6 +6,7 @@ using Wirehome.Core.System;
 
 namespace Wirehome.Core.HTTP.Controllers.Diagnostics
 {
+    [ApiController]
     public class SystemStatusController : Controller
     {
         private readonly SystemStatusService _systemStatusService;

@@ -11,6 +11,7 @@ using Wirehome.Core.HTTP.Controllers.Models;
 
 namespace Wirehome.Core.HTTP.Controllers.Hardware
 {
+    [ApiController]
     public class MqttController : Controller
     {
         private readonly MqttService _mqttService;

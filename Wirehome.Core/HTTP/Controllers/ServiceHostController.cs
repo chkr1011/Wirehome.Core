@@ -9,6 +9,7 @@ using Wirehome.Core.ServiceHost.Exceptions;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class ServiceHostController : Controller
     {
         private readonly ServiceHostService _serviceHostService;

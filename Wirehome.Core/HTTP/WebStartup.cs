@@ -53,7 +53,7 @@ namespace Wirehome.Core.HTTP
                 options.AddConsole();
             });
 
-            IMvcBuilder mvcBuilder = services.AddMvc(config => config.Filters.Add(new NotFoundExceptionFilter()));
+            IMvcBuilder mvcBuilder = services.AddMvc(config => config.Filters.Add(new DefaultExceptionFilter()));
             mvcBuilder.ConfigureApplicationPartManager(manager =>
             {
                 manager.FeatureProviders.Remove(manager.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
@@ -62,6 +62,7 @@ namespace Wirehome.Core.HTTP
 
             services.AddSwaggerGen(c =>
             {
+                c.DescribeAllEnumsAsStrings();                
                 c.SwaggerDoc("v1", new Info
                 {
                     Title = "Wirehome.Core API",

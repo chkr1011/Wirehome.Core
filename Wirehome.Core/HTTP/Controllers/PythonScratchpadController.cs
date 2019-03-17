@@ -6,6 +6,7 @@ using Wirehome.Core.Python.Models;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class PythonScratchpadController : Controller
     {
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;

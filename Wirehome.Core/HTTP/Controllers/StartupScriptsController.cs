@@ -8,6 +8,7 @@ using Wirehome.Core.System.StartupScripts;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class StartupScriptsController : Controller
     {
         private readonly StartupScriptsService _startupScriptsService;

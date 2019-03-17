@@ -9,6 +9,7 @@ using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class MacrosController : Controller
     {
         private readonly MacroRegistryService _macroRegistryService;

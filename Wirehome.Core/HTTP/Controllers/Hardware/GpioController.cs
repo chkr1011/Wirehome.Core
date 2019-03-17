@@ -4,6 +4,7 @@ using Wirehome.Core.Hardware.GPIO;
 
 namespace Wirehome.Core.HTTP.Controllers.Hardware
 {
+    [ApiController]
     public class GpioController : Controller
     {
         private readonly GpioRegistryService _gpioService;

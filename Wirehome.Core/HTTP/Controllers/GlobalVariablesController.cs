@@ -6,6 +6,7 @@ using Wirehome.Core.GlobalVariables;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class GlobalVariablesController : Controller
     {
         private readonly GlobalVariablesService _globalVariablesService;

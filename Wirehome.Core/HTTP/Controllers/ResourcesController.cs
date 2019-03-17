@@ -6,6 +6,7 @@ using Wirehome.Core.Resources;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class ResourcesController : Controller
     {
         private readonly ResourceService _resourceService;

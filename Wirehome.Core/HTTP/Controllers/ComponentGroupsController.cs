@@ -8,6 +8,7 @@ using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class ComponentGroupsController : Controller
     {
         private readonly ComponentGroupRegistryService _componentGroupRegistryService;

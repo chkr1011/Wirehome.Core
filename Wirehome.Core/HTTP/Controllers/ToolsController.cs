@@ -10,6 +10,7 @@ using Wirehome.Core.Python.Models;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class ToolsController : Controller
     {
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;

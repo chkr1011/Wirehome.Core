@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Components;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Exceptions;
-using Wirehome.Core.Constants;
 using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class ComponentsController : Controller
     {
         private readonly ComponentRegistryService _componentRegistryService;

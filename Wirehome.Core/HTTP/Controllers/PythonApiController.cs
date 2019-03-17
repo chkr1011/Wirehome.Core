@@ -4,6 +4,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class PythonApiController : Controller
     {
         private readonly PythonProxyFactory _pythonProxyFactory;

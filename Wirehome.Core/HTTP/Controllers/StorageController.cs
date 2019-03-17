@@ -6,6 +6,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
+    [ApiController]
     public class StorageController : Controller
     {
         private readonly StorageService _storageService;
