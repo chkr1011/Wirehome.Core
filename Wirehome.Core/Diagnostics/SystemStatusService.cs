@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Diagnostics
@@ -8,6 +9,13 @@ namespace Wirehome.Core.Diagnostics
     public class SystemStatusService : IService
     {
         private readonly ConcurrentDictionary<string, Func<object>> _values = new ConcurrentDictionary<string, Func<object>>();
+
+        private readonly ILogger<SystemStatusService> _logger;
+
+        public SystemStatusService(ILogger<SystemStatusService> logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
         public void Start()
         {
@@ -58,7 +66,19 @@ namespace Wirehome.Core.Diagnostics
             var result = new Dictionary<string, object>();
             foreach (var value in _values)
             {
-                result[value.Key] = value.Value();
+                object effectiveValue;
+
+                try
+                {
+                    effectiveValue = value.Value();
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogWarning(exception, $"Error while propagating value for system status '{value.Key}'.");
+                    effectiveValue = null;
+                }
+
+                result[value.Key] = effectiveValue;
             }
 
             return result;
