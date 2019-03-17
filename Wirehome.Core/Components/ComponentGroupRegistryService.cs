@@ -68,7 +68,7 @@ namespace Wirehome.Core.Components
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, ComponentGroupsDirectory, DefaultFilenames.Configuration);
+            _storageService.Write(configuration, ComponentGroupsDirectory, uid, DefaultFilenames.Configuration);
         }
 
         public void DeleteComponentGroup(string uid)
@@ -335,15 +335,15 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public object GetComponentGroupSetting(string uid, string settingUid)
+        public object GetComponentGroupSetting(string componentGroupUid, string settingUid)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
             ComponentGroup componentGroup;
             lock (_componentGroups)
             {
-                if (!_componentGroups.TryGetValue(uid, out componentGroup))
+                if (!_componentGroups.TryGetValue(componentGroupUid, out componentGroup))
                 {
                     return null;
                 }
@@ -352,15 +352,15 @@ namespace Wirehome.Core.Components
             return componentGroup.Settings.GetValueOrDefault(settingUid);
         }
 
-        public void SetComponentGroupSetting(string uid, string settingUid, object value)
+        public void SetComponentGroupSetting(string componentGroupUid, string settingUid, object value)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
             ComponentGroup componentGroup;
             lock (_componentGroups)
             {
-                if (!_componentGroups.TryGetValue(uid, out componentGroup))
+                if (!_componentGroups.TryGetValue(componentGroupUid, out componentGroup))
                 {
                     return;
                 }
@@ -373,27 +373,57 @@ namespace Wirehome.Core.Components
             }
 
             componentGroup.Settings[settingUid] = value;
-            _storageService.Write(componentGroup.Settings, ComponentGroupsDirectory, uid);
+            _storageService.Write(componentGroup.Settings, ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
 
             _logger.Log(
                 LogLevel.Debug,
                 "Component group '{0}' setting '{1}' changed from '{2}' to '{3}'.",
-                uid,
+                componentGroupUid,
                 settingUid,
                 oldValue ?? "<null>",
                 value ?? "<null>");
 
             _messageBusService.Publish(new WirehomeDictionary()
                 .WithType("component_group_registry.event.setting_changed")
-                .WithValue("component_group_uid", uid)
+                .WithValue("component_group_uid", componentGroupUid)
                 .WithValue("setting_uid", settingUid)
                 .WithValue("old_value", oldValue)
                 .WithValue("new_value", oldValue));
         }
 
-        public object RemoveComponentGroupSetting(string componentGroupUid, string settingUid)
+        public void RemoveComponentGroupSetting(string componentGroupUid, string settingUid)
         {
-            throw new NotImplementedException();
+            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
+            if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
+
+            ComponentGroup componentGroup;
+            lock (_componentGroups)
+            {
+                if (!_componentGroups.TryGetValue(componentGroupUid, out componentGroup))
+                {
+                    return;
+                }
+            }
+
+            if (!componentGroup.Settings.TryRemove(settingUid, out var oldValue))
+            {
+                return;
+            }
+
+            _storageService.Write(componentGroup.Settings, ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
+
+            _logger.Log(
+                LogLevel.Debug,
+                "Component group '{0}' setting '{1}' removed.",
+                componentGroupUid,
+                settingUid,
+                oldValue ?? "<null>");
+
+            _messageBusService.Publish(new WirehomeDictionary()
+                .WithType("component_group_registry.event.setting_removed")
+                .WithValue("component_group_uid", componentGroupUid)
+                .WithValue("setting_uid", settingUid)
+                .WithValue("old_value", oldValue));
         }
 
         private void Save()
