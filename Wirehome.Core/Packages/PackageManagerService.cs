@@ -156,6 +156,11 @@ namespace Wirehome.Core.Packages
         {
             rootPath = Path.Combine(rootPath, id);
 
+            if (!Directory.Exists(rootPath))
+            {
+                throw new WirehomePackageNotFoundException(PackageUid.Parse(id));
+            }
+
             var versions = Directory.GetDirectories(rootPath)
                 .OrderByDescending(d => d.ToLowerInvariant());
 
