@@ -56,7 +56,7 @@ namespace Wirehome.Core.Cloud
 
         public void Start()
         {
-            _storageService.TryReadOrCreate(out _options, "CloudServiceConfiguration.json");
+            _storageService.TryReadOrCreate(out _options, CloudServiceOptions.Filename);
 
             if (!_options.IsEnabled)
             {
