@@ -40,16 +40,16 @@ namespace Wirehome.Core.Cloud
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("cloud.is_connected", () => _isConnected);
-            systemStatusService.Set("cloud.bytes_sent", () => _channel.GetStatistics().BytesSent);
-            systemStatusService.Set("cloud.bytes_received", () => _channel.GetStatistics().BytesReceived);
-            systemStatusService.Set("cloud.connected", () => _channel.GetStatistics().Connected.ToString("O"));
-            systemStatusService.Set("cloud.last_message_received", () => _channel.GetStatistics().LastMessageReceived?.ToString("O"));
-            systemStatusService.Set("cloud.last_message_sent", () => _channel.GetStatistics().LastMessageSent?.ToString("O"));
-            systemStatusService.Set("cloud.messages_received", () => _channel.GetStatistics().MessagesReceived);
-            systemStatusService.Set("cloud.messages_sent", () => _channel.GetStatistics().LastMessageSent);
-            systemStatusService.Set("cloud.malformed_messages_received", () => _channel.GetStatistics().MalformedMessagesReceived);
-            systemStatusService.Set("cloud.receive_errors", () => _channel.GetStatistics().ReceiveErrors);
-            systemStatusService.Set("cloud.send_errors", () => _channel.GetStatistics().SendErrors);
+            systemStatusService.Set("cloud.bytes_sent", () => _channel?.GetStatistics()?.BytesSent);
+            systemStatusService.Set("cloud.bytes_received", () => _channel?.GetStatistics()?.BytesReceived);
+            systemStatusService.Set("cloud.connected", () => _channel?.GetStatistics()?.Connected.ToString("O"));
+            systemStatusService.Set("cloud.last_message_received", () => _channel?.GetStatistics()?.LastMessageReceived?.ToString("O"));
+            systemStatusService.Set("cloud.last_message_sent", () => _channel?.GetStatistics()?.LastMessageSent?.ToString("O"));
+            systemStatusService.Set("cloud.messages_received", () => _channel?.GetStatistics()?.MessagesReceived);
+            systemStatusService.Set("cloud.messages_sent", () => _channel?.GetStatistics()?.LastMessageSent);
+            systemStatusService.Set("cloud.malformed_messages_received", () => _channel?.GetStatistics()?.MalformedMessagesReceived);
+            systemStatusService.Set("cloud.receive_errors", () => _channel?.GetStatistics()?.ReceiveErrors);
+            systemStatusService.Set("cloud.send_errors", () => _channel?.GetStatistics()?.SendErrors);
 
             _httpClient.BaseAddress = new Uri("http://127.0.0.1:80");
         }
