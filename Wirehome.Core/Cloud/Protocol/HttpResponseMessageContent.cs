@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Wirehome.Core.Cloud.Messages
+namespace Wirehome.Core.Cloud.Protocol
 {
     public class HttpResponseMessageContent
     {

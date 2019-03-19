@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Packages.GitHub
 {
-    public class GitHubFileEntry
+    public class GitHubItem
     {
         [JsonProperty("name")]
         public string Name { get; set; }
@@ -12,5 +12,8 @@ namespace Wirehome.Core.Packages.GitHub
 
         [JsonProperty("download_url")]
         public string DownloadUrl { get; set; }
+
+        [JsonProperty("type")]
+        public string Type { get; set; }
     }
 }

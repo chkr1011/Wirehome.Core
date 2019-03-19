@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,14 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
+        [Route("/api/v1/packages/uids")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<PackageUid> GetPackageUids()
+        {
+            return _packageManagerService.GetPackageUids();
+        }
+
+        [HttpGet]
         [Route("/api/v1/packages/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
         public PackageMetaData GetMetaInformation(string uid)
@@ -30,7 +39,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return null;
             }
 
-            return _packageManagerService.GetMetaData(packageUid);
+            return _packageManagerService.GetPackageMetaData(packageUid);
         }
 
         [HttpGet]
@@ -47,7 +56,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return null;
             }
 
-            return _packageManagerService.GetDescription(packageUid);
+            return _packageManagerService.GetPackageDescription(packageUid);
         }
 
         [HttpGet]
@@ -64,7 +73,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return null;
             }
 
-            return _packageManagerService.GetReleaseNotes(packageUid);
+            return _packageManagerService.GetPackageReleaseNotes(packageUid);
         }
 
         [HttpPost]
@@ -90,7 +99,7 @@ namespace Wirehome.Core.HTTP.Controllers
         public async Task ForkPackage(string uid, string forkUid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (uid == null) throw new ArgumentNullException(nameof(forkUid));
+            if (forkUid == null) throw new ArgumentNullException(nameof(forkUid));
 
             var packageUid = PackageUid.Parse(uid);
             if (string.IsNullOrEmpty(packageUid.Version))
@@ -114,8 +123,6 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeletePackage(string uid)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
             _packageManagerService.DeletePackage(PackageUid.Parse(uid));
         }
     }

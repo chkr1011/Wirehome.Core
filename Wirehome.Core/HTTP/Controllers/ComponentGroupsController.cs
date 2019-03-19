@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Components;
-using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
@@ -47,15 +45,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public ComponentGroupConfiguration GetConfiguration(string uid)
         {
-            try
-            {
-                return _componentGroupRegistryService.ReadComponentGroupConfiguration(uid);
-            }
-            catch (ComponentGroupNotFoundException)
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
+            return _componentGroupRegistryService.ReadComponentGroupConfiguration(uid);
         }
 
         [HttpDelete]
@@ -127,13 +117,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public ConcurrentWirehomeDictionary GetStatus(string uid)
         {
-            if (!_componentGroupRegistryService.TryGetComponentGroup(uid, out var componentGroup))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
-
-            return componentGroup.Status;
+            return _componentGroupRegistryService.GetComponentGroup(uid).Status;
         }
 
         [HttpGet]
@@ -141,13 +125,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public ConcurrentWirehomeDictionary GetSettings(string uid)
         {
-            if (!_componentGroupRegistryService.TryGetComponentGroup(uid, out var componentGroup))
-            {
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                return null;
-            }
-
-            return componentGroup.Settings;
+            return _componentGroupRegistryService.GetComponentGroup(uid).Settings;
         }
 
         [HttpPost]

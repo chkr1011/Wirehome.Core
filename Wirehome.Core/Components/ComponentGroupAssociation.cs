@@ -4,6 +4,6 @@ namespace Wirehome.Core.Components
 {
     public class ComponentGroupAssociation
     {
-        public WirehomeDictionary Settings { get; set; } = new WirehomeDictionary();
+        public ConcurrentWirehomeDictionary Settings { get; set; } = new ConcurrentWirehomeDictionary();
     }
 }

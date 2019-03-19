@@ -89,6 +89,7 @@ namespace Wirehome.Core.Components
             _storageService.DeleteDirectory(ComponentsDirectory, uid);
         }
 
+
         public WirehomeDictionary EnableComponent(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));

@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Wirehome.Core.Cloud;
@@ -100,7 +99,9 @@ namespace Wirehome.Core.HTTP
             HttpServerService httpServerService,
             LogService logService,
             ILoggerFactory loggerFactory,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            GlobalVariablesService globalVariablesService,
+            PackageManagerService packageManagerService)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             if (env == null) throw new ArgumentNullException(nameof(env));
@@ -116,7 +117,7 @@ namespace Wirehome.Core.HTTP
             }
 
             ConfigureSwagger(app);
-            ConfigureWebApps(app);
+            ConfigureWebApps(app, globalVariablesService, packageManagerService);
             ConfigureMvc(app);
 
             app.Run(httpServerService.HandleRequestAsync);
@@ -126,7 +127,7 @@ namespace Wirehome.Core.HTTP
 
         private void StartServices(IServiceProvider serviceProvider)
         {
-            SystemService systemService = serviceProvider.GetRequiredService<SystemService>();
+            var systemService = serviceProvider.GetRequiredService<SystemService>();
             systemService.Start();
 
             serviceProvider.GetRequiredService<StorageService>().Start();
@@ -148,7 +149,7 @@ namespace Wirehome.Core.HTTP
 
             serviceProvider.GetRequiredService<PythonEngineService>().Start();
 
-            StartupScriptsService startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
+            var startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
             startupScriptsService.Start();
 
             serviceProvider.GetRequiredService<FunctionPoolService>().Start();
@@ -180,12 +181,8 @@ namespace Wirehome.Core.HTTP
             });
         }
 
-        private static void ConfigureWebApps(IApplicationBuilder app)
+        private static void ConfigureWebApps(IApplicationBuilder app, GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
         {
-            var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            var webAppRootPath = Path.Combine(baseDirectory, "WebApp");
-            var webConfiguratorRootPath = Path.Combine(baseDirectory, "WebConfigurator");
-
             var storagePaths = new StoragePaths();
             var customContentRootPath = Path.Combine(storagePaths.DataPath, "CustomContent");
 
@@ -200,27 +197,12 @@ namespace Wirehome.Core.HTTP
                 }
             }
 
-            if (Debugger.IsAttached)
+            app.UseFileServer(new FileServerOptions
             {
-                webAppRootPath = Path.Combine(
-                    baseDirectory,
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "Wirehome.App");
+                RequestPath = "/app",
+                FileProvider = new AppFileProvider(globalVariablesService, packageManagerService)
+            });
 
-                webConfiguratorRootPath = Path.Combine(
-                    baseDirectory,
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "Wirehome.Configurator");
-            }
-
-            ExposeDirectory(app, "/app", webAppRootPath);
-            ExposeDirectory(app, "/configurator", webConfiguratorRootPath);
             ExposeDirectory(app, "/customContent", customContentRootPath);
             ExposeDirectory(app, "/packages", packagesRootPath);
         }

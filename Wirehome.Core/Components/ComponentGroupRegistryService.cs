@@ -160,16 +160,6 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public bool TryGetComponentGroup(string uid, out ComponentGroup componentGroup)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_componentGroups)
-            {
-                return _componentGroups.TryGetValue(uid, out componentGroup);
-            }
-        }
-
         public ComponentGroup GetComponentGroup(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));

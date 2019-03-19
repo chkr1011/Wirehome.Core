@@ -4,10 +4,9 @@ using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
-using Wirehome.Core.Cloud.Messages;
+using Wirehome.Core.Cloud.Protocol;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
@@ -29,7 +28,6 @@ namespace Wirehome.Core.Cloud
 
         private readonly ILogger _logger;
 
-        private CloudServiceOptions _options;
         private ConnectorChannel _channel;
         private bool _isConnected;
 
@@ -46,7 +44,7 @@ namespace Wirehome.Core.Cloud
             systemStatusService.Set("cloud.last_message_received", () => _channel?.GetStatistics()?.LastMessageReceived?.ToString("O"));
             systemStatusService.Set("cloud.last_message_sent", () => _channel?.GetStatistics()?.LastMessageSent?.ToString("O"));
             systemStatusService.Set("cloud.messages_received", () => _channel?.GetStatistics()?.MessagesReceived);
-            systemStatusService.Set("cloud.messages_sent", () => _channel?.GetStatistics()?.LastMessageSent);
+            systemStatusService.Set("cloud.messages_sent", () => _channel?.GetStatistics()?.MessagesSent);
             systemStatusService.Set("cloud.malformed_messages_received", () => _channel?.GetStatistics()?.MalformedMessagesReceived);
             systemStatusService.Set("cloud.receive_errors", () => _channel?.GetStatistics()?.ReceiveErrors);
             systemStatusService.Set("cloud.send_errors", () => _channel?.GetStatistics()?.SendErrors);
@@ -56,13 +54,6 @@ namespace Wirehome.Core.Cloud
 
         public void Start()
         {
-            _storageService.TryReadOrCreate(out _options, CloudServiceOptions.Filename);
-
-            if (!_options.IsEnabled)
-            {
-                return;
-            }
-
             Task.Run(() => ConnectAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token).Forget(_logger);
         }
 
@@ -78,29 +69,42 @@ namespace Wirehome.Core.Cloud
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                CloudServiceOptions options = null;
                 try
                 {
                     _isConnected = false;
 
-                    if (string.IsNullOrEmpty(_options.IdentityUid) || string.IsNullOrEmpty(_options.Password))
+                    if (!_storageService.TryReadOrCreate(out options,CloudServiceOptions.Filename) || options == null)
+                    {
+                        continue;
+                    }
+
+                    if (!options.IsEnabled)
+                    {
+                        continue;
+                    }
+
+                    if (string.IsNullOrEmpty(options.IdentityUid) || string.IsNullOrEmpty(options.Password))
                     {
                         continue;
                     }
 
                     using (var webSocketClient = new ClientWebSocket())
                     {
-                        using (var timeout = new CancellationTokenSource(_options.ReconnectDelay))
+                        using (var timeout = new CancellationTokenSource(options.ReconnectDelay))
                         {
-                            var encodedIdentityUid = HttpUtility.UrlEncode(_options.IdentityUid);
-                            var encodedChannelUid = HttpUtility.UrlEncode(_options.ChannelUid);
-                            var encodedPassword = HttpUtility.UrlEncode(_options.Password);
+                            var url = $"wss://{options.Host}/Connector";
 
-                            var url = $"wss://{_options.Host}/Connectors/{encodedIdentityUid}/Channels/{encodedChannelUid}?password={encodedPassword}";
+                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.IdentityUid, options.IdentityUid);
+                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.ChannelUid, options.ChannelUid);
+                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.Password, options.Password);
+                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.Version, WirehomeCoreVersion.Version);
+
                             await webSocketClient.ConnectAsync(new Uri(url, UriKind.Absolute), timeout.Token).ConfigureAwait(false);
                         }
 
                         _channel = new ConnectorChannel(webSocketClient, _logger);
-                        _logger.LogInformation($"Connected with Wirehome.Cloud at host '{_options.Host}'.");
+                        _logger.LogInformation($"Connected with Wirehome.Cloud at host '{options.Host}'.");
                         _isConnected = true;
 
                         while (_channel.IsConnected && !cancellationToken.IsCancellationRequested)
@@ -123,14 +127,20 @@ namespace Wirehome.Core.Cloud
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogError(exception, $"Error while connecting with Wirehome.Cloud service at host '{_options.Host}'.");
+                    _logger.LogError(exception, $"Error while connecting with Wirehome.Cloud service at host '{options?.Host}'.");
                 }
                 finally
                 {
                     _isConnected = false;
                     _channel = null;
 
-                    await Task.Delay(_options.ReconnectDelay, cancellationToken).ConfigureAwait(false);
+                    var delay = TimeSpan.FromSeconds(10);
+                    if (options != null && options.ReconnectDelay > TimeSpan.Zero)
+                    {
+                        delay = options.ReconnectDelay;
+                    }
+
+                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
                 }
             }
         }

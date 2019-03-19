@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Model;
@@ -33,20 +34,9 @@ namespace Wirehome.Core.GlobalVariables
             lock (_variables)
             {
                 Load();
-            }
-        }
 
-        public void RegisterValue(string uid, object value)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_variables)
-            {
-                if (!_variables.ContainsKey(uid))
-                {
-                    _variables.Add(uid, value);
-                    Save();
-                }
+                RegisterValue(GlobalVariableUids.AppPackageUid, "wirehome.app@1.0.0");
+                RegisterValue(GlobalVariableUids.LanguageCode, "en");
             }
         }
 
@@ -137,6 +127,17 @@ namespace Wirehome.Core.GlobalVariables
 
             _logger.LogInformation("Global variable '{0}' removed.", uid);
             _messageBusService.Publish(busMessage);
+        }
+
+        private void RegisterValue(string uid, object value)
+        {
+            if (uid == null) throw new ArgumentNullException(nameof(uid));
+
+            if (!_variables.ContainsKey(uid))
+            {
+                _variables.Add(uid, value);
+                Save();
+            }
         }
 
         private void Load()

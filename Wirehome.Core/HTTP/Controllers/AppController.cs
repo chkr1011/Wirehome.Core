@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.App;
-using Wirehome.Core.Storage;
+using Wirehome.Core.Constants;
+using Wirehome.Core.GlobalVariables;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -10,25 +11,31 @@ namespace Wirehome.Core.HTTP.Controllers
     public class AppController : Controller
     {
         private readonly AppService _appService;
-        private readonly StorageService _storageService;
+        private readonly GlobalVariablesService _globalVariablesService;
 
-        public AppController(AppService appService, StorageService storageService)
+        public AppController(AppService appService, GlobalVariablesService globalVariablesService)
         {
             _appService = appService ?? throw new ArgumentNullException(nameof(appService));
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
         }
 
         [HttpGet]
-        [Route("api/v1/app/version")]
+        [Route("api/v1/app/package_uid")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ActionResult<string> GetVersion()
+        public ActionResult<object> GetPackageUid()
         {
-            if (_storageService.TryReadBinText(out var version, "WebApp", "version.txt"))
-            {
-                return Content(version);
-            }
+            return _globalVariablesService.GetValue(GlobalVariableUids.AppPackageUid);
+        }
 
-            return NotFound();
+        [HttpGet]
+        [Route("api/v1/app/access_type")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public ActionResult<string> GetAccessType()
+        {
+            // This API will always return "local" because it IS local access if this point is reached.
+            // Wirehome.Cloud will override this API and return "remote" always. Using this same URI the
+            // app can properly distinguish.
+            return "local";
         }
 
         [HttpGet]

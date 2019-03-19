@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,8 @@ namespace Wirehome.Core.Packages
 {
     public class PackageManagerService : IService
     {
+        private const string PackagesDirectory = "Packages";
+
         private readonly StorageService _storageService;
         private readonly ILogger _logger;
 
@@ -93,6 +96,27 @@ namespace Wirehome.Core.Packages
             return Task.CompletedTask;
         }
 
+        public List<PackageUid> GetPackageUids()
+        {
+            var packageUids = new List<PackageUid>();
+
+            var packagesRootPath = GetPackagesRootPath();
+            foreach (var packageId in _storageService.EnumeratureDirectories("*", packagesRootPath))
+            {
+                if (packageId.StartsWith("."))
+                {
+                    continue;
+                }
+
+                foreach (var packageVersion in _storageService.EnumeratureDirectories("*", packagesRootPath, packageId))
+                {
+                    packageUids.Add(new PackageUid(packageId, packageVersion));
+                }
+            }
+
+            return packageUids;
+        }
+
         public void DeletePackage(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
@@ -107,38 +131,30 @@ namespace Wirehome.Core.Packages
             _logger.Log(LogLevel.Information, $"Deleted package '{uid}'.");
         }
 
-        public PackageMetaData GetMetaData(PackageUid uid)
+        public PackageMetaData GetPackageMetaData(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             return LoadPackage(uid).MetaData;
         }
 
-        public string GetDescription(PackageUid uid)
+        public string GetPackageDescription(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             return LoadPackage(uid).Description;
         }
 
-        public string GetReleaseNotes(PackageUid uid)
+        public string GetPackageReleaseNotes(PackageUid uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             return LoadPackage(uid).ReleaseNotes;
         }
 
-        private string GetPackageRootPath(PackageUid uid)
+        public string GetPackageRootPath(PackageUid uid)
         {
-            _storageService.TryReadOrCreate(out PackageManagerServiceOptions options, PackageManagerServiceOptions.Filename);
-            
-            var rootPath = options.RootPath;
-            if (string.IsNullOrEmpty(rootPath))
-            {
-                rootPath = Path.Combine(_storageService.DataPath, "Packages");
-            }
-
-            var path = rootPath;
+            var path = GetPackagesRootPath();
 
             if (string.IsNullOrEmpty(uid.Version))
             {
@@ -150,6 +166,19 @@ namespace Wirehome.Core.Packages
             }
 
             return path;
+        }
+
+        private string GetPackagesRootPath()
+        {
+            _storageService.TryReadOrCreate(out PackageManagerServiceOptions options, PackageManagerServiceOptions.Filename);
+
+            var rootPath = options.RootPath;
+            if (string.IsNullOrEmpty(rootPath))
+            {
+                rootPath = Path.Combine(_storageService.DataPath, PackagesDirectory);
+            }
+
+            return rootPath;
         }
 
         private static string GetLatestVersionPath(string rootPath, string id)

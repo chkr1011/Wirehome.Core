@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
-namespace Wirehome.Core.Cloud.Messages
+namespace Wirehome.Core.Cloud.Protocol
 {
     public class CloudMessage
     {

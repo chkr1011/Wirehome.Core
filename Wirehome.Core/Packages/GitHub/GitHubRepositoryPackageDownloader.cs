@@ -8,16 +8,14 @@ using Newtonsoft.Json;
 
 namespace Wirehome.Core.Packages.GitHub
 {
-    // TODO: Do not write to repo directly. Get "Temp" path from StorageService
-    // TODO: Or load all files into memory and return the result and the repo service will store all.
     public class GitHubRepositoryPackageDownloader
     {
-        private readonly PackageManagerServiceOptions _settings;
+        private readonly PackageManagerServiceOptions _options;
         private readonly ILogger _logger;
 
-        public GitHubRepositoryPackageDownloader(PackageManagerServiceOptions settings, ILogger logger)
+        public GitHubRepositoryPackageDownloader(PackageManagerServiceOptions options, ILogger logger)
         {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -31,7 +29,7 @@ namespace Wirehome.Core.Packages.GitHub
             {
                 Directory.Delete(tempPath, true);
             }
-            
+
             Directory.CreateDirectory(tempPath);
 
             using (var httpClient = new HttpClient())
@@ -40,29 +38,64 @@ namespace Wirehome.Core.Packages.GitHub
                 // https://developer.github.com/v3/?#user-agent-required
                 httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wirehome.Core");
 
-                var uri = $"{_settings.OfficialRepositoryBaseUri}/{packageUid.Id}/{packageUid.Version}";
-                _logger.LogInformation($"Downloading file list from '{uri}'.");
-
-                var fileListContent = await httpClient.GetStringAsync(uri).ConfigureAwait(false);
-                var fileList = JsonConvert.DeserializeObject<List<GitHubFileEntry>>(fileListContent);
-                
-                foreach (var fileEntry in fileList)
+                var rootItem = new GitHubItem
                 {
-                    uri = fileEntry.DownloadUrl;
-                    _logger.LogInformation($"Downloading file '{uri}' (Size = {fileEntry.Size} bytes).");
+                    Type = "dir",
+                    DownloadUrl = $"{_options.OfficialRepositoryBaseUri}/{packageUid.Id}/{packageUid.Version}"
+                };
 
-                    var fileContent = await httpClient.GetByteArrayAsync(uri).ConfigureAwait(false);
-                    var filename = Path.Combine(tempPath, fileEntry.Name);
+                await DownloadDirectoryAsync(httpClient, rootItem, tempPath).ConfigureAwait(false);
+            }
 
-                    await File.WriteAllBytesAsync(filename, fileContent).ConfigureAwait(false);
-                }
+            if (Directory.Exists(targetPath))
+            {
+                Directory.Delete(targetPath, true);
+            }
 
-                if (Directory.Exists(targetPath))
+            Directory.Move(tempPath, targetPath);
+        }
+
+        private async Task DownloadFileAsync(HttpClient httpClient, GitHubItem item, string localDirectory)
+        {
+            var uri = item.DownloadUrl;
+
+            _logger.LogTrace($"Downloading file '{uri}' (Size = {item.Size} bytes).");
+
+            var fileContent = await httpClient.GetByteArrayAsync(uri).ConfigureAwait(false);
+            var filename = Path.Combine(localDirectory, item.Name);
+
+            await File.WriteAllBytesAsync(filename, fileContent).ConfigureAwait(false);
+        }
+
+        private async Task DownloadDirectoryAsync(HttpClient httpClient, GitHubItem item, string localDirectory)
+        {
+            if (!string.IsNullOrEmpty(item.Name))
+            {
+                localDirectory = Path.Combine(localDirectory, item.Name);
+            }
+
+            if (!Directory.Exists(localDirectory))
+            {
+                Directory.CreateDirectory(localDirectory);
+            }
+
+            _logger.LogTrace($"Downloading item list for directory '{localDirectory}'.");
+
+            var subItemsContent = await httpClient.GetStringAsync(item.DownloadUrl).ConfigureAwait(false);
+            var subItems = JsonConvert.DeserializeObject<List<GitHubItem>>(subItemsContent);
+
+            foreach (var subItem in subItems)
+            {
+                if (subItem.Type == "file")
                 {
-                    Directory.Delete(targetPath, true);
+                    await DownloadFileAsync(httpClient, subItem, localDirectory).ConfigureAwait(false);
                 }
-                
-                Directory.Move(tempPath, targetPath);
+                else if (subItem.Type == "dir")
+                {
+                    subItem.DownloadUrl = item.DownloadUrl.TrimEnd('/') + "/" + subItem.Name;
+
+                    await DownloadDirectoryAsync(httpClient, subItem, localDirectory).ConfigureAwait(false);
+                }
             }
         }
     }

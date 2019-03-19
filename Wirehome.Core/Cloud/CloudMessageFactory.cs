@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
-using Wirehome.Core.Cloud.Messages;
+using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Core.Cloud
 {

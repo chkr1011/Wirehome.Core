@@ -48,22 +48,16 @@ namespace Wirehome.Core.HTTP.Controllers
             try
             {
                 var tcs = new TaskCompletionSource<MessageBusMessage>();
+
                 foreach (var filter in filters)
                 {
                     var subscriptionUid = "api_wait_for:" + Guid.NewGuid().ToString("D");
                     subscriptions.Add(_messageBusService.Subscribe(subscriptionUid, filter, m => tcs.TrySetResult(m)));
                 }
 
-                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout)))
+                using (var timeoutToken = new CancellationTokenSource(TimeSpan.FromSeconds(timeout)))
+                using (timeoutToken.Token.Register(() => { tcs.TrySetCanceled(); }))
                 {
-                    timeoutCts.Token.Register(() =>
-                    {
-                        if (!tcs.Task.IsCanceled && !tcs.Task.IsCompleted && !tcs.Task.IsFaulted)
-                        {
-                            tcs.TrySetCanceled();
-                        }
-                    });
-
                     return (await tcs.Task).Message;
                 }
             }

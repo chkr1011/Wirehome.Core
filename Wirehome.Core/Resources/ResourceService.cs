@@ -38,8 +38,6 @@ namespace Wirehome.Core.Resources
 
         public void Start()
         {
-            _globalVariablesService.RegisterValue(GlobalVariableUids.LanguageCode, "en");
-
             foreach (var resourceUid in GetResourceUids())
             {
                 TryLoadResource(resourceUid);

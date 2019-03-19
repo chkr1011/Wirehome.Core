@@ -57,7 +57,7 @@ namespace Wirehome.Core.History.Extract
             return historyExtract;
         }
 
-        private static List<HistoryExtractDataPoint> GenerateTextBasedDataPoints(List<ComponentStatusEntity> entities, in DateTime rangeStart, in DateTime rangeEnd)
+        private static List<HistoryExtractDataPoint> GenerateTextBasedDataPoints(List<ComponentStatusEntity> entities, DateTime rangeStart, DateTime rangeEnd)
         {
             var dataPoints = new List<HistoryExtractDataPoint>();
 

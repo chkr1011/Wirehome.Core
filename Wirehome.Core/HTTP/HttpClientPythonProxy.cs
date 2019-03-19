@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
-using Wirehome.Core.Python.Proxies;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming

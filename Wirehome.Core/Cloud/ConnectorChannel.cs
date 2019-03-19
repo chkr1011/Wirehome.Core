@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Wirehome.Core.Cloud.Messages;
+using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Core.Cloud
 {
@@ -28,7 +28,7 @@ namespace Wirehome.Core.Cloud
 
         private readonly JsonSerializer _serializer;
 
-        private readonly ArraySegment<byte> _receiveBuffer = WebSocket.CreateServerBuffer(1024);
+        private readonly ArraySegment<byte> _receiveBuffer = WebSocket.CreateServerBuffer(4096);
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private readonly WebSocket _webSocket;
         private readonly ILogger _logger;
@@ -53,7 +53,7 @@ namespace Wirehome.Core.Cloud
             _serializer = JsonSerializer.Create(_serializerSettings);
         }
 
-        public bool IsConnected => _webSocket.State == WebSocketState.Open;
+        public bool IsConnected => _webSocket.State == WebSocketState.Open || _webSocket.State == WebSocketState.CloseReceived;
 
         public async Task SendMessageAsync(CloudMessage message, CancellationToken cancellationToken)
         {
@@ -61,30 +61,35 @@ namespace Wirehome.Core.Cloud
 
             try
             {
-                using (var messageBuffer = new MemoryStream())
+
+                ArraySegment<byte> sendBuffer;
+
+                using (var messageBuffer = new MemoryStream(4096))
                 using (var streamWriter = new StreamWriter(messageBuffer))
                 {
                     _serializer.Serialize(streamWriter, message);
 
                     await streamWriter.FlushAsync().ConfigureAwait(false);
+
                     messageBuffer.Position = 0;
-
-                    var compressedBuffer = Compress(messageBuffer);
-
-                    await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                    try
+                    using (var compressedBuffer = Compress(messageBuffer))
                     {
-                        var sendBuffer = new ArraySegment<byte>(compressedBuffer.GetBuffer(), 0, (int)compressedBuffer.Length);
-                        await _webSocket.SendAsync(sendBuffer, WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
+                        sendBuffer = new ArraySegment<byte>(compressedBuffer.GetBuffer(), 0, (int)compressedBuffer.Length);
+                    }
+                }
 
-                        Interlocked.Add(ref _bytesSent, sendBuffer.Count);
-                        Interlocked.Increment(ref _messagesSent);
-                        _lastMessageSent = DateTime.UtcNow;
-                    }
-                    finally
-                    {
-                        _semaphore.Release();
-                    }
+                await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await _webSocket.SendAsync(sendBuffer, WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
+
+                    Interlocked.Add(ref _bytesSent, sendBuffer.Count);
+                    Interlocked.Increment(ref _messagesSent);
+                    _lastMessageSent = DateTime.UtcNow;
+                }
+                finally
+                {
+                    _semaphore.Release();
                 }
             }
             catch
@@ -99,43 +104,24 @@ namespace Wirehome.Core.Cloud
         {
             try
             {
-                using (var messageBuffer = new MemoryStream())
+                var buffer = await ReceiveMessageInternalAsync(cancellationToken).ConfigureAwait(false);
+                if (buffer == null)
                 {
-                    WebSocketReceiveResult result;
-                    do
-                    {
-                        result = await _webSocket.ReceiveAsync(_receiveBuffer, cancellationToken).ConfigureAwait(false);
-                        if (result.MessageType == WebSocketMessageType.Close)
-                        {
-                            await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, cancellationToken).ConfigureAwait(false);
-                            return new ConnectorChannelReceiveResult(null, true);
-                        }
-
-                        if (result.Count > 0)
-                        {
-                            await messageBuffer.WriteAsync(_receiveBuffer.Array, 0, result.Count, cancellationToken).ConfigureAwait(false);
-                        }
-                    } while (!result.EndOfMessage && _webSocket.State == WebSocketState.Open);
-
-                    if (_webSocket.State != WebSocketState.Open)
-                    {
-                        return new ConnectorChannelReceiveResult(null, true);
-                    }
-
-                    Interlocked.Add(ref _bytesReceived, messageBuffer.Length);
-                    Interlocked.Increment(ref _messagesReceived);
-                    _lastMessageReceived = DateTime.UtcNow;
-
-                    messageBuffer.Position = 0;
-                    var decompressedBuffer = Decompress(messageBuffer);
-
-                    if (!TryParseCloudMessage(decompressedBuffer, out var cloudMessage))
-                    {
-                        return new ConnectorChannelReceiveResult(null, true);
-                    }
-
-                    return new ConnectorChannelReceiveResult(cloudMessage, false);
+                    return new ConnectorChannelReceiveResult(null, true);
                 }
+
+                Interlocked.Add(ref _bytesReceived, buffer.Count);
+                Interlocked.Increment(ref _messagesReceived);
+                _lastMessageReceived = DateTime.UtcNow;
+
+                var decompressedBuffer = Decompress(buffer);
+
+                if (!TryParseCloudMessage(decompressedBuffer, out var cloudMessage))
+                {
+                    return new ConnectorChannelReceiveResult(null, true);
+                }
+
+                return new ConnectorChannelReceiveResult(cloudMessage, false);
             }
             catch
             {
@@ -178,6 +164,48 @@ namespace Wirehome.Core.Cloud
             _statisticsReset = DateTime.UtcNow;
         }
 
+        private async Task<ArraySegment<byte>> ReceiveMessageInternalAsync(CancellationToken cancellationToken)
+        {
+            if (_webSocket.State != WebSocketState.Open && _webSocket.State != WebSocketState.CloseReceived)
+            {
+                return null;
+            }
+
+            var receiveResult = await _webSocket.ReceiveAsync(_receiveBuffer, cancellationToken).ConfigureAwait(false);
+
+            if (receiveResult.MessageType == WebSocketMessageType.Close)
+            {
+                return null;
+            }
+
+            if (receiveResult.EndOfMessage)
+            {
+                // The entire message fits into one receive buffer. So there is no need for
+                // another MemoryStream which copies all the memory.
+                return new ArraySegment<byte>(_receiveBuffer.Array, 0, receiveResult.Count);
+            }
+
+            using (var buffer = new MemoryStream(receiveResult.Count * 2))
+            {
+                // Write the already received part to the buffer. The buffer will be extended later with additional data.
+                await buffer.WriteAsync(_receiveBuffer.Array, 0, receiveResult.Count, cancellationToken).ConfigureAwait(false);
+
+                while (!receiveResult.EndOfMessage && (_webSocket.State == WebSocketState.Open || _webSocket.State == WebSocketState.CloseReceived))
+                {
+                    receiveResult = await _webSocket.ReceiveAsync(_receiveBuffer, cancellationToken).ConfigureAwait(false);
+
+                    if (receiveResult.MessageType == WebSocketMessageType.Close)
+                    {
+                        return null;
+                    }
+
+                    await buffer.WriteAsync(_receiveBuffer.Array, 0, receiveResult.Count, cancellationToken).ConfigureAwait(false);
+                }
+
+                return new ArraySegment<byte>(buffer.GetBuffer(), 0, (int)buffer.Length);
+            }
+        }
+
         private bool TryParseCloudMessage(Stream buffer, out CloudMessage cloudMessage)
         {
             try
@@ -213,11 +241,12 @@ namespace Wirehome.Core.Cloud
             return result;
         }
 
-        private static MemoryStream Decompress(Stream data)
+        private static MemoryStream Decompress(ArraySegment<byte> data)
         {
-            var result = new MemoryStream((int)data.Length);
+            var result = new MemoryStream(data.Count);
 
-            using (var gzipStream = new GZipStream(data, CompressionMode.Decompress, true))
+            using (var buffer = new MemoryStream(data.Array, data.Offset, data.Count))
+            using (var gzipStream = new GZipStream(buffer, CompressionMode.Decompress, true))
             {
                 gzipStream.CopyTo(result);
             }

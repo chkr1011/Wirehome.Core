@@ -1,4 +1,4 @@
-﻿namespace Wirehome.Core.Cloud.Messages
+﻿namespace Wirehome.Core.Cloud.Protocol
 {
     public static class CloudMessageType
     {
