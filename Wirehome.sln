@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28606.126
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wirehome.Core.Hosts.Console", "Wirehome.Core.Hosts.Console\Wirehome.Core.Hosts.Console.csproj", "{B8E81F46-D56B-46B9-B32B-644AF3790963}"
 EndProject
@@ -13,28 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wirehome.Configurator", "Wi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wirehome.Cloud", "Wirehome.Cloud\Wirehome.Cloud.csproj", "{9BAD8503-651D-4634-A724-DEBB2462BA4C}"
 EndProject
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Wirehome.App", "Wirehome.App\", "{5A5D2DAE-5DB9-4CCF-953B-D3361259AD48}"
-	ProjectSection(WebsiteProperties) = preProject
-		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
-		Debug.AspNetCompiler.VirtualPath = "/localhost_51828"
-		Debug.AspNetCompiler.PhysicalPath = "Wirehome.App\"
-		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_51828\"
-		Debug.AspNetCompiler.Updateable = "true"
-		Debug.AspNetCompiler.ForceOverwrite = "true"
-		Debug.AspNetCompiler.FixedNames = "false"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.VirtualPath = "/localhost_51828"
-		Release.AspNetCompiler.PhysicalPath = "Wirehome.App\"
-		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_51828\"
-		Release.AspNetCompiler.Updateable = "true"
-		Release.AspNetCompiler.ForceOverwrite = "true"
-		Release.AspNetCompiler.FixedNames = "false"
-		Release.AspNetCompiler.Debug = "False"
-		VWDPort = "51828"
-		SlnRelativePath = "Wirehome.App\"
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wirehome.Core.Setup", "Wirehome.Core.Setup\Wirehome.Core.Setup.csproj", "{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wirehome.Core.Setup", "Wirehome.Core.Setup\Wirehome.Core.Setup.csproj", "{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,10 +41,6 @@ Global
 		{9BAD8503-651D-4634-A724-DEBB2462BA4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BAD8503-651D-4634-A724-DEBB2462BA4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BAD8503-651D-4634-A724-DEBB2462BA4C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5A5D2DAE-5DB9-4CCF-953B-D3361259AD48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5A5D2DAE-5DB9-4CCF-953B-D3361259AD48}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5A5D2DAE-5DB9-4CCF-953B-D3361259AD48}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{5A5D2DAE-5DB9-4CCF-953B-D3361259AD48}.Release|Any CPU.Build.0 = Debug|Any CPU
 		{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7AF88204-E04A-4E70-BDB7-5FD5ED7CBB96}.Release|Any CPU.ActiveCfg = Release|Any CPU
