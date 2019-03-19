@@ -1,14 +1,16 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Cloud;
-using Wirehome.Core.Cloud.Messages;
+using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Cloud.Services.DeviceConnector
 {
     public class DeviceSession
     {
+        private readonly ConcurrentDictionary<Guid, TaskCompletionSource<CloudMessage>> _messageAwaiters = new ConcurrentDictionary<Guid, TaskCompletionSource<CloudMessage>>();
         private readonly DeviceSessionIdentifier _identifier;
         private readonly ConnectorChannel _channel;
         private readonly ILogger _logger;
@@ -19,8 +21,6 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             _channel = channel ?? throw new ArgumentNullException(nameof(channel));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-
-        public event EventHandler<MessageReceivedEventArgs> MessageReceived;
 
         public ConnectorChannelStatistics GetStatistics()
         {
@@ -56,19 +56,11 @@ namespace Wirehome.Cloud.Services.DeviceConnector
                         continue;
                     }
 
-                    var eventHandler = MessageReceived;
-                    if (eventHandler != null)
+                    if (receiveResult.Message.CorrelationUid.HasValue)
                     {
-                        var delegates = eventHandler.GetInvocationList();
-                        var eventArgs = new MessageReceivedEventArgs(receiveResult.Message);
-
-                        foreach (var @delegate in delegates)
+                        if (_messageAwaiters.TryRemove(receiveResult.Message.CorrelationUid.Value, out var awaiter))
                         {
-                            @delegate.DynamicInvoke(this, eventArgs);
-                            if (eventArgs.IsHandled)
-                            {
-                                break;
-                            }
+                            awaiter.TrySetResult(receiveResult.Message);
                         }
                     }
                 }
@@ -77,6 +69,16 @@ namespace Wirehome.Cloud.Services.DeviceConnector
                     _logger.LogError(exception, $"Error while processing message of session '{_identifier}'.");
                 }
             }
+        }
+
+        public void AddMessageAwaiter(TaskCompletionSource<CloudMessage> awaiter, Guid messageCorrelationUid)
+        {
+            _messageAwaiters[messageCorrelationUid] = awaiter ?? throw new ArgumentNullException(nameof(awaiter));
+        }
+
+        public void RemoveMessageAwaiter(Guid correlationUidValue)
+        {
+            _messageAwaiters.TryRemove(correlationUidValue, out _);
         }
     }
 }

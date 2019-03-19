@@ -34,8 +34,8 @@ namespace Wirehome.Cloud
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(o => 
             {
-                o.LoginPath = "/Cloud/Account/Login";
-                o.LogoutPath = "/Cloud/Account/Logout";
+                o.LoginPath = "/cloud/account/login";
+                o.LogoutPath = "/cloud/account/logout";
                 o.Events.OnRedirectToLogin = context =>
                 {
                     // This ensures that API calls are not forwarded to the login
@@ -119,7 +119,7 @@ namespace Wirehome.Cloud
 
         private static void ConfigureConnector(IApplicationBuilder app, DeviceConnectorService connectorService, AuthorizationService authorizationService)
         {
-            app.Map("/Connectors", config =>
+            app.Map("/Connector", config =>
             {
                 config.UseWebSockets(new WebSocketOptions
                 {

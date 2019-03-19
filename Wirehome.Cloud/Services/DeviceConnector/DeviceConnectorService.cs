@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Wirehome.Cloud.Filters;
 using Wirehome.Core.Cloud;
-using Wirehome.Core.Cloud.Messages;
+using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Cloud.Services.DeviceConnector
 {
@@ -80,45 +80,31 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             if (deviceSessionIdentifier == null) throw new ArgumentNullException(nameof(deviceSessionIdentifier));
             if (requestMessage == null) throw new ArgumentNullException(nameof(requestMessage));
 
-            requestMessage.CorrelationUid = Guid.NewGuid();
-
-            var result = new TaskCompletionSource<CloudMessage>();
-            void messageReceived(object sender, MessageReceivedEventArgs eventArgs)
-            {
-                if (eventArgs.Message.CorrelationUid.HasValue)
-                {
-                    if (eventArgs.Message.CorrelationUid.Value.Equals(requestMessage.CorrelationUid))
-                    {
-                        result.TrySetResult(eventArgs.Message);
-                        eventArgs.IsHandled = true;
-                    }
-                }
-            }
-
             if (!_sessions.TryGetValue(deviceSessionIdentifier.ToString(), out var session))
             {
                 throw new DeviceSessionNotFoundException(deviceSessionIdentifier);
             }
 
+            requestMessage.CorrelationUid = Guid.NewGuid();
+
+            var result = new TaskCompletionSource<CloudMessage>();
+
             try
             {
-                session.MessageReceived += messageReceived;
+                session.AddMessageAwaiter(result, requestMessage.CorrelationUid.Value);
 
                 using (cancellationToken.Register(() =>
                 {
-                    if (!result.Task.IsCompleted && !result.Task.IsFaulted && !result.Task.IsCanceled)
-                    {
-                        result.TrySetCanceled();
-                    }
+                    result.TrySetCanceled();
                 }))
                 {
                     await session.SendMessageAsync(requestMessage, cancellationToken).ConfigureAwait(false);
                     return await result.Task.ConfigureAwait(false);
-                }                
+                }
             }
             finally
             {
-                session.MessageReceived -= messageReceived;
+                session.RemoveMessageAwaiter(requestMessage.CorrelationUid.Value);
             }
         }
 

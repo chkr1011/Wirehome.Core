@@ -4,9 +4,8 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.Routing.Template;
 using Wirehome.Cloud.Services.Repository;
+using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Cloud.Services.Authorization
 {
@@ -24,22 +23,15 @@ namespace Wirehome.Cloud.Services.Authorization
         {
             if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 
-            var routeTemplate = TemplateParser.Parse("{identityUid}/Channels/{channelUid}");
-            var values = new RouteValueDictionary();
-            var templateMatcher = new TemplateMatcher(routeTemplate, values);
-            var isMatch = templateMatcher.TryMatch(httpContext.Request.Path, values);
+            httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.IdentityUid, out var identityUidHeaderValue);
+            httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.ChannelUid, out var channelUidHeaderValue);
+            httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.Password, out var password);
 
-            if (!isMatch || !httpContext.Request.Query.ContainsKey("password"))
-            {
-                throw new UnauthorizedAccessException();
-            }
+            var identityUid = identityUidHeaderValue.ToString().ToLowerInvariant();
+            var channelUid = channelUidHeaderValue.ToString().ToLowerInvariant();
 
-            var identityUid = Convert.ToString(values["identityUid"]);
-            var channelUid = Convert.ToString(values["channelUid"]);
-            var passwordHash = httpContext.Request.Query["password"];
-
-            await AuthorizeAsync(identityUid, passwordHash).ConfigureAwait(false);
-            return new DeviceAuthorizationContext(identityUid.ToLowerInvariant(), channelUid);
+            await AuthorizeAsync(identityUid, password).ConfigureAwait(false);
+            return new DeviceAuthorizationContext(identityUid, channelUid);
         }
 
         public async Task<List<Claim>> AuthorizeAsync(string identityUid, string password)

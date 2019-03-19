@@ -7,8 +7,7 @@ namespace Wirehome.Cloud.Services.Authorization
         public DeviceAuthorizationContext(string identityUid, string channelUid)
         {
             IdentityUid = identityUid ?? throw new ArgumentNullException(nameof(identityUid));
-
-            ChannelUid = channelUid;
+            ChannelUid = channelUid ?? throw new ArgumentNullException(nameof(channelUid));
         }
 
         public string IdentityUid { get; }
