@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using IronPython.Runtime;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Cloud.Protocol;
 using Wirehome.Core.Constants;
@@ -22,7 +24,6 @@ namespace Wirehome.Core.Cloud
     {
         private readonly ConcurrentDictionary<string, CloudMessageHandler> _messageHandlers = new ConcurrentDictionary<string, CloudMessageHandler>();
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        private readonly CloudMessageFactory _messageFactory = new CloudMessageFactory();
         private readonly HttpClient _httpClient = new HttpClient();
         private readonly StorageService _storageService;
 
@@ -74,7 +75,7 @@ namespace Wirehome.Core.Cloud
                 {
                     _isConnected = false;
 
-                    if (!_storageService.TryReadOrCreate(out options,CloudServiceOptions.Filename) || options == null)
+                    if (!_storageService.TryReadOrCreate(out options, CloudServiceOptions.Filename) || options == null)
                     {
                         continue;
                     }
@@ -152,7 +153,7 @@ namespace Wirehome.Core.Cloud
                 CloudMessage response = null;
                 if (message.Type == CloudMessageType.Ping)
                 {
-                    response = InvokePingRequest(message);
+                    response = new CloudMessage();
                 }
                 else if (message.Type == CloudMessageType.HttpInvoke)
                 {
@@ -165,6 +166,7 @@ namespace Wirehome.Core.Cloud
 
                 if (response != null)
                 {
+                    response.CorrelationUid = message.CorrelationUid;
                     await SendMessageAsync(response, cancellationToken).ConfigureAwait(false);
                 }
             }
@@ -175,11 +177,6 @@ namespace Wirehome.Core.Cloud
             {
                 _logger.LogError(exception, "Error while processing cloud message.");
             }
-        }
-
-        private CloudMessage InvokePingRequest(CloudMessage message)
-        {
-            return _messageFactory.CreateResponseMessage(message, new CloudMessage());
         }
 
         private CloudMessage InvokeRawRequest(CloudMessage requestMessage)
@@ -205,11 +202,11 @@ namespace Wirehome.Core.Cloud
                     }
                 }
 
-                return _messageFactory.CreateResponseMessage(requestMessage, content);
+                return new CloudMessage { Content = content };
             }
             catch (Exception exception)
             {
-                return _messageFactory.CreateMessage(ControlType.Exception, new ExceptionPythonModel(exception).ConvertToPythonDictionary());
+                return new CloudMessage { Type = ControlType.Exception, Content = new ExceptionPythonModel(exception).ConvertToPythonDictionary() };
             }
         }
 
@@ -217,43 +214,58 @@ namespace Wirehome.Core.Cloud
         {
             try
             {
+                var requestContent = (HttpRequestMessageContent)requestMessage.Content;
                 var responseContent = new HttpResponseMessageContent();
-                responseContent.Headers.Add("Wirehome-Core-Enter", DateTime.UtcNow.ToString("O"));
-
-                var requestContent = requestMessage.Content.ToObject<HttpRequestMessageContent>();
 
                 using (var httpRequestMessage = new HttpRequestMessage())
                 {
                     httpRequestMessage.Method = new HttpMethod(requestContent.Method);
                     httpRequestMessage.RequestUri = new Uri(requestContent.Uri, UriKind.Relative);
-                    httpRequestMessage.Content = new ByteArrayContent(requestContent.Content ?? new byte[0]);
 
-                    foreach (var header in requestContent.Headers)
+                    if (requestContent.Content?.Any() == true)
                     {
-                        if (!httpRequestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value))
+                        httpRequestMessage.Content = new ByteArrayContent(requestContent.Content);
+                    }
+
+                    if (requestContent.Headers?.Any() == true)
+                    {
+                        foreach (var header in requestContent.Headers)
                         {
-                            httpRequestMessage.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                            if (!httpRequestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value))
+                            {
+                                httpRequestMessage.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                            }
                         }
                     }
-                    
+
                     using (var httpResponse = await _httpClient.SendAsync(httpRequestMessage, cancellationToken).ConfigureAwait(false))
                     {
-                        responseContent.StatusCode = (int)httpResponse.StatusCode;
-                        responseContent.Content = await httpResponse.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                        if ((int)httpResponse.StatusCode != 200)
+                        {
+                            responseContent.StatusCode = (int)httpResponse.StatusCode;
+                        }
+
+                        var responseBody = await httpResponse.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                        if (responseBody.Any())
+                        {
+                            responseContent.Content = responseBody;
+                        }
 
                         if (httpResponse.Content.Headers.ContentType != null)
                         {
-                            responseContent.Headers.Add("Content-Type", httpResponse.Content.Headers.ContentType.ToString());
+                            responseContent.Headers = new Dictionary<string, string>
+                            {
+                                ["Content-Type"] = httpResponse.Content.Headers.ContentType.ToString()
+                            };
                         }
                     }
                 }
 
-                responseContent.Headers.Add("Wirehome-Core-Exit", DateTime.UtcNow.ToString("O"));
-                return _messageFactory.CreateResponseMessage(requestMessage, responseContent);
+                return new CloudMessage { Content = responseContent };
             }
             catch (Exception exception)
             {
-                return _messageFactory.CreateMessage(ControlType.Exception, new ExceptionPythonModel(exception).ConvertToPythonDictionary());
+                return new CloudMessage { Type = ControlType.Exception, Content = new ExceptionPythonModel(exception).ConvertToPythonDictionary() };
             }
         }
 

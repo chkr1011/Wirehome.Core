@@ -13,7 +13,6 @@ using Wirehome.Cloud.Filters;
 using Wirehome.Cloud.Services.Authorization;
 using Wirehome.Cloud.Services.DeviceConnector;
 using Wirehome.Cloud.Services.Repository;
-using Wirehome.Core.Cloud;
 using Wirehome.Core.HTTP.Controllers;
 
 namespace Wirehome.Cloud
@@ -29,8 +28,7 @@ namespace Wirehome.Cloud
             services.AddSingleton<DeviceConnectorService>();
             services.AddSingleton<AuthorizationService>();
             services.AddSingleton<RepositoryService>();
-            services.AddSingleton<CloudMessageFactory>();
-
+            
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(o => 
             {

@@ -49,7 +49,7 @@ namespace Wirehome.Cloud.Controllers
         [HttpGet]
         [Route("/api/v1/cloud/ping")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public async Task<JToken> GetPing()
+        public async Task<object> GetPing()
         {
             var request = new CloudMessage
             {
@@ -64,7 +64,7 @@ namespace Wirehome.Cloud.Controllers
         [HttpPost]
         [Route("/api/v1/cloud/invoke")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public async Task<JToken> PostInvoke([FromBody] JToken content)
+        public async Task<object> PostInvoke([FromBody] JToken content)
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
 

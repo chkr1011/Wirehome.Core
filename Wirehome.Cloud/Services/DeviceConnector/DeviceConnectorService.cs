@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,13 +17,11 @@ namespace Wirehome.Cloud.Services.DeviceConnector
     public class DeviceConnectorService
     {
         private readonly ConcurrentDictionary<string, DeviceSession> _sessions = new ConcurrentDictionary<string, DeviceSession>();
-        private readonly CloudMessageFactory _cloudMessageFactory;
         private readonly ILogger _logger;
 
-        public DeviceConnectorService(CloudMessageFactory cloudMessageFactory, ILogger<DeviceConnectorService> logger)
+        public DeviceConnectorService(ILogger<DeviceConnectorService> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _cloudMessageFactory = cloudMessageFactory ?? throw new ArgumentNullException(nameof(cloudMessageFactory));
         }
 
         public object GetStatistics()
@@ -130,20 +130,27 @@ namespace Wirehome.Cloud.Services.DeviceConnector
 
                 if (!string.IsNullOrEmpty(httpContext.Request.ContentType))
                 {
-                    requestContent.Headers.Add("Content-Type", httpContext.Request.ContentType);
+                    requestContent.Headers = new Dictionary<string, string>
+                    {
+                        ["Content-Type"] = httpContext.Request.ContentType
+                    };
                 }
 
-                var requestMessage = _cloudMessageFactory.CreateMessage(CloudMessageType.HttpInvoke, requestContent);
+                var requestMessage = new CloudMessage { Type = CloudMessageType.HttpInvoke, Content = requestContent };
                 var responseMessage = await Invoke(deviceSessionIdentifier, requestMessage, httpContext.RequestAborted).ConfigureAwait(false);
 
-                var responseContent = responseMessage.Content.ToObject<HttpResponseMessageContent>();
-                httpContext.Response.StatusCode = responseContent.StatusCode;
+                var responseContent = (HttpResponseMessageContent)responseMessage.Content;
 
-                foreach (var header in responseContent.Headers)
+                httpContext.Response.StatusCode = responseContent.StatusCode ?? 200;
+
+                if (responseContent.Headers?.Any() == true)
                 {
-                    httpContext.Response.Headers.Add(header.Key, new StringValues(header.Value));
+                    foreach (var header in responseContent.Headers)
+                    {
+                        httpContext.Response.Headers.Add(header.Key, new StringValues(header.Value));
+                    }
                 }
-
+                
                 if (responseContent.Content?.Length > 0)
                 {
                     httpContext.Response.Body.Write(responseContent.Content);
