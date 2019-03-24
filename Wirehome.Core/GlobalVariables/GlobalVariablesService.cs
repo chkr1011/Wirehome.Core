@@ -36,6 +36,7 @@ namespace Wirehome.Core.GlobalVariables
                 Load();
 
                 RegisterValue(GlobalVariableUids.AppPackageUid, "wirehome.app@1.0.0");
+                RegisterValue(GlobalVariableUids.ConfiguratorPackageUid, "wirehome.configurator@1.0.0");
                 RegisterValue(GlobalVariableUids.LanguageCode, "en");
             }
         }

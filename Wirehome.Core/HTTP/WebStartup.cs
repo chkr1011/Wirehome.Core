@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
+using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Diagnostics.Log;
@@ -200,7 +201,13 @@ namespace Wirehome.Core.HTTP
             app.UseFileServer(new FileServerOptions
             {
                 RequestPath = "/app",
-                FileProvider = new AppFileProvider(globalVariablesService, packageManagerService)
+                FileProvider = new PackageFileProvider(GlobalVariableUids.AppPackageUid, globalVariablesService, packageManagerService)
+            });
+
+            app.UseFileServer(new FileServerOptions
+            {
+                RequestPath = "/",
+                FileProvider = new PackageFileProvider(GlobalVariableUids.ConfiguratorPackageUid, globalVariablesService, packageManagerService)
             });
 
             ExposeDirectory(app, "/customContent", customContentRootPath);

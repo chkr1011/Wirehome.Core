@@ -5,20 +5,21 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Primitives;
-using Wirehome.Core.Constants;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Packages;
 
 namespace Wirehome.Core.HTTP
 {
-    public class AppFileProvider : IFileProvider
+    public class PackageFileProvider : IFileProvider
     {
         private readonly HashSet<string> _defaultFileNames = new HashSet<string> { "index.htm", "index.html", "default.htm", "default.html" };
+        private readonly string _packageUidGlobalVariableUid;
         private readonly GlobalVariablesService _globalVariablesService;
         private readonly PackageManagerService _packageManagerService;
 
-        public AppFileProvider(GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
+        public PackageFileProvider(string packageUidGlobalVariableUid, GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
         {
+            _packageUidGlobalVariableUid = packageUidGlobalVariableUid ?? throw new ArgumentNullException(nameof(packageUidGlobalVariableUid));
             _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
             _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
         }
@@ -34,7 +35,7 @@ namespace Wirehome.Core.HTTP
                 subpath = "index.html";
             }
 
-            var packageUid = _globalVariablesService.GetValue(GlobalVariableUids.AppPackageUid) as string;
+            var packageUid = _globalVariablesService.GetValue(_packageUidGlobalVariableUid) as string;
             var packageRootPath = _packageManagerService.GetPackageRootPath(PackageUid.Parse(packageUid));
 
             fullPath = Path.Combine(packageRootPath, fullPath);
@@ -51,7 +52,7 @@ namespace Wirehome.Core.HTTP
         {
             if (subpath == null) throw new ArgumentNullException(nameof(subpath));
 
-            var packageUid = _globalVariablesService.GetValue(GlobalVariableUids.AppPackageUid) as string;
+            var packageUid = _globalVariablesService.GetValue(_packageUidGlobalVariableUid) as string;
             var packageRootPath = _packageManagerService.GetPackageRootPath(PackageUid.Parse(packageUid));
 
             var fullPath = Path.Combine(packageRootPath, subpath.Trim(Path.PathSeparator, Path.AltDirectorySeparatorChar));
