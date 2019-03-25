@@ -52,7 +52,7 @@ namespace Wirehome.Core.Resources
 
         public IList<string> GetResourceUids()
         {
-            return _storageService.EnumeratureDirectories("*", ResourcesDirectory);
+            return _storageService.EnumerateDirectories("*", ResourcesDirectory);
         }
 
         public IDictionary<string, string> GetResource(string uid)

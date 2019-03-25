@@ -44,7 +44,7 @@ namespace Wirehome.Core.System.StartupScripts
 
         public List<string> GetStartupScriptUids()
         {
-            return _storageService.EnumeratureDirectories("*", StartupScriptsDirectory);
+            return _storageService.EnumerateDirectories("*", StartupScriptsDirectory);
         }
 
         public List<StartupScriptInstance> GetStartupScripts()

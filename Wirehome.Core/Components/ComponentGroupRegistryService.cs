@@ -48,7 +48,7 @@ namespace Wirehome.Core.Components
 
         public List<string> GetComponentGroupUids()
         {
-            return _storageService.EnumeratureDirectories("*", ComponentGroupsDirectory);
+            return _storageService.EnumerateDirectories("*", ComponentGroupsDirectory);
         }
 
         public ComponentGroupConfiguration ReadComponentGroupConfiguration(string uid)
@@ -98,7 +98,7 @@ namespace Wirehome.Core.Components
                 componentGroup.Settings[setting.Key] = setting.Value;
             }
 
-            var associationUids = _storageService.EnumeratureDirectories("*", ComponentGroupsDirectory, uid, "Components");
+            var associationUids = _storageService.EnumerateDirectories("*", ComponentGroupsDirectory, uid, "Components");
             foreach (var associationUid in associationUids)
             {
                 if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Components", associationUid, DefaultFilenames.Settings))
@@ -115,7 +115,7 @@ namespace Wirehome.Core.Components
                 componentGroup.Components.TryAdd(associationUid, componentAssociation);
             }
 
-            associationUids = _storageService.EnumeratureDirectories("*", ComponentGroupsDirectory, uid, "Macros");
+            associationUids = _storageService.EnumerateDirectories("*", ComponentGroupsDirectory, uid, "Macros");
             foreach (var associationUid in associationUids)
             {
                 if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Macros", associationUid, DefaultFilenames.Settings))

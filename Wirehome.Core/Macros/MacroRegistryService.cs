@@ -56,7 +56,7 @@ namespace Wirehome.Core.Macros
 
         public List<string> GetMacroUids()
         {
-            return _storageService.EnumeratureDirectories("*", MacrosDirectory);
+            return _storageService.EnumerateDirectories("*", MacrosDirectory);
         }
 
         public MacroInstance GetMacro(string uid)

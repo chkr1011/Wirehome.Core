@@ -101,14 +101,14 @@ namespace Wirehome.Core.Packages
             var packageUids = new List<PackageUid>();
 
             var packagesRootPath = GetPackagesRootPath();
-            foreach (var packageId in _storageService.EnumeratureDirectories("*", packagesRootPath))
+            foreach (var packageId in _storageService.EnumerateDirectories("*", packagesRootPath))
             {
                 if (packageId.StartsWith("."))
                 {
                     continue;
                 }
 
-                foreach (var packageVersion in _storageService.EnumeratureDirectories("*", packagesRootPath, packageId))
+                foreach (var packageVersion in _storageService.EnumerateDirectories("*", packagesRootPath, packageId))
                 {
                     packageUids.Add(new PackageUid(packageId, packageVersion));
                 }

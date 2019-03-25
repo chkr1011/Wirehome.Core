@@ -446,7 +446,7 @@ namespace Wirehome.Core.Components
 
         public List<string> GetComponentUids()
         {
-            return _storageService.EnumeratureDirectories("*", ComponentsDirectory);
+            return _storageService.EnumerateDirectories("*", ComponentsDirectory);
         }
 
         private void AttachToMessageBus()

@@ -58,7 +58,7 @@ namespace Wirehome.Core.ServiceHost
 
         public List<string> GetServiceUids()
         {
-            return _storageService.EnumeratureDirectories("*", ServicesDirectory);
+            return _storageService.EnumerateDirectories("*", ServicesDirectory);
         }
 
         public void WriteServiceConfiguration(string id, ServiceConfiguration configuration)

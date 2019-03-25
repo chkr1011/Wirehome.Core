@@ -11,19 +11,18 @@ namespace Wirehome.Core.Storage
     public class StorageService : IService
     {
         private readonly JsonSerializerService _jsonSerializerService;
-        private readonly ILogger _logger;
-
+        
         public StorageService(JsonSerializerService jsonSerializerService, ILogger<StorageService> logger)
         {
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             
             var paths = new StoragePaths();
             BinPath = paths.BinPath;
             DataPath = paths.DataPath;
 
-            _logger.Log(LogLevel.Information, $"Bin path  = {BinPath}");
-            _logger.Log(LogLevel.Information, $"Data path = {DataPath}");
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+            logger.Log(LogLevel.Information, $"Bin path  = {BinPath}");
+            logger.Log(LogLevel.Information, $"Data path = {DataPath}");
         }
 
         public string BinPath { get; }
@@ -34,7 +33,7 @@ namespace Wirehome.Core.Storage
         {
         }
 
-        public List<string> EnumeratureDirectories(string pattern, params string[] path)
+        public List<string> EnumerateDirectories(string pattern, params string[] path)
         {
             if (pattern == null) throw new ArgumentNullException(nameof(pattern));
             if (path == null) throw new ArgumentNullException(nameof(path));

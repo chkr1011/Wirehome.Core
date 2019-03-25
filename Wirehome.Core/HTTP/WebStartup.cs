@@ -9,6 +9,7 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.IO;
 using System.Linq;
+using Microsoft.AspNetCore.Rewrite;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
@@ -82,12 +83,12 @@ namespace Wirehome.Core.HTTP
                 });
             });
 
-            foreach (Type singletonService in Reflection.GetClassesImplementingInterface<IService>())
+            foreach (var singletonService in Reflection.GetClassesImplementingInterface<IService>())
             {
                 services.AddSingleton(singletonService);
             }
 
-            foreach (Type pythonProxy in Reflection.GetClassesImplementingInterface<IInjectedPythonProxy>())
+            foreach (var pythonProxy in Reflection.GetClassesImplementingInterface<IInjectedPythonProxy>())
             {
                 services.AddSingleton(typeof(IPythonProxy), pythonProxy);
             }
@@ -206,9 +207,14 @@ namespace Wirehome.Core.HTTP
 
             app.UseFileServer(new FileServerOptions
             {
-                RequestPath = "/",
+                RequestPath = "/configurator",
                 FileProvider = new PackageFileProvider(GlobalVariableUids.ConfiguratorPackageUid, globalVariablesService, packageManagerService)
             });
+
+            // Open the configurator by default if no path is specified.
+            var option = new RewriteOptions();
+            option.AddRedirect("^$", "/configurator");
+            app.UseRewriter(option);
 
             ExposeDirectory(app, "/customContent", customContentRootPath);
             ExposeDirectory(app, "/packages", packagesRootPath);
