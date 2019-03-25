@@ -197,7 +197,7 @@ namespace Wirehome.Tests.History
                 Assert.AreEqual(3, extract.DataPoints.Count);
 
                 Assert.AreEqual(1D, extract.DataPoints[0].Value);
-                Assert.AreEqual(3D, extract.DataPoints[1].Value);
+                Assert.AreEqual(2.5D, extract.DataPoints[1].Value);
                 Assert.AreEqual(5D, extract.DataPoints[2].Value);
 
             }
