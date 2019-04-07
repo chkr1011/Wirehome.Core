@@ -31,7 +31,13 @@ namespace Wirehome.Core.MessageBus
 
         public string subscribe(string uid, PythonDictionary filter, Action<PythonDictionary> callback)
         {
-            return _messageBusService.Subscribe(uid, filter, m => callback(PythonConvert.ToPythonDictionary(m.Message)));
+            return _messageBusService.Subscribe(uid, filter, m =>
+            {
+                var pythonDictionary = PythonConvert.ToPythonDictionary(m.Message);
+                pythonDictionary["subscription_uid"] = uid;
+
+                callback(pythonDictionary);
+            });
         }
 
         public void unsubscribe(string uid)

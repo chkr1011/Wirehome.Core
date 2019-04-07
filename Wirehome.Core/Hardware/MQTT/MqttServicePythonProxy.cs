@@ -11,6 +11,7 @@ using IronPython.Runtime;
 using MQTTnet;
 using MQTTnet.Adapter;
 using MQTTnet.Client;
+using MQTTnet.Client.Options;
 using MQTTnet.Protocol;
 using Wirehome.Core.Model;
 using Wirehome.Core.Python;
@@ -112,6 +113,7 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 var pythonMessage = new PythonDictionary
                 {
+                    ["subscription_uid"] = uid,
                     ["client_id"] = message.ClientId,
                     ["topic"] = message.ApplicationMessage.Topic,
                     ["payload"] = message.ApplicationMessage.Payload,

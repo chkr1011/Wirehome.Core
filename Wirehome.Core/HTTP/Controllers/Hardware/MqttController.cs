@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MQTTnet;
 using MQTTnet.Protocol;
-using MQTTnet.Server;
+using MQTTnet.Server.Status;
 using Wirehome.Core.Hardware.MQTT;
 using Wirehome.Core.HTTP.Controllers.Models;
 
@@ -67,9 +67,17 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         [HttpGet]
         [Route("api/v1/mqtt/clients")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IList<IMqttClientSessionStatus> GetClients()
+        public Task<IList<IMqttClientStatus>> GetClients()
         {
-            return _mqttService.GetClients();
+            return _mqttService.GetClientsAsync();
+        }
+
+        [HttpGet]
+        [Route("api/v1/mqtt/sessions")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public Task<IList<IMqttSessionStatus>> GetSessions()
+        {
+            return _mqttService.GetSessionsAsync();
         }
 
         [HttpGet]
@@ -94,9 +102,9 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         [HttpGet]
         [Route("api/v1/mqtt/retained_messages")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IList<MqttApplicationMessage> GetRetainedMessages()
+        public Task<IList<MqttApplicationMessage>> GetRetainedMessages()
         {
-            return _mqttService.GetRetainedMessages();
+            return _mqttService.GetRetainedMessagesAsync();
         }
 
         [HttpDelete]

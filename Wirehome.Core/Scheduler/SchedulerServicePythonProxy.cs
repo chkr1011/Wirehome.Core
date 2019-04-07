@@ -21,7 +21,12 @@ namespace Wirehome.Core.Scheduler
 
         public string start_thread(string uid, Action<PythonDictionary> callback, object state = null)
         {
-            return _schedulerService.StartThread(uid, p => callback(PythonConvert.ToPythonDictionary(p)), state);
+            return _schedulerService.StartThread(uid, p =>
+            {
+                var pythonDictionary = PythonConvert.ToPythonDictionary(p);
+                pythonDictionary["thread_uid"] = uid;
+                callback(pythonDictionary);
+            }, state);
         }
 
         public bool stop_thread(string uid)
@@ -36,12 +41,17 @@ namespace Wirehome.Core.Scheduler
 
         public string start_timer(string uid, int interval, Action<PythonDictionary> callback, object state = null)
         {
-            return _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), p => callback(PythonConvert.ToPythonDictionary(p)), state);
+            return _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), p =>
+            {
+                var pythonDictionary = PythonConvert.ToPythonDictionary(p);
+                pythonDictionary["timer_uid"] = uid;
+                callback(pythonDictionary);
+            }, state);
         }
 
         public bool stop_timer(string uid)
         {
-            return  _schedulerService.StopTimer(uid);
+            return _schedulerService.StopTimer(uid);
         }
 
         public bool timer_exists(string uid)
@@ -51,17 +61,27 @@ namespace Wirehome.Core.Scheduler
 
         public string attach_to_default_timer(string uid, Action<PythonDictionary> callback, object state = null)
         {
-            return _schedulerService.AttachToDefaultTimer(uid, p => callback(PythonConvert.ToPythonDictionary(p)), state);
+            return _schedulerService.AttachToDefaultTimer(uid, p =>
+            {
+                var pythonDictionary = PythonConvert.ToPythonDictionary(p);
+                pythonDictionary["timer_uid"] = uid;
+                callback(pythonDictionary);
+            }, state);
         }
 
         public void detach_from_default_timer(string uid)
         {
             _schedulerService.DetachFromDefaultTimer(uid);
         }
-        
+
         public string start_countdown(string uid, long duration, Action<PythonDictionary> callback, object state = null)
         {
-            return _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), p => callback(PythonConvert.ToPythonDictionary(p)), state);
+            return _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), p =>
+            {
+                var pythonDictionary = PythonConvert.ToPythonDictionary(p);
+                pythonDictionary["countdown_uid"] = uid;
+                callback(pythonDictionary);
+            }, state);
         }
 
         public bool stop_countdown(string uid)

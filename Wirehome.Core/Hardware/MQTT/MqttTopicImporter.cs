@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
-using MQTTnet.Client;
+using MQTTnet.Client.Options;
 using MQTTnet.Extensions.ManagedClient;
 
 namespace Wirehome.Core.Hardware.MQTT
@@ -43,7 +43,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             _mqttClient = new MqttFactory().CreateManagedMqttClient(new LoggerAdapter(_logger));
             _mqttClient.SubscribeAsync(_parameters.Topic, _parameters.QualityOfServiceLevel).GetAwaiter().GetResult();
-            _mqttClient.ApplicationMessageReceived += OnApplicationMessageReceived;
+            _mqttClient.UseApplicationMessageReceivedHandler(e => OnApplicationMessageReceived(e));
             _mqttClient.StartAsync(options).GetAwaiter().GetResult();
         }
 
@@ -53,7 +53,7 @@ namespace Wirehome.Core.Hardware.MQTT
             _mqttClient?.Dispose();
         }
 
-        private void OnApplicationMessageReceived(object sender, MqttApplicationMessageReceivedEventArgs e)
+        private void OnApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
             _mqttService.Publish(new MqttPublishParameters
             {
