@@ -50,6 +50,7 @@ namespace Wirehome.Core.Hardware.MQTT
             systemStatusService.Set("mqtt.incoming_messages_count", () => _incomingMessages.Count);
             systemStatusService.Set("mqtt.inbound_rate", () => _inboundCounter.Count);
             systemStatusService.Set("mqtt.outbound_rate", () => _outboundCounter.Count);
+            systemStatusService.Set("mqtt.connected_clients_count", () => _mqttServer.GetClientStatusAsync().GetAwaiter().GetResult().Count);
         }
 
         public void Start()
@@ -58,7 +59,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             var mqttFactory = new MqttFactory();
             _mqttServer = options.EnableLogging ? mqttFactory.CreateMqttServer(new LoggerAdapter(_logger)) : mqttFactory.CreateMqttServer();
-            _mqttServer.ApplicationMessageReceivedHandler = new MqttApplicationMessageReceivedHandlerDelegate(e => OnApplicationMessageReceived(e));
+            _mqttServer.UseApplicationMessageReceivedHandler(new MqttApplicationMessageReceivedHandlerDelegate(e => OnApplicationMessageReceived(e)));
 
             var serverOptions = new MqttServerOptionsBuilder()
                 .WithDefaultEndpointPort(options.ServerPort)

@@ -1,17 +1,17 @@
 ﻿using System.Collections.Generic;
-using Newtonsoft.Json;
+using MsgPack.Serialization;
 
 namespace Wirehome.Core.Cloud.Protocol
 {
     public class HttpResponseMessageContent
     {
-        [JsonProperty("s")]
-        public int? StatusCode { get; set; }
-
-        [JsonProperty("h")]
+        [MessagePackMember(0)]
         public Dictionary<string, string> Headers { get; set; }
 
-        [JsonProperty("c")]
+        [MessagePackMember(1)]
         public byte[] Content { get; set; }
+
+        [MessagePackMember(2)]
+        public int? StatusCode { get; set; }
     }
 }

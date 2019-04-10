@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Wirehome.Core.Cloud
+namespace Wirehome.Core.Cloud.Channel
 {
     public class ConnectorChannelStatistics
     {

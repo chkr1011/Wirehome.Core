@@ -8,15 +8,15 @@ namespace Wirehome.Core
 {
     public class WirehomeCoreHost
     {
-        private static readonly SystemCancellationToken _systemCancellationToken = new SystemCancellationToken();
+        private static readonly SystemCancellationToken SystemCancellationToken = new SystemCancellationToken();
 
         public static void Start(string[] arguments)
         {
-            IWebHost host = WebHost.CreateDefaultBuilder()
+            var host = WebHost.CreateDefaultBuilder()
                 .ConfigureServices(s =>
                 {
                     s.AddSingleton(new SystemLaunchArguments(arguments ?? new string[0]));
-                    s.AddSingleton(_systemCancellationToken);
+                    s.AddSingleton(SystemCancellationToken);
                 })
                 .UseKestrel(kestrelOptions =>
                 {
@@ -26,7 +26,7 @@ namespace Wirehome.Core
                             listenOptions.NoDelay = true;
                         });
                 })
-                .UseStartup<WebStartup>()
+                .UseStartup<Startup>()
                 .Build();
 
             host.Start();
@@ -34,7 +34,7 @@ namespace Wirehome.Core
 
         public static void Stop()
         {
-            _systemCancellationToken?.Cancel();
+            SystemCancellationToken?.Cancel();
         }
     }
 }

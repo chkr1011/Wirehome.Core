@@ -1,20 +1,20 @@
 ﻿using System.Collections.Generic;
-using Newtonsoft.Json;
+using MsgPack.Serialization;
 
 namespace Wirehome.Core.Cloud.Protocol
 {
     public class HttpRequestMessageContent
     {
-        [JsonProperty("m")]
+        [MessagePackMember(0)]
         public string Method { get; set; }
 
-        [JsonProperty("u")]
+        [MessagePackMember(1)]
         public string Uri { get; set; }
 
-        [JsonProperty("h")]
+        [MessagePackMember(2)]
         public Dictionary<string, string> Headers { get; set; }
 
-        [JsonProperty("c")]
+        [MessagePackMember(3)]
         public byte[] Content { get; set; }
     }
 }

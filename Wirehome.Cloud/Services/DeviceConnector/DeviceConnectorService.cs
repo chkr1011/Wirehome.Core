@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Wirehome.Cloud.Filters;
-using Wirehome.Core.Cloud;
+using Wirehome.Core.Cloud.Channel;
 using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Cloud.Services.DeviceConnector
@@ -136,10 +136,16 @@ namespace Wirehome.Cloud.Services.DeviceConnector
                     };
                 }
 
-                var requestMessage = new CloudMessage { Type = CloudMessageType.HttpInvoke, Content = requestContent };
+                var requestMessage = new CloudMessage
+                {
+                    Type = CloudMessageType.HttpInvoke
+                };
+
+                requestMessage.SetContent(requestContent);
+
                 var responseMessage = await Invoke(deviceSessionIdentifier, requestMessage, httpContext.RequestAborted).ConfigureAwait(false);
 
-                var responseContent = (HttpResponseMessageContent)responseMessage.Content;
+                var responseContent = responseMessage.GetContent<HttpResponseMessageContent>();
 
                 httpContext.Response.StatusCode = responseContent.StatusCode ?? 200;
 

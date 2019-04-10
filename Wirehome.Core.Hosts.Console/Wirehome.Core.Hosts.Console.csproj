@@ -8,6 +8,7 @@
     <Platforms>AnyCPU;x86</Platforms>
     <RootNamespace>Wirehome.Core.Hosts.Console</RootNamespace>
     <AssemblyName>Wirehome.Core.Hosts.Console</AssemblyName>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">

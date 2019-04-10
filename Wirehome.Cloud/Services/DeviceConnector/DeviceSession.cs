@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Cloud;
+using Wirehome.Core.Cloud.Channel;
 using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Cloud.Services.DeviceConnector

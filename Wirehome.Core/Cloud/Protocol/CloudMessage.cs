@@ -1,22 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using MsgPack.Serialization;
 
 namespace Wirehome.Core.Cloud.Protocol
 {
     public class CloudMessage
     {
-        [JsonProperty("t")]
+        [MessagePackMember(0)]
         public string Type { get; set; }
 
-        [JsonProperty("cid")]
+        [MessagePackMember(1)]
         public Guid? CorrelationUid { get; set; }
 
-        [JsonProperty("p")]
-        public Dictionary<string, object> Properties { get; set; }
+        [MessagePackMember(2)]
+        public Dictionary<string, string> Properties { get; set; }
 
-        [JsonProperty("c")]
-        public object Content { get; set; }
-
+        [MessagePackMember(3)]
+        public CloudMessageContent Content { get; set; }
     }
 }

@@ -46,10 +46,10 @@ namespace Wirehome.Cloud.Controllers
             _deviceConnectorService.ResetChannelStatistics(deviceSessionIdentifier);
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("/api/v1/cloud/ping")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public async Task<object> GetPing()
+        public Task GetPing()
         {
             var request = new CloudMessage
             {
@@ -57,26 +57,31 @@ namespace Wirehome.Cloud.Controllers
             };
 
             var deviceSessionIdentifier = HttpContext.GetDeviceSessionIdentifier();
-            var response = await _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted).ConfigureAwait(false);
-            return response.Content;
+            return _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted);
         }
 
         [HttpPost]
         [Route("/api/v1/cloud/invoke")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public async Task<object> PostInvoke([FromBody] JToken content)
+        public async Task<ActionResult> PostInvoke([FromBody] JToken content)
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
 
             var request = new CloudMessage
             {
-                Type = CloudMessageType.Raw,
-                Content = content
+                Type = CloudMessageType.Raw
             };
 
+            request.SetContent(content);
+            
             var deviceSessionIdentifier = HttpContext.GetDeviceSessionIdentifier();
-            var response = await _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted).ConfigureAwait(false);
-            return response.Content;
+            var responseMessage = await _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted).ConfigureAwait(false);
+
+            return new ContentResult
+            {
+                Content = responseMessage.GetContent<string>(),
+                ContentType = "application/json"
+            };
         }
 
         [HttpGet]

@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using IronPython.Runtime;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
+using Wirehome.Core.Cloud.Channel;
 using Wirehome.Core.Cloud.Protocol;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
@@ -183,30 +185,41 @@ namespace Wirehome.Core.Cloud
         {
             try
             {
-                object content;
+                WirehomeDictionary responseContent;
+
+                var requestContent = requestMessage.GetContent<JToken>();
 
                 // TODO: Refactor this and build converter for JSON to WirehomeDictionary and WirehomeList
-                if (!(PythonConvert.ToPython(requestMessage.Content) is PythonDictionary parameters))
+                if (!(PythonConvert.ToPython(requestContent) is PythonDictionary parameters))
                 {
-                    content = new WirehomeDictionary().WithType(ControlType.ParameterInvalidException);
+                    responseContent = new WirehomeDictionary().WithType(ControlType.ParameterInvalidException);
                 }
                 else
                 {
                     if (!_messageHandlers.TryGetValue(parameters.GetValueOr("type", string.Empty), out var messageHandler))
                     {
-                        content = new WirehomeDictionary().WithType(ControlType.NotSupportedException);
+                        responseContent = new WirehomeDictionary().WithType(ControlType.NotSupportedException);
                     }
                     else
                     {
-                        content = messageHandler.Invoke(parameters);
+                        responseContent = messageHandler.Invoke(parameters);
                     }
                 }
 
-                return new CloudMessage { Content = content };
+                var responseMessage = new CloudMessage();
+                responseMessage.SetContent(responseContent);
+
+                return responseMessage;
             }
             catch (Exception exception)
             {
-                return new CloudMessage { Type = ControlType.Exception, Content = new ExceptionPythonModel(exception).ConvertToPythonDictionary() };
+                var response = new CloudMessage
+                {
+                    Type = ControlType.Exception 
+                };
+
+                response.SetContent(new ExceptionPythonModel(exception).ConvertToPythonDictionary());
+                return response;
             }
         }
 
@@ -214,7 +227,7 @@ namespace Wirehome.Core.Cloud
         {
             try
             {
-                var requestContent = (HttpRequestMessageContent)requestMessage.Content;
+                var requestContent = requestMessage.GetContent<HttpRequestMessageContent>();
                 var responseContent = new HttpResponseMessageContent();
 
                 using (var httpRequestMessage = new HttpRequestMessage())
@@ -229,11 +242,11 @@ namespace Wirehome.Core.Cloud
 
                     if (requestContent.Headers?.Any() == true)
                     {
-                        foreach (var header in requestContent.Headers)
+                        foreach (var (key, value) in requestContent.Headers)
                         {
-                            if (!httpRequestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value))
+                            if (!httpRequestMessage.Headers.TryAddWithoutValidation(key, value))
                             {
-                                httpRequestMessage.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                                httpRequestMessage.Content.Headers.TryAddWithoutValidation(key, value);
                             }
                         }
                     }
@@ -261,11 +274,19 @@ namespace Wirehome.Core.Cloud
                     }
                 }
 
-                return new CloudMessage { Content = responseContent };
+                var responseMessage = new CloudMessage();
+                responseMessage.SetContent(responseContent);
+                return responseMessage;
             }
             catch (Exception exception)
             {
-                return new CloudMessage { Type = ControlType.Exception, Content = new ExceptionPythonModel(exception).ConvertToPythonDictionary() };
+                var response = new CloudMessage
+                {
+                    Type = ControlType.Exception
+                };
+
+                response.SetContent(new ExceptionPythonModel(exception).ConvertToPythonDictionary());
+                return response;
             }
         }
 

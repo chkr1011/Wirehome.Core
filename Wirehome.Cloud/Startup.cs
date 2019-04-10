@@ -63,6 +63,9 @@ namespace Wirehome.Cloud
             });
 
             ConfigureSwaggerServices(services);
+
+            services.AddCors();
+            services.AddResponseCompression();
         }
 
         // ReSharper disable once UnusedMember.Global
@@ -84,6 +87,8 @@ namespace Wirehome.Cloud
 
             app.UseAuthentication();
             app.UseStaticFiles();
+            app.UseCors(config => config.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+            app.UseResponseCompression();
 
             ConfigureMvc(app);
             ConfigureSwagger(app);

@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
-using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.IO;
@@ -41,7 +40,7 @@ using Wirehome.Core.System.StartupScripts;
 
 namespace Wirehome.Core.HTTP
 {
-    public class WebStartup
+    public class Startup
     {
         // ReSharper disable once UnusedMember.Global
         public void ConfigureServices(IServiceCollection services)
@@ -93,6 +92,9 @@ namespace Wirehome.Core.HTTP
             {
                 services.AddSingleton(typeof(IPythonProxy), pythonProxy);
             }
+
+            services.AddCors();
+            services.AddResponseCompression();
         }
 
         // ReSharper disable once UnusedMember.Global
@@ -119,6 +121,7 @@ namespace Wirehome.Core.HTTP
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseResponseCompression();
             app.UseCors(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 
             ConfigureSwagger(app);

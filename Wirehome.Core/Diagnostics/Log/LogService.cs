@@ -115,6 +115,11 @@ namespace Wirehome.Core.Diagnostics.Log
                     }
 
                     logEntries.Add(logEntry);
+
+                    if (logEntries.Count >= filter.TakeCount)
+                    {
+                        break;
+                    }
                 }
             }
 
