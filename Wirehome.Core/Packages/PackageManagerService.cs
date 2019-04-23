@@ -96,6 +96,12 @@ namespace Wirehome.Core.Packages
             return Task.CompletedTask;
         }
 
+        public async Task<List<PackageUid>> FetchRemotePackageUidsAsync()
+        {
+            // TODO: Implement.
+            return new List<PackageUid>();
+        }
+
         public List<PackageUid> GetPackageUids()
         {
             var packageUids = new List<PackageUid>();
