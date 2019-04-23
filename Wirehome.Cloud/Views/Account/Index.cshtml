@@ -23,14 +23,17 @@
 <div class="ui middle aligned center aligned grid">
     <div class="column">
 
-        <div>
-            <img src="~/images/Banner.png" class="image" style="width: 256px;">
-        </div>
-
         @if (!User.Identity.IsAuthenticated)
         {
             <form class="ui large form" action="/Cloud/Account/Login?returnUrl=@Model.ReturnUrl" method="post">
-                <div class="ui stacked segment">
+                <div class="ui segment">
+                    
+                    <div>
+                        <img src="~/images/Banner.png" class="image" style="width: 256px;">
+                    </div>
+                    
+                    <div class="ui divider"></div>
+
                     <div class="field">
                         <div class="ui left icon input">
                             <i class="user icon"></i>
@@ -43,9 +46,9 @@
                             <input type="password" asp-for="Password" placeholder="Password">
                         </div>
                     </div>
-                    <button type="submit" class="ui fluid large green button">Log in</button>
+                    <button type="submit" class="ui fluid large teal button">Log in</button>
 
-                    @Html.ValidationSummary(false, null, new { @class = "lulu" })
+                    @Html.ValidationSummary(false, null, new {@class = "lulu"})
                 </div>
 
             </form>
@@ -53,7 +56,7 @@
         else
         {
             <form class="ui large form" action="/Cloud/Account/Logout" method="post">
-                <div class="ui stacked segment">
+                <div class="ui segment">
                     <div class="field">
                         <div class="ui left icon input">
                             <span>
@@ -61,12 +64,16 @@
                                 <span class="text">@User.Identity.Name</span>
                             </span>
                         </div>
-
                     </div>
 
                     <button type="submit" class="ui fluid large orange button">Log out</button>
-                    <div class="ui divider"></div>
-                    <a class="ui fluid large blue button" href="/app/" target="_blank">Open Wirehome.App</a>
+
+                    <h2 class="ui header dividing">Links</h2>
+                    <div class="ui vertical buttons fluid">
+                        <button class="ui large button" href="/app/" target="_blank">Wirehome.App</button>
+                        <button class="ui large button" href="/configurator/" target="_blank">Wirehome.Configurator</button>
+                        <button class="ui large button" href="/api/" target="_blank">Wirehome.API definition</button>
+                    </div>
                 </div>
 
             </form>
