@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using IronPython.Runtime;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
+using MQTTnet.Extensions.ManagedClient;
 using Newtonsoft.Json.Linq;
 using Wirehome.Core.Cloud.Channel;
 using Wirehome.Core.Cloud.Protocol;
@@ -25,12 +26,12 @@ namespace Wirehome.Core.Cloud
     public class CloudService : IService
     {
         private readonly ConcurrentDictionary<string, CloudMessageHandler> _messageHandlers = new ConcurrentDictionary<string, CloudMessageHandler>();
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         private readonly HttpClient _httpClient = new HttpClient();
         private readonly StorageService _storageService;
 
         private readonly ILogger _logger;
 
+        private CancellationTokenSource _cancellationTokenSource;
         private ConnectorChannel _channel;
         private bool _isConnected;
 
@@ -57,7 +58,15 @@ namespace Wirehome.Core.Cloud
 
         public void Start()
         {
-            Task.Run(() => ConnectAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token).Forget(_logger);
+            var cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = cancellationTokenSource;
+            Task.Run(() => ConnectAsync(cancellationTokenSource.Token), cancellationTokenSource.Token).Forget(_logger);
+        }
+
+        public void Reconnect()
+        {
+            _cancellationTokenSource?.Cancel();
+            Start();
         }
 
         public void RegisterMessageHandler(string type, Func<WirehomeDictionary, WirehomeDictionary> handler)

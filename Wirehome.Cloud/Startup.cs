@@ -29,9 +29,9 @@ namespace Wirehome.Cloud
             services.AddSingleton<DeviceConnectorService>();
             services.AddSingleton<AuthorizationService>();
             services.AddSingleton<RepositoryService>();
-            
+
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            .AddCookie(o => 
+            .AddCookie(o =>
             {
                 o.LoginPath = "/cloud/account/login";
                 o.LogoutPath = "/cloud/account/logout";
@@ -59,7 +59,7 @@ namespace Wirehome.Cloud
             .ConfigureApplicationPartManager(config =>
             {
                 config.FeatureProviders.Remove(config.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
-                config.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(CloudController).Namespace));
+                config.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(Wirehome.Cloud.Controllers.CloudController).Namespace));
             });
 
             ConfigureSwaggerServices(services);

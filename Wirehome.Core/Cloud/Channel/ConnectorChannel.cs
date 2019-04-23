@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MsgPack;
 using MsgPack.Serialization;
 using Wirehome.Core.Cloud.Protocol;
 
@@ -186,16 +187,19 @@ namespace Wirehome.Core.Cloud.Channel
         {
             try
             {
-                // TODO: Propose support for ArraySegments.
-                var cloudMessage = await _serializer.UnpackSingleObjectAsync(buffer.ToArray(), cancellationToken).ConfigureAwait(false);
-
-                if (cloudMessage.Content?.IsCompressed == true)
+                // Use a memory stream to avoid useless memory allocation because the MsgPack lib does
+                // not support an ArraySegment.
+                using (var memoryStream = new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, false))
                 {
-                    cloudMessage.Content.IsCompressed = false;
-                    cloudMessage.Content.Data = Decompress(cloudMessage.Content.Data);
+                    var cloudMessage = await _serializer.UnpackAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+                    if (cloudMessage.Content?.IsCompressed == true)
+                    {
+                        cloudMessage.Content.IsCompressed = false;
+                        cloudMessage.Content.Data = Decompress(cloudMessage.Content.Data);
+                    }
+
+                    return cloudMessage;
                 }
-                
-                return cloudMessage;
             }
             catch (Exception exception)
             {
