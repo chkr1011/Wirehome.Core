@@ -103,10 +103,15 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/components/{uid}/process_message")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message)
+        public WirehomeDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message, bool returnUpdatedComponent = true)
         {
             var result = _componentRegistryService.ProcessComponentMessage(uid, message);
-            result["component"] = _componentRegistryService.GetComponent(uid);
+
+            if (returnUpdatedComponent)
+            {
+                result["component"] = _componentRegistryService.GetComponent(uid);
+            }
+            
             return result;
         }
 
@@ -149,8 +154,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             return _componentRegistryService.GetComponent(uid).Status;
         }
-
-
+        
         [HttpGet]
         [Route("/api/v1/components/{uid}/debug_information")]
         [ApiExplorerSettings(GroupName = "v1")]

@@ -18,6 +18,24 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
+        [Route("/api/v1/packages/index/local")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public Dictionary<string, HashSet<string>> GetLocalPackageIndex()
+        {
+            var packageUids = _packageManagerService.GetPackageUids();
+            return GeneratePackageIndex(packageUids);
+        }
+
+        [HttpGet]
+        [Route("/api/v1/packages/index/remote")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public async Task<Dictionary<string, HashSet<string>>> GetRemotePackageIndex()
+        {
+            var packageUids = await _packageManagerService.FetchRemotePackageUidsAsync();
+            return GeneratePackageIndex(packageUids);
+        }
+        
+        [HttpGet]
         [Route("/api/v1/packages/uids")]
         [ApiExplorerSettings(GroupName = "v1")]
         public List<PackageUid> GetPackageUids()
@@ -124,6 +142,23 @@ namespace Wirehome.Core.HTTP.Controllers
         public void DeletePackage(string uid)
         {
             _packageManagerService.DeletePackage(PackageUid.Parse(uid));
+        }
+
+        private static Dictionary<string, HashSet<string>> GeneratePackageIndex(List<PackageUid> packageUids)
+        {
+            var index = new Dictionary<string, HashSet<string>>();
+
+            foreach (var packageUid in packageUids)
+            {
+                if (!index.ContainsKey(packageUid.Id))
+                {
+                    index.Add(packageUid.Id, new HashSet<string>());
+                }
+
+                index[packageUid.Id].Add(packageUid.Version);
+            }
+
+            return index;
         }
     }
 }

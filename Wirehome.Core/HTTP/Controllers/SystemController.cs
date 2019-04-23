@@ -31,9 +31,8 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/system/ping")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public string GetPing()
+        public void GetPing()
         {
-            return "pong";
         }
 
         [HttpGet]
