@@ -5,7 +5,6 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using MsgPack;
 using MsgPack.Serialization;
 using Wirehome.Core.Cloud.Protocol;
 
@@ -227,7 +226,7 @@ namespace Wirehome.Core.Cloud.Channel
 
         private static ArraySegment<byte> Decompress(ArraySegment<byte> data)
         {
-            using (var outputBuffer = new MemoryStream(data.Count))
+            using (var outputBuffer = new MemoryStream(data.Count * 2))
             {
                 using (var inputBuffer = new MemoryStream(data.Array, data.Offset, data.Count))
                 using (var decompressor = new BrotliStream(inputBuffer, CompressionMode.Decompress, false))
