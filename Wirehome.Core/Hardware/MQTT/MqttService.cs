@@ -129,12 +129,12 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public Task<IList<MqttApplicationMessage>> GetRetainedMessagesAsync()
         {
-            return _mqttServer.GetRetainedMessagesAsync();
+            return _mqttServer.GetRetainedApplicationMessagesAsync();
         }
 
         public void DeleteRetainedMessages()
         {
-            _mqttServer.ClearRetainedMessagesAsync().GetAwaiter().GetResult();
+            _mqttServer.ClearRetainedApplicationMessagesAsync().GetAwaiter().GetResult();
         }
 
         public void Publish(MqttPublishParameters parameters)
@@ -170,7 +170,7 @@ namespace Wirehome.Core.Hardware.MQTT
             // Enqueue all retained messages to match the expected MQTT behavior.
             // Here we have no client per subscription. So we need to adopt some
             // features here manually.
-            foreach (var retainedMessage in _mqttServer.GetRetainedMessagesAsync().GetAwaiter().GetResult())
+            foreach (var retainedMessage in _mqttServer.GetRetainedApplicationMessagesAsync().GetAwaiter().GetResult())
             {
                 _incomingMessages.Add(new MqttApplicationMessageReceivedEventArgs(null, retainedMessage));
             }
