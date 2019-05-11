@@ -43,8 +43,16 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
             });
         }
 
+        [HttpGet]
+        [Route("/api/v1/mqtt/imports/uids")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<string> GetImports()
+        {
+            return _mqttService.GetTopicImportUids();
+        }
+
         [HttpPost]
-        [Route("/api/v1/mqtt/import/{uid}")]
+        [Route("/api/v1/mqtt/imports/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostImport(string uid, [FromBody] MqttImportTopicParameters parameters)
         {
@@ -55,7 +63,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         }
 
         [HttpDelete]
-        [Route("/api/v1/mqtt/import/{uid}")]
+        [Route("/api/v1/mqtt/imports/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteImport(string uid)
         {
@@ -124,9 +132,9 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         [HttpDelete]
         [Route("api/v1/mqtt/retained_messages")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void DeleteRetainedMessages()
+        public Task DeleteRetainedMessages()
         {
-            _mqttService.DeleteRetainedMessages();
+            return _mqttService.DeleteRetainedMessagesAsync();
         }
     }
 }

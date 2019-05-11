@@ -77,6 +77,14 @@ namespace Wirehome.Core.Hardware.MQTT
             Task.Factory.StartNew(() => ProcessIncomingMqttMessages(_systemCancellationToken.Token), _systemCancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
+        public List<string> GetTopicImportUids()
+        {
+            lock (_importers)
+            {
+                return _importers.Select(i => i.Key).ToList();
+            }
+        }
+
         public string StartTopicImport(string uid, MqttImportTopicParameters parameters)
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
@@ -132,9 +140,9 @@ namespace Wirehome.Core.Hardware.MQTT
             return _mqttServer.GetRetainedApplicationMessagesAsync();
         }
 
-        public void DeleteRetainedMessages()
+        public Task DeleteRetainedMessagesAsync()
         {
-            _mqttServer.ClearRetainedApplicationMessagesAsync().GetAwaiter().GetResult();
+            return _mqttServer.ClearRetainedApplicationMessagesAsync();
         }
 
         public void Publish(MqttPublishParameters parameters)
