@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -30,6 +31,7 @@ namespace Wirehome.Core.Hardware.MQTT
         private readonly ILogger _logger;
 
         private IMqttServer _mqttServer;
+        private bool _enableMqttLogging;
 
         public MqttService(
             SystemCancellationToken systemCancellationToken,
@@ -58,7 +60,17 @@ namespace Wirehome.Core.Hardware.MQTT
             _storageService.TryReadOrCreate(out MqttServiceOptions options, MqttServiceOptions.Filename);
 
             var mqttFactory = new MqttFactory();
-            _mqttServer = options.EnableLogging ? mqttFactory.CreateMqttServer(new LoggerAdapter(_logger)) : mqttFactory.CreateMqttServer();
+
+            _enableMqttLogging = options.EnableLogging;
+            if (_enableMqttLogging)
+            {
+                _mqttServer = mqttFactory.CreateMqttServer(new LoggerAdapter(_logger));
+            }
+            else
+            {
+                _mqttServer = mqttFactory.CreateMqttServer();
+            }
+
             _mqttServer.UseApplicationMessageReceivedHandler(new MqttApplicationMessageReceivedHandlerDelegate(e => OnApplicationMessageReceived(e)));
 
             var serverOptions = new MqttServerOptionsBuilder()
@@ -94,7 +106,7 @@ namespace Wirehome.Core.Hardware.MQTT
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            var importer = new MqttTopicImporter(parameters, this, _logger);
+            var importer = new MqttTopicImporter(parameters, this, _enableMqttLogging,  _logger);
             importer.Start();
 
             lock (_importers)
