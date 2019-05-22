@@ -5,7 +5,7 @@
 </p>
 
 [![Build status](https://ci.appveyor.com/api/projects/status/8mcith0f2hueuhhe/branch/master?svg=true)](https://ci.appveyor.com/project/chkr1011/wirehome-core/branch/master)
-[![BCH compliance](https://bettercodehub.com/edge/badge/chkr1011/MQTTnet?branch=master)](https://bettercodehub.com/)
+[![BCH compliance](https://bettercodehub.com/edge/badge/chkr1011/MQTTnet?branch=master)](https://bettercodehub.com/) [![Join the chat at https://gitter.im/Wirehome-Core/community](https://badges.gitter.im/Wirehome-Core/community.svg)](https://gitter.im/Wirehome-Core/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Wirehome.Core
 Wirehome.Core is an open source Home Automation system for .NET Core. This system is written in C# targeting .NET Standard 2.0+- It runs on Windows, macOS and Linux (e.g. a Raspberry Pi 2 Model B+). 
