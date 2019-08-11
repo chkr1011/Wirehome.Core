@@ -41,6 +41,27 @@ namespace Wirehome.Core.Components
                 ["component_uid"] = component.Uid
             };
 
+            if (!string.IsNullOrEmpty(configuration.Script))
+            {
+                // Having a script in place always overrides the logic and adapter configuration.
+                SetupComponentBasedOnScript(component, configuration, context);
+                return;
+            }
+
+            SetupComponentBasedOnPackages(component, configuration, context);
+        }
+
+        private void SetupComponentBasedOnScript(Component component, ComponentConfiguration configuration, WirehomeDictionary context)
+        {
+            var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentLogicLogger);
+            logic.Compile(component.Uid, configuration.Script);
+            logic.AddToWirehomeWrapper("context", context);
+
+            component.SetLogic(logic);
+        }
+
+        private void SetupComponentBasedOnPackages(Component component, ComponentConfiguration configuration, WirehomeDictionary context)
+        {
             Package adapterPackage = null;
             IComponentAdapter adapter;
             ScriptComponentAdapter scriptAdapter = null;
@@ -66,7 +87,7 @@ namespace Wirehome.Core.Components
             {
                 adapter = new EmptyComponentAdapter();
             }
-            
+
             context["adapter_uid"] = adapterPackage?.Uid?.ToString();
             context["adapter_id"] = adapterPackage?.Uid?.Id;
             context["adapter_version"] = adapterPackage?.Uid?.Version;

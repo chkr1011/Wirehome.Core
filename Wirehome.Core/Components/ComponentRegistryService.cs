@@ -127,25 +127,27 @@ namespace Wirehome.Core.Components
                     return;
                 }
 
-                if (!_storageService.TryRead(out WirehomeDictionary settings, ComponentsDirectory, uid, DefaultFilenames.Settings))
-                {
-                    settings = new WirehomeDictionary();
-                }
-
-                if (!_storageService.TryRead(out WirehomeHashSet<string> tags, ComponentsDirectory, uid, DefaultFilenames.Tags))
-                {
-                    tags = new WirehomeHashSet<string>();
-                }
-
                 var component = new Component(uid);
-                foreach (var setting in settings)
+
+                if (_storageService.TryReadText(out var script, ComponentsDirectory, uid, DefaultFilenames.Script))
                 {
-                    component.Settings[setting.Key] = setting.Value;
+                    configuration.Script = script;
+                }
+                
+                if (_storageService.TryRead(out WirehomeDictionary settings, ComponentsDirectory, uid, DefaultFilenames.Settings))
+                {
+                    foreach (var setting in settings)
+                    {
+                        component.Settings[setting.Key] = setting.Value;
+                    }
                 }
 
-                foreach (var tag in tags)
+                if (_storageService.TryRead(out WirehomeHashSet<string> tags, ComponentsDirectory, uid, DefaultFilenames.Tags))
                 {
-                    component.Tags.Add(tag);
+                    foreach (var tag in tags)
+                    {
+                        component.Tags.Add(tag);
+                    }
                 }
 
                 lock (_components)

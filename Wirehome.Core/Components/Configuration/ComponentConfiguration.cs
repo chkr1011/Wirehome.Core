@@ -10,5 +10,7 @@ namespace Wirehome.Core.Components.Configuration
         public int InitializationPhase { get; set; }
 
         public ComponentLogicConfiguration Logic { get; set; }
+
+        public string Script { get; set; }
     }
 }
