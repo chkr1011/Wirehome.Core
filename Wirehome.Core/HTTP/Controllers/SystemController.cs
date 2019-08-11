@@ -75,12 +75,12 @@ namespace Wirehome.Core.HTTP.Controllers
             string configuratorPackageUid = "wirehome.configurator@1.0.0", 
             bool fixStartupScripts = true)
         {
-            if (!string.IsNullOrEmpty(appPackageUid.Trim()))
+            if (!string.IsNullOrWhiteSpace(appPackageUid.Trim()))
             {
                 await _packageManagerService.DownloadPackageAsync(PackageUid.Parse(appPackageUid));
             }
 
-            if (!string.IsNullOrEmpty(configuratorPackageUid.Trim()))
+            if (!string.IsNullOrWhiteSpace(configuratorPackageUid.Trim()))
             {
                 await _packageManagerService.DownloadPackageAsync(PackageUid.Parse(configuratorPackageUid));
             }

@@ -86,14 +86,14 @@ namespace Wirehome.Core.Storage
 
             if (!File.Exists(filename))
             {
-                value = default(TValue);
+                value = default;
                 return false;
             }
 
             var json = File.ReadAllText(filename, Encoding.UTF8);
             if (string.IsNullOrEmpty(json))
             {
-                value = default(TValue);
+                value = default;
                 return true;
             }
 
