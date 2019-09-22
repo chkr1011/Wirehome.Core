@@ -13,14 +13,14 @@ Write-Host "MSBuild path     = $msbuild"
 Write-Host
 
 Write-Host "Cleaning output directory..."
-Remove-Item ..\Wirehome.Core.Hosts.Console\bin\Debug\netcoreapp2.2 -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item Wirehome.Core.Hosts.Console\bin\Release\netcoreapp2.2\publish -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Building project..."
-&$msbuild ..\Wirehome.Core.Hosts.Console\Wirehome.Core.Hosts.Console.csproj /t:Build /p:Configuration="Debug" /p:TargetFramework="netcoreapp2.2" /p:FileVersion=$assemblyVersion /p:AssemblyVersion=$assemblyVersion /verbosity:m
+&dotnet publish .\Wirehome.Core.Hosts.Console\Wirehome.Core.Hosts.Console.csproj --configuration Release /p:FileVersion=$assemblyVersion /p:Version=$packageVersion
 
 Write-Host "Creating package..."
-$source = "..\Wirehome.Core.Hosts.Console\bin\Debug\netcoreapp2.2"
-$destination = ".\Wirehome.Core-v$packageVersion.zip"
+$source = ".\Wirehome.Core.Hosts.Console\bin\Release\netcoreapp2.2\publish"
+$destination = ".\Wirehome.Core.Hosts.Console\bin\Wirehome.Core-Portable-v$packageVersion.zip"
 If(Test-path $destination) {Remove-item $destination}
  Add-Type -assembly "system.io.compression.filesystem"
-[io.compression.zipfile]::CreateFromDirectory($source, $destination)
+[io.compression.zipfile]::CreateFromDirectory($source, $destination) 
