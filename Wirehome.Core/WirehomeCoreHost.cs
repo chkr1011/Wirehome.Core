@@ -18,14 +18,8 @@ namespace Wirehome.Core
                     s.AddSingleton(new SystemLaunchArguments(arguments ?? new string[0]));
                     s.AddSingleton(SystemCancellationToken);
                 })
-                .UseKestrel(kestrelOptions =>
-                {
-                    kestrelOptions.ListenAnyIP(80,
-                        listenOptions =>
-                        {
-                            listenOptions.NoDelay = true;
-                        });
-                })
+                .UseSockets(o => o.NoDelay = true)
+                .UseKestrel(o => o.ListenAnyIP(80))
                 .UseStartup<Startup>()
                 .Build();
 

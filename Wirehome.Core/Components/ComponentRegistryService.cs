@@ -200,7 +200,7 @@ namespace Wirehome.Core.Components
                 {
                     throw new ComponentNotFoundException(uid);
                 }
-
+                    
                 return component;
             }
         }

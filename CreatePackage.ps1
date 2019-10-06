@@ -13,13 +13,13 @@ Write-Host "MSBuild path     = $msbuild"
 Write-Host
 
 Write-Host "Cleaning output directory..."
-Remove-Item Wirehome.Core.Hosts.Console\bin\Release\netcoreapp2.2\publish -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item Wirehome.Core.Hosts.Console\bin\Release\netcoreapp3.0\publish -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Building project..."
-&dotnet publish .\Wirehome.Core.Hosts.Console\Wirehome.Core.Hosts.Console.csproj --configuration Release /p:FileVersion=$assemblyVersion /p:Version=$packageVersion
+&dotnet publish .\Wirehome.Core.Hosts.Console\Wirehome.Core.Hosts.Console.csproj -r linux-arm --self-contained --configuration Release /p:FileVersion=$assemblyVersion /p:Version=$packageVersion
 
 Write-Host "Creating package..."
-$source = ".\Wirehome.Core.Hosts.Console\bin\Release\netcoreapp2.2\publish"
+$source = ".\Wirehome.Core.Hosts.Console\bin\Release\netcoreapp3.0\publish"
 $destination = ".\Wirehome.Core.Hosts.Console\bin\Wirehome.Core-Portable-v$packageVersion.zip"
 If(Test-path $destination) {Remove-item $destination}
  Add-Type -assembly "system.io.compression.filesystem"

@@ -75,7 +75,12 @@ namespace Wirehome.Core.Components
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.DeleteDirectory(ComponentGroupsDirectory, uid);
+            lock (_componentGroups)
+            {
+                _storageService.DeleteDirectory(ComponentGroupsDirectory, uid);
+
+                _componentGroups.Remove(uid);
+            }
         }
 
         public void InitializeComponentGroup(string uid)
@@ -189,7 +194,7 @@ namespace Wirehome.Core.Components
                     return;
                 }
 
-                Save();
+                Save(componentGroup);
             }
         }
 
@@ -207,7 +212,7 @@ namespace Wirehome.Core.Components
                     return;
                 }
 
-                Save();
+                Save(componentGroup);
             }
         }
 
@@ -225,7 +230,7 @@ namespace Wirehome.Core.Components
                     return;
                 }
 
-                Save();
+                Save(componentGroup);
             }
         }
 
@@ -243,7 +248,7 @@ namespace Wirehome.Core.Components
                     return;
                 }
 
-                Save();
+                Save(componentGroup);
             }
         }
 
@@ -294,7 +299,7 @@ namespace Wirehome.Core.Components
 
                 association.Settings[settingUid] = settingValue;
 
-                Save();
+                SaveComponentAssociationSettings(componentGroup, componentUid, association);
             }
         }
 
@@ -321,7 +326,7 @@ namespace Wirehome.Core.Components
                     return;
                 }
 
-                Save();
+                Save(componentGroup);
             }
         }
 
@@ -404,23 +409,30 @@ namespace Wirehome.Core.Components
             return oldValue;
         }
 
-        private void Save()
+        private void Save(ComponentGroup componentGroup)
         {
-            foreach (var componentGroup in _componentGroups.Values)
+            var configuration = new ComponentGroupConfiguration();
+            _storageService.Write(configuration, ComponentGroupsDirectory, componentGroup.Uid, DefaultFilenames.Configuration);
+
+            foreach (var componentAssociation in componentGroup.Components)
             {
-                var configuration = new ComponentGroupConfiguration();
-                _storageService.Write(configuration, ComponentGroupsDirectory, componentGroup.Uid, DefaultFilenames.Configuration);
-
-                foreach (var componentAssociation in componentGroup.Components)
-                {
-                    _storageService.Write(componentAssociation.Value.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Components", componentAssociation.Key, DefaultFilenames.Settings);
-                }
-
-                foreach (var componentAssociation in componentGroup.Macros)
-                {
-                    _storageService.Write(componentAssociation.Value.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Macros", componentAssociation.Key, DefaultFilenames.Settings);
-                }
+                SaveComponentAssociationSettings(componentGroup, componentAssociation.Key, componentAssociation.Value);
             }
+
+            foreach (var componentAssociation in componentGroup.Macros)
+            {
+                SaveMacroAssociationSettings(componentGroup, componentAssociation.Key, componentAssociation.Value);
+            }
+        }
+
+        private void SaveComponentAssociationSettings(ComponentGroup componentGroup, string componentUid, ComponentGroupAssociation association)
+        {
+            _storageService.Write(association.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Components", componentUid, DefaultFilenames.Settings);
+        }
+        
+        private void SaveMacroAssociationSettings(ComponentGroup componentGroup, string componentUid, ComponentGroupAssociation association)
+        {
+            _storageService.Write(association.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Macros", componentUid, DefaultFilenames.Settings);
         }
     }
 }

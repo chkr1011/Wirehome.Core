@@ -17,19 +17,19 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpPost]
-        [Route("api/v1/settings/{uid}")]
+        [Route("api/v1/settings/{*uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostSettings([FromBody] JObject value, params string[] uid)
+        public void PostSetting([FromBody] JObject value, string uid)
         {
-            _storageService.Write(value, uid);
+            _storageService.Write(value, uid.Split("/"));
         }
 
         [HttpGet]
-        [Route("api/v1/settings/{uid}")]
+        [Route("api/v1/settings/{*uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object GetSettings(params string[] uid)
+        public object GetSettings(string uid)
         {
-            if (!_storageService.TryRead(out JObject value, uid))
+            if (!_storageService.TryRead(out JObject value, uid.Split("/")))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
             }
@@ -38,11 +38,11 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpDelete]
-        [Route("api/v1/settings/{uid}")]
+        [Route("api/v1/settings/{*uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void DeleteSettings(params string[] uid)
+        public void DeleteSettings(string uid)
         {
-            _storageService.DeleteFile(uid);
+            _storageService.DeleteFile(uid.Split("/"));
         }
     }
 }

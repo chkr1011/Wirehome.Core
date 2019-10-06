@@ -68,7 +68,6 @@ namespace Wirehome.Core.Python
 
             var paths = new List<string>
             {
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Lib"),
                 Path.Combine(storagePaths.DataPath, "PythonLibraries"),
                 "/usr/lib/python2.7",
                 @"C:\Python27\Lib"

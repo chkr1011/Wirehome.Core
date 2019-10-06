@@ -15,8 +15,10 @@ namespace Wirehome.Core.Extensions
                 throw new InvalidOperationException();
             }
 
-            return Assembly.GetExecutingAssembly().GetTypes()
-                .Where(t => t.IsClass && typeof(TInterface).IsAssignableFrom(t)).ToList();
+            var assembly = Assembly.GetExecutingAssembly();
+
+            return assembly.GetTypes()
+                .Where(t => t.IsClass && typeof(TInterface).IsAssignableFrom(t)).ToList();            
         }
     }
 }

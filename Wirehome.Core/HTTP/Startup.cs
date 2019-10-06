@@ -13,11 +13,9 @@ using Microsoft.OpenApi.Models;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
-using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Diagnostics.Log;
 using Wirehome.Core.Discovery;
-using Wirehome.Core.Extensions;
 using Wirehome.Core.FunctionPool;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Hardware.GPIO;
@@ -37,6 +35,9 @@ using Wirehome.Core.ServiceHost;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 using Wirehome.Core.System.StartupScripts;
+using Wirehome.Core.Extensions;
+using Wirehome.Core.Contracts;
+using Newtonsoft.Json.Converters;
 
 namespace Wirehome.Core.HTTP
 {
@@ -54,7 +55,21 @@ namespace Wirehome.Core.HTTP
                 options.AddConsole();
             });
 
-            var mvcBuilder = services.AddMvc(config => config.Filters.Add(new DefaultExceptionFilter()));
+            var mvcBuilder = services.AddMvc(o =>
+            {
+                o.Filters.Add(new DefaultExceptionFilter());
+            });
+                
+            mvcBuilder.AddNewtonsoftJson(o =>
+            {
+                o.SerializerSettings.Converters.Add(new StringEnumConverter());
+            });
+
+            //}).AddJsonOptions(o =>
+            //{
+            //    o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            //});
+
             mvcBuilder.ConfigureApplicationPartManager(manager =>
             {
                 manager.FeatureProviders.Remove(manager.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
@@ -63,7 +78,6 @@ namespace Wirehome.Core.HTTP
 
             services.AddSwaggerGen(c =>
             {
-                c.DescribeAllEnumsAsStrings();                
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "Wirehome.Core API",
@@ -92,7 +106,7 @@ namespace Wirehome.Core.HTTP
             {
                 services.AddSingleton(typeof(IPythonProxy), pythonProxy);
             }
-
+            
             services.AddCors();
             services.AddResponseCompression();
         }
@@ -100,7 +114,6 @@ namespace Wirehome.Core.HTTP
         // ReSharper disable once UnusedMember.Global
         public void Configure(
             IApplicationBuilder app,
-            IHostingEnvironment env,
             HttpServerService httpServerService,
             LogService logService,
             ILoggerFactory loggerFactory,
@@ -109,17 +122,11 @@ namespace Wirehome.Core.HTTP
             PackageManagerService packageManagerService)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
-            if (env == null) throw new ArgumentNullException(nameof(env));
             if (httpServerService == null) throw new ArgumentNullException(nameof(httpServerService));
             if (logService == null) throw new ArgumentNullException(nameof(logService));
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
 
             loggerFactory.AddProvider(new LogServiceLoggerProvider(logService));
-
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
 
             app.UseResponseCompression();
             app.UseCors(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
@@ -127,7 +134,7 @@ namespace Wirehome.Core.HTTP
             ConfigureSwagger(app);
             ConfigureWebApps(app, globalVariablesService, packageManagerService);
             ConfigureMvc(app);
-            
+
             app.Run(httpServerService.HandleRequestAsync);
 
             StartServices(serviceProvider);
@@ -183,9 +190,11 @@ namespace Wirehome.Core.HTTP
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
 
-            app.UseMvc(config =>
+            app.UseRouting();
+            
+            app.UseEndpoints(endpoints =>
             {
-                config.MapRoute("default", "api/{controller}/{action}/{id?}", null, null, null);
+                endpoints.MapControllers();
             });
         }
 
