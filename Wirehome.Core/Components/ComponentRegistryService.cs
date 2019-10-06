@@ -89,7 +89,6 @@ namespace Wirehome.Core.Components
             _storageService.DeleteDirectory(ComponentsDirectory, uid);
         }
 
-
         public WirehomeDictionary EnableComponent(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
@@ -104,7 +103,7 @@ namespace Wirehome.Core.Components
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var result = ProcessComponentMessage(uid, new WirehomeDictionary().WithType(ControlType.Enable));
+            var result = ProcessComponentMessage(uid, new WirehomeDictionary().WithType(ControlType.Disable));
             _messageBusWrapper.PublishDisabledEvent(uid);
 
             return result;
