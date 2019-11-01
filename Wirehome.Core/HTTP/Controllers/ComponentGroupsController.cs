@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Components;
-using Wirehome.Core.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -16,12 +18,26 @@ namespace Wirehome.Core.HTTP.Controllers
             _componentGroupRegistryService = componentGroupRegistryService ?? throw new ArgumentNullException(nameof(componentGroupRegistryService));
         }
 
+        public static object CreateComponentGroupModel(ComponentGroup componentGroup)
+        {
+            return new
+            {
+                componentGroup.Uid,
+                componentGroup.Hash,
+                Status = componentGroup.GetStatus(),
+                Settings = componentGroup.GetSettings(),
+                Tags = componentGroup.GetTags(),
+                componentGroup.Components,
+                componentGroup.Macros
+            };
+        }
+
         [HttpGet]
         [Route("api/v1/component_groups")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<ComponentGroup> GetComponentGroups()
+        public List<object> GetComponentGroups()
         {
-            return _componentGroupRegistryService.GetComponentGroups();
+            return _componentGroupRegistryService.GetComponentGroups().Select(g => CreateComponentGroupModel(g)).ToList();
         }
 
         [HttpGet]
@@ -55,7 +71,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             _componentGroupRegistryService.DeleteComponentGroup(uid);
         }
-
+               
         [HttpPost]
         [Route("api/v1/component_groups/{componentGroupUid}/components/{componentUid}")]
         [ApiExplorerSettings(GroupName = "v1")]
@@ -115,17 +131,17 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/component_groups/{uid}/status")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetStatus(string uid)
+        public IDictionary GetStatus(string uid)
         {
-            return _componentGroupRegistryService.GetComponentGroup(uid).Status;
+            return _componentGroupRegistryService.GetComponentGroup(uid).GetStatus();
         }
 
         [HttpGet]
         [Route("/api/v1/component_groups/{uid}/settings")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetSettings(string uid)
+        public IDictionary GetSettings(string uid)
         {
-            return _componentGroupRegistryService.GetComponentGroup(uid).Settings;
+            return _componentGroupRegistryService.GetComponentGroup(uid).GetSettings();
         }
 
         [HttpPost]
@@ -150,6 +166,55 @@ namespace Wirehome.Core.HTTP.Controllers
         public object DeleteSetting(string componentGroupUid, string settingUid)
         {
             return _componentGroupRegistryService.RemoveComponentGroupSetting(componentGroupUid, settingUid);
+        }
+
+        [HttpGet]
+        [Route("/api/v1/component_groups/{componentGroupUid}/tags")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<string> GetTags(string componentGroupUid)
+        {
+            var componentGroup = _componentGroupRegistryService.GetComponentGroup(componentGroupUid);
+            return componentGroup.GetTags();
+        }
+
+        [HttpGet]
+        [Route("/api/v1/component_groups/{componentGroupUid}/tags/{tag}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public string GetTag(string componentGroupUid, string tag)
+        {
+            var componentGroup = _componentGroupRegistryService.GetComponentGroup(componentGroupUid);
+            if (!componentGroup.HasTag(tag))
+            {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return null;
+            }
+
+            return tag;
+        }
+
+        [HttpGet]
+        [Route("/api/v1/tags/{tag}/component_groups")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public List<string> GetComponentsWithTag(string tag)
+        {
+            var componentGroup = _componentGroupRegistryService.GetComponentGroupsWithTag(tag);
+            return componentGroup.Select(c => c.Uid).ToList();
+        }
+
+        [HttpPost]
+        [Route("/api/v1/components/{componentGroupUid}/tags/{tag}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void AddTag(string componentGroupUid, string tag)
+        {
+            _componentGroupRegistryService.SetComponentGroupTag(componentGroupUid, tag);
+        }
+
+        [HttpDelete]
+        [Route("/api/v1/components/{componentGroupUid}/tags/{tag}")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteTag(string componentGroupUid, string tag)
+        {
+            _componentGroupRegistryService.RemoveComponentGroupTag(componentGroupUid, tag);
         }
 
         [HttpPost]

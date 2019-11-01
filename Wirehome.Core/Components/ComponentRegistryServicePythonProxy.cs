@@ -32,9 +32,14 @@ namespace Wirehome.Core.Components
             return result;
         }
 
+        public bool set_tag(string component_uid, string tag)
+        {
+            return _componentRegistryService.SetComponentTag(component_uid, tag);
+        }
+
         public bool add_tag(string component_uid, string tag)
         {
-            return _componentRegistryService.AddComponentTag(component_uid, tag);
+            return set_tag(component_uid, tag);
         }
 
         public bool remove_tag(string component_uid, string tag)

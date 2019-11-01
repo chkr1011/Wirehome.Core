@@ -111,7 +111,7 @@ namespace Wirehome.Core.History
         {
             if (_componentRegistryService.TryGetComponent(componentUid, out var component))
             {
-                if (component.Settings.TryGetValue(settingUid, out var value))
+                if (component.TryGetSetting(settingUid, out var value))
                 {
                     return value;
                 }
@@ -244,7 +244,7 @@ namespace Wirehome.Core.History
 
                     foreach (var component in _componentRegistryService.GetComponents())
                     {
-                        foreach (var status in component.Status)
+                        foreach (var status in component.GetStatus())
                         {
                             TryEnqueueComponentStatusValue(
                                 component.Uid,

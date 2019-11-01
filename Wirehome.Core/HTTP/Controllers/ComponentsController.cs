@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -20,6 +21,19 @@ namespace Wirehome.Core.HTTP.Controllers
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
         }
 
+        public static object CreateComponentModel(Component component)
+        {
+            return new
+            {
+                component.Uid,
+                component.Hash,
+                Status = component.GetStatus(),
+                Settings = component.GetSettings(),
+                Tags = component.GetTags(),
+                Configuration = component.GetConfiguration()
+            };
+        }
+
         [HttpGet]
         [Route("api/v1/components/uids")]
         [ApiExplorerSettings(GroupName = "v1")]
@@ -31,17 +45,17 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("api/v1/components")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<Component> GetComponents()
+        public List<object> GetComponents()
         {
-            return _componentRegistryService.GetComponents();
+            return _componentRegistryService.GetComponents().Select(c => CreateComponentModel(c)).ToList();
         }
 
         [HttpGet]
         [Route("/api/v1/components/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Component GetComponent(string uid)
+        public object GetComponent(string uid)
         {
-            return _componentRegistryService.GetComponent(uid);
+            return CreateComponentModel(_componentRegistryService.GetComponent(uid));
         }
 
         [HttpDelete]
@@ -87,7 +101,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/components/{uid}/enable")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostEnable(string uid)
+        public IDictionary PostEnable(string uid)
         {
             return _componentRegistryService.EnableComponent(uid);
         }
@@ -95,7 +109,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/components/{uid}/disable")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostDisable(string uid)
+        public IDictionary PostDisable(string uid)
         {
             return _componentRegistryService.DisableComponent(uid);
         }
@@ -103,24 +117,24 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/components/{uid}/process_message")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message, bool returnUpdatedComponent = true)
+        public IDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message, bool returnUpdatedComponent = true)
         {
             var result = _componentRegistryService.ProcessComponentMessage(uid, message);
 
             if (returnUpdatedComponent)
             {
-                result["component"] = _componentRegistryService.GetComponent(uid);
+                result["component"] = CreateComponentModel(_componentRegistryService.GetComponent(uid));
             }
-            
+
             return result;
         }
 
         [HttpGet]
         [Route("/api/v1/components/{uid}/settings")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetSettingValues(string uid)
+        public IDictionary GetSettingValues(string uid)
         {
-            return _componentRegistryService.GetComponent(uid).Settings;
+            return _componentRegistryService.GetComponent(uid).GetSettings();
         }
 
         [HttpGet]
@@ -150,15 +164,15 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{uid}/status")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetStatusValues(string uid)
+        public IDictionary GetStatusValues(string uid)
         {
-            return _componentRegistryService.GetComponent(uid).Status;
+            return _componentRegistryService.GetComponent(uid).GetStatus();
         }
-        
+
         [HttpGet]
         [Route("/api/v1/components/{uid}/debug_information")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary GetDebugInformation(string uid, [FromBody] WirehomeDictionary parameters)
+        public IDictionary GetDebugInformation(string uid, [FromBody] WirehomeDictionary parameters)
         {
             return _componentRegistryService.GetComponent(uid).GetDebugInformation(parameters);
         }
@@ -170,7 +184,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             var component = _componentRegistryService.GetComponent(componentUid);
 
-            if (!component.Status.TryGetValue(statusUid, out var value))
+            if (!component.TryGetStatusValue(statusUid, out var value))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return null;
@@ -190,9 +204,9 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{uid}/runtime_configuration")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetConfigurationValues(string uid)
+        public IDictionary GetConfigurationValues(string uid)
         {
-            return _componentRegistryService.GetComponent(uid).Configuration;
+            return _componentRegistryService.GetComponent(uid).GetConfiguration();
         }
 
         [HttpGet]
@@ -202,7 +216,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             var component = _componentRegistryService.GetComponent(componentUid);
 
-            if (!component.Configuration.TryGetValue(configurationUid, out var value))
+            if (!component.TryGetConfigurationValue(configurationUid, out var value))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return null;
@@ -217,7 +231,7 @@ namespace Wirehome.Core.HTTP.Controllers
         public List<string> GetTags(string componentUid)
         {
             var component = _componentRegistryService.GetComponent(componentUid);
-            return component.Tags.ToList();
+            return component.GetTags();
         }
 
         [HttpGet]
@@ -226,7 +240,7 @@ namespace Wirehome.Core.HTTP.Controllers
         public string GetTag(string componentUid, string tag)
         {
             var component = _componentRegistryService.GetComponent(componentUid);
-            if (!component.Tags.Contains(tag))
+            if (!component.HasTag(tag))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return null;
@@ -238,7 +252,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/tags/{tag}/components")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public List<string> GetComponentsWithTag(string componentUid, string tag)
+        public List<string> GetComponentsWithTag(string tag)
         {
             var components = _componentRegistryService.GetComponentsWithTag(tag);
             return components.Select(c => c.Uid).ToList();
@@ -249,8 +263,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void AddTag(string componentUid, string tag)
         {
-            var component = _componentRegistryService.GetComponent(componentUid);
-            component.Tags.Add(tag);
+            _componentRegistryService.SetComponentTag(componentUid, tag);
         }
 
         [HttpDelete]
@@ -258,8 +271,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteTag(string componentUid, string tag)
         {
-            var component = _componentRegistryService.GetComponent(componentUid);
-            component.Tags.Remove(tag);
+            _componentRegistryService.RemoveComponentTag(componentUid, tag);
         }
     }
 }

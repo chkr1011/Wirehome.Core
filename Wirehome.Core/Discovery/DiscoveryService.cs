@@ -95,7 +95,7 @@ namespace Wirehome.Core.Discovery
                         }
                         catch (Exception exception)
                         {
-                            _logger.LogWarning(exception, $"Error while loading device info from '{device.DescriptionLocation}.'");
+                            _logger.LogDebug(exception, $"Error while loading device info from '{device.DescriptionLocation}.'");
                         }
                     }
 

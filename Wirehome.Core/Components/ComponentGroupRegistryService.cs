@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Contracts;
@@ -100,7 +101,7 @@ namespace Wirehome.Core.Components
             var componentGroup = new ComponentGroup(uid);
             foreach (var setting in settings)
             {
-                componentGroup.Settings[setting.Key] = setting.Value;
+                componentGroup.SetSetting(setting.Key, setting.Value);
             }
 
             var associationUids = _storageService.EnumerateDirectories("*", ComponentGroupsDirectory, uid, "Components");
@@ -180,6 +181,16 @@ namespace Wirehome.Core.Components
             }
         }
 
+        public List<ComponentGroup> GetComponentGroupsWithTag(string tag)
+        {
+            if (tag == null) throw new ArgumentNullException(nameof(tag));
+
+            lock (_componentGroups)
+            {
+                return _componentGroups.Values.Where(g => g.HasTag(tag)).ToList();
+            }
+        }
+        
         public void AssignComponent(string componentGroupUid, string componentUid)
         {
             if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
@@ -214,6 +225,46 @@ namespace Wirehome.Core.Components
 
                 Save(componentGroup);
             }
+        }
+
+        public bool SetComponentGroupTag(string componentGroupUid, string tag)
+        {
+            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
+
+            var componentGroup = GetComponentGroup(componentGroupUid);
+
+            if (!componentGroup.SetTag(tag))
+            {
+                return false;
+            }
+
+            _storageService.Write(componentGroup.GetTags(), ComponentGroupsDirectory, componentGroup.Uid, DefaultFilenames.Tags);
+
+            //_messageBusWrapper.PublishTagAddedEvent(componentGroup.Uid, tag);
+
+            _logger.LogDebug("Component group '{0}' tag '{1}' set.", componentGroup.Uid, tag);
+
+            return true;
+        }
+
+        public bool RemoveComponentGroupTag(string componentGroupUid, string tag)
+        {
+            if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
+
+            var componentGroup = GetComponentGroup(componentGroupUid);
+
+            if (!componentGroup.RemoveTag(tag))
+            {
+                return false;
+            }
+
+            _storageService.Write(componentGroup.GetTags(), ComponentGroupsDirectory, componentGroup.Uid, DefaultFilenames.Tags);
+
+            //_messageBusWrapper.PublishTagRemovedEvent(componentGroup.Uid, tag);
+
+            _logger.LogDebug("Component group '{0}' tag '{1}' removed.", componentGroup.Uid, tag);
+
+            return true;
         }
 
         public void AssignMacro(string componentGroupUid, string macroUid)
@@ -344,7 +395,8 @@ namespace Wirehome.Core.Components
                 }
             }
 
-            return componentGroup.Settings.GetValueOrDefault(settingUid);
+            componentGroup.TryGetSetting(settingUid, out var value);
+            return value;
         }
 
         public void SetComponentGroupSetting(string componentGroupUid, string settingUid, object value)
@@ -354,29 +406,31 @@ namespace Wirehome.Core.Components
 
             var componentGroup = GetComponentGroup(componentGroupUid);
 
-            componentGroup.Settings.TryGetValue(settingUid, out var oldValue);
-            if (Equals(oldValue, value))
+            var setSettingResult = componentGroup.SetSetting(settingUid, value);
+            if (!setSettingResult.IsNewValue)
             {
-                return;
+                if (Equals(setSettingResult.OldValue, value))
+                {
+                    return;
+                }
             }
-
-            componentGroup.Settings[settingUid] = value;
-            _storageService.Write(componentGroup.Settings, ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
+            
+            _storageService.Write(componentGroup.GetSettings(), ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
 
             _logger.Log(
                 LogLevel.Debug,
                 "Component group '{0}' setting '{1}' changed from '{2}' to '{3}'.",
                 componentGroupUid,
                 settingUid,
-                oldValue ?? "<null>",
+                setSettingResult.OldValue ?? "<null>",
                 value ?? "<null>");
 
             _messageBusService.Publish(new WirehomeDictionary()
                 .WithType("component_group_registry.event.setting_changed")
                 .WithValue("component_group_uid", componentGroupUid)
                 .WithValue("setting_uid", settingUid)
-                .WithValue("old_value", oldValue)
-                .WithValue("new_value", oldValue));
+                .WithValue("old_value", setSettingResult.OldValue)
+                .WithValue("new_value", setSettingResult.OldValue));
         }
 
         public object RemoveComponentGroupSetting(string componentGroupUid, string settingUid)
@@ -386,12 +440,12 @@ namespace Wirehome.Core.Components
 
             var componentGroup = GetComponentGroup(componentGroupUid);
 
-            if (!componentGroup.Settings.TryRemove(settingUid, out var oldValue))
+            if (!componentGroup.RemoveSetting(settingUid, out var oldValue))
             {
                 return null;
             }
 
-            _storageService.Write(componentGroup.Settings, ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
+            _storageService.Write(componentGroup.GetSettings(), ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
 
             _logger.Log(
                 LogLevel.Debug,

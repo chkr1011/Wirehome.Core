@@ -137,7 +137,7 @@ namespace Wirehome.Core.Components
                 {
                     foreach (var setting in settings)
                     {
-                        component.Settings[setting.Key] = setting.Value;
+                        component.SetSetting(setting.Key, setting.Value);
                     }
                 }
 
@@ -145,7 +145,7 @@ namespace Wirehome.Core.Components
                 {
                     foreach (var tag in tags)
                     {
-                        component.Tags.Add(tag);
+                        component.SetTag(tag);
                     }
                 }
 
@@ -218,7 +218,7 @@ namespace Wirehome.Core.Components
 
             lock (_components)
             {
-                return _components.Values.Where(c => c.Tags.Contains(tag)).ToList();
+                return _components.Values.Where(c => c.HasTag(tag)).ToList();
             }
         }
 
@@ -237,7 +237,7 @@ namespace Wirehome.Core.Components
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (configurationUid == null) throw new ArgumentNullException(nameof(configurationUid));
 
-            GetComponent(componentUid)?.Configuration?.SetValue(configurationUid, value);
+            GetComponent(componentUid)?.SetConfigurationValue(configurationUid, value);
         }
 
         public object GetComponentConfiguration(string componentUid, string configurationUid, object defaultValue = null)
@@ -246,7 +246,12 @@ namespace Wirehome.Core.Components
             if (configurationUid == null) throw new ArgumentNullException(nameof(configurationUid));
 
             var component = GetComponent(componentUid);
-            return component.Configuration.GetValueOrDefault(configurationUid, defaultValue);
+            if (component.TryGetConfigurationValue(configurationUid, out var value))
+            {
+                return value;
+            }
+
+            return defaultValue;
         }
 
         public bool ComponentHasStatus(string componentUid, string statusUid)
@@ -255,7 +260,7 @@ namespace Wirehome.Core.Components
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
             var component = GetComponent(componentUid);
-            return component.Status.ContainsKey(statusUid);
+            return component.TryGetStatusValue(statusUid, out var _);
         }
 
         public object GetComponentStatus(string componentUid, string statusUid, object defaultValue = null)
@@ -264,25 +269,30 @@ namespace Wirehome.Core.Components
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
             var component = GetComponent(componentUid);
-            return component.Status.GetValueOrDefault(statusUid, defaultValue);
+            if (component.TryGetStatusValue(statusUid, out var value))
+            {
+                return value;
+            }
+
+            return defaultValue;
         }
 
-        public bool AddComponentTag(string componentUid, string tag)
+        public bool SetComponentTag(string componentUid, string tag)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
 
             var component = GetComponent(componentUid);
 
-            if (!component.Tags.Add(tag))
+            if (!component.SetTag(tag))
             {
                 return false;
             }
 
-            _storageService.Write(component.Tags, ComponentsDirectory, component.Uid, DefaultFilenames.Tags);
+            _storageService.Write(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFilenames.Tags);
 
             _messageBusWrapper.PublishTagAddedEvent(component.Uid, tag);
 
-            _logger.LogDebug("Component '{0}' tag '{1}' added.", component.Uid, tag);
+            _logger.LogDebug("Component '{0}' tag '{1}' set.", component.Uid, tag);
 
             return true;
         }
@@ -293,12 +303,12 @@ namespace Wirehome.Core.Components
 
             var component = GetComponent(componentUid);
 
-            if (!component.Tags.Remove(tag))
+            if (!component.RemoveTag(tag))
             {
                 return false;
             }
 
-            _storageService.Write(component.Tags, ComponentsDirectory, component.Uid, DefaultFilenames.Tags);
+            _storageService.Write(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFilenames.Tags);
 
             _messageBusWrapper.PublishTagRemovedEvent(component.Uid, tag);
 
@@ -313,7 +323,7 @@ namespace Wirehome.Core.Components
             if (tag == null) throw new ArgumentNullException(nameof(tag));
 
             var component = GetComponent(componentUid);
-            return component.Tags.Contains(tag);
+            return component.HasTag(tag);
         }
 
         public void SetComponentStatus(string componentUid, string statusUid, object value)
@@ -323,15 +333,9 @@ namespace Wirehome.Core.Components
 
             var component = GetComponent(componentUid);
 
-            var isAdd = true;
-            object oldValue = null;
-
-            component.Status.AddOrUpdate(statusUid, value, (_, v) =>
-            {
-                isAdd = false;
-                oldValue = v;
-                return value;
-            });
+            var setStatusValueResult = component.SetStatusValue(statusUid, value);
+            var oldValue = setStatusValueResult.OldValue;
+            var isAdd = setStatusValueResult.IsNewValue;
 
             var oldValueString = Convert.ToString(oldValue, CultureInfo.InvariantCulture);
             var newValueString = Convert.ToString(value, CultureInfo.InvariantCulture);
@@ -358,7 +362,7 @@ namespace Wirehome.Core.Components
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
             var component = GetComponent(componentUid);
-            return component.Settings.ContainsKey(settingUid);
+            return component.TryGetSetting(settingUid, out var _);
         }
 
         public object GetComponentSetting(string componentUid, string settingUid, object defaultValue = null)
@@ -367,7 +371,12 @@ namespace Wirehome.Core.Components
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
             var component = GetComponent(componentUid);
-            return component.Settings.GetValueOrDefault(settingUid, defaultValue);
+            if (!component.TryGetSetting(settingUid, out var value))
+            {
+                return value;
+            }
+
+            return defaultValue;
         }
 
         public void RegisterComponentSetting(string componentUid, string settingUid, object value)
@@ -376,7 +385,7 @@ namespace Wirehome.Core.Components
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
             var component = GetComponent(componentUid);
-            if (component.Settings.TryGetValue(settingUid, out _))
+            if (component.TryGetSetting(settingUid, out _))
             {
                 return;
             }
@@ -390,7 +399,7 @@ namespace Wirehome.Core.Components
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
             var component = GetComponent(componentUid);
-            component.Settings.TryGetValue(settingUid, out var oldValue);
+            component.TryGetSetting(settingUid, out var oldValue);
 
             var oldValueString = Convert.ToString(oldValue, CultureInfo.InvariantCulture);
             var newValueString = Convert.ToString(value, CultureInfo.InvariantCulture);
@@ -401,9 +410,9 @@ namespace Wirehome.Core.Components
                 return;
             }
 
-            component.Settings[settingUid] = value;
+            component.SetSetting(settingUid, value);
 
-            _storageService.Write(component.Settings, ComponentsDirectory, component.Uid, DefaultFilenames.Settings);
+            _storageService.Write(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFilenames.Settings);
             _messageBusWrapper.PublishSettingChangedEvent(component.Uid, settingUid, oldValue, value);
 
             _logger.LogDebug(
@@ -420,9 +429,12 @@ namespace Wirehome.Core.Components
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
             var component = GetComponent(componentUid);
-            component.Settings.Remove(settingUid, out var value);
+            if (!component.RemoveSetting(settingUid, out var value))
+            {
+                return null;
+            }
 
-            _storageService.Write(component.Settings, ComponentsDirectory, component.Uid, DefaultFilenames.Settings);
+            _storageService.Write(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFilenames.Settings);
             _messageBusWrapper.PublishSettingRemovedEvent(component.Uid, settingUid, value);
 
             return value;
