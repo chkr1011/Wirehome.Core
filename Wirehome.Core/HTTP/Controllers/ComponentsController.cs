@@ -198,7 +198,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostStatusValue(string componentUid, string statusUid, [FromBody] object value)
         {
-            _componentRegistryService.SetComponentStatus(componentUid, statusUid, value);
+            _componentRegistryService.SetComponentStatusValue(componentUid, statusUid, value);
         }
 
         [HttpGet]

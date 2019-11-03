@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using static Wirehome.Core.Components.Component;
 
 namespace Wirehome.Core.Components
 {
@@ -29,21 +28,21 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public bool TryGetStatusValue(string key, out object value)
+        public bool TryGetStatusValue(string uid, out object value)
         {
             lock (_status)
             {
-                return _status.TryGetValue(key, out value);
+                return _status.TryGetValue(uid, out value);
             }
         }
 
-        public SetValueResult SetStatusValue(string key, object value)
+        public SetValueResult SetStatusValue(string uid, object value)
         {
             lock (_status)
             {
-                var isExistingValue = _status.TryGetValue(key, out var oldValue);
+                var isExistingValue = _status.TryGetValue(uid, out var oldValue);
 
-                _status[key] = value;
+                _status[uid] = value;
                 IncrementHash();
 
                 return new SetValueResult
@@ -65,21 +64,21 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public bool TryGetSetting(string key, out object value)
+        public bool TryGetSetting(string uid, out object value)
         {
             lock (_settings)
             {
-                return _settings.TryGetValue(key, out value);
+                return _settings.TryGetValue(uid, out value);
             }
         }
 
-        public SetValueResult SetSetting(string key, object value)
+        public SetValueResult SetSetting(string uid, object value)
         {
             lock (_settings)
             {
-                var isExistingValue = _settings.TryGetValue(key, out var oldValue);
+                var isExistingValue = _settings.TryGetValue(uid, out var oldValue);
 
-                _settings[key] = value;
+                _settings[uid] = value;
                 IncrementHash();
 
                 return new SetValueResult
@@ -90,13 +89,13 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public bool RemoveSetting(string key, out object oldValue)
+        public bool RemoveSetting(string uid, out object oldValue)
         {
             lock (_settings)
             {
-                if (_settings.TryGetValue(key, out oldValue))
+                if (_settings.TryGetValue(uid, out oldValue))
                 {
-                    _settings.Remove(key);
+                    _settings.Remove(uid);
                     IncrementHash();
 
                     return true;

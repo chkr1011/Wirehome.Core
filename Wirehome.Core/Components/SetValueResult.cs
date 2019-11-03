@@ -1,12 +1,9 @@
 ﻿namespace Wirehome.Core.Components
 {
-    public partial class Component
+    public class SetValueResult
     {
-        public class SetValueResult
-        {
-            public object OldValue { get; set; }
+        public object OldValue { get; set; }
 
-            public bool IsNewValue { get; set; }
-        }
+        public bool IsNewValue { get; set; }
     }
 }

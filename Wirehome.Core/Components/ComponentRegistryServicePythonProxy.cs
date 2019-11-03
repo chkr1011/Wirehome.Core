@@ -54,17 +54,17 @@ namespace Wirehome.Core.Components
 
         public bool has_status(string component_uid, string status_uid)
         {
-            return _componentRegistryService.ComponentHasStatus(component_uid, status_uid);
+            return _componentRegistryService.ComponentHasStatusValue(component_uid, status_uid);
         }
 
         public object get_status(string component_uid, string status_uid, object default_value = null)
         {
-            return PythonConvert.ToPython(_componentRegistryService.GetComponentStatus(component_uid, status_uid, default_value));
+            return PythonConvert.ToPython(_componentRegistryService.GetComponentStatusValue(component_uid, status_uid, default_value));
         }
 
         public void set_status(string component_uid, string status_uid, object value)
         {
-            _componentRegistryService.SetComponentStatus(component_uid, status_uid, PythonConvert.FromPython(value));
+            _componentRegistryService.SetComponentStatusValue(component_uid, status_uid, PythonConvert.FromPython(value));
         }
 
         public bool has_setting(string component_uid, string setting_uid)

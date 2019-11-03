@@ -47,17 +47,17 @@ namespace Wirehome.Core.Components
 
         public bool has_status(string status_uid)
         {
-            return _componentRegistryService.ComponentHasStatus(_componentUid, status_uid);
+            return _componentRegistryService.ComponentHasStatusValue(_componentUid, status_uid);
         }
 
         public object get_status(string status_uid, object default_value = null)
         {
-            return PythonConvert.ToPython(_componentRegistryService.GetComponentStatus(_componentUid, status_uid, default_value));
+            return PythonConvert.ToPython(_componentRegistryService.GetComponentStatusValue(_componentUid, status_uid, default_value));
         }
 
         public void set_status(string status_uid, object value)
         {
-            _componentRegistryService.SetComponentStatus(_componentUid, status_uid, PythonConvert.FromPython(value));
+            _componentRegistryService.SetComponentStatusValue(_componentUid, status_uid, PythonConvert.FromPython(value));
         }
 
         public bool has_setting(string setting_uid)
@@ -82,12 +82,12 @@ namespace Wirehome.Core.Components
         
         public object get_configuration(string configuration_uid, object default_value = null)
         {
-            return PythonConvert.ToPython(_componentRegistryService.GetComponentConfiguration(_componentUid, configuration_uid, default_value));
+            return PythonConvert.ToPython(_componentRegistryService.GetComponentConfigurationValue(_componentUid, configuration_uid, default_value));
         }
 
         public void set_configuration(string configuration_uid, object value)
         {
-            _componentRegistryService.SetComponentConfiguration(_componentUid, configuration_uid, PythonConvert.FromPython(value));
+            _componentRegistryService.SetComponentConfigurationValue(_componentUid, configuration_uid, PythonConvert.FromPython(value));
         }
     }
 }
