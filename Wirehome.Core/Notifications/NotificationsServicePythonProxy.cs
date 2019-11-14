@@ -1,6 +1,7 @@
-﻿using System;
+﻿using IronPython.Runtime;
+using System;
+using System.Linq;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
@@ -18,6 +19,34 @@ namespace Wirehome.Core.Notifications
         }
 
         public string ModuleName { get; } = "notifications";
+
+        public List find_all_by_tag(string tag)
+        {
+            if (tag is null) throw new ArgumentNullException(nameof(tag));
+
+            var matchingNotifications = _notificationsService.GetNotifications().Where(n => n.Tag == tag).Select(n => n.Uid);
+            var result = new List();
+
+            foreach (var notificationUid in matchingNotifications)
+            {
+                result.Add(notificationUid);
+            }
+
+            return result;
+        }
+
+        public string find_first_by_tag(string tag)
+        {
+            if (tag is null) throw new ArgumentNullException(nameof(tag));
+
+            var matchingNotification = _notificationsService.GetNotifications().FirstOrDefault(n => n.Tag == tag);
+            if (matchingNotification != null)
+            {
+                return matchingNotification.Uid.ToString();
+            }
+
+            return null;
+        }
 
         public void publish(string type, string message, string ttl = null)
         {
@@ -52,6 +81,11 @@ namespace Wirehome.Core.Notifications
             }
 
             _notificationsService.PublishFromResource(parameters);
+        }
+
+        public void delete(string uid)
+        {
+            _notificationsService.DeleteNotification(Guid.Parse(uid));
         }
     }
 }

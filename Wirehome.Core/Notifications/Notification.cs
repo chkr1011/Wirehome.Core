@@ -1,6 +1,4 @@
 ﻿using System;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace Wirehome.Core.Notifications
 {
@@ -8,7 +6,6 @@ namespace Wirehome.Core.Notifications
     {
         public Guid Uid { get; set; }
 
-        [JsonConverter(typeof(StringEnumConverter))]
         public NotificationType Type { get; set; }
 
         public DateTime Timestamp { get; set; }
@@ -16,5 +13,7 @@ namespace Wirehome.Core.Notifications
         public string Message { get; set; }
 
         public TimeSpan TimeToLive { get; set; }
+
+        public string Tag { get; set; }
     }
 }

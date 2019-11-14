@@ -94,6 +94,11 @@ namespace Wirehome.Core.History
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
+            if (_repository == null)
+            {
+                return null;
+            }
+
             return new HistoryExtractBuilder(_repository).BuildAsync(componentUid, statusUid, rangeStart, rangeEnd, interval, dataType, maxRowCount, cancellationToken);
         }
 
