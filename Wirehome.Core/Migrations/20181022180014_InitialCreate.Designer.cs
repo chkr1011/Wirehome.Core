@@ -8,62 +8,62 @@ using Wirehome.Core.History.Repository.Entities;
 
 namespace Wirehome.Core.Migrations
 {
-    [DbContext(typeof(HistoryDatabaseContext))]
-    [Migration("20181022180014_InitialCreate")]
-    partial class InitialCreate
-    {
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
-        {
-#pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "2.1.4-rtm-31024")
-                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+//    [DbContext(typeof(HistoryDatabaseContext))]
+//    [Migration("20181022180014_InitialCreate")]
+//    partial class InitialCreate
+//    {
+//        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+//        {
+//#pragma warning disable 612, 618
+//            modelBuilder
+//                .HasAnnotation("ProductVersion", "2.1.4-rtm-31024")
+//                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", b =>
-                {
-                    b.Property<ulong>("ID")
-                        .ValueGeneratedOnAdd();
+//            modelBuilder.Entity("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", b =>
+//                {
+//                    b.Property<ulong>("ID")
+//                        .ValueGeneratedOnAdd();
 
-                    b.Property<string>("ComponentUid")
-                        .HasMaxLength(256);
+//                    b.Property<string>("ComponentUid")
+//                        .HasMaxLength(256);
 
-                    b.Property<ulong?>("NextEntityID");
+//                    b.Property<ulong?>("NextEntityID");
 
-                    b.Property<ulong?>("PreviousEntityID");
+//                    b.Property<ulong?>("PreviousEntityID");
 
-                    b.Property<DateTime>("RangeEnd");
+//                    b.Property<DateTime>("RangeEnd");
 
-                    b.Property<DateTime>("RangeStart");
+//                    b.Property<DateTime>("RangeStart");
 
-                    b.Property<string>("StatusUid")
-                        .HasMaxLength(256);
+//                    b.Property<string>("StatusUid")
+//                        .HasMaxLength(256);
 
-                    b.Property<string>("Value")
-                        .HasMaxLength(512);
+//                    b.Property<string>("Value")
+//                        .HasMaxLength(512);
 
-                    b.HasKey("ID");
+//                    b.HasKey("ID");
 
-                    b.HasIndex("NextEntityID")
-                        .IsUnique();
+//                    b.HasIndex("NextEntityID")
+//                        .IsUnique();
 
-                    b.HasIndex("PreviousEntityID");
+//                    b.HasIndex("PreviousEntityID");
 
-                    b.HasIndex("RangeStart", "RangeEnd", "ComponentUid", "StatusUid");
+//                    b.HasIndex("RangeStart", "RangeEnd", "ComponentUid", "StatusUid");
 
-                    b.ToTable("ComponentStatus");
-                });
+//                    b.ToTable("ComponentStatus");
+//                });
 
-            modelBuilder.Entity("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", b =>
-                {
-                    b.HasOne("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "NextEntity")
-                        .WithOne()
-                        .HasForeignKey("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "NextEntityID");
+//            modelBuilder.Entity("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", b =>
+//                {
+//                    b.HasOne("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "NextEntity")
+//                        .WithOne()
+//                        .HasForeignKey("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "NextEntityID");
 
-                    b.HasOne("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "PreviousEntity")
-                        .WithMany()
-                        .HasForeignKey("PreviousEntityID");
-                });
-#pragma warning restore 612, 618
-        }
-    }
+//                    b.HasOne("Wirehome.Core.History.Repository.Entities.ComponentStatusEntity", "PreviousEntity")
+//                        .WithMany()
+//                        .HasForeignKey("PreviousEntityID");
+//                });
+//#pragma warning restore 612, 618
+//        }
+//    }
 }
