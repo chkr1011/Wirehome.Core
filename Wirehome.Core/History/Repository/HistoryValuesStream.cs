@@ -1,148 +1,169 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Wirehome.Core.History.Repository.Entities;
-using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.History.Repository
 {
-
-    public class HistoryRepository
+    public sealed class HistoryValuesStream : IDisposable
     {
-        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-        private readonly StorageService _storageService;
+        byte[] BeginTokenPrefixBuffer = Encoding.UTF8.GetBytes("b:");
+        byte[] EndTokenPrefixBuffer = Encoding.UTF8.GetBytes("e:");
+        byte[] ValueTokenPrefixBuffer = Encoding.UTF8.GetBytes("v:");
+        
+        readonly Stream _source;
 
-        public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
+        HistoryValueStreamSerializer _serializer = new HistoryValueStreamSerializer();
 
-        public HistoryRepository(StorageService storageService)
+        public HistoryValuesStream(Stream source)
         {
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _source = source ?? throw new ArgumentNullException(nameof(source));
         }
 
-        public void Initialize()
+        public Token CurrentToken
         {
+            get; private set;
         }
 
-        public void Delete()
+        public bool EndOfStream => _source.Position == _source.Length;
+
+        public bool BeginningOfStream => _source.Position == 0;
+
+        public void SeekBegin()
         {
+            _source.Seek(0, SeekOrigin.Begin);
         }
 
-        public async Task UpdateComponentStatusValueAsync(ComponentStatusValue componentStatusValue, CancellationToken cancellationToken)
+        public void SeekEnd()
         {
-            if (componentStatusValue == null) throw new ArgumentNullException(nameof(componentStatusValue));
+            _source.Seek(0, SeekOrigin.End);
+        }
 
-            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-
-            string path = null;
-            try
+        public async Task<bool> MoveNextAsync(CancellationToken cancellationToken = default)
+        {
+            if (EndOfStream)
             {
-                path = Path.Combine(
-                    _storageService.DataPath,
-                    "Components",
-                    componentStatusValue.ComponentUid,
-                    "History",
-                    componentStatusValue.StatusUid,
-                    componentStatusValue.Timestamp.Year.ToString(),
-                    componentStatusValue.Timestamp.Month.ToString().PadLeft(2, '0'),
-                    componentStatusValue.Timestamp.Day.ToString().PadLeft(2, '0'));
+                CurrentToken = null;
+                return false;
+            }
 
-                if (!Directory.Exists(path))
+            var readBuffer = new byte[1];
+            using (var buffer = new MemoryStream(24))
+            {
+                while (!EndOfStream)
                 {
-                    Directory.CreateDirectory(path);
-                }
+                    await _source.ReadAsync(readBuffer, 0, 1, cancellationToken).ConfigureAwait(false);
 
-                path = Path.Combine(path, "Values");
-
-                using (var valuesStream = new HistoryValuesStream(new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
-                {
-                    valuesStream.SeekEnd();
-
-                    var createNewValue = true;
-
-                    if (await valuesStream.MovePreviousAsync(cancellationToken).ConfigureAwait(false))
+                    if (_serializer.IsSeparator(readBuffer[0]))
                     {
-                        var endToken = (EndToken)valuesStream.CurrentToken;
-
-                        if (componentStatusValue.Timestamp.TimeOfDay - endToken.Value < ComponentStatusOutdatedTimeout)
-                        {
-                            // Update value is not outdated (the time difference is not exceeded).
-                            await valuesStream.MovePreviousAsync(cancellationToken).ConfigureAwait(false);
-                            var valueToken = valuesStream.CurrentToken as ValueToken;
-                            await valuesStream.MoveNextAsync().ConfigureAwait(false); // Move back to end token.
-                            
-                            if (string.Equals(valueToken.Value, componentStatusValue.Value, StringComparison.Ordinal))
-                            {
-                                // The value is still the same so we patch the end date only.
-                                await valuesStream.WriteTokenAsync(new EndToken(componentStatusValue.Timestamp.TimeOfDay), cancellationToken).ConfigureAwait(false);
-
-                                createNewValue = false;
-                            }
-
-                            await valuesStream.MoveNextAsync().ConfigureAwait(false);
-                        }
+                        CurrentToken = ParseToken(new ArraySegment<byte>(buffer.GetBuffer(), 0, (int)buffer.Length));
+                        return true;
                     }
 
-                    if (createNewValue)
+                    buffer.Write(readBuffer, 0, 1);
+                }
+            }
+
+            return false;
+        }
+
+        public async Task<bool> MovePreviousAsync(CancellationToken cancellationToken = default)
+        {
+            if (BeginningOfStream)
+            {
+                CurrentToken = null;
+                return false;
+            }
+
+            var separatorsCount = 0;
+            var readBuffer = new byte[1];
+
+            while (!BeginningOfStream)
+            {
+                _source.Seek(-1, SeekOrigin.Current);
+                await _source.ReadAsync(readBuffer, 0, 1, cancellationToken).ConfigureAwait(false);
+                _source.Seek(-1, SeekOrigin.Current);
+
+                if (_serializer.IsSeparator(readBuffer[0]))
+                {
+                    separatorsCount++;
+
+                    if (separatorsCount == 2)
                     {
-                        await valuesStream.WriteTokenAsync(new BeginToken(componentStatusValue.Timestamp.TimeOfDay), cancellationToken).ConfigureAwait(false);
-                        await valuesStream.WriteTokenAsync(new ValueToken(componentStatusValue.Value), cancellationToken).ConfigureAwait(false);
-                        await valuesStream.WriteTokenAsync(new EndToken(componentStatusValue.Timestamp.TimeOfDay), cancellationToken).ConfigureAwait(false);
+                        _source.Seek(1, SeekOrigin.Current);
+                        break;
                     }
                 }
             }
-            catch (Exception exception)
+
+            var position = _source.Position;
+            var result = await MoveNextAsync().ConfigureAwait(false);
+            _source.Position = position;
+                       
+            return result;
+        }
+               
+        public Task WriteTokenAsync(Token token, CancellationToken cancellationToken = default)
+        {
+            // TODO: Move to serializer and keep await calls low (add buffer).
+
+            if (token is BeginToken beginToken)
             {
-                // TODO: Implement automatic file repair and delete etc. when not possible.
-
-                File.Delete(path);
-
-                throw;
+                return WriteAsync(
+                    cancellationToken, 
+                    BeginTokenPrefixBuffer, 
+                    _serializer.SerializeTimeSpan(beginToken.Value), 
+                    _serializer.SerializeSeparator());
             }
-            finally
+
+            if (token is ValueToken valueToken)
             {
-                _lock.Release();
+                return WriteAsync(
+                    cancellationToken,
+                    ValueTokenPrefixBuffer,
+                    _serializer.SerializeValue(valueToken.Value),
+                    _serializer.SerializeSeparator());
             }
+
+            if (token is EndToken endToken)
+            {
+                return WriteAsync(
+                    cancellationToken,
+                    EndTokenPrefixBuffer,
+                    _serializer.SerializeTimeSpan(endToken.Value),
+                    _serializer.SerializeSeparator());
+            }
+
+            throw new NotSupportedException("Token is not supported.");
         }
 
-        public Task DeleteComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
+        public async Task WriteElementAsync(TimeSpan begin, string value, TimeSpan end)
         {
-            return Task.CompletedTask;
+            await WriteTokenAsync(new BeginToken(begin)).ConfigureAwait(false);
+            await WriteTokenAsync(new ValueToken(value)).ConfigureAwait(false);
+            await WriteTokenAsync(new EndToken(end)).ConfigureAwait(false);
         }
 
-        public async Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(string componentUid, string statusUid, int maxRowsCount, CancellationToken cancellationToken)
+        async Task WriteAsync(CancellationToken cancellationToken, params byte[][] buffers)
         {
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
-
-            return new List<ComponentStatusEntity>();
+            foreach(var buffer in buffers)
+            {
+                await _source.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+            }   
         }
 
-        public Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(
-            string componentUid,
-            string statusUid,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-            int maxRowsCount,
-            CancellationToken cancellationToken)
+        Token ParseToken(ArraySegment<byte> source)
         {
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
-            if (rangeStart > rangeEnd) throw new ArgumentException($"{nameof(rangeStart)} is greater than {nameof(rangeEnd)}");
+            var tokenKey = new ArraySegment<byte>(source.Array, 0, 2);
+            var tokenValue = new ArraySegment<byte>(source.Array, 2, source.Count - 2);
 
-            return Task.FromResult(new List<ComponentStatusEntity>());
+            return _serializer.ParseToken(tokenKey, tokenValue);
         }
 
-        public Task<int> GetRowCountForComponentStatusHistoryAsync(
-            string componentUid,
-            string statusUid,
-            DateTime? rangeStart,
-            DateTime? rangeEnd,
-            CancellationToken cancellationToken)
+        public void Dispose()
         {
-            return Task.FromResult(0);
+            _source.Dispose();
         }
     }
 
