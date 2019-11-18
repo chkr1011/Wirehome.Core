@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Wirehome.Core.History.Repository.Entities;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.History.Repository
 {
-
-    public class HistoryRepository
+    public partial class HistoryRepository
     {
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
         private readonly StorageService _storageService;
@@ -21,12 +19,113 @@ namespace Wirehome.Core.History.Repository
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
         }
 
-        public void Initialize()
+        public async Task DeleteComponentStatusHistory(string componentUid, string statusUid, CancellationToken cancellationToken)
         {
+            if (componentUid is null) throw new ArgumentNullException(nameof(componentUid));
+            if (statusUid is null) throw new ArgumentNullException(nameof(statusUid));
+
+            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                TryDeleteEntireDirectory(BuildComponentStatusPath(componentUid, statusUid));
+            }
+            finally
+            {
+                _lock.Release();
+            }
         }
 
-        public void Delete()
+        public async Task<List<HistoryValueElement>> GetComponentStatusValues(ComponentStatusFilter filter, CancellationToken cancellationToken)
         {
+            var result = new List<HistoryValueElement>();
+
+            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var rootPath = BuildComponentStatusPath(filter.ComponentUid, filter.StatusUid);
+                var dayPaths = BuildDayPaths(filter.RangeStart, filter.RangeEnd);
+
+                foreach (var dayPath in dayPaths)
+                {
+                    var path = Path.Combine(rootPath, dayPath.ToString(), "Values");
+                    if (!File.Exists(path))
+                    {
+                        continue;
+                    }
+
+                    using (var fileStream = File.OpenRead(path))
+                    {
+                        var valueStream = new HistoryValuesStream(fileStream);
+
+                        HistoryValueElement currentElement = null;
+
+                        while (await valueStream.MoveNextAsync())
+                        {
+                            if (valueStream.CurrentToken is BeginToken beginToken)
+                            {
+                                currentElement = new HistoryValueElement
+                                {
+                                    Begin = new DateTime(
+                                    dayPath.Year, dayPath.Month,
+                                    dayPath.Day,
+                                    beginToken.Value.Hours,
+                                    beginToken.Value.Minutes,
+                                    beginToken.Value.Seconds,
+                                    beginToken.Value.Milliseconds,
+                                    DateTimeKind.Utc)
+                                };
+                            }
+                            else if (valueStream.CurrentToken is ValueToken valueToken)
+                            {
+                                currentElement.Value = valueToken.Value;
+                            }
+                            else if (valueStream.CurrentToken is EndToken endToken)
+                            {
+                                currentElement.End = new DateTime(
+                                    dayPath.Year, dayPath.Month,
+                                    dayPath.Day,
+                                    endToken.Value.Hours,
+                                    endToken.Value.Minutes,
+                                    endToken.Value.Seconds,
+                                    endToken.Value.Milliseconds,
+                                    DateTimeKind.Utc);
+
+                                result.Add(currentElement);
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _lock.Release();
+            }
+
+            return result;
+        }
+
+        public Task DeleteComponentStatusHistory(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, CancellationToken cancellationToken)
+        {
+            if (componentUid is null) throw new ArgumentNullException(nameof(componentUid));
+            if (statusUid is null) throw new ArgumentNullException(nameof(statusUid));
+
+
+            return Task.CompletedTask;
+        }
+
+        public async Task DeleteComponentHistory(string componentUid, CancellationToken cancellationToken)
+        {
+            if (componentUid is null) throw new ArgumentNullException(nameof(componentUid));
+
+            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                TryDeleteEntireDirectory(BuildComponentPath(componentUid));
+            }
+            finally
+            {
+                _lock.Release();
+            }
         }
 
         public async Task UpdateComponentStatusValueAsync(ComponentStatusValue componentStatusValue, CancellationToken cancellationToken)
@@ -40,11 +139,7 @@ namespace Wirehome.Core.History.Repository
             try
             {
                 path = Path.Combine(
-                    _storageService.DataPath,
-                    "Components",
-                    componentStatusValue.ComponentUid,
-                    "History",
-                    componentStatusValue.StatusUid,
+                    BuildComponentStatusPath(componentStatusValue.ComponentUid, componentStatusValue.Value),
                     componentStatusValue.Timestamp.Year.ToString(),
                     componentStatusValue.Timestamp.Month.ToString().PadLeft(2, '0'),
                     componentStatusValue.Timestamp.Day.ToString().PadLeft(2, '0'));
@@ -72,7 +167,7 @@ namespace Wirehome.Core.History.Repository
                             await valuesStream.MovePreviousAsync(cancellationToken).ConfigureAwait(false);
                             var valueToken = valuesStream.CurrentToken as ValueToken;
                             await valuesStream.MoveNextAsync().ConfigureAwait(false); // Move back to end token.
-                            
+
                             if (string.Equals(valueToken.Value, componentStatusValue.Value, StringComparison.Ordinal))
                             {
                                 // The value is still the same so we patch the end date only.
@@ -107,277 +202,95 @@ namespace Wirehome.Core.History.Repository
             }
         }
 
-        public Task DeleteComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
+        public async Task<long> GetComponentStatusHistorySize(string componentUid, string statusUid, CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var path = BuildComponentStatusPath(componentUid, statusUid);
+                return GetDirectorySize(path);
+            }
+            finally
+            {
+                _lock.Release();
+            }
         }
 
-        public async Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(string componentUid, string statusUid, int maxRowsCount, CancellationToken cancellationToken)
+        public async Task<long> GetComponentHistorySize(string componentUid, CancellationToken cancellationToken)
         {
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
-
-            return new List<ComponentStatusEntity>();
+            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var path = BuildComponentPath(componentUid);
+                return GetDirectorySize(path);
+            }
+            finally
+            {
+                _lock.Release();
+            }
         }
 
-        public Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(
-            string componentUid,
-            string statusUid,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-            int maxRowsCount,
-            CancellationToken cancellationToken)
+        void TryDeleteEntireDirectory(string path)
         {
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
-            if (rangeStart > rangeEnd) throw new ArgumentException($"{nameof(rangeStart)} is greater than {nameof(rangeEnd)}");
-
-            return Task.FromResult(new List<ComponentStatusEntity>());
+            try
+            {
+                Directory.Delete(path, true);
+            }
+            catch (DirectoryNotFoundException)
+            {
+            }
         }
 
-        public Task<int> GetRowCountForComponentStatusHistoryAsync(
-            string componentUid,
-            string statusUid,
-            DateTime? rangeStart,
-            DateTime? rangeEnd,
-            CancellationToken cancellationToken)
+        string BuildComponentPath(string componentUid)
         {
-            return Task.FromResult(0);
+            return Path.Combine(_storageService.DataPath, "Components", componentUid, "History");
+        }
+
+        string BuildComponentStatusPath(string componentUid, string statusUid)
+        {
+            return Path.Combine(BuildComponentPath(componentUid), "Status", statusUid);
+        }
+
+        List<DayPath> BuildDayPaths(DateTime begin, DateTime end)
+        {
+            var paths = new List<DayPath>();
+
+            while (begin <= end)
+            {
+                paths.Add(new DayPath
+                {
+                    Year = begin.Year,
+                    Month = begin.Month,
+                    Day = begin.Day
+                });
+
+                begin = begin.AddDays(1);
+            }
+
+            return paths;
+        }
+
+        static long GetDirectorySize(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                return 0;
+            }
+
+            var sum = 0L;
+            var files = Directory.GetFiles(path);
+            foreach (var file in files)
+            {
+                sum += new FileInfo(file).Length;
+            }
+
+            var subDirectories = Directory.GetDirectories(path);
+            foreach (var subDirectory in subDirectories)
+            {
+                sum += GetDirectorySize(subDirectory);
+            }
+
+            return sum;
         }
     }
-
-    //public class HistoryRepository
-    //{
-    //    private DbContextOptions _dbContextOptions;
-
-    //    public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
-
-    //    public void Initialize()
-    //    {
-    //        var dbContextOptionsBuilder = new DbContextOptionsBuilder<HistoryDatabaseContext>();
-    //        dbContextOptionsBuilder.UseMySql("Server=localhost;Uid=wirehome;Pwd=w1r3h0m3;SslMode=None;Database=WirehomeHistory");
-
-    //        Initialize(dbContextOptionsBuilder.Options);
-    //    }
-
-    //    public void Initialize(DbContextOptions options)
-    //    {
-    //        _dbContextOptions = options ?? throw new ArgumentNullException(nameof(options));
-
-    //        using (var databaseContext = new HistoryDatabaseContext(_dbContextOptions))
-    //        {
-    //            databaseContext.Database.EnsureCreated();
-    //        }
-    //    }
-
-    //    public void Delete()
-    //    {
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            databaseContext.Database.EnsureDeleted();
-    //        }
-    //    }
-
-    //    public async Task UpdateComponentStatusValueAsync(ComponentStatusValue componentStatusValue, CancellationToken cancellationToken)
-    //    {
-    //        if (componentStatusValue == null) throw new ArgumentNullException(nameof(componentStatusValue));
-
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            var latestEntities = await databaseContext.ComponentStatus
-    //                .Where(s =>
-    //                    s.ComponentUid == componentStatusValue.ComponentUid &&
-    //                    s.StatusUid == componentStatusValue.StatusUid &&
-    //                    s.NextEntityID == null)
-    //                .OrderByDescending(s => s.RangeEnd)
-    //                .ThenByDescending(s => s.RangeStart)
-    //                .ToListAsync(cancellationToken);
-
-    //            var latestEntity = latestEntities.FirstOrDefault();
-
-    //            if (latestEntities.Count > 1)
-    //            {
-    //                // TODO: Log broken data.
-    //            }
-
-    //            if (latestEntity == null)
-    //            {
-    //                var newEntry = CreateComponentStatusEntity(componentStatusValue, null);
-    //                databaseContext.ComponentStatus.Add(newEntry);
-    //            }
-    //            else
-    //            {
-    //                var newestIsObsolete = latestEntity.RangeEnd > componentStatusValue.Timestamp;
-    //                if (newestIsObsolete)
-    //                {
-    //                    return;
-    //                }
-
-    //                var latestIsOutdated = componentStatusValue.Timestamp - latestEntity.RangeEnd > ComponentStatusOutdatedTimeout;
-    //                var valueHasChanged = !string.Equals(latestEntity.Value, componentStatusValue.Value, StringComparison.Ordinal);
-
-    //                if (valueHasChanged)
-    //                {
-    //                    var newEntity = CreateComponentStatusEntity(componentStatusValue, latestEntity);
-    //                    databaseContext.ComponentStatus.Add(newEntity);
-
-    //                    if (!latestIsOutdated)
-    //                    {
-    //                        latestEntity.RangeEnd = componentStatusValue.Timestamp;
-    //                    }
-    //                }
-    //                else
-    //                {
-    //                    if (!latestIsOutdated)
-    //                    {
-    //                        latestEntity.RangeEnd = componentStatusValue.Timestamp;
-    //                    }
-    //                    else
-    //                    {
-    //                        var newEntity = CreateComponentStatusEntity(componentStatusValue, latestEntity);
-    //                        databaseContext.ComponentStatus.Add(newEntity);
-    //                    }
-    //                }
-    //            }
-
-    //            await databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-    //        }
-    //    }
-
-    //    public async Task DeleteComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
-    //    {
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            var query = BuildQuery(databaseContext, componentUid, statusUid, rangeStart, rangeEnd);
-    //            databaseContext.ComponentStatus.RemoveRange(query);
-    //            await databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-    //        }
-    //    }
-
-    //    public async Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(string componentUid, string statusUid, int maxRowsCount, CancellationToken cancellationToken)
-    //    {
-    //        if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-    //        if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
-
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            return await databaseContext.ComponentStatus
-    //                .AsNoTracking()
-    //                .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
-    //                .OrderBy(s => s.RangeStart)
-    //                .ThenBy(s => s.RangeEnd)
-    //                .Take(maxRowsCount)
-    //                .ToListAsync(cancellationToken).ConfigureAwait(false);
-    //        }
-    //    }
-
-    //    public async Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(
-    //        string componentUid, 
-    //        string statusUid, 
-    //        DateTime rangeStart, 
-    //        DateTime rangeEnd, 
-    //        int maxRowsCount, 
-    //        CancellationToken cancellationToken)
-    //    {
-    //        if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-    //        if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
-    //        if (rangeStart > rangeEnd) throw new ArgumentException($"{nameof(rangeStart)} is greater than {nameof(rangeEnd)}");
-
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            return await databaseContext.ComponentStatus
-    //                .AsNoTracking()
-    //                .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
-    //                .Where(s => (s.RangeStart <= rangeEnd && s.RangeEnd >= rangeStart))
-    //                .OrderBy(s => s.RangeStart)
-    //                .ThenBy(s => s.RangeEnd)
-    //                .Take(maxRowsCount)
-    //                .ToListAsync(cancellationToken).ConfigureAwait(false);
-    //        }
-    //    }
-
-    //    public async Task<int> GetRowCountForComponentStatusHistoryAsync(
-    //        string componentUid, 
-    //        string statusUid, 
-    //        DateTime? rangeStart, 
-    //        DateTime? rangeEnd, 
-    //        CancellationToken cancellationToken)
-    //    {
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            var query = BuildQuery(databaseContext, componentUid, statusUid, rangeStart, rangeEnd);
-    //            return await query.CountAsync(cancellationToken);
-    //        }
-    //    }
-
-    //    private static IQueryable<ComponentStatusEntity> BuildQuery(
-    //        HistoryDatabaseContext databaseContext,
-    //        string componentUid, 
-    //        string statusUid,
-    //        DateTime? rangeStart,
-    //        DateTime? rangeEnd)
-    //    {
-    //        var query = databaseContext.ComponentStatus.AsQueryable();
-
-    //        if (!string.IsNullOrEmpty(componentUid))
-    //        {
-    //            query = query.Where(c => c.ComponentUid == componentUid);
-    //        }
-
-    //        if (!string.IsNullOrEmpty(statusUid))
-    //        {
-    //            query = query.Where(c => c.StatusUid == statusUid);
-    //        }
-
-    //        if (rangeStart.HasValue)
-    //        {
-    //            query = query.Where(c => c.RangeEnd >= rangeStart);
-    //        }
-
-    //        if (rangeEnd.HasValue)
-    //        {
-    //            query = query.Where(c => c.RangeStart <= rangeEnd);
-    //        }
-
-    //        return query;
-    //    }
-
-    //    private HistoryDatabaseContext CreateDatabaseContext()
-    //    {
-    //        var databaseContext = new HistoryDatabaseContext(_dbContextOptions);
-
-    //        try
-    //        {
-    //            databaseContext.Database.SetCommandTimeout(TimeSpan.FromSeconds(120));
-    //        }
-    //        catch (InvalidOperationException)
-    //        {
-    //            // This exception is thrown in UnitTests.
-    //        }
-
-    //        return databaseContext;
-    //    }
-
-    //    private static ComponentStatusEntity CreateComponentStatusEntity(
-    //        ComponentStatusValue componentStatusValue,
-    //        ComponentStatusEntity latestEntity)
-    //    {
-    //        var newEntity = new ComponentStatusEntity
-    //        {
-    //            ComponentUid = componentStatusValue.ComponentUid,
-    //            StatusUid = componentStatusValue.StatusUid,
-    //            Value = componentStatusValue.Value,
-    //            RangeStart = componentStatusValue.Timestamp,
-    //            RangeEnd = componentStatusValue.Timestamp,
-    //            PreviousEntityID = latestEntity?.ID
-    //        };
-
-    //        if (latestEntity != null)
-    //        {
-    //            latestEntity.NextEntity = newEntity;
-    //        }
-
-    //        return newEntity;
-    //    }
-    //}
 }

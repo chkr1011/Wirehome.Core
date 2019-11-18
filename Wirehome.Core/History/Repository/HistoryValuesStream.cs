@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,10 +7,8 @@ namespace Wirehome.Core.History.Repository
 {
     public sealed class HistoryValuesStream : IDisposable
     {
-        byte[] BeginTokenPrefixBuffer = Encoding.UTF8.GetBytes("b:");
-        byte[] EndTokenPrefixBuffer = Encoding.UTF8.GetBytes("e:");
-        byte[] ValueTokenPrefixBuffer = Encoding.UTF8.GetBytes("v:");
-        
+        const int TokenBufferSize = 24;
+
         readonly Stream _source;
 
         HistoryValueStreamSerializer _serializer = new HistoryValueStreamSerializer();
@@ -49,7 +46,7 @@ namespace Wirehome.Core.History.Repository
             }
 
             var readBuffer = new byte[1];
-            using (var buffer = new MemoryStream(24))
+            using (var buffer = new MemoryStream(TokenBufferSize))
             {
                 while (!EndOfStream)
                 {
@@ -104,53 +101,39 @@ namespace Wirehome.Core.History.Repository
             return result;
         }
                
-        public Task WriteTokenAsync(Token token, CancellationToken cancellationToken = default)
+        public async Task WriteTokenAsync(Token token, CancellationToken cancellationToken = default)
         {
-            // TODO: Move to serializer and keep await calls low (add buffer).
-
-            if (token is BeginToken beginToken)
+            using (var buffer = new MemoryStream(TokenBufferSize))
             {
-                return WriteAsync(
-                    cancellationToken, 
-                    BeginTokenPrefixBuffer, 
-                    _serializer.SerializeTimeSpan(beginToken.Value), 
-                    _serializer.SerializeSeparator());
-            }
+                if (token is BeginToken beginToken)
+                {
+                    buffer.Write(_serializer.SerializeBeginTokenKey());
+                    buffer.Write(_serializer.SerializeTimeSpan(beginToken.Value));
+                }
+                else if (token is ValueToken valueToken)
+                {
+                    buffer.Write(_serializer.SerializeValueTokenKey());
+                    buffer.Write(_serializer.SerializeValue(valueToken.Value));
+                }
+                else if (token is EndToken endToken)
+                {
+                    buffer.Write(_serializer.SerializeEndTokenKey());
+                    buffer.Write(_serializer.SerializeTimeSpan(endToken.Value));
+                }
+                else
+                {
+                    throw new NotSupportedException("Token is not supported.");
+                }
 
-            if (token is ValueToken valueToken)
-            {
-                return WriteAsync(
-                    cancellationToken,
-                    ValueTokenPrefixBuffer,
-                    _serializer.SerializeValue(valueToken.Value),
-                    _serializer.SerializeSeparator());
-            }
+                buffer.Write(_serializer.SerializeSeparator());
 
-            if (token is EndToken endToken)
-            {
-                return WriteAsync(
-                    cancellationToken,
-                    EndTokenPrefixBuffer,
-                    _serializer.SerializeTimeSpan(endToken.Value),
-                    _serializer.SerializeSeparator());
+                await _source.WriteAsync(buffer.GetBuffer(), 0, (int)buffer.Length, cancellationToken).ConfigureAwait(false);
             }
-
-            throw new NotSupportedException("Token is not supported.");
         }
 
-        public async Task WriteElementAsync(TimeSpan begin, string value, TimeSpan end)
+        public void Dispose()
         {
-            await WriteTokenAsync(new BeginToken(begin)).ConfigureAwait(false);
-            await WriteTokenAsync(new ValueToken(value)).ConfigureAwait(false);
-            await WriteTokenAsync(new EndToken(end)).ConfigureAwait(false);
-        }
-
-        async Task WriteAsync(CancellationToken cancellationToken, params byte[][] buffers)
-        {
-            foreach(var buffer in buffers)
-            {
-                await _source.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
-            }   
+            _source.Dispose();
         }
 
         Token ParseToken(ArraySegment<byte> source)
@@ -159,11 +142,6 @@ namespace Wirehome.Core.History.Repository
             var tokenValue = new ArraySegment<byte>(source.Array, 2, source.Count - 2);
 
             return _serializer.ParseToken(tokenKey, tokenValue);
-        }
-
-        public void Dispose()
-        {
-            _source.Dispose();
         }
     }
 

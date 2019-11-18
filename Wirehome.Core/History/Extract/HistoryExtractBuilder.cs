@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Internal;
 using Wirehome.Core.History.Repository;
-using Wirehome.Core.History.Repository.Entities;
 
 namespace Wirehome.Core.History.Extract
 {
@@ -26,13 +25,20 @@ namespace Wirehome.Core.History.Extract
             DateTime rangeEnd,
             TimeSpan? interval,
             HistoryExtractDataType dataType,
-            int maxRowCount,
+            int maxEntityCount,
             CancellationToken cancellationToken)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
 
-            var entities = await _repository.GetComponentStatusValuesAsync(componentUid, statusUid, rangeStart, rangeEnd, maxRowCount, cancellationToken).ConfigureAwait(false);
+            var entities = await _repository.GetComponentStatusValues(new ComponentStatusFilter
+            {
+                ComponentUid = componentUid,
+                StatusUid = statusUid,
+                RangeStart = rangeStart,
+                RangeEnd = rangeEnd,
+                MaxEntityCount = maxEntityCount
+            }, cancellationToken).ConfigureAwait(false);
 
             var historyExtract = new HistoryExtract
             {
@@ -57,7 +63,7 @@ namespace Wirehome.Core.History.Extract
             return historyExtract;
         }
 
-        private static List<HistoryExtractDataPoint> GenerateTextBasedDataPoints(List<ComponentStatusEntity> entities, DateTime rangeStart, DateTime rangeEnd)
+        private static List<HistoryExtractDataPoint> GenerateTextBasedDataPoints(List<HistoryValueElement> entities, DateTime rangeStart, DateTime rangeEnd)
         {
             var dataPoints = new List<HistoryExtractDataPoint>();
 
@@ -65,7 +71,7 @@ namespace Wirehome.Core.History.Extract
             {
                 var @break = false;
 
-                var timestamp = entity.RangeStart;
+                var timestamp = entity.Begin;
 
                 if (timestamp <= rangeStart)
                 {
@@ -74,7 +80,7 @@ namespace Wirehome.Core.History.Extract
                     timestamp = rangeStart;
                 }
 
-                if (entity.RangeEnd >= rangeEnd)
+                if (entity.End >= rangeEnd)
                 {
                     // The value is still valid after the requested range. So we treat it as our last value.
                     // Also there is no further data point needed because we already reached the end.
@@ -100,7 +106,7 @@ namespace Wirehome.Core.History.Extract
         }
 
         private static IEnumerable<HistoryExtractDataPoint> GenerateNumberBasedDataPoints(
-            List<ComponentStatusEntity> entities,
+            List<HistoryValueElement> entities,
             DateTime rangeStart,
             DateTime rangeEnd,
             TimeSpan? interval)
@@ -164,7 +170,7 @@ namespace Wirehome.Core.History.Extract
             return intervalDataPoints;
         }
 
-        private static double? GetAverageValue(List<ComponentStatusEntity> entities, DateTime rangeStart, DateTime rangeEnd)
+        private static double? GetAverageValue(List<HistoryValueElement> entities, DateTime rangeStart, DateTime rangeEnd)
         {
             var value = 0D;
             var counter = 0;
@@ -193,9 +199,9 @@ namespace Wirehome.Core.History.Extract
             return value / counter;
         }
 
-        private static double? GetValue(List<ComponentStatusEntity> entities, DateTime timestamp)
+        private static double? GetValue(List<HistoryValueElement> entities, DateTime timestamp)
         {
-            var entity = entities.FirstOrDefault(e => e.RangeStart <= timestamp && e.RangeEnd >= timestamp);
+            var entity = entities.FirstOrDefault(e => e.Begin <= timestamp && e.End >= timestamp);
             if (entity == null)
             {
                 return null;

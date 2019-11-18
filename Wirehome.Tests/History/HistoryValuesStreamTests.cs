@@ -17,8 +17,8 @@ namespace Wirehome.Tests.History
             var memory = new MemoryStream();
             var stream = new HistoryValuesStream(memory);
 
-            await stream.WriteElementAsync(new TimeSpan(10, 30, 00), "20", new TimeSpan(11, 45, 00));
-            await stream.WriteElementAsync(new TimeSpan(11, 45, 01), "21.5", new TimeSpan(12, 59, 59));
+            await WriteElementAsync(stream, new TimeSpan(10, 30, 00), "20", new TimeSpan(11, 45, 00));
+            await WriteElementAsync(stream, new TimeSpan(11, 45, 01), "21.5", new TimeSpan(12, 59, 59));
             
             memory.Seek(0, SeekOrigin.Begin);
             var output = Encoding.UTF8.GetString(memory.ToArray());
@@ -32,12 +32,12 @@ namespace Wirehome.Tests.History
             var memory = new MemoryStream();
             var stream = new HistoryValuesStream(memory);
 
-            await stream.WriteElementAsync(new TimeSpan(00, 00, 00), "19.5", new TimeSpan(12, 30, 59));
+            await WriteElementAsync(stream, new TimeSpan(00, 00, 00), "19.5", new TimeSpan(12, 30, 59));
 
             stream = new HistoryValuesStream(memory);
             stream.SeekEnd();
 
-            await stream.WriteElementAsync(new TimeSpan(12, 31, 00), "21.5", new TimeSpan(23, 59, 59));
+            await WriteElementAsync(stream, new TimeSpan(12, 31, 00), "21.5", new TimeSpan(23, 59, 59));
 
             memory.Seek(0, SeekOrigin.Begin);
             var output = Encoding.UTF8.GetString(memory.ToArray());
@@ -63,7 +63,7 @@ namespace Wirehome.Tests.History
             var memory = new MemoryStream();
             var stream = new HistoryValuesStream(memory);
 
-            await stream.WriteElementAsync(new TimeSpan(00, 00, 00), "19.5", new TimeSpan(12, 30, 59));
+            await WriteElementAsync(stream, new TimeSpan(00, 00, 00), "19.5", new TimeSpan(12, 30, 59));
 
             memory.Seek(0, SeekOrigin.Begin);
 
@@ -94,7 +94,7 @@ namespace Wirehome.Tests.History
             var memory = new MemoryStream();
             var stream = new HistoryValuesStream(memory);
 
-            await stream.WriteElementAsync(new TimeSpan(00, 00, 00), "19.5", new TimeSpan(12, 30, 59));
+            await WriteElementAsync(stream, new TimeSpan(00, 00, 00), "19.5", new TimeSpan(12, 30, 59));
 
             memory.Seek(0, SeekOrigin.Begin);
 
@@ -278,6 +278,13 @@ namespace Wirehome.Tests.History
 
             // The value is still the same so we patch the end date only.
             await stream.WriteTokenAsync(new EndToken(new TimeSpan(13, 00, 00)), CancellationToken.None).ConfigureAwait(false);
+        }
+
+        async Task WriteElementAsync(HistoryValuesStream stream, TimeSpan begin, string value, TimeSpan end)
+        {
+            await stream.WriteTokenAsync(new BeginToken(begin)).ConfigureAwait(false);
+            await stream.WriteTokenAsync(new ValueToken(value)).ConfigureAwait(false);
+            await stream.WriteTokenAsync(new EndToken(end)).ConfigureAwait(false);
         }
     }
 }

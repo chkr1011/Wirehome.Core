@@ -27,11 +27,17 @@ namespace Wirehome.Core.History
         private readonly MessageBusService _messageBusService;
         private readonly SystemCancellationToken _systemCancellationToken;
         private readonly ILogger _logger;
+
         private readonly OperationsPerSecondCounter _updateRateCounter;
 
         private HistoryRepository _repository;
         private HistoryServiceOptions _options;
-        private long _componentStatusUpdateDuration;
+
+        private long _lastUpdateDuration;
+        private long _maxUpdateDuration;
+        private long? _minUpdateDuration;
+        private long _updatesCount;
+        private long _totalUpdateDuration;
 
         public HistoryService(
             ComponentRegistryService componentRegistryService,
@@ -53,8 +59,13 @@ namespace Wirehome.Core.History
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("history.component_status.pending_updates_count", _pendingComponentStatusValues.Count);
+            
             systemStatusService.Set("history.component_status.update_rate", () => _updateRateCounter.Count);
-            systemStatusService.Set("history.component_status.update_duration", () => _componentStatusUpdateDuration);
+            systemStatusService.Set("history.component_status.updates_count", () => _updatesCount);
+            systemStatusService.Set("history.component_status.last_update_duration", () => _lastUpdateDuration);
+            systemStatusService.Set("history.component_status.max_update_duration", () => _maxUpdateDuration);
+            systemStatusService.Set("history.component_status.min_update_duration", () => _minUpdateDuration);
+            systemStatusService.Set("history.component_status.average_update_duration", () => _totalUpdateDuration / (decimal)_updatesCount);
         }
 
         public void Start()
@@ -100,14 +111,44 @@ namespace Wirehome.Core.History
             return new HistoryExtractBuilder(_repository).BuildAsync(componentUid, statusUid, rangeStart, rangeEnd, interval, dataType, maxRowCount, cancellationToken);
         }
 
-        public Task DeleteComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
+        public void ResetStatistics()
         {
-            return _repository.DeleteComponentStatusHistoryAsync(componentUid, statusUid, rangeStart, rangeEnd, cancellationToken);
+            _maxUpdateDuration = 0L;
+            _minUpdateDuration = null;
+            _updatesCount = 0L;
+            _totalUpdateDuration = 0L;
         }
 
-        public Task<int> GetRowCountForComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
+        public Task<List<HistoryValueElement>> GetComponentStatusValues(string componentUid, string statusUid, DateTime day, CancellationToken cancellationToken)
         {
-            return _repository.GetRowCountForComponentStatusHistoryAsync(componentUid, statusUid, rangeStart, rangeEnd, cancellationToken);
+            return _repository.GetComponentStatusValues(new ComponentStatusFilter()
+            {
+                ComponentUid = componentUid,
+                StatusUid = statusUid,
+                RangeStart = new DateTime(day.Year, day.Month, day.Day, 0, 0, 0),
+                RangeEnd = new DateTime(day.Year, day.Month, day.Day, 23, 59, 59),
+                MaxEntityCount = null
+            }, cancellationToken);
+        }
+
+        public Task DeleteComponentStatusHistory(string componentUid, string statusUid, CancellationToken cancellationToken)
+        {
+            return _repository.DeleteComponentStatusHistory(componentUid, statusUid, cancellationToken);
+        }
+
+        public Task DeleteComponentHistory(string componentUid, CancellationToken cancellationToken)
+        {
+            return _repository.DeleteComponentHistory(componentUid, cancellationToken);
+        }
+
+        public Task<long> GetComponentStatusHistorySize(string componentUid, string statusUid, CancellationToken cancellationToken)
+        {
+            return _repository.GetComponentStatusHistorySize(componentUid, statusUid, cancellationToken);
+        }
+
+        public Task<long> GetComponentHistorySize(string componentUid, CancellationToken cancellationToken)
+        {
+            return _repository.GetComponentHistorySize(componentUid, cancellationToken);
         }
 
         private object GetComponentStatusHistorySetting(string componentUid, string statusUid, string settingUid)
@@ -135,13 +176,7 @@ namespace Wirehome.Core.History
         {
             try
             {
-                var repository = new HistoryRepository(_storageService);
-                repository.Initialize();
-                _repository = repository;
-
-                //var repository = new HistoryRepository();
-                //repository.Initialize();
-                //_repository = repository;
+                _repository = new HistoryRepository(_storageService);
                 return true;
             }
             catch (Exception exception)
@@ -226,7 +261,23 @@ namespace Wirehome.Core.History
                 await _repository.UpdateComponentStatusValueAsync(componentStatusValue, cancellationToken).ConfigureAwait(false);
 
                 stopwatch.Stop();
-                _componentStatusUpdateDuration = stopwatch.ElapsedMilliseconds;
+
+                var duration = stopwatch.ElapsedMilliseconds;
+
+                _totalUpdateDuration += duration;
+                _updatesCount++;
+
+                if (duration > _maxUpdateDuration)
+                {
+                    _maxUpdateDuration = duration;
+                }
+
+                if (!_minUpdateDuration.HasValue || duration < _minUpdateDuration)
+                {
+                    _minUpdateDuration = duration;
+                }
+
+                _lastUpdateDuration = duration;
 
                 _updateRateCounter.Increment();
             }

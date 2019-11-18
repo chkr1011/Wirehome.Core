@@ -18,9 +18,9 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
-        [Route("api/v1/history/{componentUid}/{statusUid}")]
+        [Route("api/v1/components/{componentUid}/status/{statusUid}/history")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public async Task<ActionResult<HistoryExtract>> GetComponentStatusHistoryAsync(
+        public async Task<ActionResult<HistoryExtract>> GetComponentStatusHistory(
             string componentUid, 
             string statusUid,
             DateTimeOffset? rangeStart,
@@ -72,52 +72,58 @@ namespace Wirehome.Core.HTTP.Controllers
             return new ObjectResult(historyExtract);
         }
 
-        [HttpDelete]
-        [Route("api/v1/history/components/{componentUid}")]
+        [HttpGet]
+        [Route("api/v1/components/{componentUid}/status/{statusUid}/history/raw")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task DeleteComponentHistoryAsync(string componentUid, DateTime? rangeStart, DateTime? rangeEnd)
+        public async Task<ActionResult<HistoryExtract>> GetComponentStatusHistoryRaw(string componentUid, string statusUid, int year, int month, int day)
         {
-            return _historyService.DeleteComponentStatusHistoryAsync(componentUid, null, rangeStart, rangeEnd, HttpContext.RequestAborted);
-        }
+            var result = await _historyService.GetComponentStatusValues(
+                componentUid,
+                statusUid,
+                new DateTime(year, month, day),
+                HttpContext.RequestAborted);
 
-        [HttpDelete]
-        [Route("api/v1/history/components/{componentUid}/status/{statusUid}")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public Task DeleteComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd)
-        {
-            return _historyService.DeleteComponentStatusHistoryAsync(componentUid, statusUid, rangeStart, rangeEnd, HttpContext.RequestAborted);
-        }
-
-        [HttpDelete]
-        [Route("api/v1/history/status/{statusUid}")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public Task DeleteStatusHistoryAsync(string statusUid, DateTime? rangeStart, DateTime? rangeEnd)
-        {
-            return _historyService.DeleteComponentStatusHistoryAsync(null, statusUid, rangeStart, rangeEnd, HttpContext.RequestAborted);
+            return new ObjectResult(result);
         }
 
         [HttpGet]
-        [Route("api/v1/history/components/{componentUid}/row_count")]
+        [Route("api/v1/components/{componentUid}/status/{statusUid}/history/size")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task<int> GetRowCountForComponentHistoryAsync(string componentUid, DateTime? rangeStart, DateTime? rangeEnd)
+        public Task<long> GetComponentStatusHistorySize(string componentUid, string statusUid)
         {
-            return _historyService.GetRowCountForComponentStatusHistoryAsync(componentUid, null, rangeStart, rangeEnd, HttpContext.RequestAborted);
+            return _historyService.GetComponentStatusHistorySize(componentUid, statusUid, HttpContext.RequestAborted);
         }
 
         [HttpGet]
-        [Route("api/v1/history/components/{componentUid}/status/{statusUid}/row_count")]
+        [Route("api/v1/components/{componentUid}/history/size")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task<int> GetRowCountForComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd)
+        public Task<long> GetComponentHistorySize(string componentUid)
         {
-            return _historyService.GetRowCountForComponentStatusHistoryAsync(componentUid, statusUid, rangeStart, rangeEnd, HttpContext.RequestAborted);
+            return _historyService.GetComponentHistorySize(componentUid, HttpContext.RequestAborted);
         }
 
-        [HttpGet]
-        [Route("api/v1/history/status/{statusUid}/row_count")]
+        [HttpDelete]
+        [Route("api/v1/components/{componentUid}/history")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task<int> GetRowCountForStatusHistoryAsync(string statusUid, DateTime? rangeStart, DateTime? rangeEnd)
+        public Task DeleteComponentHistory(string componentUid)
         {
-            return _historyService.GetRowCountForComponentStatusHistoryAsync(null, statusUid, rangeStart, rangeEnd, HttpContext.RequestAborted);
+            return _historyService.DeleteComponentHistory(componentUid, HttpContext.RequestAborted);
+        }
+
+        [HttpDelete]
+        [Route("api/v1/components/{componentUid}/status/{statusUid}/history")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public Task DeleteComponentStatusHistory(string componentUid, string statusUid)
+        {
+            return _historyService.DeleteComponentStatusHistory(componentUid, statusUid, HttpContext.RequestAborted);
+        }
+
+        [HttpDelete]
+        [Route("api/v1/history/statistics")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DeleteStatistics()
+        {
+            _historyService.ResetStatistics();
         }
     }
 }
