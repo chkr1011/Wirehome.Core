@@ -54,6 +54,8 @@ namespace Wirehome.Core.History
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
+            _repository = new HistoryRepository(_storageService);
+
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _updateRateCounter = diagnosticsService.CreateOperationsPerSecondCounter("history.update_rate");
 
@@ -77,12 +79,7 @@ namespace Wirehome.Core.History
                 _logger.LogInformation("History is disabled.");
                 return;
             }
-
-            if (!TryInitializeRepository())
-            {
-                return;
-            }
-
+        
             // Give the pulling code some time to complete before declaring an entity 
             // as outdated. 1.25 might be enough additional time.
             _repository.ComponentStatusOutdatedTimeout = _options.ComponentStatusPullInterval * 1.25;
@@ -90,11 +87,11 @@ namespace Wirehome.Core.History
             AttachToMessageBus();
 
             Task.Run(
-                () => ProcessHistoryMessagesAsync(_systemCancellationToken.Token),
+                () => TryProcesstMessages(_systemCancellationToken.Token),
                 _systemCancellationToken.Token);
 
             Task.Run(
-                () => TryUpdateComponentStatusValuesAsync(_systemCancellationToken.Token),
+                () => TryUpdateComponentStatusValues(_systemCancellationToken.Token),
                 _systemCancellationToken.Token);
         }
 
@@ -172,20 +169,6 @@ namespace Wirehome.Core.History
             return null;
         }
 
-        private bool TryInitializeRepository()
-        {
-            try
-            {
-                _repository = new HistoryRepository(_storageService);
-                return true;
-            }
-            catch (Exception exception)
-            {
-                _logger.Log(LogLevel.Warning, exception, "Error while initializing history repository.");
-                return false;
-            }
-        }
-
         private void AttachToMessageBus()
         {
             var filter = new WirehomeDictionary()
@@ -215,13 +198,13 @@ namespace Wirehome.Core.History
             }
         }
 
-        private async Task ProcessHistoryMessagesAsync(CancellationToken cancellationToken)
+        private async Task TryProcesstMessages(CancellationToken cancellationToken)
         {
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    await TryProcessNextMessageAsync(cancellationToken).ConfigureAwait(false);
+                    await TryProcessNextMessage(cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
@@ -233,7 +216,7 @@ namespace Wirehome.Core.History
             }
         }
 
-        private async Task TryProcessNextMessageAsync(CancellationToken cancellationToken)
+        private async Task TryProcessNextMessage(CancellationToken cancellationToken)
         {
             try
             {
@@ -290,7 +273,7 @@ namespace Wirehome.Core.History
             }
         }
 
-        private async Task TryUpdateComponentStatusValuesAsync(CancellationToken cancellationToken)
+        private async Task TryUpdateComponentStatusValues(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
