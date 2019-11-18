@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using IronPython.Runtime;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
-using MQTTnet.Extensions.ManagedClient;
 using Newtonsoft.Json.Linq;
 using Wirehome.Core.Cloud.Channel;
 using Wirehome.Core.Cloud.Protocol;
