@@ -1,7 +1,7 @@
-﻿using System;
-using IronPython.Runtime;
+﻿using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
-using Wirehome.Core.Model;
+using System;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components.Adapters

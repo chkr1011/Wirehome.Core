@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc.Controllers;
+using System;
 using System.Reflection;
-using Microsoft.AspNetCore.Mvc.Controllers;
 
 namespace Wirehome.Core.HTTP.Controllers
 {

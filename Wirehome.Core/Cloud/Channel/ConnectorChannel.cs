@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using MsgPack.Serialization;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using MsgPack.Serialization;
 using Wirehome.Core.Cloud.Protocol;
+using Wirehome.Core.Foundation;
 
 namespace Wirehome.Core.Cloud.Channel
 {
@@ -17,7 +18,7 @@ namespace Wirehome.Core.Cloud.Channel
         private readonly MessagePackSerializer<CloudMessage> _serializer = MessagePackSerializer.Get<CloudMessage>();
 
         private readonly ArraySegment<byte> _receiveBuffer = WebSocket.CreateServerBuffer(4096);
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private readonly AsyncLock _lock = new AsyncLock();
         private readonly WebSocket _webSocket;
         private readonly ILogger _logger;
         private readonly DateTime _connected = DateTime.UtcNow;
@@ -55,7 +56,7 @@ namespace Wirehome.Core.Cloud.Channel
 
                 var sendBuffer = await _serializer.PackSingleObjectAsBytesAsync(message, cancellationToken).ConfigureAwait(false);
 
-                await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
                     await _webSocket.SendAsync(sendBuffer, WebSocketMessageType.Binary, true, cancellationToken).ConfigureAwait(false);
@@ -66,7 +67,7 @@ namespace Wirehome.Core.Cloud.Channel
                 }
                 finally
                 {
-                    _semaphore.Release();
+                    _lock.Exit();
                 }
             }
             catch

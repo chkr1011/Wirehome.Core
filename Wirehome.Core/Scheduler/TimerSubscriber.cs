@@ -1,17 +1,17 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Diagnostics;
-using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Scheduler
 {
-    public class DefaultTimerSubscriber
+    public class TimerSubscriber
     {
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         private readonly Action<TimerTickCallbackParameters> _callback;
         private readonly object _state;
         private readonly ILogger _logger;
 
-        public DefaultTimerSubscriber(string uid, Action<TimerTickCallbackParameters> callback, object state, ILogger logger)
+        public TimerSubscriber(string uid, Action<TimerTickCallbackParameters> callback, object state, ILogger logger)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));

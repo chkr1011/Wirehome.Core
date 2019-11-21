@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Wirehome.Core.Components.Logic;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Components
 {

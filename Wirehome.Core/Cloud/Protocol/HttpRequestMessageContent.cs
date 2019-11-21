@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using MsgPack.Serialization;
+﻿using MsgPack.Serialization;
+using System.Collections.Generic;
 
 namespace Wirehome.Core.Cloud.Protocol
 {

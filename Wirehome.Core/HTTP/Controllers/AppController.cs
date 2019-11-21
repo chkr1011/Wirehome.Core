@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.App;
 using Wirehome.Core.Constants;
 using Wirehome.Core.GlobalVariables;

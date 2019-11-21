@@ -1,5 +1,5 @@
 ﻿using System;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Python.Models
 {

@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Extensions;
 
 namespace Wirehome.Core.Hardware.I2C.Adapters

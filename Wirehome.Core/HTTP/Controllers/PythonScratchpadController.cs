@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.IO;
-using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 

@@ -2,8 +2,8 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using System;
 using Microsoft.Extensions.Logging;
+using System;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Exceptions;
 

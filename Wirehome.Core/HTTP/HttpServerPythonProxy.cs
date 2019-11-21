@@ -1,10 +1,9 @@
-﻿using System;
-using System.Globalization;
-using IronPython.Runtime;
+﻿using IronPython.Runtime;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
+using System;
+using System.Globalization;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming

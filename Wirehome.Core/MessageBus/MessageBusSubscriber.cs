@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
-using Microsoft.Extensions.Logging;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.MessageBus
 {

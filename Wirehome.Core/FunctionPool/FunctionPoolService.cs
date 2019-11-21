@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.FunctionPool
 {

@@ -1,12 +1,12 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Components

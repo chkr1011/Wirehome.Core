@@ -1,8 +1,8 @@
-﻿using System.Collections.Concurrent;
-using IronPython.Runtime;
+﻿using IronPython.Runtime;
+using System.Collections.Concurrent;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Model
+namespace Wirehome.Core.Foundation.Model
 {
     public class ConcurrentWirehomeDictionary : ConcurrentDictionary<string, object>
     {

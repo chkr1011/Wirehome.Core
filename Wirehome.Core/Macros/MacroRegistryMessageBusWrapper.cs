@@ -1,6 +1,6 @@
 ﻿using System;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Macros
 {

@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using MQTTnet;
+using MQTTnet.Server;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using MQTTnet;
-using MQTTnet.Server;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
 

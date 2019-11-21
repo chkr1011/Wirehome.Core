@@ -1,15 +1,14 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Wirehome.Core.Scheduler
 {
@@ -18,7 +17,7 @@ namespace Wirehome.Core.Scheduler
         private readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
         private readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
         private readonly Dictionary<string, ActiveThread> _activeThreads = new Dictionary<string, ActiveThread>();
-        private readonly Dictionary<string, DefaultTimerSubscriber> _defaultTimerSubscribers = new Dictionary<string, DefaultTimerSubscriber>();
+        private readonly Dictionary<string, TimerSubscriber> _highPrecisionTimerSubscribers = new Dictionary<string, TimerSubscriber>();
 
         private readonly ILogger _logger;
         private readonly SystemCancellationToken _systemCancellationToken;
@@ -41,10 +40,16 @@ namespace Wirehome.Core.Scheduler
 
         public void Start()
         {
-            Task.Factory.StartNew(ScheduleTasks, _systemCancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            var taskScheduler = new Thread(ScheduleTasks)
+            {
+                Priority = ThreadPriority.AboveNormal,
+                IsBackground = true
+            };
+
+            taskScheduler.Start();
         }
 
-        public string AttachToDefaultTimer(string uid, Action<TimerTickCallbackParameters> callback, object state = null)
+        public string AttachToHighPrecisionTimer(string uid, Action<TimerTickCallbackParameters> callback, object state = null)
         {
             if (callback == null) throw new ArgumentNullException(nameof(callback));
 
@@ -53,29 +58,29 @@ namespace Wirehome.Core.Scheduler
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            lock (_defaultTimerSubscribers)
+            lock (_highPrecisionTimerSubscribers)
             {
-                _defaultTimerSubscribers[uid] = new DefaultTimerSubscriber(uid, callback, state, _logger);
+                _highPrecisionTimerSubscribers[uid] = new TimerSubscriber(uid, callback, state, _logger);
             }
 
             return uid;
         }
 
-        public void DetachFromDefaultTimer(string uid)
+        public void DetachFromHighPrecisionTimer(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            lock (_defaultTimerSubscribers)
+            lock (_highPrecisionTimerSubscribers)
             {
-                _defaultTimerSubscribers.Remove(uid);
+                _highPrecisionTimerSubscribers.Remove(uid);
             }
         }
 
-        public List<DefaultTimerSubscriber> GetDefaultTimerSubscribers()
+        public List<TimerSubscriber> GetHighPrecisionTimerSubscribers()
         {
-            lock (_defaultTimerSubscribers)
+            lock (_highPrecisionTimerSubscribers)
             {
-                return _defaultTimerSubscribers.Values.ToList();
+                return _highPrecisionTimerSubscribers.Values.ToList();
             }
         }
 
@@ -196,7 +201,7 @@ namespace Wirehome.Core.Scheduler
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            _logger.Log(LogLevel.Debug, $"Starting new thread '{uid}'.");
+            _logger.LogDebug($"Starting new thread '{uid}'.");
 
             lock (_activeThreads)
             {
@@ -238,7 +243,7 @@ namespace Wirehome.Core.Scheduler
             }
             catch (Exception exception)
             {
-                _logger.Log(LogLevel.Error, exception, $"Error while stopping thread '{uid}'.");
+                _logger.LogError(exception, $"Error while stopping thread '{uid}'.");
             }
 
             return false;
@@ -264,27 +269,31 @@ namespace Wirehome.Core.Scheduler
 
         private void ScheduleTasks()
         {
-            Thread.CurrentThread.Name = nameof(ScheduleTasks);
-
-            var stopwatch = Stopwatch.StartNew();
-
-            while (!_systemCancellationToken.Token.IsCancellationRequested)
+            try
             {
-                var elapsed = stopwatch.Elapsed;
-                stopwatch.Restart();
+                var stopwatch = Stopwatch.StartNew();
 
-                UpdateActiveCountdowns(elapsed);
-                InvokeDefaultTimerSubscribers();
+                while (!_systemCancellationToken.Token.IsCancellationRequested)
+                {
+                    var elapsed = stopwatch.Elapsed;
+                    stopwatch.Restart();
 
-                Thread.Sleep(10);
+                    UpdateActiveCountdowns(elapsed);
+                    InvokeHighPrecisionTimerSubscribers();
+
+                    Thread.Sleep(10);
+                }
+            }
+            catch (ThreadAbortException)
+            {
             }
         }
 
-        private void InvokeDefaultTimerSubscribers()
+        private void InvokeHighPrecisionTimerSubscribers()
         {
-            lock (_defaultTimerSubscribers)
+            lock (_highPrecisionTimerSubscribers)
             {
-                foreach (var defaultTimerSubscriber in _defaultTimerSubscribers)
+                foreach (var defaultTimerSubscriber in _highPrecisionTimerSubscribers)
                 {
                     defaultTimerSubscriber.Value.TryInvokeCallback();
                 }

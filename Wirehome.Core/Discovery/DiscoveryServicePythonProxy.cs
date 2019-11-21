@@ -2,13 +2,12 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using System;
-using System.Linq;
 using IronPython.Runtime;
 using Rssdp;
+using System;
+using System.Linq;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.Discovery
 {

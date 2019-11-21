@@ -3,17 +3,17 @@
 // ReSharper disable UnusedMember.Global
 // ReSharper disable MemberCanBePrivate.Global
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using IronPython.Runtime;
 using MQTTnet;
 using MQTTnet.Adapter;
 using MQTTnet.Client;
 using MQTTnet.Client.Options;
 using MQTTnet.Protocol;
-using Wirehome.Core.Model;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 
@@ -148,7 +148,7 @@ namespace Wirehome.Core.Hardware.MQTT
                 QualityOfServiceLevel = (MqttQualityOfServiceLevel)Convert.ToInt32(parameters.get("qos"))
             };
 
-            return _mqttService.StartTopicImport(uid, topicImportParameters);
+            return _mqttService.StartTopicImport(uid, topicImportParameters).GetAwaiter().GetResult();
         }
 
         public void stop_topic_import(string uid)

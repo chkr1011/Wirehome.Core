@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using IronPython.Runtime;
+﻿using IronPython.Runtime;
+using System.Collections.Generic;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Model
+namespace Wirehome.Core.Foundation.Model
 {
     public class WirehomeDictionary : Dictionary<string, object>
     {

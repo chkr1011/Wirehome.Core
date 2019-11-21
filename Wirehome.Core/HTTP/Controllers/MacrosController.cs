@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Net;
-using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Macros;
 using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.Macros.Exceptions;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {

@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.HTTP.Controllers.Models;
 using Wirehome.Core.Python.Models;
 using Wirehome.Core.Scheduler;
@@ -64,7 +64,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public IList<string> GetDefaultTimerSubscribers()
         {
-            return _schedulerService.GetDefaultTimerSubscribers().Select(s => s.Uid).ToList();
+            return _schedulerService.GetHighPrecisionTimerSubscribers().Select(s => s.Uid).ToList();
         }
 
         [HttpDelete]
@@ -72,7 +72,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteDefaultTimerSubscriber(string uid)
         {
-            _schedulerService.DetachFromDefaultTimer(uid);
+            _schedulerService.DetachFromHighPrecisionTimer(uid);
         }
 
         [HttpGet]

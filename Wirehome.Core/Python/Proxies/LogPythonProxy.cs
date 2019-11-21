@@ -2,9 +2,9 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
+using Microsoft.Extensions.Logging;
 using System;
 using System.Globalization;
-using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Python.Proxies
 {

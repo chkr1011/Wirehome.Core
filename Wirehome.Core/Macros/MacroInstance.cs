@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Macros.Configuration;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 

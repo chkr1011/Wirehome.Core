@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Globalization;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.MessageBus
 {
@@ -19,31 +19,32 @@ namespace Wirehome.Core.MessageBus
                 }
 
                 var pattern = ConvertValueToString(filterEntry.Value);
+                var wildcard = "*".AsSpan();
 
-                if (pattern.Equals("*", StringComparison.Ordinal))
+                if (pattern.Equals(wildcard, StringComparison.Ordinal))
                 {
                     continue;
                 }
 
                 var value = ConvertValueToString(propertyValue);
 
-                if (pattern.EndsWith("*", StringComparison.Ordinal))
+                if (pattern.EndsWith(wildcard, StringComparison.Ordinal))
                 {
-                    if (!value.StartsWith(pattern.Substring(0, pattern.Length - 1), StringComparison.Ordinal))
+                    if (!value.StartsWith(pattern.Slice(0, pattern.Length - 1), StringComparison.Ordinal))
                     {
                         return false;
                     }
                 }
-                else if (pattern.StartsWith("*", StringComparison.Ordinal))
+                else if (pattern.StartsWith(wildcard, StringComparison.Ordinal))
                 {
-                    if (!value.EndsWith(pattern.Substring(1), StringComparison.Ordinal))
+                    if (!value.EndsWith(pattern.Slice(1), StringComparison.Ordinal))
                     {
                         return false;
                     }
                 }
                 else
                 {
-                    if (!string.Equals(value, pattern, StringComparison.Ordinal))
+                    if (!value.Equals(pattern, StringComparison.Ordinal))
                     {
                         return false;
                     }
@@ -54,7 +55,7 @@ namespace Wirehome.Core.MessageBus
             return true;
         }
 
-        private static string ConvertValueToString(object value)
+        private static ReadOnlySpan<char> ConvertValueToString(object value)
         {
             // This is required because some type checks are not supported
             // like `(int)5 == (long)5` which will result in `False`.
@@ -62,15 +63,15 @@ namespace Wirehome.Core.MessageBus
 
             if (value == null)
             {
-                return string.Empty;
+                return string.Empty.AsSpan();
             }
 
             if (value is string @string)
             {
-                return @string;
+                return @string.AsSpan();
             }
 
-            return Convert.ToString(value, CultureInfo.InvariantCulture);
+            return Convert.ToString(value, CultureInfo.InvariantCulture).AsSpan();
         }
     }
 }

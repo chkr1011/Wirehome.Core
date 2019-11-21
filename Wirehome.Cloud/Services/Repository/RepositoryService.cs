@@ -1,20 +1,20 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Wirehome.Cloud.Services.Repository.Models;
+using Wirehome.Core.Foundation;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Cloud.Services.Repository
 {
     public class RepositoryService
     {
-        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+        private readonly AsyncLock _lock = new AsyncLock();
         private readonly string _rootPath;
         private readonly ILogger _logger;
         
@@ -36,14 +36,14 @@ namespace Wirehome.Cloud.Services.Repository
         {
             if (identityUid == null) throw new ArgumentNullException(nameof(identityUid));
 
-            await _lock.WaitAsync().ConfigureAwait(false);
+            await _lock.EnterAsync().ConfigureAwait(false);
             try
             {
                 return await TryReadIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
             }
             finally
             {
-                _lock.Release();
+                _lock.Exit();
             }
         }
 
@@ -52,7 +52,7 @@ namespace Wirehome.Cloud.Services.Repository
             if (identityUid == null) throw new ArgumentNullException(nameof(identityUid));
             if (newPassword == null) throw new ArgumentNullException(nameof(newPassword));
 
-            await _lock.WaitAsync().ConfigureAwait(false);
+            await _lock.EnterAsync().ConfigureAwait(false);
             try
             {
                 var identityConfiguration = await TryReadIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
@@ -64,7 +64,7 @@ namespace Wirehome.Cloud.Services.Repository
             }
             finally
             {
-                _lock.Release();
+                _lock.Exit();
             }
         }
 

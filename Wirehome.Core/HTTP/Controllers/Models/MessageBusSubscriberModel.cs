@@ -1,4 +1,4 @@
-﻿using Wirehome.Core.Model;
+﻿using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.HTTP.Controllers.Models
 {

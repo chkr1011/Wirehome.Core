@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Wirehome.Core.Model
+namespace Wirehome.Core.Foundation.Model
 {
     public static class WirehomeDictionaryExtensions
     {

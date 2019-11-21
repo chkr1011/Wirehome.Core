@@ -1,6 +1,6 @@
-﻿using System;
+﻿using MsgPack.Serialization;
+using System;
 using System.Collections.Generic;
-using MsgPack.Serialization;
 
 namespace Wirehome.Core.Cloud.Protocol
 {

@@ -2,8 +2,8 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using System;
 using IronPython.Runtime;
+using System;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Scheduler
@@ -61,7 +61,7 @@ namespace Wirehome.Core.Scheduler
 
         public string attach_to_default_timer(string uid, Action<PythonDictionary> callback, object state = null)
         {
-            return _schedulerService.AttachToDefaultTimer(uid, p =>
+            return _schedulerService.AttachToHighPrecisionTimer(uid, p =>
             {
                 var pythonDictionary = PythonConvert.ToPythonDictionary(p);
                 pythonDictionary["timer_uid"] = uid;
@@ -71,7 +71,7 @@ namespace Wirehome.Core.Scheduler
 
         public void detach_from_default_timer(string uid)
         {
-            _schedulerService.DetachFromDefaultTimer(uid);
+            _schedulerService.DetachFromHighPrecisionTimer(uid);
         }
 
         public string start_countdown(string uid, long duration, Action<PythonDictionary> callback, object state = null)

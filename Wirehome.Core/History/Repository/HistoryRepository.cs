@@ -3,43 +3,31 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Wirehome.Core.Components;
+using Wirehome.Core.Foundation;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.History.Repository
 {
     public partial class HistoryRepository
     {
-        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+        private readonly AsyncLock _lock = new AsyncLock();
         private readonly StorageService _storageService;
+        private readonly ComponentRegistryService _componentRegistryService;
 
         public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
 
-        public HistoryRepository(StorageService storageService)
+        public HistoryRepository(StorageService storageService, ComponentRegistryService componentRegistryService)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-        }
-
-        public async Task DeleteComponentStatusHistory(string componentUid, string statusUid, CancellationToken cancellationToken)
-        {
-            if (componentUid is null) throw new ArgumentNullException(nameof(componentUid));
-            if (statusUid is null) throw new ArgumentNullException(nameof(statusUid));
-
-            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                TryDeleteEntireDirectory(BuildComponentStatusPath(componentUid, statusUid));
-            }
-            finally
-            {
-                _lock.Release();
-            }
+            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
         }
 
         public async Task<List<HistoryValueElement>> GetComponentStatusValues(ComponentStatusFilter filter, CancellationToken cancellationToken)
         {
             var result = new List<HistoryValueElement>();
 
-            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 var rootPath = BuildComponentStatusPath(filter.ComponentUid, filter.StatusUid);
@@ -98,48 +86,23 @@ namespace Wirehome.Core.History.Repository
             }
             finally
             {
-                _lock.Release();
+                _lock.Exit();
             }
 
             return result;
-        }
-
-        public Task DeleteComponentStatusHistory(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, CancellationToken cancellationToken)
-        {
-            if (componentUid is null) throw new ArgumentNullException(nameof(componentUid));
-            if (statusUid is null) throw new ArgumentNullException(nameof(statusUid));
-
-
-            return Task.CompletedTask;
-        }
-
-        public async Task DeleteComponentHistory(string componentUid, CancellationToken cancellationToken)
-        {
-            if (componentUid is null) throw new ArgumentNullException(nameof(componentUid));
-
-            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                TryDeleteEntireDirectory(BuildComponentPath(componentUid));
-            }
-            finally
-            {
-                _lock.Release();
-            }
         }
 
         public async Task UpdateComponentStatusValueAsync(ComponentStatusValue componentStatusValue, CancellationToken cancellationToken)
         {
             if (componentStatusValue == null) throw new ArgumentNullException(nameof(componentStatusValue));
 
-            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-
+            await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
+            
             string path = null;
             try
             {
                 path = Path.Combine(
-                    BuildComponentStatusPath(componentStatusValue.ComponentUid, componentStatusValue.Value),
+                    BuildComponentStatusPath(componentStatusValue.ComponentUid, componentStatusValue.StatusUid),
                     componentStatusValue.Timestamp.Year.ToString(),
                     componentStatusValue.Timestamp.Month.ToString().PadLeft(2, '0'),
                     componentStatusValue.Timestamp.Day.ToString().PadLeft(2, '0'));
@@ -198,13 +161,13 @@ namespace Wirehome.Core.History.Repository
             }
             finally
             {
-                _lock.Release();
+                _lock.Exit();
             }
         }
 
         public async Task<long> GetComponentStatusHistorySize(string componentUid, string statusUid, CancellationToken cancellationToken)
         {
-            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 var path = BuildComponentStatusPath(componentUid, statusUid);
@@ -212,13 +175,13 @@ namespace Wirehome.Core.History.Repository
             }
             finally
             {
-                _lock.Release();
+                _lock.Exit();
             }
         }
 
         public async Task<long> GetComponentHistorySize(string componentUid, CancellationToken cancellationToken)
         {
-            await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 var path = BuildComponentPath(componentUid);
@@ -226,7 +189,54 @@ namespace Wirehome.Core.History.Repository
             }
             finally
             {
-                _lock.Release();
+                _lock.Exit();
+            }
+        }
+
+        public async Task DeleteEntireHistory(CancellationToken cancellationToken)
+        {
+            await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                foreach (var component in _componentRegistryService.GetComponents())
+                {
+                    TryDeleteEntireDirectory(BuildComponentPath(component.Uid));
+                }
+            }
+            finally
+            {
+                _lock.Exit();
+            }
+        }
+
+        public async Task DeleteComponentStatusHistory(string componentUid, string statusUid, CancellationToken cancellationToken)
+        {
+            if (componentUid is null) throw new ArgumentNullException(nameof(componentUid));
+            if (statusUid is null) throw new ArgumentNullException(nameof(statusUid));
+
+            await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                TryDeleteEntireDirectory(BuildComponentStatusPath(componentUid, statusUid));
+            }
+            finally
+            {
+                _lock.Exit();
+            }
+        }
+
+        public async Task DeleteComponentHistory(string componentUid, CancellationToken cancellationToken)
+        {
+            if (componentUid is null) throw new ArgumentNullException(nameof(componentUid));
+
+            await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                TryDeleteEntireDirectory(BuildComponentPath(componentUid));
+            }
+            finally
+            {
+                _lock.Exit();
             }
         }
 

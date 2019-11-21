@@ -1,9 +1,9 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Logic;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Packages;
 using Wirehome.Core.Python;
 

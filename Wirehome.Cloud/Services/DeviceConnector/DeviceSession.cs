@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Wirehome.Core.Cloud;
 using Wirehome.Core.Cloud.Channel;
 using Wirehome.Core.Cloud.Protocol;
 

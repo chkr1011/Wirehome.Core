@@ -1,5 +1,5 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Components.Logic;
 using Wirehome.Core.Contracts;

@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using Rssdp;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Rssdp;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;

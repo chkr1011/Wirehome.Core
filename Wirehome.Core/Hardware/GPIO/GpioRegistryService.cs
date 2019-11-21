@@ -1,12 +1,12 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Exceptions;
 using Wirehome.Core.Hardware.GPIO.Adapters;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Hardware.GPIO
 {

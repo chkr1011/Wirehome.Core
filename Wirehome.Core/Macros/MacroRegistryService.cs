@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
@@ -9,7 +9,7 @@ using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.Macros.Exceptions;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Macros

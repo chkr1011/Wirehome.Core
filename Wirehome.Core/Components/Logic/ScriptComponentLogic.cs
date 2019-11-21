@@ -1,8 +1,8 @@
-﻿using System;
-using IronPython.Runtime;
+﻿using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
+using System;
 using Wirehome.Core.Constants;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components.Logic

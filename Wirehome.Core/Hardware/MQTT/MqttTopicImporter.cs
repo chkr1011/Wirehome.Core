@@ -1,8 +1,9 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Client.Options;
 using MQTTnet.Extensions.ManagedClient;
+using System;
+using System.Threading.Tasks;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
@@ -24,7 +25,7 @@ namespace Wirehome.Core.Hardware.MQTT
             _enableMqttLogging = enableMqttLogging;
         }
 
-        public void Start()
+        public async Task Start()
         {
             var optionsBuilder = new ManagedMqttClientOptionsBuilder();
             optionsBuilder = optionsBuilder.WithClientOptions(
@@ -52,16 +53,25 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 _mqttClient = new MqttFactory().CreateManagedMqttClient();
             }
-            
-            _mqttClient.SubscribeAsync(_parameters.Topic, _parameters.QualityOfServiceLevel).GetAwaiter().GetResult();
+
+            await _mqttClient.SubscribeAsync(_parameters.Topic, _parameters.QualityOfServiceLevel).ConfigureAwait(false);
             _mqttClient.UseApplicationMessageReceivedHandler(e => OnApplicationMessageReceived(e));
-            _mqttClient.StartAsync(options).GetAwaiter().GetResult();
+            await _mqttClient.StartAsync(options).ConfigureAwait(false);
         }
 
-        public void Stop()
+        public async Task Stop()
         {
-            _mqttClient?.StopAsync().GetAwaiter().GetResult();
-            _mqttClient?.Dispose();
+            try
+            {
+                if (_mqttClient != null)
+                {
+                    await _mqttClient.StopAsync().ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _mqttClient?.Dispose();
+            }
         }
 
         private void OnApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)

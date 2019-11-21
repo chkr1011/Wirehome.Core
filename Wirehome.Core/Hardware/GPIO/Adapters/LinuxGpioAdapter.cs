@@ -1,17 +1,19 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
     public class LinuxGpioAdapter : IGpioAdapter
     {
-        private readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new Dictionary<int, InterruptMonitor>();
-        private readonly object _syncRoot = new object();
-        private readonly ILogger _logger;
+        readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new Dictionary<int, InterruptMonitor>();
+        readonly object _syncRoot = new object();
+        readonly ILogger _logger;
+
+        Thread _workerThread;
 
         public LinuxGpioAdapter(ILogger logger)
         {
@@ -20,7 +22,17 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         public void Enable()
         {
-            Task.Factory.StartNew(PollGpios, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            // Do not use tasks because polling must be fast as possible and task library overhead (continuation,
+            // cancellation, async/await, thread pool) is not needed.
+            _workerThread = new Thread(PollGpios)
+            {
+                Priority = ThreadPriority.AboveNormal,
+                IsBackground = true
+            };
+
+            _workerThread.Start();
+            
+            _logger.LogInformation("Started GPIO polling thread.");
         }
 
         public event EventHandler<GpioAdapterStateChangedEventArgs> GpioStateChanged;
@@ -32,7 +44,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                 Export(gpioId);
 
                 var fileContent = direction == GpioDirection.Output ? "out" : "in";
-                File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/direction", fileContent);
+                File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/direction", fileContent, Encoding.ASCII);
             }
         }
 
@@ -41,7 +53,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
             lock (_syncRoot)
             {
                 var fileContent = state == GpioState.Low ? "0" : "1";
-                File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/value", fileContent);
+                File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/value", fileContent, Encoding.ASCII);
             }
         }
 
@@ -57,7 +69,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
             lock (_syncRoot)
             {
-                var fileContent = File.ReadAllText("/sys/class/gpio/gpio" + gpioId + "/value").Trim();
+                var fileContent = File.ReadAllText("/sys/class/gpio/gpio" + gpioId + "/value", Encoding.ASCII).Trim();
                 return fileContent == "1" ? GpioState.High : GpioState.Low;
             }
         }
@@ -75,18 +87,22 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                 {
                     Export(gpioId);
 
-                    File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/direction", "in");
+                    File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/direction", "in", Encoding.ASCII);
 
                     // TODO: Edge is only required if the state is read via blocked thread.
                     //File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/edge", edge.ToString().ToLowerInvariant());
                 }
-                
+
                 var initialState = ReadState(gpioId);
-                _interruptMonitors.Add(gpioId, new InterruptMonitor { LatestState = initialState });
+                _interruptMonitors.Add(gpioId, new InterruptMonitor
+                {
+                    LatestState = initialState,
+                    GpioValuePath = $"/sys/class/gpio/gpio{gpioId}/value"
+                });
             }
         }
 
-        private void Export(int gpioId)
+        void Export(int gpioId)
         {
             var path = "/sys/class/gpio/gpio" + gpioId;
             if (Directory.Exists(path))
@@ -94,26 +110,26 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                 return;
             }
 
-            File.WriteAllText("/sys/class/gpio/export", gpioId.ToString());
+            File.WriteAllText("/sys/class/gpio/export", gpioId.ToString(), Encoding.ASCII);
 
             _logger.Log(LogLevel.Debug, $"Exported GPIO {gpioId}.");
         }
 
-        private void PollGpios()
+        void PollGpios()
         {
-            Thread.CurrentThread.Name = nameof(PollGpios);
-
             while (true)
             {
                 try
                 {
-                    var eventArgsList = new List<GpioAdapterStateChangedEventArgs>();
+                    List<GpioAdapterStateChangedEventArgs> eventArgsList;
 
                     lock (_interruptMonitors)
                     {
+                        eventArgsList = new List<GpioAdapterStateChangedEventArgs>(_interruptMonitors.Count);
+
                         foreach (var interruptMonitor in _interruptMonitors)
                         {
-                            var fileContent = File.ReadAllText("/sys/class/gpio/gpio" + interruptMonitor.Key + "/value").Trim();
+                            var fileContent = File.ReadAllText(interruptMonitor.Value.GpioValuePath, Encoding.ASCII).Trim();
                             var currentState = fileContent == "1" ? GpioState.High : GpioState.Low;
 
                             if (currentState == interruptMonitor.Value.LatestState)
@@ -135,15 +151,18 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
                     Thread.Sleep(10);
                 }
+                catch (ThreadAbortException)
+                {
+                }
                 catch (Exception exception)
                 {
-                    _logger.Log(LogLevel.Error, exception, "Unhandled exception while polling interrupt inputs.");
+                    _logger.Log(LogLevel.Error, exception, "Error while polling interrupt inputs.");
                     Thread.Sleep(TimeSpan.FromSeconds(1));
                 }
             }
         }
 
-        private void OnGpioChanged(GpioAdapterStateChangedEventArgs eventArgs)
+        void OnGpioChanged(GpioAdapterStateChangedEventArgs eventArgs)
         {
             _logger.Log(LogLevel.Information, "GPIO {0} changed from {1} to {2}.", eventArgs.GpioId, eventArgs.OldState, eventArgs.NewState);
             GpioStateChanged?.Invoke(this, eventArgs);

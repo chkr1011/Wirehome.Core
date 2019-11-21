@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Wirehome.Core.History.Extract;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Wirehome.Tests.History
 {

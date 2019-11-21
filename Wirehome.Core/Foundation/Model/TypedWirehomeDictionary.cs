@@ -1,7 +1,7 @@
 ﻿using IronPython.Runtime;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Model
+namespace Wirehome.Core.Foundation.Model
 {
     public abstract class TypedWirehomeDictionary : IPythonConvertible
     {

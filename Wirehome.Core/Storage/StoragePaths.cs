@@ -16,7 +16,7 @@ namespace Wirehome.Core.Storage
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                DataPath = Path.Combine("/etc/wirehome");
+                DataPath = Path.Combine("/etc/wirehome/");
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 

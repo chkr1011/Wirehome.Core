@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Scheduler
 {
@@ -26,11 +26,7 @@ namespace Wirehome.Core.Scheduler
 
         public void Start()
         {
-            Task.Factory.StartNew(
-                () => RunAsync(_cancellationTokenSource.Token),
-                _cancellationTokenSource.Token,
-                TaskCreationOptions.LongRunning,
-                TaskScheduler.Default).ConfigureAwait(false);
+            Task.Run(() => RunAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
         }
 
         public string Uid { get; }
@@ -61,7 +57,7 @@ namespace Wirehome.Core.Scheduler
                     //Thread.Sleep(Interval);
                     await Task.Delay(Interval, cancellationToken).ConfigureAwait(false);
 
-                    // Ensure that the tick is not called when the task was cancelled during the sleep time.
+                    // Ensure that the tick is not called when the task was canceled during the sleep time.
                     if (cancellationToken.IsCancellationRequested)
                     {
                         return;

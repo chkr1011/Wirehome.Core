@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using IronPython.Runtime;
+﻿using IronPython.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Wirehome.Core.Python.Exceptions;
 
 namespace Wirehome.Core.Python

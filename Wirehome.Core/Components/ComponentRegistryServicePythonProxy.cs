@@ -2,10 +2,10 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using System;
 using IronPython.Runtime;
+using System;
 using Wirehome.Core.Components.Exceptions;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components

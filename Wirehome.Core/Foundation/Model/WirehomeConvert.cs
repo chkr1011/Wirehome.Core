@@ -1,15 +1,10 @@
-﻿using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
-namespace Wirehome.Core.Model
+namespace Wirehome.Core.Foundation.Model
 {
     public static class WirehomeConvert
     {
-        //public static WirehomeDictionary FromJson(string json)
-        //{
-
-        //}
-
         public static object FromJson(JToken json)
         {
             if (json == null)

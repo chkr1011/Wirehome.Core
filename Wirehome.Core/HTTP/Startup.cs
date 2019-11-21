@@ -1,21 +1,24 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Converters;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.IO;
 using System.Linq;
-using Microsoft.AspNetCore.Rewrite;
-using Microsoft.OpenApi.Models;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
+using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Diagnostics.Log;
 using Wirehome.Core.Discovery;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.FunctionPool;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Hardware.GPIO;
@@ -35,9 +38,6 @@ using Wirehome.Core.ServiceHost;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 using Wirehome.Core.System.StartupScripts;
-using Wirehome.Core.Extensions;
-using Wirehome.Core.Contracts;
-using Newtonsoft.Json.Converters;
 
 namespace Wirehome.Core.HTTP
 {

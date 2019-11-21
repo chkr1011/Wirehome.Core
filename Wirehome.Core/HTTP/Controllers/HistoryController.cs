@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Net;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.History;
 using Wirehome.Core.History.Extract;
 
@@ -116,6 +116,14 @@ namespace Wirehome.Core.HTTP.Controllers
         public Task DeleteComponentStatusHistory(string componentUid, string statusUid)
         {
             return _historyService.DeleteComponentStatusHistory(componentUid, statusUid, HttpContext.RequestAborted);
+        }
+
+        [HttpDelete]
+        [Route("api/v1/history")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public Task DeleteEntireHistory()
+        {
+            return _historyService.DeleteEntireHistory(HttpContext.RequestAborted);
         }
 
         [HttpDelete]

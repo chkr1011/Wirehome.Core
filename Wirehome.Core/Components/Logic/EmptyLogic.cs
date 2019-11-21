@@ -1,7 +1,7 @@
 ﻿using System;
 using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Constants;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Components.Logic
 {

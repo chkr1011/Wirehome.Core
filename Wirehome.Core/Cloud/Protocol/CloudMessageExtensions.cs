@@ -1,8 +1,8 @@
-﻿using System;
-using System.Text;
-using MsgPack.Serialization;
+﻿using MsgPack.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Text;
 
 namespace Wirehome.Core.Cloud.Protocol
 {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,13 +10,13 @@ namespace Wirehome.Core.History.Repository
     {
         const int TokenBufferSize = 24;
 
-        readonly Stream _source;
+        readonly Stream _stream;
 
         HistoryValueStreamSerializer _serializer = new HistoryValueStreamSerializer();
 
-        public HistoryValuesStream(Stream source)
+        public HistoryValuesStream(Stream stream)
         {
-            _source = source ?? throw new ArgumentNullException(nameof(source));
+            _stream = stream ?? throw new ArgumentNullException(nameof(stream));
         }
 
         public Token CurrentToken
@@ -23,18 +24,18 @@ namespace Wirehome.Core.History.Repository
             get; private set;
         }
 
-        public bool EndOfStream => _source.Position == _source.Length;
+        public bool EndOfStream => _stream.Position == _stream.Length;
 
-        public bool BeginningOfStream => _source.Position == 0;
+        public bool BeginningOfStream => _stream.Position == 0;
 
         public void SeekBegin()
         {
-            _source.Seek(0, SeekOrigin.Begin);
+            _stream.Seek(0, SeekOrigin.Begin);
         }
 
         public void SeekEnd()
         {
-            _source.Seek(0, SeekOrigin.End);
+            _stream.Seek(0, SeekOrigin.End);
         }
 
         public async Task<bool> MoveNextAsync(CancellationToken cancellationToken = default)
@@ -45,21 +46,28 @@ namespace Wirehome.Core.History.Repository
                 return false;
             }
 
-            var readBuffer = new byte[1];
-            using (var buffer = new MemoryStream(TokenBufferSize))
+            var readBufferMemory = ArrayPool<byte>.Shared.Rent(1);
+            try
             {
-                while (!EndOfStream)
+                using (var buffer = new MemoryStream(TokenBufferSize))
                 {
-                    await _source.ReadAsync(readBuffer, 0, 1, cancellationToken).ConfigureAwait(false);
-
-                    if (_serializer.IsSeparator(readBuffer[0]))
+                    while (!EndOfStream)
                     {
-                        CurrentToken = ParseToken(new ArraySegment<byte>(buffer.GetBuffer(), 0, (int)buffer.Length));
-                        return true;
-                    }
+                        await _stream.ReadAsync(readBufferMemory, 0, 1, cancellationToken).ConfigureAwait(false);
 
-                    buffer.Write(readBuffer, 0, 1);
+                        if (_serializer.IsSeparator(readBufferMemory[0]))
+                        {
+                            CurrentToken = ParseToken(buffer.GetBuffer().AsSpan().Slice(0, (int)buffer.Length));
+                            return true;
+                        }
+
+                        buffer.Write(readBufferMemory, 0, 1);
+                    }
                 }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(readBufferMemory);
             }
 
             return false;
@@ -74,31 +82,59 @@ namespace Wirehome.Core.History.Repository
             }
 
             var separatorsCount = 0;
-            var readBuffer = new byte[1];
-
-            while (!BeginningOfStream)
+            var readBufferMemory = ArrayPool<byte>.Shared.Rent(1);
+            try
             {
-                _source.Seek(-1, SeekOrigin.Current);
-                await _source.ReadAsync(readBuffer, 0, 1, cancellationToken).ConfigureAwait(false);
-                _source.Seek(-1, SeekOrigin.Current);
-
-                if (_serializer.IsSeparator(readBuffer[0]))
+                while (!BeginningOfStream)
                 {
-                    separatorsCount++;
+                    _stream.Seek(-1, SeekOrigin.Current);
+                    await _stream.ReadAsync(readBufferMemory, 0, 1, cancellationToken).ConfigureAwait(false);
+                    _stream.Seek(-1, SeekOrigin.Current);
 
-                    if (separatorsCount == 2)
+                    if (_serializer.IsSeparator(readBufferMemory[0]))
                     {
-                        _source.Seek(1, SeekOrigin.Current);
-                        break;
+                        separatorsCount++;
+
+                        if (separatorsCount == 2)
+                        {
+                            _stream.Seek(1, SeekOrigin.Current);
+                            break;
+                        }
                     }
+                }
+
+                var position = _stream.Position;
+                var result = await MoveNextAsync().ConfigureAwait(false);
+                _stream.Position = position;
+
+                return result;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(readBufferMemory);
+            }
+        }
+
+        public async Task<bool> Align(CancellationToken cancellationToken = default)
+        {
+            while (!EndOfStream)
+            {
+                var readBufferMemory = ArrayPool<byte>.Shared.Rent(1);
+                try
+                {
+                    await _stream.ReadAsync(readBufferMemory, 0, 1, cancellationToken).ConfigureAwait(false);
+                    if (_serializer.IsSeparator(readBufferMemory[0]))
+                    {
+                        return true;
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(readBufferMemory);
                 }
             }
 
-            var position = _source.Position;
-            var result = await MoveNextAsync().ConfigureAwait(false);
-            _source.Position = position;
-                       
-            return result;
+            return false;
         }
                
         public async Task WriteTokenAsync(Token token, CancellationToken cancellationToken = default)
@@ -127,256 +163,21 @@ namespace Wirehome.Core.History.Repository
 
                 buffer.Write(_serializer.SerializeSeparator());
 
-                await _source.WriteAsync(buffer.GetBuffer(), 0, (int)buffer.Length, cancellationToken).ConfigureAwait(false);
+                await _stream.WriteAsync(buffer.GetBuffer().AsMemory().Slice(0, (int)buffer.Length), cancellationToken).ConfigureAwait(false);
             }
         }
 
         public void Dispose()
         {
-            _source.Dispose();
+            _stream.Dispose();
         }
 
-        Token ParseToken(ArraySegment<byte> source)
+        Token ParseToken(ReadOnlySpan<byte> source)
         {
-            var tokenKey = new ArraySegment<byte>(source.Array, 0, 2);
-            var tokenValue = new ArraySegment<byte>(source.Array, 2, source.Count - 2);
+            var tokenKey = source.Slice(0, 2);
+            var tokenValue = source.Slice(2, source.Length - 2);
 
             return _serializer.ParseToken(tokenKey, tokenValue);
         }
     }
-
-    //public class HistoryRepository
-    //{
-    //    private DbContextOptions _dbContextOptions;
-
-    //    public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
-
-    //    public void Initialize()
-    //    {
-    //        var dbContextOptionsBuilder = new DbContextOptionsBuilder<HistoryDatabaseContext>();
-    //        dbContextOptionsBuilder.UseMySql("Server=localhost;Uid=wirehome;Pwd=w1r3h0m3;SslMode=None;Database=WirehomeHistory");
-
-    //        Initialize(dbContextOptionsBuilder.Options);
-    //    }
-
-    //    public void Initialize(DbContextOptions options)
-    //    {
-    //        _dbContextOptions = options ?? throw new ArgumentNullException(nameof(options));
-
-    //        using (var databaseContext = new HistoryDatabaseContext(_dbContextOptions))
-    //        {
-    //            databaseContext.Database.EnsureCreated();
-    //        }
-    //    }
-
-    //    public void Delete()
-    //    {
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            databaseContext.Database.EnsureDeleted();
-    //        }
-    //    }
-
-    //    public async Task UpdateComponentStatusValueAsync(ComponentStatusValue componentStatusValue, CancellationToken cancellationToken)
-    //    {
-    //        if (componentStatusValue == null) throw new ArgumentNullException(nameof(componentStatusValue));
-
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            var latestEntities = await databaseContext.ComponentStatus
-    //                .Where(s =>
-    //                    s.ComponentUid == componentStatusValue.ComponentUid &&
-    //                    s.StatusUid == componentStatusValue.StatusUid &&
-    //                    s.NextEntityID == null)
-    //                .OrderByDescending(s => s.RangeEnd)
-    //                .ThenByDescending(s => s.RangeStart)
-    //                .ToListAsync(cancellationToken);
-
-    //            var latestEntity = latestEntities.FirstOrDefault();
-
-    //            if (latestEntities.Count > 1)
-    //            {
-    //                // TODO: Log broken data.
-    //            }
-
-    //            if (latestEntity == null)
-    //            {
-    //                var newEntry = CreateComponentStatusEntity(componentStatusValue, null);
-    //                databaseContext.ComponentStatus.Add(newEntry);
-    //            }
-    //            else
-    //            {
-    //                var newestIsObsolete = latestEntity.RangeEnd > componentStatusValue.Timestamp;
-    //                if (newestIsObsolete)
-    //                {
-    //                    return;
-    //                }
-
-    //                var latestIsOutdated = componentStatusValue.Timestamp - latestEntity.RangeEnd > ComponentStatusOutdatedTimeout;
-    //                var valueHasChanged = !string.Equals(latestEntity.Value, componentStatusValue.Value, StringComparison.Ordinal);
-
-    //                if (valueHasChanged)
-    //                {
-    //                    var newEntity = CreateComponentStatusEntity(componentStatusValue, latestEntity);
-    //                    databaseContext.ComponentStatus.Add(newEntity);
-
-    //                    if (!latestIsOutdated)
-    //                    {
-    //                        latestEntity.RangeEnd = componentStatusValue.Timestamp;
-    //                    }
-    //                }
-    //                else
-    //                {
-    //                    if (!latestIsOutdated)
-    //                    {
-    //                        latestEntity.RangeEnd = componentStatusValue.Timestamp;
-    //                    }
-    //                    else
-    //                    {
-    //                        var newEntity = CreateComponentStatusEntity(componentStatusValue, latestEntity);
-    //                        databaseContext.ComponentStatus.Add(newEntity);
-    //                    }
-    //                }
-    //            }
-
-    //            await databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-    //        }
-    //    }
-
-    //    public async Task DeleteComponentStatusHistoryAsync(string componentUid, string statusUid, DateTime? rangeStart, DateTime? rangeEnd, CancellationToken cancellationToken)
-    //    {
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            var query = BuildQuery(databaseContext, componentUid, statusUid, rangeStart, rangeEnd);
-    //            databaseContext.ComponentStatus.RemoveRange(query);
-    //            await databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-    //        }
-    //    }
-
-    //    public async Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(string componentUid, string statusUid, int maxRowsCount, CancellationToken cancellationToken)
-    //    {
-    //        if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-    //        if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
-
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            return await databaseContext.ComponentStatus
-    //                .AsNoTracking()
-    //                .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
-    //                .OrderBy(s => s.RangeStart)
-    //                .ThenBy(s => s.RangeEnd)
-    //                .Take(maxRowsCount)
-    //                .ToListAsync(cancellationToken).ConfigureAwait(false);
-    //        }
-    //    }
-
-    //    public async Task<List<ComponentStatusEntity>> GetComponentStatusValuesAsync(
-    //        string componentUid, 
-    //        string statusUid, 
-    //        DateTime rangeStart, 
-    //        DateTime rangeEnd, 
-    //        int maxRowsCount, 
-    //        CancellationToken cancellationToken)
-    //    {
-    //        if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-    //        if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
-    //        if (rangeStart > rangeEnd) throw new ArgumentException($"{nameof(rangeStart)} is greater than {nameof(rangeEnd)}");
-
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            return await databaseContext.ComponentStatus
-    //                .AsNoTracking()
-    //                .Where(s => s.ComponentUid == componentUid && s.StatusUid == statusUid)
-    //                .Where(s => (s.RangeStart <= rangeEnd && s.RangeEnd >= rangeStart))
-    //                .OrderBy(s => s.RangeStart)
-    //                .ThenBy(s => s.RangeEnd)
-    //                .Take(maxRowsCount)
-    //                .ToListAsync(cancellationToken).ConfigureAwait(false);
-    //        }
-    //    }
-
-    //    public async Task<int> GetRowCountForComponentStatusHistoryAsync(
-    //        string componentUid, 
-    //        string statusUid, 
-    //        DateTime? rangeStart, 
-    //        DateTime? rangeEnd, 
-    //        CancellationToken cancellationToken)
-    //    {
-    //        using (var databaseContext = CreateDatabaseContext())
-    //        {
-    //            var query = BuildQuery(databaseContext, componentUid, statusUid, rangeStart, rangeEnd);
-    //            return await query.CountAsync(cancellationToken);
-    //        }
-    //    }
-
-    //    private static IQueryable<ComponentStatusEntity> BuildQuery(
-    //        HistoryDatabaseContext databaseContext,
-    //        string componentUid, 
-    //        string statusUid,
-    //        DateTime? rangeStart,
-    //        DateTime? rangeEnd)
-    //    {
-    //        var query = databaseContext.ComponentStatus.AsQueryable();
-
-    //        if (!string.IsNullOrEmpty(componentUid))
-    //        {
-    //            query = query.Where(c => c.ComponentUid == componentUid);
-    //        }
-
-    //        if (!string.IsNullOrEmpty(statusUid))
-    //        {
-    //            query = query.Where(c => c.StatusUid == statusUid);
-    //        }
-
-    //        if (rangeStart.HasValue)
-    //        {
-    //            query = query.Where(c => c.RangeEnd >= rangeStart);
-    //        }
-
-    //        if (rangeEnd.HasValue)
-    //        {
-    //            query = query.Where(c => c.RangeStart <= rangeEnd);
-    //        }
-
-    //        return query;
-    //    }
-
-    //    private HistoryDatabaseContext CreateDatabaseContext()
-    //    {
-    //        var databaseContext = new HistoryDatabaseContext(_dbContextOptions);
-
-    //        try
-    //        {
-    //            databaseContext.Database.SetCommandTimeout(TimeSpan.FromSeconds(120));
-    //        }
-    //        catch (InvalidOperationException)
-    //        {
-    //            // This exception is thrown in UnitTests.
-    //        }
-
-    //        return databaseContext;
-    //    }
-
-    //    private static ComponentStatusEntity CreateComponentStatusEntity(
-    //        ComponentStatusValue componentStatusValue,
-    //        ComponentStatusEntity latestEntity)
-    //    {
-    //        var newEntity = new ComponentStatusEntity
-    //        {
-    //            ComponentUid = componentStatusValue.ComponentUid,
-    //            StatusUid = componentStatusValue.StatusUid,
-    //            Value = componentStatusValue.Value,
-    //            RangeStart = componentStatusValue.Timestamp,
-    //            RangeEnd = componentStatusValue.Timestamp,
-    //            PreviousEntityID = latestEntity?.ID
-    //        };
-
-    //        if (latestEntity != null)
-    //        {
-    //            latestEntity.NextEntity = newEntity;
-    //        }
-
-    //        return newEntity;
-    //    }
-    //}
 }

@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Scheduler
 {
@@ -52,8 +52,7 @@ namespace Wirehome.Core.Scheduler
             Task.Factory.StartNew(() =>
             {
                 try
-                {
-                    Thread.CurrentThread.Name = Uid;
+                {                    
                     ManagedThreadId = Thread.CurrentThread.ManagedThreadId;
 
                     _action(new StartThreadCallbackParameters(Uid, _state));

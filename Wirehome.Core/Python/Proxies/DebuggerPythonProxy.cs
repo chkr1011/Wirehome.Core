@@ -2,11 +2,11 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
+using IronPython.Runtime;
+using Microsoft.Scripting.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using IronPython.Runtime;
-using Microsoft.Scripting.Utils;
 
 namespace Wirehome.Core.Python.Proxies
 {

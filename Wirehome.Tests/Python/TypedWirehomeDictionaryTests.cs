@@ -1,6 +1,6 @@
 ﻿using IronPython.Runtime;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Tests.Python

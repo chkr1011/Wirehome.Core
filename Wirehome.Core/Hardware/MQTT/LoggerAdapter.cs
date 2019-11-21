@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using MQTTnet.Diagnostics;
+using System;
+using System.Collections.Generic;
 
 namespace Wirehome.Core.Hardware.MQTT
 {

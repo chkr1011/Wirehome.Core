@@ -1,18 +1,18 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Components;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.History.Extract;
 using Wirehome.Core.History.Repository;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
@@ -54,7 +54,7 @@ namespace Wirehome.Core.History
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _repository = new HistoryRepository(_storageService);
+            _repository = new HistoryRepository(_storageService, componentRegistryService);
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _updateRateCounter = diagnosticsService.CreateOperationsPerSecondCounter("history.update_rate");
@@ -72,8 +72,8 @@ namespace Wirehome.Core.History
 
         public void Start()
         {
-            _storageService.TryReadOrCreate(out _options, HistoryServiceOptions.Filename);
 
+            _storageService.TryReadOrCreate(out _options, HistoryServiceOptions.Filename);
             if (!_options.IsEnabled)
             {
                 _logger.LogInformation("History is disabled.");
@@ -126,6 +126,11 @@ namespace Wirehome.Core.History
                 RangeEnd = new DateTime(day.Year, day.Month, day.Day, 23, 59, 59),
                 MaxEntityCount = null
             }, cancellationToken);
+        }
+
+        public Task DeleteEntireHistory(CancellationToken cancellationToken)
+        {
+            return _repository.DeleteEntireHistory(cancellationToken);
         }
 
         public Task DeleteComponentStatusHistory(string componentUid, string statusUid, CancellationToken cancellationToken)

@@ -7,13 +7,12 @@ namespace Wirehome.Core.History.Repository
 {
     public class HistoryValueStreamSerializer
     {
-        const string TimestampFormat = "HHmmss.fff";
         readonly byte _separator = (byte)' ';
         readonly byte[] _separatorBuffer;
 
-        readonly byte[] _beginTokenKeyBuffer = Encoding.UTF8.GetBytes("b:");
-        readonly byte[] _endTokenKeyBuffer = Encoding.UTF8.GetBytes("e:");
-        readonly byte[] _valueTokenKeyBuffer = Encoding.UTF8.GetBytes("v:");
+        readonly byte[] _beginTokenKeyBuffer = Encoding.ASCII.GetBytes("b:");
+        readonly byte[] _endTokenKeyBuffer = Encoding.ASCII.GetBytes("e:");
+        readonly byte[] _valueTokenKeyBuffer = Encoding.ASCII.GetBytes("v:");
 
         public HistoryValueStreamSerializer()
         {
@@ -25,14 +24,18 @@ namespace Wirehome.Core.History.Repository
             return source == _separator;
         }
 
-        public byte[] SerializeTimeSpan(TimeSpan timeSpan)
+        public ReadOnlySpan<byte> SerializeTimeSpan(TimeSpan timeSpan)
         {
-            // This is a workaround because .NET is not very flexible when it comes to custom TimeSpan formats.
-            var buffer = new DateTime(1, 1, 1, timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds, DateTimeKind.Utc).ToString(TimestampFormat);
-            return Encoding.UTF8.GetBytes(buffer);
+            var buffer = timeSpan.Hours.ToString("00") +
+                timeSpan.Minutes.ToString("00") +
+                timeSpan.Seconds.ToString("00") +
+                "." +
+                timeSpan.Milliseconds.ToString("000");
+
+            return Encoding.ASCII.GetBytes(buffer).AsSpan();
         }
 
-        public byte[] SerializeValue(string value)
+        public ReadOnlySpan<byte> SerializeValue(string value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -40,38 +43,38 @@ namespace Wirehome.Core.History.Repository
             }
 
             var buffer = HttpUtility.UrlEncode(value);
-            return Encoding.UTF8.GetBytes(buffer);
+            return Encoding.UTF8.GetBytes(buffer).AsSpan();
         }
 
-        public byte[] SerializeSeparator()
+        public ReadOnlySpan<byte> SerializeSeparator()
         {
-            return _separatorBuffer;
+            return _separatorBuffer.AsSpan();
         }
 
-        public byte[] SerializeBeginTokenKey()
+        public ReadOnlySpan<byte> SerializeBeginTokenKey()
         {
-            return _beginTokenKeyBuffer;
+            return _beginTokenKeyBuffer.AsSpan();
         }
 
-        public byte[] SerializeEndTokenKey()
+        public ReadOnlySpan<byte> SerializeEndTokenKey()
         {
-            return _endTokenKeyBuffer;
+            return _endTokenKeyBuffer.AsSpan();
         }
 
-        public byte[] SerializeValueTokenKey()
+        public ReadOnlySpan<byte> SerializeValueTokenKey()
         {
-            return _valueTokenKeyBuffer;
+            return _valueTokenKeyBuffer.AsSpan();
         }
 
-        public Token ParseToken(ArraySegment<byte> tokenKey, ArraySegment<byte> tokenValue)
+        public Token ParseToken(ReadOnlySpan<byte> tokenKey, ReadOnlySpan<byte> tokenValue)
         {
-            if (tokenKey.Array[tokenKey.Offset + 1] != ':')
+            if (tokenKey[1] != ':')
             {
-                var tokenKeyText = Encoding.UTF8.GetString(tokenKey.Array, 0, 2);
+                var tokenKeyText = Encoding.UTF8.GetString(tokenKey);
                 throw new NotSupportedException($"Token is not supported ({tokenKeyText}).");
             }
 
-            switch (tokenKey.Array[tokenKey.Offset])
+            switch (tokenKey[0])
             {
                 case (byte)'b':
                     {
@@ -90,22 +93,28 @@ namespace Wirehome.Core.History.Repository
 
                 default:
                     {
-                        var tokenKeyText = Encoding.UTF8.GetString(tokenKey.Array, 0, 2);
+                        var tokenKeyText = Encoding.UTF8.GetString(tokenKey);
                         throw new NotSupportedException($"Token is not supported ({tokenKeyText}).");
                     }
             }
         }
 
-        string ParseValue(ArraySegment<byte> source)
+        string ParseValue(ReadOnlySpan<byte> source)
         {
-            var buffer = Encoding.UTF8.GetString(source.Array, source.Offset, source.Count);
+            var buffer = Encoding.UTF8.GetString(source);
             return HttpUtility.UrlDecode(buffer);
         }
 
-        TimeSpan ParseTimeSpan(ArraySegment<byte> source)
+        TimeSpan ParseTimeSpan(ReadOnlySpan<byte> source)
         {
-            var buffer = Encoding.UTF8.GetString(source.Array, source.Offset, source.Count);
-            return DateTime.ParseExact(buffer, TimestampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None).TimeOfDay;
+            var buffer = Encoding.ASCII.GetString(source).AsSpan();
+
+            return new TimeSpan(
+                0,
+                int.Parse(buffer.Slice(0, 2), NumberStyles.Integer),
+                int.Parse(buffer.Slice(2, 2), NumberStyles.Integer),
+                int.Parse(buffer.Slice(4, 2), NumberStyles.Integer),
+                int.Parse(buffer.Slice(7, 3), NumberStyles.Integer));
         }
     }
 }

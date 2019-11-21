@@ -1,6 +1,6 @@
 ﻿using IronPython.Runtime;
 using System;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Storage

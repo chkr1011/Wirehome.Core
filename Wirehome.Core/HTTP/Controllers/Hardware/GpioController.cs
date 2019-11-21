@@ -1,5 +1,5 @@
-﻿using System;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using Wirehome.Core.Hardware.GPIO;
 
 namespace Wirehome.Core.HTTP.Controllers.Hardware

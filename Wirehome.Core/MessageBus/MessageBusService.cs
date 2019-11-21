@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Model;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
@@ -15,19 +15,19 @@ namespace Wirehome.Core.MessageBus
 {
     public class MessageBusService : IService
     {
-        private readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
-        private readonly LinkedList<MessageBusMessage> _history = new LinkedList<MessageBusMessage>();
-        private readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new ConcurrentDictionary<string, MessageBusSubscriber>();
-        private readonly ConcurrentDictionary<string, MessageBusResponseSubscriber> _responseSubscribers = new ConcurrentDictionary<string, MessageBusResponseSubscriber>();
+        readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
+        readonly LinkedList<MessageBusMessage> _history = new LinkedList<MessageBusMessage>();
+        readonly Dictionary<string, MessageBusSubscriber> _subscribers = new Dictionary<string, MessageBusSubscriber>();
+        readonly Dictionary<string, MessageBusResponseSubscriber> _responseSubscribers = new Dictionary<string, MessageBusResponseSubscriber>();
 
-        private readonly SystemCancellationToken _systemCancellationToken;
+        readonly SystemCancellationToken _systemCancellationToken;
 
-        private readonly OperationsPerSecondCounter _inboundCounter;
-        private readonly OperationsPerSecondCounter _processingRateCounter;
+        readonly OperationsPerSecondCounter _inboundCounter;
+        readonly OperationsPerSecondCounter _processingRateCounter;
 
-        private readonly MessageBusServiceOptions _options;
+        readonly MessageBusServiceOptions _options;
 
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
         public MessageBusService(
             StorageService storageService,
@@ -55,20 +55,46 @@ namespace Wirehome.Core.MessageBus
 
         public void Start()
         {
-            Task.Factory.StartNew(
-                () => DispatchMessageBusMessages(_systemCancellationToken.Token),
-                _systemCancellationToken.Token,
-                TaskCreationOptions.LongRunning,
-                TaskScheduler.Default);
+            var dispatcherThread = new Thread(DispatchMessageBusMessages)
+            {
+                Priority = ThreadPriority.AboveNormal,
+                IsBackground = true
+            };
+
+            dispatcherThread.Start();
 
             for (var i = 0; i < _options.MessageProcessorsCount; i++)
             {
-                Task.Factory.StartNew(
-                    () => ProcessMessages(_systemCancellationToken.Token),
-                    _systemCancellationToken.Token,
-                    TaskCreationOptions.LongRunning,
-                    TaskScheduler.Default);
+                var workerThread = new Thread(ProcessMessages)
+                {
+                    Priority = ThreadPriority.AboveNormal,
+                    IsBackground = true
+                };
+
+                workerThread.Start();
             }
+        }
+
+        public void Publish(WirehomeDictionary message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+
+            var busMessage = new MessageBusMessage
+            {
+                Message = message
+            };
+
+            Publish(busMessage);
+        }
+
+        public void Publish(MessageBusMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+
+            message.EnqueuedTimestamp = DateTime.UtcNow;
+            _messageQueue.Add(message);
+
+            _inboundCounter.Increment();
         }
 
         public async Task<WirehomeDictionary> PublishRequestAsync(WirehomeDictionary message, TimeSpan timeout)
@@ -108,7 +134,10 @@ namespace Wirehome.Core.MessageBus
             {
                 if (requestCorrelationUid != null)
                 {
-                    _responseSubscribers.TryRemove(requestCorrelationUid, out _);
+                    lock (_responseSubscribers)
+                    {
+                        _responseSubscribers.Remove(requestCorrelationUid);
+                    }
                 }
             }
         }
@@ -121,30 +150,12 @@ namespace Wirehome.Core.MessageBus
             responseMessage[MessageBusMessagePropertyName.CorrelationUid] =
                 request[MessageBusMessagePropertyName.CorrelationUid];
 
-            var response = new MessageBusMessage { Message = responseMessage };
-            Publish(response);
-        }
-
-        public void Publish(WirehomeDictionary message)
-        {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-
-            var busMessage = new MessageBusMessage
+            var response = new MessageBusMessage
             {
-                Message = message
+                Message = responseMessage
             };
 
-            Publish(busMessage);
-        }
-
-        public void Publish(MessageBusMessage message)
-        {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-
-            message.EnqueuedTimestamp = DateTime.Now;
-            _messageQueue.Add(message);
-
-            _inboundCounter.Increment();
+            Publish(response);
         }
 
         public void ClearHistory()
@@ -165,7 +176,10 @@ namespace Wirehome.Core.MessageBus
 
         public List<MessageBusSubscriber> GetSubscribers()
         {
-            return new List<MessageBusSubscriber>(_subscribers.Values);
+            lock (_subscribers)
+            {
+                return new List<MessageBusSubscriber>(_subscribers.Values);
+            }     
         }
 
         public string Subscribe(string uid, WirehomeDictionary filter, Action<MessageBusMessage> callback)
@@ -179,8 +193,11 @@ namespace Wirehome.Core.MessageBus
             }
 
             var subscriber = new MessageBusSubscriber(uid, filter, callback, _logger);
-            _subscribers[uid] = subscriber;
-
+            lock (_subscribers)
+            {
+                _subscribers[uid] = subscriber;
+            }
+            
             return uid;
         }
 
@@ -188,19 +205,20 @@ namespace Wirehome.Core.MessageBus
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _subscribers.TryRemove(uid, out _);
+            lock (_subscribers)
+            {
+                _subscribers.Remove(uid, out _);
+            }
         }
 
-        private void DispatchMessageBusMessages(CancellationToken cancellationToken)
+        void DispatchMessageBusMessages()
         {
-            Thread.CurrentThread.Name = nameof(DispatchMessageBusMessages);
-
-            while (!cancellationToken.IsCancellationRequested)
+            while (!_systemCancellationToken.Token.IsCancellationRequested)
             {
                 try
                 {
-                    var message = _messageQueue.Take(cancellationToken);
-                    if (message == null || cancellationToken.IsCancellationRequested)
+                    var message = _messageQueue.Take(_systemCancellationToken.Token);
+                    if (message == null || _systemCancellationToken.Token.IsCancellationRequested)
                     {
                         return;
                     }
@@ -218,7 +236,13 @@ namespace Wirehome.Core.MessageBus
                     {
                         var responseCorrelationUid = Convert.ToString(correlationUid, CultureInfo.InvariantCulture);
 
-                        foreach (var responseSubscriber in _responseSubscribers)
+                        Dictionary<string, MessageBusResponseSubscriber> currentResponseSubscribers;
+                        lock (_responseSubscribers)
+                        {
+                            currentResponseSubscribers = new Dictionary<string, MessageBusResponseSubscriber>(_responseSubscribers);
+                        }
+
+                        foreach (var responseSubscriber in currentResponseSubscribers)
                         {
                             if (responseSubscriber.Key.Equals(responseCorrelationUid, StringComparison.Ordinal))
                             {
@@ -229,11 +253,17 @@ namespace Wirehome.Core.MessageBus
                     }
                     else
                     {
-                        foreach (var subscriber in _subscribers.Values)
+                        lock (_subscribers)
                         {
-                            subscriber.EnqueueMessage(message);
+                            foreach (var subscriber in _subscribers.Values)
+                            {
+                                subscriber.EnqueueMessage(message);
+                            }
                         }
                     }
+                }
+                catch (ThreadAbortException)
+                {
                 }
                 catch (OperationCanceledException)
                 {
@@ -246,15 +276,19 @@ namespace Wirehome.Core.MessageBus
             }
         }
 
-        private void ProcessMessages(CancellationToken cancellationToken)
+        void ProcessMessages()
         {
             try
             {
-                Thread.CurrentThread.Name = nameof(ProcessMessages);
-
-                while (!cancellationToken.IsCancellationRequested)
+                while (!_systemCancellationToken.Token.IsCancellationRequested)
                 {
-                    foreach (var subscriber in _subscribers.Values)
+                    List<MessageBusSubscriber> currentSubscribers;
+                    lock (_subscribers)
+                    {
+                        currentSubscribers = new List<MessageBusSubscriber>(_subscribers.Values);
+                    }
+
+                    foreach (var subscriber in currentSubscribers)
                     {
                         if (subscriber.TryProcessNextMessage())
                         {
@@ -264,6 +298,9 @@ namespace Wirehome.Core.MessageBus
 
                     Thread.Sleep(10);
                 }
+            }
+            catch (ThreadAbortException)
+            {
             }
             catch (OperationCanceledException)
             {

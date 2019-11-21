@@ -1,5 +1,5 @@
-﻿using System;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.HTTP.Controllers

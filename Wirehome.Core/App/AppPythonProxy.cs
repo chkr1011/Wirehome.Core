@@ -1,5 +1,5 @@
-﻿using System;
-using IronPython.Runtime;
+﻿using IronPython.Runtime;
+using System;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.SDK;
 
