@@ -153,7 +153,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public void stop_topic_import(string uid)
         {
-            _mqttService.StopTopicImport(uid);
+            _mqttService.StopTopicImport(uid).GetAwaiter().GetResult();
         }
 
         private static byte[] ConvertPayload(object payload)

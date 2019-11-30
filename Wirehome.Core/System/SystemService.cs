@@ -56,14 +56,40 @@ namespace Wirehome.Core.System
 
             _systemStatusService.Set("system.date_time", () => DateTime.Now);
             _systemStatusService.Set("system.processor_count", Environment.ProcessorCount);
-            _systemStatusService.Set("system.working_set", () => Environment.WorkingSet);
-
+            
             _systemStatusService.Set("up_time", () => DateTime.Now - _creationTimestamp);
 
             _systemStatusService.Set("arguments", string.Join(" ", _systemLaunchArguments.Values));
 
             _systemStatusService.Set("wirehome.core.version", WirehomeCoreVersion.Version);
 
+            _systemStatusService.RegisterProvider(target =>
+            {
+                using (var currentProcess = Process.GetCurrentProcess())
+                {
+                    target.Add("process.pid", currentProcess.Id);
+                    target.Add("process.threads_count", currentProcess.Threads.Count);
+
+                    ////foreach (ProcessThread thread in currentProcess.Threads)
+                    ////{
+                    ////    using (thread)
+                    ////    {
+                    ////        target.Add($"process.threads.{thread.Id}.priority_level", thread.PriorityLevel);
+                    ////        target.Add($"process.threads.{thread.Id}.total_processor_time", thread.TotalProcessorTime);
+                    ////    }
+                    ////}
+
+                    target.Add("process.working_set", currentProcess.WorkingSet64);
+                    target.Add("process.max_working_set", currentProcess.MaxWorkingSet.ToInt64());
+                    target.Add("process.peak_working_set", currentProcess.PeakWorkingSet64);
+                    
+                    target.Add("process.private_memory", currentProcess.PrivateMemorySize64);
+
+                    target.Add("process.virtual_memory", currentProcess.VirtualMemorySize64);
+                    target.Add("process.peak_virtual_memory", currentProcess.PeakVirtualMemorySize64);
+                }
+            });
+                       
             AddOSInformation();
             AddThreadPoolInformation();
         }

@@ -87,7 +87,7 @@ namespace Wirehome.Core.HTTP.Controllers
             
             if (fixStartupScripts)
             {
-                FixStartupScripts();
+                await FixStartupScripts();
             }
         }
 
@@ -115,29 +115,29 @@ namespace Wirehome.Core.HTTP.Controllers
             return WirehomeCoreVersion.Version;
         }
 
-        private void FixStartupScripts()
+        private async Task FixStartupScripts()
         {
             var path = _storageService.BinPath;
 
-            FixFile(Path.Combine(path, "run.sh"));
-            FixFile(Path.Combine(path, "rund.sh"));
+            await FixFile(Path.Combine(path, "run.sh")).ConfigureAwait(false);
+            await FixFile(Path.Combine(path, "rund.sh")).ConfigureAwait(false);
         }
 
-        private static void FixFile(string filename)
+        private static async Task FixFile(string filename)
         {
             if (!global::System.IO.File.Exists(filename))
             {
                 return;
             }
 
-            var content = global::System.IO.File.ReadAllText(filename, Encoding.UTF8);
+            var content = await global::System.IO.File.ReadAllTextAsync(filename, Encoding.UTF8).ConfigureAwait(false);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 content = content.Replace("\r\n", "\n");
             }
 
-            global::System.IO.File.WriteAllText(filename, content, Encoding.UTF8);
+            await global::System.IO.File.WriteAllTextAsync(filename, content, Encoding.UTF8).ConfigureAwait(false);
         }
     }
 }

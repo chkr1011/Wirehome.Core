@@ -23,7 +23,7 @@ namespace Wirehome.Tests.History
             memory.Seek(0, SeekOrigin.Begin);
             var output = Encoding.UTF8.GetString(memory.ToArray());
 
-            Assert.AreEqual("b:103000.000 v:20 e:114500.000 b:114501.000 v:21.5 e:125959.000 ", output);
+            Assert.AreEqual("b103000000 v20 e114500000 b114501000 v21.5 e125959000 ", output);
         }
 
         [TestMethod]
@@ -42,7 +42,7 @@ namespace Wirehome.Tests.History
             memory.Seek(0, SeekOrigin.Begin);
             var output = Encoding.UTF8.GetString(memory.ToArray());
 
-            Assert.AreEqual("b:000000.000 v:19.5 e:123059.000 b:123100.000 v:21.5 e:235959.000 ", output);
+            Assert.AreEqual("b000000000 v19.5 e123059000 b123100000 v21.5 e235959000 ", output);
         }
 
         [TestMethod]
@@ -203,7 +203,7 @@ namespace Wirehome.Tests.History
             // Patch data...
             await stream.WriteTokenAsync(new EndToken(new TimeSpan(12, 35, 59)));
 
-            Assert.AreEqual("b:000000.000 v:19.5 e:123559.000 ", Encoding.UTF8.GetString(memory.ToArray()));
+            Assert.AreEqual("b000000000 v19.5 e123559000 ", Encoding.UTF8.GetString(memory.ToArray()));
 
             stream = new HistoryValuesStream(memory);
             stream.SeekBegin();
@@ -247,7 +247,7 @@ namespace Wirehome.Tests.History
             memory.Seek(0, SeekOrigin.Begin);
             var output = Encoding.UTF8.GetString(memory.ToArray());
 
-            Assert.AreEqual("b:000000.000 v:19.5 e:123059.000 ", output);
+            Assert.AreEqual("b000000000 v19.5 e123059000 ", output);
         }
 
         [TestMethod]

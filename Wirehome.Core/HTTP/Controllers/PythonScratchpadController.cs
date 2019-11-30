@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 
@@ -19,14 +20,14 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/python_scratchpad/execute")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object ExecuteScript(string function_name = "main")
+        public async Task<object> ExecuteScript(string function_name = "main")
         {
             try
             {
                 string script;
                 using (var streamReader = new StreamReader(HttpContext.Request.Body))
                 {
-                    script = streamReader.ReadToEnd();
+                    script = await streamReader.ReadToEndAsync().ConfigureAwait(false);
                 }
 
                 var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(null);

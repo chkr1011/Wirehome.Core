@@ -98,8 +98,10 @@ namespace Wirehome.Core.Scheduler
             {
                 if (_activeTimers.TryGetValue(uid, out var existingTimer))
                 {
-                    existingTimer.Stop();
-                    existingTimer.Dispose();
+                    using (existingTimer)
+                    {
+                        existingTimer.Stop();
+                    }
                 }
 
                 _activeTimers[uid] = activeTimer;
@@ -118,8 +120,10 @@ namespace Wirehome.Core.Scheduler
             {
                 if (_activeTimers.TryGetValue(uid, out var activeTimer))
                 {
-                    activeTimer.Stop();
-                    activeTimer.Dispose();
+                    using (activeTimer)
+                    {
+                        activeTimer.Stop();
+                    }
                 }
 
                 return _activeTimers.Remove(uid);
@@ -234,9 +238,11 @@ namespace Wirehome.Core.Scheduler
                 {
                     if (_activeThreads.TryGetValue(uid, out var activeThread))
                     {
-                        activeThread.Stop();
-                        activeThread.Dispose();
-
+                        using (activeThread)
+                        {
+                            activeThread.Stop();
+                        }
+                                               
                         return true;
                     }
                 }

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Wirehome.Core.Contracts;
 
@@ -8,9 +7,10 @@ namespace Wirehome.Core.Diagnostics
 {
     public class SystemStatusService : IService
     {
-        private readonly ConcurrentDictionary<string, Func<object>> _values = new ConcurrentDictionary<string, Func<object>>();
+        readonly Dictionary<string, Func<object>> _values = new Dictionary<string, Func<object>>();
+        readonly List<Action<Dictionary<string, object>>> _valueProviders = new List<Action<Dictionary<string, object>>>();
 
-        private readonly ILogger<SystemStatusService> _logger;
+        readonly ILogger<SystemStatusService> _logger;
 
         public SystemStatusService(ILogger<SystemStatusService> logger)
         {
@@ -21,24 +21,40 @@ namespace Wirehome.Core.Diagnostics
         {
         }
 
+        public void RegisterProvider(Action<Dictionary<string, object>> provider)
+        {
+            if (provider is null) throw new ArgumentNullException(nameof(provider));
+
+            lock (_valueProviders)
+            {
+                _valueProviders.Add(provider);
+            }
+        }
+
         public void Set(string uid, object value)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _values[uid] = () => value;
+            lock (_values)
+            {
+                _values[uid] = () => value;
+            }
         }
 
-        public void Set(string uid, Func<object> value)
+        public void Set(string uid, Func<object> valueProvider)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (value == null)
+            lock (_values)
             {
-                _values[uid] = null;
-            }
-            else
-            {
-                _values[uid] = value;
+                if (valueProvider == null)
+                {
+                    _values[uid] = null;
+                }
+                else
+                {
+                    _values[uid] = valueProvider;
+                }
             }
         }
 
@@ -46,39 +62,64 @@ namespace Wirehome.Core.Diagnostics
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_values.TryGetValue(uid, out var valueProvider))
+            lock (_values)
             {
-                return null;
-            }
+                if (!_values.TryGetValue(uid, out var valueProvider))
+                {
+                    return null;
+                }
 
-            return valueProvider();
+                return valueProvider();
+            }
         }
 
         public void Delete(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _values.TryRemove(uid, out _);
+            lock (_values)
+            {
+                _values.Remove(uid);
+            }
         }
 
         public Dictionary<string, object> All()
         {
             var result = new Dictionary<string, object>();
-            foreach (var value in _values)
+
+            lock (_values)
             {
-                object effectiveValue;
-
-                try
+                foreach (var value in _values)
                 {
-                    effectiveValue = value.Value();
-                }
-                catch (Exception exception)
-                {
-                    _logger.LogWarning(exception, $"Error while propagating value for system status '{value.Key}'.");
-                    effectiveValue = null;
-                }
+                    object effectiveValue;
 
-                result[value.Key] = effectiveValue;
+                    try
+                    {
+                        effectiveValue = value.Value();
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.LogWarning(exception, $"Error while propagating value for system status '{value.Key}'.");
+                        effectiveValue = null;
+                    }
+
+                    result[value.Key] = effectiveValue;
+                }
+            }
+
+            lock (_valueProviders)
+            {
+                foreach (var valueProvider in _valueProviders)
+                {
+                    try
+                    {
+                        valueProvider(result);
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.LogWarning(exception, $"Error while propagating values for system status.");
+                    }
+                }
             }
 
             return result;

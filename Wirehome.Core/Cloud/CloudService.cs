@@ -57,6 +57,12 @@ namespace Wirehome.Core.Cloud
 
         public void Start()
         {
+            if (_cancellationTokenSource != null)
+            {
+                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Dispose();
+            }
+
             var cancellationTokenSource = new CancellationTokenSource();
             _cancellationTokenSource = cancellationTokenSource;
             Task.Run(() => ConnectAsync(cancellationTokenSource.Token), cancellationTokenSource.Token).Forget(_logger);

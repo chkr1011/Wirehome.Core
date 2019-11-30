@@ -8,16 +8,10 @@ namespace Wirehome.Core.History.Repository
     public class HistoryValueStreamSerializer
     {
         readonly byte _separator = (byte)' ';
-        readonly byte[] _separatorBuffer;
-
-        readonly byte[] _beginTokenKeyBuffer = Encoding.ASCII.GetBytes("b:");
-        readonly byte[] _endTokenKeyBuffer = Encoding.ASCII.GetBytes("e:");
-        readonly byte[] _valueTokenKeyBuffer = Encoding.ASCII.GetBytes("v:");
-
-        public HistoryValueStreamSerializer()
-        {
-            _separatorBuffer = new byte[] { _separator };
-        }
+        readonly byte[] _separatorBuffer = new byte[] { (byte)' ' };
+        readonly byte[] _beginTokenIdBuffer = new byte[] { (byte)'b' };
+        readonly byte[] _endTokenIdBuffer = new byte[] { (byte)'e' };
+        readonly byte[] _valueTokenIdBuffer = new byte[] { (byte)'v' };
 
         public bool IsSeparator(byte source)
         {
@@ -29,7 +23,6 @@ namespace Wirehome.Core.History.Repository
             var buffer = timeSpan.Hours.ToString("00") +
                 timeSpan.Minutes.ToString("00") +
                 timeSpan.Seconds.ToString("00") +
-                "." +
                 timeSpan.Milliseconds.ToString("000");
 
             return Encoding.ASCII.GetBytes(buffer).AsSpan();
@@ -51,52 +44,39 @@ namespace Wirehome.Core.History.Repository
             return _separatorBuffer.AsSpan();
         }
 
-        public ReadOnlySpan<byte> SerializeBeginTokenKey()
+        public ReadOnlySpan<byte> SerializeBeginTokenId()
         {
-            return _beginTokenKeyBuffer.AsSpan();
+            return _beginTokenIdBuffer.AsSpan();
         }
 
-        public ReadOnlySpan<byte> SerializeEndTokenKey()
+        public ReadOnlySpan<byte> SerializeEndTokenId()
         {
-            return _endTokenKeyBuffer.AsSpan();
+            return _endTokenIdBuffer.AsSpan();
         }
 
-        public ReadOnlySpan<byte> SerializeValueTokenKey()
+        public ReadOnlySpan<byte> SerializeValueTokenId()
         {
-            return _valueTokenKeyBuffer.AsSpan();
+            return _valueTokenIdBuffer.AsSpan();
         }
 
-        public Token ParseToken(ReadOnlySpan<byte> tokenKey, ReadOnlySpan<byte> tokenValue)
+        public Token ParseToken(ReadOnlySpan<byte> tokenId, ReadOnlySpan<byte> tokenValue)
         {
-            if (tokenKey[1] != ':')
+            if (tokenId[0] == _beginTokenIdBuffer[0])
             {
-                var tokenKeyText = Encoding.UTF8.GetString(tokenKey);
-                throw new NotSupportedException($"Token is not supported ({tokenKeyText}).");
+                return new BeginToken(ParseTimeSpan(tokenValue));
             }
 
-            switch (tokenKey[0])
+            if (tokenId[0] == _endTokenIdBuffer[0])
             {
-                case (byte)'b':
-                    {
-                        return new BeginToken(ParseTimeSpan(tokenValue));
-                    }
-
-                case (byte)'v':
-                    {
-                        return new ValueToken(ParseValue(tokenValue));
-                    }
-
-                case (byte)'e':
-                    {
-                        return new EndToken(ParseTimeSpan(tokenValue));
-                    }
-
-                default:
-                    {
-                        var tokenKeyText = Encoding.UTF8.GetString(tokenKey);
-                        throw new NotSupportedException($"Token is not supported ({tokenKeyText}).");
-                    }
+                return new EndToken(ParseTimeSpan(tokenValue));
             }
+
+            if (tokenId[0] == _valueTokenIdBuffer[0])
+            {
+                return new ValueToken(ParseValue(tokenValue));
+            }
+
+            throw new NotSupportedException($"Token ID '{(char)tokenId[0]}' is not supported.");
         }
 
         string ParseValue(ReadOnlySpan<byte> source)
@@ -111,10 +91,10 @@ namespace Wirehome.Core.History.Repository
 
             return new TimeSpan(
                 0,
-                int.Parse(buffer.Slice(0, 2), NumberStyles.Integer),
-                int.Parse(buffer.Slice(2, 2), NumberStyles.Integer),
-                int.Parse(buffer.Slice(4, 2), NumberStyles.Integer),
-                int.Parse(buffer.Slice(7, 3), NumberStyles.Integer));
+                int.Parse(buffer.Slice(0, 2), NumberStyles.None),
+                int.Parse(buffer.Slice(2, 2), NumberStyles.None),
+                int.Parse(buffer.Slice(4, 2), NumberStyles.None),
+                int.Parse(buffer.Slice(6, 3), NumberStyles.None));
         }
     }
 }

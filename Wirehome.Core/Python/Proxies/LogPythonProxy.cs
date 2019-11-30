@@ -18,7 +18,12 @@ namespace Wirehome.Core.Python.Proxies
         }
 
         public string ModuleName { get; } = "log";
-        
+
+        public void trace(object message)
+        {
+            _logger.Log(LogLevel.Trace, Convert.ToString(message, CultureInfo.InvariantCulture));
+        }
+
         public void debug(object message)
         {
             _logger.Log(LogLevel.Debug, Convert.ToString(message, CultureInfo.InvariantCulture));

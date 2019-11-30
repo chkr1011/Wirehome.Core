@@ -17,7 +17,7 @@ namespace Wirehome.Core.Python.Models
             StackTrace = exception.StackTrace;
         }
 
-        public string Type { get; }
+        //public string Type { get; }
 
         public string ExceptionType { get; }
 

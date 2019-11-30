@@ -68,9 +68,7 @@ namespace Wirehome.Core.Python
 
             var paths = new List<string>
             {
-                Path.Combine(storagePaths.DataPath, "PythonLibraries"),
-                "/usr/lib/python2.7",
-                @"C:\Python27\Lib"
+                Path.Combine(storagePaths.DataPath, "PythonLibraries")
             };
 
             AddSearchPaths(scriptEngine, paths);

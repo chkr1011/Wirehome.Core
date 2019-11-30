@@ -14,6 +14,11 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         public event EventHandler<GpioAdapterStateChangedEventArgs> GpioStateChanged;
 
+        public void NotifyGpioStateChanged(int gpioId, GpioState oldState, GpioState newState)
+        {
+            GpioStateChanged?.Invoke(this, new GpioAdapterStateChangedEventArgs(gpioId, oldState, newState));
+        }
+
         public void SetDirection(int gpio, GpioDirection direction)
         {
             //_logger.Log(LogLevel.Information, $"FAKE SetDirection: GPIO = {gpio}; Direction = {direction}");
@@ -21,7 +26,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         public void WriteState(int gpio, GpioState state)
         {
-            //_logger.Log(LogLevel.Information, $"FAKE SetState: GPIO = {gpio}; State = {state}");
+            //_logger.Log(LogLevel.Information, $"FAKE SetState: GPIO = {gpio}; State = {state}");            
         }
 
         public GpioState ReadState(int gpio)

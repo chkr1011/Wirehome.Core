@@ -16,7 +16,7 @@ namespace Wirehome.Core.Hardware.MQTT
         }
 
         public event EventHandler<MqttNetLogMessagePublishedEventArgs> LogMessagePublished;
-
+                
         public IMqttNetChildLogger CreateChildLogger(string source = null)
         {
             lock (_childLoggers)
@@ -52,7 +52,7 @@ namespace Wirehome.Core.Hardware.MQTT
                 newLogLevel = LogLevel.Trace;
             }
 
-            _logger.Log(newLogLevel, exception, message, parameters);
+            _logger.Log(newLogLevel, exception, message, parameters);            
         }
     }
 }

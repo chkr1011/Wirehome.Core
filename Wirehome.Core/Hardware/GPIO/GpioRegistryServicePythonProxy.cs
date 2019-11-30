@@ -9,12 +9,12 @@ using Wirehome.Core.Python.Exceptions;
 
 namespace Wirehome.Core.Hardware.GPIO
 {
-    public class GpioRegistryServicePythonProxy : IInjectedPythonProxy
+    public class DeviceRegistryServicePythonProxy : IInjectedPythonProxy
     {
         private readonly ILogger _logger;
         private readonly GpioRegistryService _gpioRegistryService;
 
-        public GpioRegistryServicePythonProxy(GpioRegistryService gpioRegistryService, ILogger<GpioRegistryServicePythonProxy> logger)
+        public DeviceRegistryServicePythonProxy(GpioRegistryService gpioRegistryService, ILogger<DeviceRegistryServicePythonProxy> logger)
         {
             _gpioRegistryService = gpioRegistryService ?? throw new ArgumentNullException(nameof(gpioRegistryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

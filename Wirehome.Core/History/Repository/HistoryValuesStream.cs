@@ -139,21 +139,28 @@ namespace Wirehome.Core.History.Repository
                
         public async Task WriteTokenAsync(Token token, CancellationToken cancellationToken = default)
         {
+            // [    Token    ]
+            // [i][content][s]
+            //
+            // i = ID (1 byte)
+            // content = (n bytes)
+            // s = Separator (1 byte)
+
             using (var buffer = new MemoryStream(TokenBufferSize))
             {
                 if (token is BeginToken beginToken)
                 {
-                    buffer.Write(_serializer.SerializeBeginTokenKey());
+                    buffer.Write(_serializer.SerializeBeginTokenId());
                     buffer.Write(_serializer.SerializeTimeSpan(beginToken.Value));
                 }
                 else if (token is ValueToken valueToken)
                 {
-                    buffer.Write(_serializer.SerializeValueTokenKey());
+                    buffer.Write(_serializer.SerializeValueTokenId());
                     buffer.Write(_serializer.SerializeValue(valueToken.Value));
                 }
                 else if (token is EndToken endToken)
                 {
-                    buffer.Write(_serializer.SerializeEndTokenKey());
+                    buffer.Write(_serializer.SerializeEndTokenId());
                     buffer.Write(_serializer.SerializeTimeSpan(endToken.Value));
                 }
                 else
@@ -174,8 +181,8 @@ namespace Wirehome.Core.History.Repository
 
         Token ParseToken(ReadOnlySpan<byte> source)
         {
-            var tokenKey = source.Slice(0, 2);
-            var tokenValue = source.Slice(2, source.Length - 2);
+            var tokenKey = source.Slice(0, 1);
+            var tokenValue = source.Slice(1, source.Length - 1);
 
             return _serializer.ParseToken(tokenKey, tokenValue);
         }

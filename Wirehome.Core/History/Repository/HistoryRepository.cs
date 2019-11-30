@@ -11,9 +11,11 @@ namespace Wirehome.Core.History.Repository
 {
     public partial class HistoryRepository
     {
-        private readonly AsyncLock _lock = new AsyncLock();
-        private readonly StorageService _storageService;
-        private readonly ComponentRegistryService _componentRegistryService;
+        const string ValuesFilename = "Values";
+
+        readonly AsyncLock _lock = new AsyncLock();
+        readonly StorageService _storageService;
+        readonly ComponentRegistryService _componentRegistryService;
 
         public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
 
@@ -35,7 +37,7 @@ namespace Wirehome.Core.History.Repository
 
                 foreach (var dayPath in dayPaths)
                 {
-                    var path = Path.Combine(rootPath, dayPath.ToString(), "Values");
+                    var path = Path.Combine(rootPath, dayPath.Path, ValuesFilename);
                     if (!File.Exists(path))
                     {
                         continue;
@@ -97,22 +99,18 @@ namespace Wirehome.Core.History.Repository
             if (componentStatusValue == null) throw new ArgumentNullException(nameof(componentStatusValue));
 
             await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
-            
-            string path = null;
             try
             {
-                path = Path.Combine(
+                var path = Path.Combine(
                     BuildComponentStatusPath(componentStatusValue.ComponentUid, componentStatusValue.StatusUid),
-                    componentStatusValue.Timestamp.Year.ToString(),
-                    componentStatusValue.Timestamp.Month.ToString().PadLeft(2, '0'),
-                    componentStatusValue.Timestamp.Day.ToString().PadLeft(2, '0'));
+                    BuildDayPath(componentStatusValue.Timestamp));
 
                 if (!Directory.Exists(path))
                 {
                     Directory.CreateDirectory(path);
                 }
 
-                path = Path.Combine(path, "Values");
+                path = Path.Combine(path, ValuesFilename);
 
                 using (var valuesStream = new HistoryValuesStream(new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
                 {
@@ -123,21 +121,23 @@ namespace Wirehome.Core.History.Repository
                     if (await valuesStream.MovePreviousAsync(cancellationToken).ConfigureAwait(false))
                     {
                         var endToken = (EndToken)valuesStream.CurrentToken;
+                        var valueIsExpired = componentStatusValue.Timestamp.TimeOfDay - endToken.Value > ComponentStatusOutdatedTimeout;
 
-                        if (componentStatusValue.Timestamp.TimeOfDay - endToken.Value < ComponentStatusOutdatedTimeout)
+                        if (!valueIsExpired)
                         {
-                            // Update value is not outdated (the time difference is not exceeded).
                             await valuesStream.MovePreviousAsync(cancellationToken).ConfigureAwait(false);
-                            var valueToken = valuesStream.CurrentToken as ValueToken;
+                            var valueToken = (ValueToken)valuesStream.CurrentToken;
                             await valuesStream.MoveNextAsync().ConfigureAwait(false); // Move back to end token.
 
                             if (string.Equals(valueToken.Value, componentStatusValue.Value, StringComparison.Ordinal))
                             {
-                                // The value is still the same so we patch the end date only.
-                                await valuesStream.WriteTokenAsync(new EndToken(componentStatusValue.Timestamp.TimeOfDay), cancellationToken).ConfigureAwait(false);
-
                                 createNewValue = false;
                             }
+
+                            // The end date is moved to the same value (-1 ms) as the new beginning value to fill small gaps.
+                            // The 1 ms is removed to avoid wrong comparisons when begin is exactly the same as end (which is the correct value?).
+                            var newEndTimestamp = componentStatusValue.Timestamp.TimeOfDay.Subtract(TimeSpan.FromMilliseconds(1));
+                            await valuesStream.WriteTokenAsync(new EndToken(newEndTimestamp), cancellationToken).ConfigureAwait(false);
 
                             await valuesStream.MoveNextAsync().ConfigureAwait(false);
                         }
@@ -150,14 +150,6 @@ namespace Wirehome.Core.History.Repository
                         await valuesStream.WriteTokenAsync(new EndToken(componentStatusValue.Timestamp.TimeOfDay), cancellationToken).ConfigureAwait(false);
                     }
                 }
-            }
-            catch (Exception exception)
-            {
-                // TODO: Implement automatic file repair and delete etc. when not possible.
-
-                File.Delete(path);
-
-                throw;
             }
             finally
             {
@@ -239,6 +231,14 @@ namespace Wirehome.Core.History.Repository
                 _lock.Exit();
             }
         }
+        
+        static string BuildDayPath(DateTime date)
+        {
+            return Path.Combine(
+                date.Year.ToString(),
+                date.Month.ToString("00"),
+                date.Day.ToString("00"));
+        }
 
         void TryDeleteEntireDirectory(string path)
         {
@@ -271,7 +271,8 @@ namespace Wirehome.Core.History.Repository
                 {
                     Year = begin.Year,
                     Month = begin.Month,
-                    Day = begin.Day
+                    Day = begin.Day,
+                    Path = BuildDayPath(begin)
                 });
 
                 begin = begin.AddDays(1);

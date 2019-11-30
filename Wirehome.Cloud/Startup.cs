@@ -69,7 +69,7 @@ namespace Wirehome.Cloud
         // ReSharper disable once UnusedMember.Global
         public void Configure(
             IApplicationBuilder app,
-            IHostingEnvironment env,
+            IWebHostEnvironment env,
             AuthorizationService authorizationService,
             DeviceConnectorService deviceConnectorService)
         {
@@ -78,7 +78,7 @@ namespace Wirehome.Cloud
             if (authorizationService == null) throw new ArgumentNullException(nameof(authorizationService));
             if (deviceConnectorService == null) throw new ArgumentNullException(nameof(deviceConnectorService));
 
-            if (env.IsDevelopment())
+            if (env.EnvironmentName == "Development")
             {
                 app.UseDeveloperExceptionPage();
             }
@@ -113,10 +113,7 @@ namespace Wirehome.Cloud
 
         private static void ConfigureMvc(IApplicationBuilder app)
         {
-            app.UseMvc(config =>
-            {
-                config.MapRoute("default", "cloud/{controller}/{action=Index}/{id?}", null, null, null);
-            });
+            app.UseRouting();
         }
 
         private static void ConfigureConnector(IApplicationBuilder app, DeviceConnectorService connectorService, AuthorizationService authorizationService)
@@ -166,7 +163,6 @@ namespace Wirehome.Cloud
         {
             services.AddSwaggerGen(c =>
             {
-                c.DescribeAllEnumsAsStrings();
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "Wirehome.Cloud API",

@@ -54,22 +54,22 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         [HttpPost]
         [Route("/api/v1/mqtt/imports/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostImport(string uid, [FromBody] MqttImportTopicParameters parameters)
+        public Task PostImport(string uid, [FromBody] MqttImportTopicParameters parameters)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            _mqttService.StartTopicImport(uid, parameters);
+            return _mqttService.StartTopicImport(uid, parameters);
         }
 
         [HttpDelete]
         [Route("/api/v1/mqtt/imports/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void DeleteImport(string uid)
+        public Task DeleteImport(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _mqttService.StopTopicImport(uid);
+            return _mqttService.StopTopicImport(uid);
         }
 
         [HttpGet]

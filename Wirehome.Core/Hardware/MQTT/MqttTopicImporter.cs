@@ -11,18 +11,15 @@ namespace Wirehome.Core.Hardware.MQTT
     {
         private readonly MqttImportTopicParameters _parameters;
         private readonly MqttService _mqttService;
-        private readonly bool _enableMqttLogging;
         private readonly ILogger _logger;
 
         private IManagedMqttClient _mqttClient;
 
-        public MqttTopicImporter(MqttImportTopicParameters parameters, MqttService mqttService, bool enableMqttLogging, ILogger logger)
+        public MqttTopicImporter(MqttImportTopicParameters parameters, MqttService mqttService, ILogger logger)
         {
             _parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
             _mqttService = mqttService ?? throw new ArgumentNullException(nameof(mqttService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            _enableMqttLogging = enableMqttLogging;
         }
 
         public async Task Start()
@@ -45,7 +42,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             var options = optionsBuilder.Build();
 
-            if (_enableMqttLogging)
+            if (_mqttService.IsLowLevelMqttLoggingEnabled)
             {
                 _mqttClient = new MqttFactory().CreateManagedMqttClient(new LoggerAdapter(_logger));
             }
