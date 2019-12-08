@@ -9,13 +9,13 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.History.Repository
 {
-    public partial class HistoryRepository
+    public class HistoryRepository
     {
-        const string ValuesFilename = "Values";
+        private const string ValuesFilename = "Values";
 
-        readonly AsyncLock _lock = new AsyncLock();
-        readonly StorageService _storageService;
-        readonly ComponentRegistryService _componentRegistryService;
+        private readonly AsyncLock _lock = new AsyncLock();
+        private readonly StorageService _storageService;
+        private readonly ComponentRegistryService _componentRegistryService;
 
         public TimeSpan ComponentStatusOutdatedTimeout { get; set; } = TimeSpan.FromMinutes(6);
 
@@ -92,6 +92,71 @@ namespace Wirehome.Core.History.Repository
             }
 
             return result;
+        }
+
+        public async Task Update(HistoryUpdate update, CancellationToken cancellationToken)
+        {
+            if (update is null) throw new ArgumentNullException(nameof(update));
+
+            await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var path = Path.Combine(
+                    _storageService.DataPath,
+                    "History",
+                    update.Path,
+                    BuildDayPath(update.Timestamp));
+
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+
+                path = Path.Combine(path, ValuesFilename);
+
+                using (var valuesStream = new HistoryValuesStream(new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
+                {
+                    valuesStream.SeekEnd();
+
+                    var createNewValue = true;
+
+                    if (await valuesStream.MovePreviousAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        var endToken = (EndToken)valuesStream.CurrentToken;
+                        var valueIsExpired = update.Timestamp.TimeOfDay - endToken.Value > ComponentStatusOutdatedTimeout;
+
+                        if (!valueIsExpired)
+                        {
+                            await valuesStream.MovePreviousAsync(cancellationToken).ConfigureAwait(false);
+                            var valueToken = (ValueToken)valuesStream.CurrentToken;
+                            await valuesStream.MoveNextAsync().ConfigureAwait(false); // Move back to end token.
+
+                            if (string.Equals(valueToken.Value, update.Value, StringComparison.Ordinal))
+                            {
+                                createNewValue = false;
+                            }
+
+                            // The end date is moved to the same value (-1 ms) as the new beginning value to fill small gaps.
+                            // The 1 ms is removed to avoid wrong comparisons when begin is exactly the same as end (which is the correct value?).
+                            var newEndTimestamp = update.Timestamp.TimeOfDay.Subtract(TimeSpan.FromMilliseconds(1));
+                            await valuesStream.WriteTokenAsync(new EndToken(newEndTimestamp), cancellationToken).ConfigureAwait(false);
+
+                            await valuesStream.MoveNextAsync().ConfigureAwait(false);
+                        }
+                    }
+
+                    if (createNewValue)
+                    {
+                        await valuesStream.WriteTokenAsync(new BeginToken(update.Timestamp.TimeOfDay), cancellationToken).ConfigureAwait(false);
+                        await valuesStream.WriteTokenAsync(new ValueToken(update.Value), cancellationToken).ConfigureAwait(false);
+                        await valuesStream.WriteTokenAsync(new EndToken(update.Timestamp.TimeOfDay), cancellationToken).ConfigureAwait(false);
+                    }
+                }
+            }
+            finally
+            {
+                _lock.Exit();
+            }
         }
 
         public async Task UpdateComponentStatusValueAsync(ComponentStatusValue componentStatusValue, CancellationToken cancellationToken)
@@ -231,8 +296,8 @@ namespace Wirehome.Core.History.Repository
                 _lock.Exit();
             }
         }
-        
-        static string BuildDayPath(DateTime date)
+
+        private static string BuildDayPath(DateTime date)
         {
             return Path.Combine(
                 date.Year.ToString(),
@@ -240,7 +305,7 @@ namespace Wirehome.Core.History.Repository
                 date.Day.ToString("00"));
         }
 
-        void TryDeleteEntireDirectory(string path)
+        private void TryDeleteEntireDirectory(string path)
         {
             try
             {
@@ -251,17 +316,17 @@ namespace Wirehome.Core.History.Repository
             }
         }
 
-        string BuildComponentPath(string componentUid)
+        private string BuildComponentPath(string componentUid)
         {
             return Path.Combine(_storageService.DataPath, "Components", componentUid, "History");
         }
 
-        string BuildComponentStatusPath(string componentUid, string statusUid)
+        private string BuildComponentStatusPath(string componentUid, string statusUid)
         {
             return Path.Combine(BuildComponentPath(componentUid), "Status", statusUid);
         }
 
-        List<DayPath> BuildDayPaths(DateTime begin, DateTime end)
+        private List<DayPath> BuildDayPaths(DateTime begin, DateTime end)
         {
             var paths = new List<DayPath>();
 
@@ -281,7 +346,7 @@ namespace Wirehome.Core.History.Repository
             return paths;
         }
 
-        static long GetDirectorySize(string path)
+        private static long GetDirectorySize(string path)
         {
             if (!Directory.Exists(path))
             {

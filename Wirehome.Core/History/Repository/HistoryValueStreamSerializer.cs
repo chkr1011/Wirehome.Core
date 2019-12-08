@@ -7,11 +7,11 @@ namespace Wirehome.Core.History.Repository
 {
     public class HistoryValueStreamSerializer
     {
-        readonly byte _separator = (byte)' ';
-        readonly byte[] _separatorBuffer = new byte[] { (byte)' ' };
-        readonly byte[] _beginTokenIdBuffer = new byte[] { (byte)'b' };
-        readonly byte[] _endTokenIdBuffer = new byte[] { (byte)'e' };
-        readonly byte[] _valueTokenIdBuffer = new byte[] { (byte)'v' };
+        private readonly byte _separator = (byte)' ';
+        private readonly byte[] _separatorBuffer = new byte[] { (byte)' ' };
+        private readonly byte[] _beginTokenIdBuffer = new byte[] { (byte)'b' };
+        private readonly byte[] _endTokenIdBuffer = new byte[] { (byte)'e' };
+        private readonly byte[] _valueTokenIdBuffer = new byte[] { (byte)'v' };
 
         public bool IsSeparator(byte source)
         {
@@ -79,13 +79,13 @@ namespace Wirehome.Core.History.Repository
             throw new NotSupportedException($"Token ID '{(char)tokenId[0]}' is not supported.");
         }
 
-        string ParseValue(ReadOnlySpan<byte> source)
+        private string ParseValue(ReadOnlySpan<byte> source)
         {
             var buffer = Encoding.UTF8.GetString(source);
             return HttpUtility.UrlDecode(buffer);
         }
 
-        TimeSpan ParseTimeSpan(ReadOnlySpan<byte> source)
+        private TimeSpan ParseTimeSpan(ReadOnlySpan<byte> source)
         {
             var buffer = Encoding.ASCII.GetString(source).AsSpan();
 

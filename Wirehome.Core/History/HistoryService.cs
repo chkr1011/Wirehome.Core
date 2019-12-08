@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 using Wirehome.Core.Components;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.History.Extract;
 using Wirehome.Core.History.Repository;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
@@ -61,7 +61,7 @@ namespace Wirehome.Core.History
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("history.component_status.pending_updates_count", _pendingComponentStatusValues.Count);
-            
+
             systemStatusService.Set("history.component_status.update_rate", () => _updateRateCounter.Count);
             systemStatusService.Set("history.component_status.updates_count", () => _updatesCount);
             systemStatusService.Set("history.component_status.last_update_duration", () => _lastUpdateDuration);
@@ -72,15 +72,14 @@ namespace Wirehome.Core.History
 
         public void Start()
         {
-
             _storageService.TryReadOrCreate(out _options, HistoryServiceOptions.Filename);
             if (!_options.IsEnabled)
             {
                 _logger.LogInformation("History is disabled.");
                 return;
             }
-        
-            // Give the pulling code some time to complete before declaring an entity 
+
+            // Give the pulling code some time to complete before declaring an entity
             // as outdated. 1.25 might be enough additional time.
             _repository.ComponentStatusOutdatedTimeout = _options.ComponentStatusPullInterval * 1.25;
 
@@ -93,6 +92,11 @@ namespace Wirehome.Core.History
             Task.Run(
                 () => TryUpdateComponentStatusValues(_systemCancellationToken.Token),
                 _systemCancellationToken.Token);
+        }
+
+        public Task Publish(HistoryUpdate update, CancellationToken cancellationToken)
+        {
+            return _repository.Update(update, cancellationToken);
         }
 
         public Task<HistoryExtract> BuildHistoryExtractAsync(string componentUid, string statusUid, DateTime rangeStart, DateTime rangeEnd, TimeSpan? interval, HistoryExtractDataType dataType, int maxRowCount, CancellationToken cancellationToken)

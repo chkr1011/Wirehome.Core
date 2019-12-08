@@ -10,11 +10,11 @@ using Wirehome.Core.ServiceHost.Exceptions;
 namespace Wirehome.Core.HTTP.Controllers
 {
     [ApiController]
-    public class ServiceHostController : Controller
+    public class ServicesController : Controller
     {
         private readonly ServiceHostService _serviceHostService;
 
-        public ServiceHostController(ServiceHostService serviceHostService)
+        public ServicesController(ServiceHostService serviceHostService)
         {
             _serviceHostService = serviceHostService ?? throw new ArgumentNullException(nameof(serviceHostService));
         }

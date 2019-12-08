@@ -185,7 +185,7 @@ namespace Wirehome.Core.History.Extract
 
                 // Use one second to allow calculation of a proper average. There is is maybe only one
                 // or two real ranges with a different value. So the "larger" range must have more impact
-                // than the "smaller" one. One way is to calculate percentage first or generate lots of 
+                // than the "smaller" one. One way is to calculate percentage first or generate lots of
                 // of small second based values.
                 rangeStart = rangeStart.AddSeconds(1);
             }

@@ -55,5 +55,13 @@ namespace Wirehome.Core.Python.Proxies
                 ["message"] = message
             };
         }
+
+        public PythonDictionary disabled()
+        {
+            return new PythonDictionary
+            {
+                ["type"] = "exception.disabled"
+            };
+        }
     }
 }
