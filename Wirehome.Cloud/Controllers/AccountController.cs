@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Wirehome.Cloud.Services.Authorization;
 
@@ -19,18 +18,21 @@ namespace Wirehome.Cloud.Controllers
             _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
         }
 
+        [Route("Cloud/Account")]
         [HttpGet]
         public IActionResult Index()
         {
             return View(nameof(Index), new LoginModel());
         }
 
+        [Route("Cloud/Account/Login")]
         [HttpGet]
         public IActionResult Login(string returnUrl)
         {
             return View(nameof(Index), new LoginModel {ReturnUrl = returnUrl});
         }
 
+        [Route("Cloud/Account/Logout")]
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
@@ -39,26 +41,13 @@ namespace Wirehome.Cloud.Controllers
             return Redirect(nameof(Index));
         }
 
+        [Route("Cloud/Account/Login")]
         [HttpPost]
         public async Task<IActionResult> Login(LoginModel model)
         {
             try
             {
-                var claims = await _authorizationService.AuthorizeAsync(model.IdentityUid, model.Password).ConfigureAwait(false);
-
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-                var authenticationProperties = new AuthenticationProperties
-                {
-                    AllowRefresh = true,
-                    IsPersistent = true,
-                    IssuedUtc = DateTimeOffset.UtcNow
-                };
-
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    new ClaimsPrincipal(claimsIdentity),
-                    authenticationProperties);
+                await _authorizationService.Authorize(HttpContext, model.IdentityUid, model.Password).ConfigureAwait(false);
             }
             catch (UnauthorizedAccessException)
             {

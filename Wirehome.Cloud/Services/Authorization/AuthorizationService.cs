@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -19,7 +21,7 @@ namespace Wirehome.Cloud.Services.Authorization
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
         }
 
-        public async Task<DeviceAuthorizationContext> AuthorizeDeviceAsync(HttpContext httpContext)
+        public async Task<DeviceAuthorizationContext> AuthorizeDevice(HttpContext httpContext)
         {
             if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 
@@ -30,11 +32,29 @@ namespace Wirehome.Cloud.Services.Authorization
             var identityUid = identityUidHeaderValue.ToString().ToLowerInvariant();
             var channelUid = channelUidHeaderValue.ToString().ToLowerInvariant();
 
-            await AuthorizeAsync(identityUid, password).ConfigureAwait(false);
+            await AuthorizeInternal(identityUid, password).ConfigureAwait(false);
             return new DeviceAuthorizationContext(identityUid, channelUid);
         }
 
-        public async Task<List<Claim>> AuthorizeAsync(string identityUid, string password)
+        public async Task Authorize(HttpContext httpContext, string identityUid, string password)
+        {
+            var claims = await AuthorizeInternal(identityUid, password).ConfigureAwait(false);
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var authenticationProperties = new AuthenticationProperties
+            {
+                AllowRefresh = true,
+                IsPersistent = true,
+                IssuedUtc = DateTimeOffset.UtcNow
+            };
+
+            await httpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authenticationProperties).ConfigureAwait(false);
+        }
+
+        async Task<List<Claim>> AuthorizeInternal(string identityUid, string password)
         {
             if (string.IsNullOrEmpty(identityUid) || string.IsNullOrEmpty(password))
             {

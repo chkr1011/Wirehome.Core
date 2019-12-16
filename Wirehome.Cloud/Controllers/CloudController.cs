@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 using Wirehome.Cloud.Services.DeviceConnector;
 using Wirehome.Core.Cloud.Protocol;
@@ -14,10 +15,12 @@ namespace Wirehome.Cloud.Controllers
     public class CloudController : Controller
     {
         private readonly DeviceConnectorService _deviceConnectorService;
-        
-        public CloudController(DeviceConnectorService deviceConnectorService)
+        private readonly CloudMessageFactory _cloudMessageFactory;
+
+        public CloudController(DeviceConnectorService deviceConnectorService, CloudMessageFactory cloudMessageFactory)
         {
             _deviceConnectorService = deviceConnectorService ?? throw new ArgumentNullException(nameof(deviceConnectorService));
+            _cloudMessageFactory = cloudMessageFactory ?? throw new ArgumentNullException(nameof(cloudMessageFactory));
         }
         
         [HttpGet]
@@ -69,17 +72,16 @@ namespace Wirehome.Cloud.Controllers
 
             var request = new CloudMessage
             {
-                Type = CloudMessageType.Raw
+                Type = CloudMessageType.Raw,
+                Payload = Encoding.UTF8.GetBytes(content.ToString())
             };
 
-            request.SetContent(content);
-            
             var deviceSessionIdentifier = HttpContext.GetDeviceSessionIdentifier();
             var responseMessage = await _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted).ConfigureAwait(false);
 
             return new ContentResult
             {
-                Content = responseMessage.GetContent<string>(),
+                Content = Encoding.UTF8.GetString(responseMessage.Payload),
                 ContentType = "application/json"
             };
         }

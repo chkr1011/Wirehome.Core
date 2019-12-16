@@ -1,59 +1,36 @@
 ﻿using MsgPack.Serialization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Text;
 
 namespace Wirehome.Core.Cloud.Protocol
 {
-    public static class CloudMessageExtensions
+    public class CloudMessageSerializer
     {
-        public static void SetContent<T>(this CloudMessage cloudMessage, T value)
+        public byte[] Pack<TValue>(TValue value)
         {
-            if (cloudMessage == null) throw new ArgumentNullException(nameof(cloudMessage));
+            if (value == null) return null;
 
-            if (value == null)
-            {
-                cloudMessage.Content = null;
-            }
+            //if (value is JToken token)
+            //{
+            //    var json = token.ToString(Formatting.None);
+            //    return MessagePackSerializer.Get<string>().PackSingleObject(json);
+            //}
 
-            if (value is JToken token)
-            {
-                cloudMessage.Content = new CloudMessageContent
-                {
-                    Data = MessagePackSerializer.Get<string>().PackSingleObject(token.ToString(Formatting.None))
-                };
-            }
-            else
-            {
-                cloudMessage.Content = new CloudMessageContent
-                {
-                    Data = MessagePackSerializer.Get<T>().PackSingleObject(value)
-                };
-            }
+            return MessagePackSerializer.Get<TValue>().PackSingleObject(value);
         }
 
-        public static T GetContent<T>(this CloudMessage cloudMessage)
+        public TValue Unpack<TValue>(byte[] data)
         {
-            if (cloudMessage == null) throw new ArgumentNullException(nameof(cloudMessage));
-
-            if (cloudMessage.Content?.Data == null)
+            if (data?.Length == 0)
             {
                 return default;
             }
+                       
+            //if (typeof(TValue) == typeof(JToken))
+            //{
+            //    var json = MessagePackSerializer.Get<string>().UnpackSingleObject(cloudMessage.Content.Data.Array);
+            //    return (TValue)(object)JToken.Parse(json);
+            //}
 
-            if (typeof(T) == typeof(string))
-            {
-                return (T)(object)Encoding.UTF8.GetString(cloudMessage.Content.Data);
-            }
-
-            if (typeof(T) == typeof(JToken))
-            {
-                var json = MessagePackSerializer.Get<string>().UnpackSingleObject(cloudMessage.Content.Data.Array);
-                return (T)(object)JToken.Parse(json);
-            }
-
-            return MessagePackSerializer.Get<T>().UnpackSingleObject(cloudMessage.Content.Data.Array);
+            return MessagePackSerializer.Get<TValue>().UnpackSingleObject(data);
         }
     }
 }

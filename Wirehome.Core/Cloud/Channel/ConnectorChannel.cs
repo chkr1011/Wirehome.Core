@@ -15,7 +15,7 @@ namespace Wirehome.Core.Cloud.Channel
     {
         private const int MessageContentCompressionThreshold = 4096;
 
-        private readonly MessagePackSerializer<CloudMessage> _serializer = MessagePackSerializer.Get<CloudMessage>();
+        private readonly MessagePackSerializer<TransportCloudMessage> _serializer = MessagePackSerializer.Get<TransportCloudMessage>();
 
         private readonly ArraySegment<byte> _receiveBuffer = WebSocket.CreateServerBuffer(4096);
         private readonly AsyncLock _lock = new AsyncLock();
@@ -42,19 +42,14 @@ namespace Wirehome.Core.Cloud.Channel
 
         public bool IsConnected => _webSocket.State == WebSocketState.Open || _webSocket.State == WebSocketState.CloseReceived;
 
-        public async Task SendMessageAsync(CloudMessage message, CancellationToken cancellationToken)
+        public async Task SendAsync(CloudMessage cloudMessage, CancellationToken cancellationToken)
         {
-            if (message == null) throw new ArgumentNullException(nameof(message));
+            if (cloudMessage == null) throw new ArgumentNullException(nameof(cloudMessage));
 
             try
             {
-                if (message.Content?.Data.Count > MessageContentCompressionThreshold)
-                {
-                    message.Content.IsCompressed = true;
-                    message.Content.Data = Compress(message.Content.Data);
-                }
-
-                var sendBuffer = await _serializer.PackSingleObjectAsBytesAsync(message, cancellationToken).ConfigureAwait(false);
+                var transportCloudMessage = CreateTransportCloudMessage(cloudMessage);
+                var sendBuffer = await _serializer.PackSingleObjectAsBytesAsync(transportCloudMessage, cancellationToken).ConfigureAwait(false);
 
                 await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
                 try
@@ -78,11 +73,11 @@ namespace Wirehome.Core.Cloud.Channel
             }
         }
 
-        public async Task<ConnectorChannelReceiveResult> ReceiveMessageAsync(CancellationToken cancellationToken)
+        public async Task<ConnectorChannelReceiveResult> ReceiveAsync(CancellationToken cancellationToken)
         {
             try
             {
-                var buffer = await ReceiveMessageInternalAsync(cancellationToken).ConfigureAwait(false);
+                var buffer = await ReceiveInternalAsync(cancellationToken).ConfigureAwait(false);
                 if (buffer == null)
                 {
                     return new ConnectorChannelReceiveResult(null, true);
@@ -141,7 +136,7 @@ namespace Wirehome.Core.Cloud.Channel
             _statisticsReset = DateTime.UtcNow;
         }
 
-        private async Task<ArraySegment<byte>> ReceiveMessageInternalAsync(CancellationToken cancellationToken)
+        async Task<ArraySegment<byte>> ReceiveInternalAsync(CancellationToken cancellationToken)
         {
             if (_webSocket.State != WebSocketState.Open && _webSocket.State != WebSocketState.CloseReceived)
             {
@@ -183,7 +178,7 @@ namespace Wirehome.Core.Cloud.Channel
             }
         }
 
-        private async Task<CloudMessage> TryParseCloudMessageAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
+        async Task<CloudMessage> TryParseCloudMessageAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
             try
             {
@@ -191,14 +186,19 @@ namespace Wirehome.Core.Cloud.Channel
                 // not support an ArraySegment.
                 using (var memoryStream = new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, false))
                 {
-                    var cloudMessage = await _serializer.UnpackAsync(memoryStream, cancellationToken).ConfigureAwait(false);
-                    if (cloudMessage.Content?.IsCompressed == true)
+                    var transportCloudMessage = await _serializer.UnpackAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+                    if (transportCloudMessage.PayloadIsCompressed == true)
                     {
-                        cloudMessage.Content.IsCompressed = false;
-                        cloudMessage.Content.Data = Decompress(cloudMessage.Content.Data);
+                        transportCloudMessage.Payload = Decompress(transportCloudMessage.Payload);
                     }
 
-                    return cloudMessage;
+                    return new CloudMessage
+                    {
+                        Type = transportCloudMessage.Type,
+                        CorrelationId = transportCloudMessage.CorrelationId,
+                        Payload = transportCloudMessage.Payload,
+                        Properties = transportCloudMessage.Properties
+                    };
                 }
             }
             catch (Exception exception)
@@ -211,32 +211,52 @@ namespace Wirehome.Core.Cloud.Channel
             }
         }
 
-        private static ArraySegment<byte> Compress(ArraySegment<byte> input)
+        TransportCloudMessage CreateTransportCloudMessage(CloudMessage cloudMessage)
         {
-            using (var outputBuffer = new MemoryStream(input.Count / 2))
+            var transportCloudMessage = new TransportCloudMessage()
             {
-                using (var inputBuffer = new MemoryStream(input.Array, input.Offset, input.Count))
+                Type = cloudMessage.Type,
+                CorrelationId = cloudMessage.CorrelationId,
+                Payload = cloudMessage.Payload,
+                PayloadIsCompressed = false,
+                Properties = cloudMessage.Properties
+            };
+
+            if (cloudMessage.Payload?.Length > MessageContentCompressionThreshold)
+            {
+                transportCloudMessage.PayloadIsCompressed = true;
+                transportCloudMessage.Payload = Compress(cloudMessage.Payload);
+            }
+
+            return transportCloudMessage;
+        }
+
+        static byte[] Compress(byte[] data)
+        {
+            using (var outputBuffer = new MemoryStream(data.Length / 2))
+            {
+                using (var inputBuffer = new MemoryStream(data))
                 using (var compressor = new BrotliStream(outputBuffer, CompressionMode.Compress, true))
                 {
                     inputBuffer.CopyTo(compressor);
                 }
 
-                return new ArraySegment<byte>(outputBuffer.GetBuffer(), 0, (int)outputBuffer.Length);
+                return outputBuffer.ToArray();
             }
         }
 
-        private static ArraySegment<byte> Decompress(ArraySegment<byte> data)
+        static byte[] Decompress(byte[] data)
         {
-            using (var outputBuffer = new MemoryStream(data.Count * 2))
+            using (var outputBuffer = new MemoryStream(data.Length * 2))
             {
-                using (var inputBuffer = new MemoryStream(data.Array, data.Offset, data.Count))
+                using (var inputBuffer = new MemoryStream(data))
                 using (var decompressor = new BrotliStream(inputBuffer, CompressionMode.Decompress, false))
                 {
                     decompressor.CopyTo(outputBuffer);
                 }
 
                 outputBuffer.Position = 0;
-                return new ArraySegment<byte>(outputBuffer.GetBuffer(), 0, (int)outputBuffer.Length);
+                return outputBuffer.ToArray();
             }
         }
     }

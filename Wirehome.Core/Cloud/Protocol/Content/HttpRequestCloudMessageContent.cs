@@ -1,9 +1,9 @@
 ﻿using MsgPack.Serialization;
 using System.Collections.Generic;
 
-namespace Wirehome.Core.Cloud.Protocol
+namespace Wirehome.Core.Cloud.Protocol.Content
 {
-    public class HttpRequestMessageContent
+    public class HttpRequestCloudMessageContent
     {
         [MessagePackMember(0)]
         public string Method { get; set; }

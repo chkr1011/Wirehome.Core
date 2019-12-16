@@ -10,6 +10,8 @@ namespace Wirehome.Cloud.Services.Repository.Models
 
         public bool IsAdmin { get; set; }
 
+        public string DefaultChannel { get; set; }
+
         public Dictionary<string, ChannelConfiguration> Channels { get; set; } = new Dictionary<string, ChannelConfiguration>();
     }
 }

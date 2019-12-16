@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.DependencyInjection;
@@ -214,39 +215,44 @@ namespace Wirehome.Core.HTTP
                 }
             }
 
-            app.UseFileServer(new FileServerOptions
+            if (!Directory.Exists(customContentRootPath))
             {
-                RequestPath = "/app",
-                FileProvider = new PackageFileProvider(GlobalVariableUids.AppPackageUid, globalVariablesService, packageManagerService)
-            });
+                Directory.CreateDirectory(customContentRootPath);
+            }
 
-            app.UseFileServer(new FileServerOptions
+            if (!Directory.Exists(packagesRootPath))
             {
-                RequestPath = "/configurator",
-                FileProvider = new PackageFileProvider(GlobalVariableUids.ConfiguratorPackageUid, globalVariablesService, packageManagerService)
-            });
+                Directory.CreateDirectory(packagesRootPath);
+            }
 
             // Open the configurator by default if no path is specified.
             var option = new RewriteOptions();
             option.AddRedirect("^$", "/configurator");
             app.UseRewriter(option);
 
-            ExposeDirectory(app, "/customContent", customContentRootPath);
-            ExposeDirectory(app, "/packages", packagesRootPath);
+            ExposeDirectory(app, "/app", new PackageFileProvider(GlobalVariableUids.AppPackageUid, globalVariablesService, packageManagerService));
+            ExposeDirectory(app, "/configurator", new PackageFileProvider(GlobalVariableUids.AppPackageUid, globalVariablesService, packageManagerService));
+            ExposeDirectory(app, "/customContent", new PhysicalFileProvider(customContentRootPath));
+            ExposeDirectory(app, "/packages", new PhysicalFileProvider(packagesRootPath));
         }
 
-        private static void ExposeDirectory(IApplicationBuilder app, string uri, string path)
+        private static void ExposeDirectory(IApplicationBuilder app, string requestPath, IFileProvider fileProvider)
         {
-            if (!Directory.Exists(path))
+            var fileServerOptions = new FileServerOptions
             {
-                Directory.CreateDirectory(path);
-            }
+                RequestPath = requestPath,
+                FileProvider = fileProvider,
+                EnableDirectoryBrowsing = true,
+                EnableDefaultFiles = true
+            };
 
-            app.UseFileServer(new FileServerOptions
+            fileServerOptions.StaticFileOptions.HttpsCompression = HttpsCompressionMode.Compress;
+            fileServerOptions.StaticFileOptions.OnPrepareResponse = context =>
             {
-                RequestPath = uri,
-                FileProvider = new PhysicalFileProvider(path)
-            });
+                context.Context.Response.Headers["Cache-Control"] = "public, max-age=60";
+            };
+
+            app.UseFileServer(fileServerOptions);
         }
 
         private static void ConfigureSwagger(IApplicationBuilder app)

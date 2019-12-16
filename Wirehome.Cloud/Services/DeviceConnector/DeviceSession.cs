@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Cloud.Channel;
@@ -10,10 +10,10 @@ namespace Wirehome.Cloud.Services.DeviceConnector
 {
     public class DeviceSession
     {
-        private readonly ConcurrentDictionary<Guid, TaskCompletionSource<CloudMessage>> _messageAwaiters = new ConcurrentDictionary<Guid, TaskCompletionSource<CloudMessage>>();
-        private readonly DeviceSessionIdentifier _identifier;
-        private readonly ConnectorChannel _channel;
-        private readonly ILogger _logger;
+        readonly Dictionary<string, TaskCompletionSource<CloudMessage>> _messageAwaiters = new Dictionary<string, TaskCompletionSource<CloudMessage>>();
+        readonly DeviceSessionIdentifier _identifier;
+        readonly ConnectorChannel _channel;
+        readonly ILogger _logger;
         
         public DeviceSession(DeviceSessionIdentifier identifier, ConnectorChannel channel, ILogger logger)
         {
@@ -32,11 +32,11 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             _channel.ResetStatistics();
         }
 
-        public Task SendMessageAsync(CloudMessage message, CancellationToken cancellationToken)
+        public Task SendAsync(CloudMessage cloudMessage, CancellationToken cancellationToken)
         {
-            if (message == null) throw new ArgumentNullException(nameof(message));
+            if (cloudMessage == null) throw new ArgumentNullException(nameof(cloudMessage));
 
-            return _channel.SendMessageAsync(message, cancellationToken);
+            return _channel.SendAsync(cloudMessage, cancellationToken);
         }
 
         public async Task RunAsync(CancellationToken cancellationToken)
@@ -45,7 +45,7 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             {
                 try
                 {
-                    var receiveResult = await _channel.ReceiveMessageAsync(cancellationToken).ConfigureAwait(false);
+                    var receiveResult = await _channel.ReceiveAsync(cancellationToken).ConfigureAwait(false);
                     if (receiveResult.CloseConnection)
                     {
                         break;
@@ -56,11 +56,14 @@ namespace Wirehome.Cloud.Services.DeviceConnector
                         continue;
                     }
 
-                    if (receiveResult.Message.CorrelationUid.HasValue)
+                    if (receiveResult.Message.CorrelationId != null)
                     {
-                        if (_messageAwaiters.TryRemove(receiveResult.Message.CorrelationUid.Value, out var awaiter))
+                        lock (_messageAwaiters)
                         {
-                            awaiter.TrySetResult(receiveResult.Message);
+                            if (_messageAwaiters.Remove(receiveResult.Message.CorrelationId, out var awaiter))
+                            {
+                                awaiter.TrySetResult(receiveResult.Message);
+                            }
                         }
                     }
                 }
@@ -71,14 +74,20 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             }
         }
 
-        public void AddMessageAwaiter(TaskCompletionSource<CloudMessage> awaiter, Guid messageCorrelationUid)
+        public void AddAwaiter(string correlationId, TaskCompletionSource<CloudMessage> awaiter)
         {
-            _messageAwaiters[messageCorrelationUid] = awaiter ?? throw new ArgumentNullException(nameof(awaiter));
+            lock (_messageAwaiters)
+            {
+                _messageAwaiters[correlationId] = awaiter ?? throw new ArgumentNullException(nameof(awaiter));
+            }
         }
 
-        public void RemoveMessageAwaiter(Guid correlationUidValue)
+        public void RemoveAwaiter(string correlationId)
         {
-            _messageAwaiters.TryRemove(correlationUidValue, out _);
+            lock (_messageAwaiters)
+            {
+                _messageAwaiters.Remove(correlationId);
+            }
         }
     }
 }

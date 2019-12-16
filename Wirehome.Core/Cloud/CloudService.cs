@@ -2,37 +2,38 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Cloud.Channel;
 using Wirehome.Core.Cloud.Protocol;
-using Wirehome.Core.Constants;
+using Wirehome.Core.Cloud.Protocol.Content;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
-using Wirehome.Core.Python.Models;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Cloud
 {
     public class CloudService : IService
     {
-        private readonly ConcurrentDictionary<string, CloudMessageHandler> _messageHandlers = new ConcurrentDictionary<string, CloudMessageHandler>();
-        private readonly HttpClient _httpClient = new HttpClient();
-        private readonly StorageService _storageService;
+        readonly Dictionary<string, CloudMessageHandler> _rawMessageHandlers = new Dictionary<string, CloudMessageHandler>();
+        readonly HttpClient _httpClient = new HttpClient();
+        readonly StorageService _storageService;
+        readonly CloudMessageFactory _cloudMessageFactory;
+        readonly CloudMessageSerializer _cloudMessageSerializer;
+                
+        readonly ILogger _logger;
 
-        private readonly ILogger _logger;
-
-        private CancellationTokenSource _cancellationTokenSource;
-        private ConnectorChannel _channel;
-        private bool _isConnected;
+        CancellationTokenSource _cancellationTokenSource;
+        ConnectorChannel _channel;
+        bool _isConnected;
 
         public CloudService(StorageService storageService, SystemStatusService systemStatusService, ILogger<CloudService> logger)
         {
@@ -53,6 +54,9 @@ namespace Wirehome.Core.Cloud
             systemStatusService.Set("cloud.send_errors", () => _channel?.GetStatistics()?.SendErrors);
 
             _httpClient.BaseAddress = new Uri("http://127.0.0.1:80");
+
+            _cloudMessageSerializer = new CloudMessageSerializer();
+            _cloudMessageFactory = new CloudMessageFactory(_cloudMessageSerializer);
         }
 
         public void Start()
@@ -79,7 +83,10 @@ namespace Wirehome.Core.Cloud
             if (type == null) throw new ArgumentNullException(nameof(type));
             if (handler == null) throw new ArgumentNullException(nameof(handler));
 
-            _messageHandlers[type] = new CloudMessageHandler(type, handler);
+            lock (_rawMessageHandlers)
+            {
+                _rawMessageHandlers[type] = new CloudMessageHandler(type, handler);
+            }
         }
 
         private async Task ConnectAsync(CancellationToken cancellationToken)
@@ -126,7 +133,7 @@ namespace Wirehome.Core.Cloud
 
                         while (_channel.IsConnected && !cancellationToken.IsCancellationRequested)
                         {
-                            var receiveResult = await _channel.ReceiveMessageAsync(cancellationToken).ConfigureAwait(false);
+                            var receiveResult = await _channel.ReceiveAsync(cancellationToken).ConfigureAwait(false);
                             if (receiveResult.CloseConnection || cancellationToken.IsCancellationRequested)
                             {
                                 webSocketClient.Abort();
@@ -162,28 +169,28 @@ namespace Wirehome.Core.Cloud
             }
         }
 
-        private async Task TryProcessCloudMessageAsync(CloudMessage message, CancellationToken cancellationToken)
+        private async Task TryProcessCloudMessageAsync(CloudMessage requestMessage, CancellationToken cancellationToken)
         {
             try
             {
-                CloudMessage response = null;
-                if (message.Type == CloudMessageType.Ping)
+                CloudMessage responseMessage = null;
+                if (requestMessage.Type == CloudMessageType.Ping)
                 {
-                    response = new CloudMessage();
+                    responseMessage = new CloudMessage();
                 }
-                else if (message.Type == CloudMessageType.HttpInvoke)
+                else if (requestMessage.Type == CloudMessageType.HttpInvoke)
                 {
-                    response = await InvokeHttpRequestAsync(message, cancellationToken).ConfigureAwait(false);
+                    responseMessage = await InvokeHttpRequestAsync(requestMessage, cancellationToken).ConfigureAwait(false);
                 }
-                else if (message.Type == CloudMessageType.Raw)
+                else if (requestMessage.Type == CloudMessageType.Raw)
                 {
-                    response = InvokeRawRequest(message);
+                    responseMessage = InvokeRawRequest(requestMessage);
                 }
 
-                if (response != null)
+                if (responseMessage != null)
                 {
-                    response.CorrelationUid = message.CorrelationUid;
-                    await SendMessageAsync(response, cancellationToken).ConfigureAwait(false);
+                    responseMessage.CorrelationId = requestMessage.CorrelationId;
+                    await SendMessageAsync(responseMessage, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
@@ -199,41 +206,32 @@ namespace Wirehome.Core.Cloud
         {
             try
             {
-                WirehomeDictionary responseContent;
+                var jsonRequestPayload = Encoding.UTF8.GetString(requestMessage.Payload);
+                var jsonRequest = JObject.Parse(jsonRequestPayload);
+                var pythonDictionary = PythonConvert.ToPythonDictionary(jsonRequest);
 
-                var requestContent = requestMessage.GetContent<JToken>();
-
-                // TODO: Refactor this and build converter for JSON to WirehomeDictionary and WirehomeList
-                if (!(PythonConvert.ToPython(requestContent) is PythonDictionary parameters))
+                CloudMessageHandler cloudMessageHandler;
+                lock (_rawMessageHandlers)
                 {
-                    responseContent = new WirehomeDictionary().WithType(ControlType.ParameterInvalidException);
-                }
-                else
-                {
-                    if (!_messageHandlers.TryGetValue(parameters.GetValueOr("type", string.Empty), out var messageHandler))
+                    if (!_rawMessageHandlers.TryGetValue(pythonDictionary.GetValueOr("type", string.Empty), out cloudMessageHandler))
                     {
-                        responseContent = new WirehomeDictionary().WithType(ControlType.NotSupportedException);
-                    }
-                    else
-                    {
-                        responseContent = messageHandler.Invoke(parameters);
+                        throw new NotSupportedException("RAW message type handler not supported.");
                     }
                 }
 
-                var responseMessage = new CloudMessage();
-                responseMessage.SetContent(responseContent);
+                var responseContent = cloudMessageHandler.Invoke(pythonDictionary);
 
-                return responseMessage;
+                var jsonResponse = PythonConvert.FromPythonToJson(responseContent);
+
+                return new CloudMessage()
+                {
+                    CorrelationId = requestMessage.CorrelationId,
+                    Payload = Encoding.UTF8.GetBytes(jsonResponse.ToString())
+                };
             }
             catch (Exception exception)
             {
-                var response = new CloudMessage
-                {
-                    Type = ControlType.Exception 
-                };
-
-                response.SetContent(new ExceptionPythonModel(exception).ConvertToPythonDictionary());
-                return response;
+                return _cloudMessageFactory.Create(exception);
             }
         }
 
@@ -241,9 +239,8 @@ namespace Wirehome.Core.Cloud
         {
             try
             {
-                var requestContent = requestMessage.GetContent<HttpRequestMessageContent>();
-                var responseContent = new HttpResponseMessageContent();
-
+                var requestContent = _cloudMessageSerializer.Unpack<HttpRequestCloudMessageContent>(requestMessage.Payload);
+                
                 using (var httpRequestMessage = new HttpRequestMessage())
                 {
                     httpRequestMessage.Method = new HttpMethod(requestContent.Method);
@@ -267,44 +264,17 @@ namespace Wirehome.Core.Cloud
 
                     using (var httpResponse = await _httpClient.SendAsync(httpRequestMessage, cancellationToken).ConfigureAwait(false))
                     {
-                        if ((int)httpResponse.StatusCode != 200)
-                        {
-                            responseContent.StatusCode = (int)httpResponse.StatusCode;
-                        }
-
-                        var responseBody = await httpResponse.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                        if (responseBody.Any())
-                        {
-                            responseContent.Content = responseBody;
-                        }
-
-                        if (httpResponse.Content.Headers.ContentType != null)
-                        {
-                            responseContent.Headers = new Dictionary<string, string>
-                            {
-                                ["Content-Type"] = httpResponse.Content.Headers.ContentType.ToString()
-                            };
-                        }
+                        return await _cloudMessageFactory.Create(httpResponse, requestMessage.CorrelationId).ConfigureAwait(false);
                     }
                 }
-
-                var responseMessage = new CloudMessage();
-                responseMessage.SetContent(responseContent);
-                return responseMessage;
             }
             catch (Exception exception)
             {
-                var response = new CloudMessage
-                {
-                    Type = ControlType.Exception
-                };
-
-                response.SetContent(new ExceptionPythonModel(exception).ConvertToPythonDictionary());
-                return response;
+                return _cloudMessageFactory.Create(exception);
             }
         }
 
-        private Task SendMessageAsync(CloudMessage message, CancellationToken cancellationToken)
+        Task SendMessageAsync(CloudMessage message, CancellationToken cancellationToken)
         {
             var channel = _channel;
             if (channel == null)
@@ -312,7 +282,7 @@ namespace Wirehome.Core.Cloud
                 return Task.CompletedTask;
             }
 
-            return _channel.SendMessageAsync(message, cancellationToken);
+            return _channel.SendAsync(message, cancellationToken);
         }
     }
 }

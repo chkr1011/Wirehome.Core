@@ -2,55 +2,73 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Cloud.Filters;
+using Wirehome.Cloud.Services.Authorization;
 using Wirehome.Core.Cloud.Channel;
 using Wirehome.Core.Cloud.Protocol;
+using Wirehome.Core.Cloud.Protocol.Content;
 
 namespace Wirehome.Cloud.Services.DeviceConnector
 {
     public class DeviceConnectorService
     {
-        private readonly ConcurrentDictionary<string, DeviceSession> _sessions = new ConcurrentDictionary<string, DeviceSession>();
+        private readonly Dictionary<string, DeviceSession> _deviceSessions = new Dictionary<string, DeviceSession>();
+        private readonly AuthorizationService _authorizationService;
+        private readonly CloudMessageFactory _cloudMessageFactory;
+        private readonly CloudMessageSerializer _cloudMessageSerializer;
         private readonly ILogger _logger;
 
-        public DeviceConnectorService(ILogger<DeviceConnectorService> logger)
+        public DeviceConnectorService(AuthorizationService authorizationService, CloudMessageFactory cloudMessageFactory, CloudMessageSerializer cloudMessageSerializer, ILogger<DeviceConnectorService> logger)
         {
+            _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
+            _cloudMessageFactory = cloudMessageFactory ?? throw new ArgumentNullException(nameof(cloudMessageFactory));
+            _cloudMessageSerializer = cloudMessageSerializer ?? throw new ArgumentNullException(nameof(cloudMessageSerializer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public object GetStatistics()
         {
-            return new
+            lock (_deviceSessions)
             {
-                connectedDevicesCount = _sessions.Count,
-                connectedDevices = _sessions.Keys
-            };
+                return new
+                {
+                    connectedDevicesCount = _deviceSessions.Count,
+                    connectedDevices = _deviceSessions.Keys
+                };
+            }
         }
 
         public ConnectorChannelStatistics GetChannelStatistics(DeviceSessionIdentifier deviceSessionIdentifier)
         {
-            if (!_sessions.TryGetValue(deviceSessionIdentifier.ToString(), out var deviceSession))
+            lock (_deviceSessions)
             {
-                return null;
-            }
+                if (!_deviceSessions.TryGetValue(deviceSessionIdentifier.ToString(), out var deviceSession))
+                {
+                    return null;
+                }
 
-            return deviceSession.GetStatistics();
+                return deviceSession.GetStatistics();
+            }      
         }
 
         public void ResetChannelStatistics(DeviceSessionIdentifier deviceSessionIdentifier)
         {
-            if (!_sessions.TryGetValue(deviceSessionIdentifier.ToString(), out var deviceSession))
+            lock (_deviceSessions)
             {
-                return;
-            }
+                if (!_deviceSessions.TryGetValue(deviceSessionIdentifier.ToString(), out var deviceSession))
+                {
+                    return;
+                }
 
-            deviceSession.ResetStatistics();
+                deviceSession.ResetStatistics();
+            }
         }
 
         public async Task RunAsync(DeviceSessionIdentifier deviceSessionIdentifier, WebSocket webSocket, CancellationToken cancellationToken)
@@ -61,8 +79,11 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             try
             {
                 var deviceSession = new DeviceSession(deviceSessionIdentifier, channel, _logger);
-                _sessions[deviceSessionIdentifier.ToString()] = deviceSession;
-
+                lock (_deviceSessions)
+                {
+                    _deviceSessions[deviceSessionIdentifier.ToString()] = deviceSession;
+                }
+                
                 await deviceSession.RunAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception)
@@ -71,7 +92,10 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             }
             finally
             {
-                _sessions.TryRemove(deviceSessionIdentifier.ToString(), out _);
+                lock (_deviceSessions)
+                {
+                    _deviceSessions.Remove(deviceSessionIdentifier.ToString());
+                }
             }
         }
 
@@ -80,31 +104,35 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             if (deviceSessionIdentifier == null) throw new ArgumentNullException(nameof(deviceSessionIdentifier));
             if (requestMessage == null) throw new ArgumentNullException(nameof(requestMessage));
 
-            if (!_sessions.TryGetValue(deviceSessionIdentifier.ToString(), out var session))
+            DeviceSession deviceSession;
+            lock (_deviceSessions)
             {
-                throw new DeviceSessionNotFoundException(deviceSessionIdentifier);
+                if (!_deviceSessions.TryGetValue(deviceSessionIdentifier.ToString(), out deviceSession))
+                {
+                    throw new DeviceSessionNotFoundException(deviceSessionIdentifier);
+                }
             }
+            
+            requestMessage.CorrelationId = Guid.NewGuid().ToString();
 
-            requestMessage.CorrelationUid = Guid.NewGuid();
-
-            var result = new TaskCompletionSource<CloudMessage>();
+            var resultAwaiter = new TaskCompletionSource<CloudMessage>();
 
             try
             {
-                session.AddMessageAwaiter(result, requestMessage.CorrelationUid.Value);
+                deviceSession.AddAwaiter(requestMessage.CorrelationId, resultAwaiter);
 
                 using (cancellationToken.Register(() =>
                 {
-                    result.TrySetCanceled();
+                    resultAwaiter.TrySetCanceled();
                 }))
                 {
-                    await session.SendMessageAsync(requestMessage, cancellationToken).ConfigureAwait(false);
-                    return await result.Task.ConfigureAwait(false);
+                    await deviceSession.SendAsync(requestMessage, cancellationToken).ConfigureAwait(false);
+                    return await resultAwaiter.Task.ConfigureAwait(false);
                 }
             }
             finally
             {
-                session.RemoveMessageAwaiter(requestMessage.CorrelationUid.Value);
+                deviceSession.RemoveAwaiter(requestMessage.CorrelationId);
             }
         }
 
@@ -114,53 +142,24 @@ namespace Wirehome.Cloud.Services.DeviceConnector
 
             try
             {
+                (string username, string password) = ParseBasicAuthenticationHeader(httpContext.Request);
+                if (username != null)
+                {
+                    await _authorizationService.Authorize(httpContext, username, password).ConfigureAwait(false);
+                }
+
                 var deviceSessionIdentifier = httpContext.GetDeviceSessionIdentifier();
                 if (deviceSessionIdentifier == null)
                 {
                     httpContext.Response.Redirect("/Cloud/Account/Login");
                     return;
                 }
-
-                var requestContent = new HttpRequestMessageContent
-                {
-                    Method = httpContext.Request.Method,
-                    Uri = httpContext.Request.Path + httpContext.Request.QueryString,
-                    Content = LoadContent(httpContext.Request)
-                };
-
-                if (!string.IsNullOrEmpty(httpContext.Request.ContentType))
-                {
-                    requestContent.Headers = new Dictionary<string, string>
-                    {
-                        ["Content-Type"] = httpContext.Request.ContentType
-                    };
-                }
-
-                var requestMessage = new CloudMessage
-                {
-                    Type = CloudMessageType.HttpInvoke
-                };
-
-                requestMessage.SetContent(requestContent);
-
+                
+                var requestMessage = await _cloudMessageFactory.Create(httpContext.Request).ConfigureAwait(false);
                 var responseMessage = await Invoke(deviceSessionIdentifier, requestMessage, httpContext.RequestAborted).ConfigureAwait(false);
 
-                var responseContent = responseMessage.GetContent<HttpResponseMessageContent>();
-
-                httpContext.Response.StatusCode = responseContent.StatusCode ?? 200;
-
-                if (responseContent.Headers?.Any() == true)
-                {
-                    foreach (var header in responseContent.Headers)
-                    {
-                        httpContext.Response.Headers.Add(header.Key, new StringValues(header.Value));
-                    }
-                }
-                
-                if (responseContent.Content?.Length > 0)
-                {
-                    httpContext.Response.Body.Write(responseContent.Content);
-                }
+                var responseContent = _cloudMessageSerializer.Unpack<HttpResponseCloudMessageContent>(responseMessage.Payload);
+                await PatchHttpResponseWithResponseFromDevice(httpContext.Response, responseContent).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -171,17 +170,38 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             }
         }
 
-        private static byte[] LoadContent(HttpRequest httpRequest)
+        (string username, string password) ParseBasicAuthenticationHeader(HttpRequest request)
         {
-            if (!httpRequest.ContentLength.HasValue)
+            if (!request.Headers.TryGetValue("Authorization", out var headerValues))
             {
-                return null;
+                return (null, null);
+            }
+            
+            var authenticationHeader = AuthenticationHeaderValue.Parse(headerValues);
+            var credentialBytes = Convert.FromBase64String(authenticationHeader.Parameter);
+            var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
+            var username = credentials[0];
+            var password = credentials[1];
+
+            return (username, password);
+        }
+
+        async Task PatchHttpResponseWithResponseFromDevice(HttpResponse httpResponse, HttpResponseCloudMessageContent responseContent)
+        {
+            httpResponse.StatusCode = responseContent.StatusCode ?? 200;
+
+            if (responseContent.Headers?.Any() == true)
+            {
+                foreach (var header in responseContent.Headers)
+                {
+                    httpResponse.Headers.Add(header.Key, new StringValues(header.Value));
+                }
             }
 
-            var buffer = new byte[httpRequest.ContentLength.Value];
-            httpRequest.Body.Read(buffer, 0, buffer.Length);
-
-            return buffer;
+            if (responseContent.Content?.Length > 0)
+            {
+                await httpResponse.Body.WriteAsync(responseContent.Content).ConfigureAwait(false);
+            }
         }
     }
 }

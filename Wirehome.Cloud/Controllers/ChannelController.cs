@@ -6,12 +6,14 @@ namespace Wirehome.Cloud.Controllers
     [Authorize]
     public class ChannelController : Controller
     {
+        [Route("Cloud/Channel/DeviceNotConnected")]
         [HttpGet]
         public IActionResult DeviceNotConnected()
         {
             return View(nameof(DeviceNotConnected));
         }
 
+        [Route("Cloud/Channel")]
         [HttpGet]
         public IActionResult Index()
         {

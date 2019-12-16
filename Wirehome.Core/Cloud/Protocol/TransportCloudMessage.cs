@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Wirehome.Core.Cloud.Protocol
 {
-    public class CloudMessage
+    public class TransportCloudMessage
     {
         [MessagePackMember(0)]
         public string Type { get; set; }
@@ -11,10 +11,13 @@ namespace Wirehome.Core.Cloud.Protocol
         [MessagePackMember(1)]
         public string CorrelationId { get; set; }
 
-        [MessagePackMember(2)]
+        [MessagePackMember(3)]
         public byte[] Payload { get; set; }
 
-        [MessagePackMember(3)]
+        [MessagePackMember(4)]
         public Dictionary<string, string> Properties { get; set; }
+
+        [MessagePackMember(5)]
+        public bool PayloadIsCompressed { get; set; }
     }
 }
