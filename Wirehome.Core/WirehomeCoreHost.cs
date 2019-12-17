@@ -12,18 +12,28 @@ namespace Wirehome.Core
 
         public static void Start(string[] arguments)
         {
+            var loopbackServer = new LoopbackServer();
+
             var host = WebHost.CreateDefaultBuilder()
                 .ConfigureServices(s =>
                 {
                     s.AddSingleton(new SystemLaunchArguments(arguments ?? new string[0]));
                     s.AddSingleton(SystemCancellationToken);
+                    s.AddSingleton(loopbackServer);
                 })
                 .UseSockets(o => o.NoDelay = true)
                 .UseKestrel(o => o.ListenAnyIP(80))
+                .UseServer(loopbackServer)
                 .UseStartup<Startup>()
                 .Build();
 
             host.Start();
+
+            //var x = new TestServer();
+            //x.SendAsync(c =>
+            //{
+            //    c.Request.Method = "Get";
+            //});
         }
 
         public static void Stop()

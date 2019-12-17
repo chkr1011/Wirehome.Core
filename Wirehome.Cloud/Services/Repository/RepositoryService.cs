@@ -14,9 +14,9 @@ namespace Wirehome.Cloud.Services.Repository
 {
     public class RepositoryService
     {
-        private readonly AsyncLock _lock = new AsyncLock();
-        private readonly string _rootPath;
-        private readonly ILogger _logger;
+        readonly AsyncLock _lock = new AsyncLock();
+        readonly string _rootPath;
+        readonly ILogger _logger;
         
         public RepositoryService(ILogger<RepositoryService> logger)
         {
@@ -68,7 +68,7 @@ namespace Wirehome.Cloud.Services.Repository
             }
         }
 
-        private async Task<IdentityConfiguration> TryReadIdentityConfigurationAsync(string identityUid)
+        async Task<IdentityConfiguration> TryReadIdentityConfigurationAsync(string identityUid)
         {
             var filename = Path.Combine(_rootPath, identityUid, DefaultFilenames.Configuration);
             if (!File.Exists(filename))
@@ -91,7 +91,7 @@ namespace Wirehome.Cloud.Services.Repository
             }
         }
 
-        private Task WriteIdentityConfigurationAsync(string identityUid, IdentityConfiguration identityConfiguration)
+        Task WriteIdentityConfigurationAsync(string identityUid, IdentityConfiguration identityConfiguration)
         {
             if (identityUid == null) throw new ArgumentNullException(nameof(identityUid));
             if (identityConfiguration == null) throw new ArgumentNullException(nameof(identityConfiguration));

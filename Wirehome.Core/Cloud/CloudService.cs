@@ -127,7 +127,7 @@ namespace Wirehome.Core.Cloud
                             await webSocketClient.ConnectAsync(new Uri(url, UriKind.Absolute), timeout.Token).ConfigureAwait(false);
                         }
 
-                        _channel = new ConnectorChannel(webSocketClient, _logger);
+                        _channel = new ConnectorChannel(webSocketClient, _cloudMessageSerializer, _logger);
                         _logger.LogInformation($"Connected with Wirehome.Cloud at host '{options.Host}'.");
                         _isConnected = true;
 

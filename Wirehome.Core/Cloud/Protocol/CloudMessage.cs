@@ -1,4 +1,5 @@
 ﻿using MsgPack.Serialization;
+using System;
 using System.Collections.Generic;
 
 namespace Wirehome.Core.Cloud.Protocol
@@ -12,7 +13,7 @@ namespace Wirehome.Core.Cloud.Protocol
         public string CorrelationId { get; set; }
 
         [MessagePackMember(2)]
-        public byte[] Payload { get; set; }
+        public ArraySegment<byte> Payload { get; set; }
 
         [MessagePackMember(3)]
         public Dictionary<string, string> Properties { get; set; }

@@ -75,7 +75,7 @@ namespace Wirehome.Cloud.Services.DeviceConnector
         {
             if (webSocket == null) throw new ArgumentNullException(nameof(webSocket));
 
-            var channel = new ConnectorChannel(webSocket, _logger);
+            var channel = new ConnectorChannel(webSocket, _cloudMessageSerializer, _logger);
             try
             {
                 var deviceSession = new DeviceSession(deviceSessionIdentifier, channel, _logger);

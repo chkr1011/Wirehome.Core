@@ -25,7 +25,7 @@ namespace Wirehome.Cloud.Services.DeviceConnector
             httpContext.Request.Cookies.TryGetValue(CookieNames.ChannelUid, out var channelUid);
             if (string.IsNullOrEmpty(channelUid))
             {
-                channelUid = "default";
+                channelUid = "default"; // TODO: From config.
             }
 
             return new DeviceSessionIdentifier(identityUid, channelUid);
