@@ -59,7 +59,8 @@ namespace Wirehome.Cloud
             })
             .ConfigureApplicationPartManager(config =>
             {
-                // TODO: Required?
+                // This is required because ASP.NET tries to find controllers in ALL referenced assemblies.
+                // This project only covers the cloud part and only uses Wirehome.Core for protocol classes etc.
                 config.FeatureProviders.Remove(config.FeatureProviders.First(f => f.GetType() == typeof(ControllerFeatureProvider)));
                 config.FeatureProviders.Add(new WirehomeControllerFeatureProvider(typeof(Wirehome.Cloud.Controllers.CloudController).Namespace));
             });

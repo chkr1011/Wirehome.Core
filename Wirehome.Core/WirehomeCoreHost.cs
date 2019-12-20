@@ -23,7 +23,7 @@ namespace Wirehome.Core
                 })
                 .UseSockets(o => o.NoDelay = true)
                 .UseKestrel(o => o.ListenAnyIP(80))
-                .UseServer(loopbackServer)
+                //.UseServer(loopbackServer)
                 .UseStartup<Startup>()
                 .Build();
 
