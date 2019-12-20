@@ -1,17 +1,18 @@
-﻿using MsgPack.Serialization;
+﻿using MessagePack;
 using System.Collections.Generic;
 
 namespace Wirehome.Core.Cloud.Protocol.Content
 {
+    [MessagePackObject]
     public class HttpResponseCloudMessageContent
     {
-        [MessagePackMember(0)]
+        [Key(0)]
         public Dictionary<string, string> Headers { get; set; }
 
-        [MessagePackMember(1)]
+        [Key(1)]
         public byte[] Content { get; set; }
 
-        [MessagePackMember(2)]
+        [Key(2)]
         public int? StatusCode { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace Wirehome.Core.Cloud
 {
     public class CloudService : IService
     {
-        readonly Dictionary<string, CloudMessageHandler> _rawMessageHandlers = new Dictionary<string, CloudMessageHandler>();
+        readonly Dictionary<string, RawCloudMessageHandler> _rawMessageHandlers = new Dictionary<string, RawCloudMessageHandler>();
         readonly HttpClient _httpClient = new HttpClient();
         readonly StorageService _storageService;
         readonly CloudMessageFactory _cloudMessageFactory;
@@ -85,7 +86,7 @@ namespace Wirehome.Core.Cloud
 
             lock (_rawMessageHandlers)
             {
-                _rawMessageHandlers[type] = new CloudMessageHandler(type, handler);
+                _rawMessageHandlers[type] = new RawCloudMessageHandler(type, handler);
             }
         }
 
@@ -207,26 +208,30 @@ namespace Wirehome.Core.Cloud
             try
             {
                 var jsonRequestPayload = Encoding.UTF8.GetString(requestMessage.Payload);
-                var jsonRequest = JObject.Parse(jsonRequestPayload);
-                var pythonDictionary = PythonConvert.ToPythonDictionary(jsonRequest);
+                var invokeParameter = JsonConvert.DeserializeObject<WirehomeDictionary>(jsonRequestPayload);
 
-                CloudMessageHandler cloudMessageHandler;
+                if(!invokeParameter.TryGetValue("type", out var handlerType))
+                {
+                    throw new NotSupportedException("Mandatory key 'type' not found in request parameter.");
+                }
+
+                RawCloudMessageHandler cloudMessageHandler;
                 lock (_rawMessageHandlers)
                 {
-                    if (!_rawMessageHandlers.TryGetValue(pythonDictionary.GetValueOr("type", string.Empty), out cloudMessageHandler))
+                    if (!_rawMessageHandlers.TryGetValue(Convert.ToString(handlerType), out cloudMessageHandler))
                     {
-                        throw new NotSupportedException("RAW message type handler not supported.");
+                        throw new NotSupportedException($"RAW message handler '{handlerType}' not supported.");
                     }
                 }
 
-                var responseContent = cloudMessageHandler.Invoke(pythonDictionary);
+                var invokeResult = cloudMessageHandler.Invoke(invokeParameter);
 
-                var jsonResponse = PythonConvert.FromPythonToJson(responseContent);
+                var jsonResponse = JsonConvert.SerializeObject(invokeResult);
 
                 return new CloudMessage()
                 {
                     CorrelationId = requestMessage.CorrelationId,
-                    Payload = Encoding.UTF8.GetBytes(jsonResponse.ToString())
+                    Payload = Encoding.UTF8.GetBytes(jsonResponse)
                 };
             }
             catch (Exception exception)

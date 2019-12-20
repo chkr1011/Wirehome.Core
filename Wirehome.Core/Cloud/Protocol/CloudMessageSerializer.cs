@@ -1,5 +1,6 @@
-﻿using MsgPack.Serialization;
+﻿using MessagePack;
 using System;
+using System.IO;
 
 namespace Wirehome.Core.Cloud.Protocol
 {
@@ -9,7 +10,7 @@ namespace Wirehome.Core.Cloud.Protocol
         {
             if (value == null) return null;
 
-            return MessagePackSerializer.Get<TValue>().PackSingleObjectAsBytes(value);
+            return MessagePackSerializer.Serialize(value);
         }
 
         public TValue Unpack<TValue>(ArraySegment<byte> data)
@@ -18,9 +19,11 @@ namespace Wirehome.Core.Cloud.Protocol
             {
                 return default;
             }
-                       
-            // TODO: Use stream instead to avoid useless memory allocation.
-            return MessagePackSerializer.Get<TValue>().UnpackSingleObject(data.ToArray());
+
+            using (var buffer = new MemoryStream(data.Array, data.Offset, data.Count))
+            {
+                return MessagePackSerializer.Deserialize<TValue>(buffer);
+            }                
         }
     }
 }

@@ -19,7 +19,7 @@ namespace Wirehome.Core.Cloud
 
         public string ModuleName { get; } = "cloud";
 
-        public void register_message_handler(string type, Func<PythonDictionary, PythonDictionary> handler)
+        public void register_raw_message_handler(string type, Func<PythonDictionary, PythonDictionary> handler)
         {
             if (handler == null) throw new ArgumentNullException(nameof(handler));
 

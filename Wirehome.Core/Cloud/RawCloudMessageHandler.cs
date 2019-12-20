@@ -3,11 +3,11 @@ using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Cloud
 {
-    public class CloudMessageHandler
+    public class RawCloudMessageHandler
     {
         private readonly Func<WirehomeDictionary, WirehomeDictionary> _callback;
 
-        public CloudMessageHandler(string type, Func<WirehomeDictionary, WirehomeDictionary> callback)
+        public RawCloudMessageHandler(string type, Func<WirehomeDictionary, WirehomeDictionary> callback)
         {
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
             TargetType = type ?? throw new ArgumentNullException(nameof(type));

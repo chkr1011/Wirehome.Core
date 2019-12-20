@@ -1,24 +1,25 @@
-﻿using MsgPack.Serialization;
+﻿using MessagePack;
 using System;
 using System.Collections.Generic;
 
 namespace Wirehome.Core.Cloud.Protocol
 {
+    [MessagePackObject]
     public class TransportCloudMessage
     {
-        [MessagePackMember(0)]
+        [Key(0)]
         public string Type { get; set; }
 
-        [MessagePackMember(1)]
+        [Key(1)]
         public string CorrelationId { get; set; }
 
-        [MessagePackMember(3)]
+        [Key(2)]
         public ArraySegment<byte> Payload { get; set; }
 
-        [MessagePackMember(4)]
+        [Key(3)]
         public bool PayloadIsCompressed { get; set; }
 
-        [MessagePackMember(5)]
+        [Key(4)]
         public Dictionary<string, string> Properties { get; set; }
     }
 }

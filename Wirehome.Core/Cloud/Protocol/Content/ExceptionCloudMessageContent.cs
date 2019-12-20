@@ -1,10 +1,11 @@
-﻿using MsgPack.Serialization;
+﻿using MessagePack;
 
 namespace Wirehome.Core.Cloud.Protocol.Content
 {
+    [MessagePackObject]
     public class ExceptionCloudMessageContent
     {
-        [MessagePackMember(0)]
+        [Key(0)]
         public string Exception { get; set; }
     }
 }
