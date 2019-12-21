@@ -118,10 +118,10 @@ namespace Wirehome.Core.Cloud
                         {
                             var url = $"wss://{_options.Host}/Connector";
 
-                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.IdentityUid, _options.IdentityUid);
-                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.ChannelUid, _options.ChannelUid);
-                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.AccessToken, _options.AccessToken);
-                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.Version, WirehomeCoreVersion.Version);
+                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.IdentityUid, _options.IdentityUid);
+                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.ChannelUid, _options.ChannelUid);
+                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.AccessToken, _options.AccessToken);
+                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.Version, WirehomeCoreVersion.Version);
 
                             await webSocketClient.ConnectAsync(new Uri(url, UriKind.Absolute), timeout.Token).ConfigureAwait(false);
                         }

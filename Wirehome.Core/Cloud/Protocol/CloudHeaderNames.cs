@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.Cloud.Protocol
 {
-    public static class CustomCloudHeaderNames
+    public static class CloudHeaderNames
     {
         public const string IdentityUid = "WirehomeCloud-IdentityUid";
 

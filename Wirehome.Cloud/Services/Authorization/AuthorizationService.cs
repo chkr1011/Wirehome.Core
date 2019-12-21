@@ -25,9 +25,9 @@ namespace Wirehome.Cloud.Services.Authorization
         {
             if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 
-            httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.IdentityUid, out var identityUidHeaderValue);
-            httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.ChannelUid, out var channelUidHeaderValue);
-            httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.AccessToken, out var accessToken);
+            httpContext.Request.Headers.TryGetValue(CloudHeaderNames.IdentityUid, out var identityUidHeaderValue);
+            httpContext.Request.Headers.TryGetValue(CloudHeaderNames.ChannelUid, out var channelUidHeaderValue);
+            httpContext.Request.Headers.TryGetValue(CloudHeaderNames.AccessToken, out var accessToken);
 
             var identityUid = identityUidHeaderValue.ToString().ToLowerInvariant();
             var channelUid = channelUidHeaderValue.ToString().ToLowerInvariant();
@@ -83,6 +83,8 @@ namespace Wirehome.Cloud.Services.Authorization
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 authenticationProperties).ConfigureAwait(false);
+
+            httpContext.Response.Cookies.Append(CloudCookieNames.ChannelUid, identityConfiguration.DefaultChannel);
         }
 
         public Task SetPasswordAsync(string identityUid, string newPassword)

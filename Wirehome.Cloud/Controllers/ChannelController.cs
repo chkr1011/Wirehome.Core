@@ -17,7 +17,7 @@ namespace Wirehome.Cloud.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            HttpContext.Response.Cookies.Append(CookieNames.ChannelUid, "default");
+            //HttpContext.Response.Cookies.Append(CloudCookieNames.ChannelUid, "default");
 
             // This controller allows setting the used channel. 
             // The list of channels is provided as radio buttons.
