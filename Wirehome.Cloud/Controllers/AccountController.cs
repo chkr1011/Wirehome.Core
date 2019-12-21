@@ -47,7 +47,7 @@ namespace Wirehome.Cloud.Controllers
         {
             try
             {
-                await _authorizationService.Authorize(HttpContext, model.IdentityUid, model.Password).ConfigureAwait(false);
+                await _authorizationService.AuthorizeUser(HttpContext, model.IdentityUid, model.Password).ConfigureAwait(false);
             }
             catch (UnauthorizedAccessException)
             {

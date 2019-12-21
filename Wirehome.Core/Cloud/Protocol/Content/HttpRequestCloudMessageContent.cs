@@ -1,4 +1,5 @@
 ﻿using MessagePack;
+using System;
 using System.Collections.Generic;
 
 namespace Wirehome.Core.Cloud.Protocol.Content
@@ -16,6 +17,6 @@ namespace Wirehome.Core.Cloud.Protocol.Content
         public Dictionary<string, string> Headers { get; set; }
 
         [Key(3)]
-        public byte[] Content { get; set; }
+        public ArraySegment<byte> Content { get; set; }
     }
 }

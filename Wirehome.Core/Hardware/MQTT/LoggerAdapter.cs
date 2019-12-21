@@ -54,5 +54,10 @@ namespace Wirehome.Core.Hardware.MQTT
 
             _logger.Log(newLogLevel, exception, message, parameters);            
         }
+
+        public void NotifyLogMessagePublished(MqttNetLogMessage logMessage)
+        {
+            LogMessagePublished?.Invoke(this, new MqttNetLogMessagePublishedEventArgs(logMessage));
+        }
     }
 }

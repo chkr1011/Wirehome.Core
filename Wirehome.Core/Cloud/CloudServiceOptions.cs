@@ -12,10 +12,12 @@ namespace Wirehome.Core.Cloud
 
         public string IdentityUid { get; set; }
 
-        public string Password { get; set; }
+        public string AccessToken { get; set; }
 
         public string ChannelUid { get; set; } = "default";
 
         public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(10);
+
+        public bool UseCompression { get; set; } = true;
     }
 }

@@ -75,7 +75,12 @@ namespace Wirehome.Cloud.Services.DeviceConnector
         {
             if (webSocket == null) throw new ArgumentNullException(nameof(webSocket));
 
-            var channel = new ConnectorChannel(webSocket, _cloudMessageSerializer, _logger);
+            var channelOptions = new ConnectorChannelOptions
+            {
+                UseCompression = true
+            };
+
+            var channel = new ConnectorChannel(channelOptions, webSocket, _cloudMessageSerializer, _logger);
             try
             {
                 var deviceSession = new DeviceSession(deviceSessionIdentifier, channel, _logger);
@@ -145,7 +150,7 @@ namespace Wirehome.Cloud.Services.DeviceConnector
                 (string username, string password) = ParseBasicAuthenticationHeader(httpContext.Request);
                 if (username != null)
                 {
-                    await _authorizationService.Authorize(httpContext, username, password).ConfigureAwait(false);
+                    await _authorizationService.AuthorizeUser(httpContext, username, password).ConfigureAwait(false);
                 }
 
                 var deviceSessionIdentifier = httpContext.GetDeviceSessionIdentifier();
@@ -188,7 +193,7 @@ namespace Wirehome.Cloud.Services.DeviceConnector
 
         async Task PatchHttpResponseWithResponseFromDevice(HttpResponse httpResponse, HttpResponseCloudMessageContent responseContent)
         {
-            httpResponse.StatusCode = responseContent.StatusCode ?? 200;
+            httpResponse.StatusCode = responseContent.StatusCode;
 
             if (responseContent.Headers?.Any() == true)
             {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -35,38 +36,50 @@ namespace Wirehome.Core.Cloud.Protocol
         {
             if (httpRequest is null) throw new ArgumentNullException(nameof(httpRequest));
 
-            var cloudMessageContent = new HttpRequestCloudMessageContent
+            var contentLength = (int)(httpRequest.ContentLength ?? 0L);
+            var requestContentBuffer = ArrayPool<byte>.Shared.Rent(contentLength);
+            try
             {
-                Method = httpRequest.Method,
-                Uri = httpRequest.Path + httpRequest.QueryString,
-                Content = await LoadHttpRequestContent(httpRequest).ConfigureAwait(false)
-            };
-
-            if (!string.IsNullOrEmpty(httpRequest.ContentType))
-            {
-                cloudMessageContent.Headers = new Dictionary<string, string>
+                var cloudMessageContent = new HttpRequestCloudMessageContent
                 {
-                    ["Content-Type"] = httpRequest.ContentType
+                    Method = httpRequest.Method,
+                    Uri = httpRequest.Path + httpRequest.QueryString
                 };
+
+                if (contentLength > 0)
+                {
+                    await httpRequest.Body.ReadAsync(requestContentBuffer, 0, contentLength).ConfigureAwait(false);
+                    cloudMessageContent.Content = new ArraySegment<byte>(requestContentBuffer, 0, contentLength);
+                }
+
+                if (!string.IsNullOrEmpty(httpRequest.ContentType))
+                {
+                    cloudMessageContent.Headers = new Dictionary<string, string>
+                    {
+                        ["Content-Type"] = httpRequest.ContentType
+                    };
+                }
+
+                var requestMessage = new CloudMessage
+                {
+                    Type = CloudMessageType.HttpInvoke,
+                    Payload = _cloudMessageSerializer.Pack(cloudMessageContent)
+                };
+
+                return requestMessage;
             }
-
-            var requestMessage = new CloudMessage
+            finally
             {
-                Type = CloudMessageType.HttpInvoke,
-                Payload = _cloudMessageSerializer.Pack(cloudMessageContent)
-            };
-
-            return requestMessage;
+                ArrayPool<byte>.Shared.Return(requestContentBuffer);
+            }
         }
 
         public async Task<CloudMessage> Create(HttpResponseMessage httpResponse, string correlationId)
         {
-            var responseContent = new HttpResponseCloudMessageContent();
-
-            if ((int)httpResponse.StatusCode != 200)
+            var responseContent = new HttpResponseCloudMessageContent
             {
-                responseContent.StatusCode = (int)httpResponse.StatusCode;
-            }
+                StatusCode = (int)httpResponse.StatusCode
+            };
 
             var responseBody = await httpResponse.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
             if (responseBody.Any())
@@ -87,17 +100,6 @@ namespace Wirehome.Core.Cloud.Protocol
                 CorrelationId = correlationId,
                 Payload = _cloudMessageSerializer.Pack(responseContent)
             };
-        }
-
-        async Task<byte[]> LoadHttpRequestContent(HttpRequest httpRequest)
-        {
-            if (!httpRequest.ContentLength.HasValue)
-                return null;
-
-            var buffer = new byte[httpRequest.ContentLength.Value];
-            await httpRequest.Body.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-
-            return buffer;
         }
     }
 }

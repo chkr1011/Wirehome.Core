@@ -13,8 +13,8 @@ namespace Wirehome.Cloud.Services.Authorization
 {
     public class AuthorizationService
     {
-        private readonly PasswordHasher<string> _passwordHasher = new PasswordHasher<string>();
         private readonly RepositoryService _repositoryService;
+        readonly PasswordHasher<string> _passwordHasher = new PasswordHasher<string>();
 
         public AuthorizationService(RepositoryService repositoryService)
         {
@@ -27,18 +27,49 @@ namespace Wirehome.Cloud.Services.Authorization
 
             httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.IdentityUid, out var identityUidHeaderValue);
             httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.ChannelUid, out var channelUidHeaderValue);
-            httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.Password, out var password);
+            httpContext.Request.Headers.TryGetValue(CustomCloudHeaderNames.AccessToken, out var accessToken);
 
             var identityUid = identityUidHeaderValue.ToString().ToLowerInvariant();
             var channelUid = channelUidHeaderValue.ToString().ToLowerInvariant();
 
-            await AuthorizeInternal(identityUid, password).ConfigureAwait(false);
+            var identityConfiguration = await _repositoryService.TryGetIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
+            if (identityConfiguration == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            if (identityConfiguration.IsLocked)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            if (!identityConfiguration.DeviceAccessTokens.TryGetValue(accessToken, out var accessTokenConfiguration))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
             return new DeviceAuthorizationContext(identityUid, channelUid);
         }
 
-        public async Task Authorize(HttpContext httpContext, string identityUid, string password)
+        public async Task AuthorizeUser(HttpContext httpContext, string identityUid, string password)
         {
-            var claims = await AuthorizeInternal(identityUid, password).ConfigureAwait(false);
+            var identityConfiguration = await _repositoryService.TryGetIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
+            if (identityConfiguration == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            if (identityConfiguration.IsLocked)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            if (_passwordHasher.VerifyHashedPassword(identityUid, identityConfiguration.PasswordHash, password) != PasswordVerificationResult.Success)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var claims = new List<Claim>();
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
             var authenticationProperties = new AuthenticationProperties
@@ -52,45 +83,6 @@ namespace Wirehome.Cloud.Services.Authorization
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 authenticationProperties).ConfigureAwait(false);
-        }
-
-        async Task<List<Claim>> AuthorizeInternal(string identityUid, string password)
-        {
-            if (string.IsNullOrEmpty(identityUid) || string.IsNullOrEmpty(password))
-            {
-                throw new UnauthorizedAccessException();
-            }
-
-            identityUid = identityUid.ToLowerInvariant();
-
-            var identityConfiguration = await _repositoryService.TryGetIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
-
-            if (identityConfiguration == null)
-            {
-                throw new UnauthorizedAccessException();
-            }
-
-            if (identityConfiguration.IsLocked)
-            {
-                throw new UnauthorizedAccessException();
-            }
-            
-            if (_passwordHasher.VerifyHashedPassword(identityUid, identityConfiguration.PasswordHash, password) != PasswordVerificationResult.Success)
-            {
-                throw new UnauthorizedAccessException();
-            }
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, identityUid)
-            };
-
-            if (identityConfiguration.IsAdmin)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, "Administrator"));
-            }
-
-            return claims;
         }
 
         public Task SetPasswordAsync(string identityUid, string newPassword)

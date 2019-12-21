@@ -6,7 +6,7 @@
 
         public const string ChannelUid = "WirehomeCloud-ChannelUid";
 
-        public const string Password = "WirehomeCloud-Password";
+        public const string AccessToken = "WirehomeCloud-AccessToken";
 
         public const string Version = "WirehomeCloud-Version";
     }

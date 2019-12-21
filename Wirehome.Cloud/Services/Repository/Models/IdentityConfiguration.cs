@@ -13,5 +13,7 @@ namespace Wirehome.Cloud.Services.Repository.Models
         public string DefaultChannel { get; set; }
 
         public Dictionary<string, ChannelConfiguration> Channels { get; set; } = new Dictionary<string, ChannelConfiguration>();
+
+        public Dictionary<string, DeviceAccessTokenConfiguration> DeviceAccessTokens { get; set; } = new Dictionary<string, DeviceAccessTokenConfiguration>();
     }
 }

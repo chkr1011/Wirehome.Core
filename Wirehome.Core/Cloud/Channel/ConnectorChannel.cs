@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,9 +12,11 @@ namespace Wirehome.Core.Cloud.Channel
     public class ConnectorChannel
     {
         private const int MessageContentCompressionThreshold = 4096;
-                
-        private readonly ArraySegment<byte> _receiveBuffer = WebSocket.CreateServerBuffer(4096);
+        private const int ReceiveBufferSize = 1024 * 1024; // 1 MB
+
+        private readonly ArraySegment<byte> _receiveBuffer = new byte[ReceiveBufferSize];
         private readonly AsyncLock _lock = new AsyncLock();
+        private readonly ConnectorChannelOptions _options;
         private readonly WebSocket _webSocket;
         private readonly CloudMessageSerializer _cloudMessageSerializer;
         private readonly ILogger _logger;
@@ -32,8 +33,9 @@ namespace Wirehome.Core.Cloud.Channel
         private DateTime? _lastMessageSent;
         private DateTime? _lastMessageReceived;
 
-        public ConnectorChannel(WebSocket webSocket, CloudMessageSerializer cloudMessageSerializer, ILogger logger)
+        public ConnectorChannel(ConnectorChannelOptions options, WebSocket webSocket, CloudMessageSerializer cloudMessageSerializer, ILogger logger)
         {
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _webSocket = webSocket ?? throw new ArgumentNullException(nameof(webSocket));
             _cloudMessageSerializer = cloudMessageSerializer ?? throw new ArgumentNullException(nameof(cloudMessageSerializer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -153,7 +155,7 @@ namespace Wirehome.Core.Cloud.Channel
             {
                 // The entire message fits into one receive buffer. So there is no need for
                 // another MemoryStream which copies all the memory.
-                return new ArraySegment<byte>(_receiveBuffer.Array, 0, receiveResult.Count);
+                return _receiveBuffer.Slice(0, receiveResult.Count);
             }
 
             using (var buffer = new MemoryStream(receiveResult.Count * 2))
@@ -184,7 +186,7 @@ namespace Wirehome.Core.Cloud.Channel
                 var transportCloudMessage = _cloudMessageSerializer.Unpack<TransportCloudMessage>(buffer);
                 if (transportCloudMessage.PayloadIsCompressed == true)
                 {
-                    transportCloudMessage.Payload = Decompress(transportCloudMessage.Payload);
+                    transportCloudMessage.Payload = _cloudMessageSerializer.Decompress(transportCloudMessage.Payload);
                 }
 
                 return new CloudMessage
@@ -216,42 +218,16 @@ namespace Wirehome.Core.Cloud.Channel
                 Properties = cloudMessage.Properties
             };
 
-            if (cloudMessage.Payload.Count > MessageContentCompressionThreshold)
+            if (_options.UseCompression)
             {
-                transportCloudMessage.PayloadIsCompressed = true;
-                transportCloudMessage.Payload = Compress(cloudMessage.Payload);
+                if (transportCloudMessage.Payload.Count > MessageContentCompressionThreshold)
+                {
+                    transportCloudMessage.PayloadIsCompressed = true;
+                    transportCloudMessage.Payload = _cloudMessageSerializer.Compress(cloudMessage.Payload);
+                }
             }
 
             return transportCloudMessage;
-        }
-
-        static ArraySegment<byte> Compress(ArraySegment<byte> data)
-        {
-            using (var outputBuffer = new MemoryStream(data.Count / 2))
-            {
-                using (var inputBuffer = new MemoryStream(data.Array, data.Offset, data.Count, false))
-                using (var compressor = new BrotliStream(outputBuffer, CompressionMode.Compress, true))
-                {
-                    inputBuffer.CopyTo(compressor);
-                }
-
-                return new ArraySegment<byte>(outputBuffer.GetBuffer(), 0, (int)outputBuffer.Length);
-            }
-        }
-
-        static ArraySegment<byte> Decompress(ArraySegment<byte> data)
-        {
-            using (var outputBuffer = new MemoryStream(data.Count * 2))
-            {
-                using (var inputBuffer = new MemoryStream(data.Array, data.Offset, data.Count, false))
-                using (var decompressor = new BrotliStream(inputBuffer, CompressionMode.Decompress, false))
-                {
-                    decompressor.CopyTo(outputBuffer);
-                }
-
-                outputBuffer.Position = 0;
-                return new ArraySegment<byte>(outputBuffer.GetBuffer(), 0, (int)outputBuffer.Length);
-            }
         }
     }
 }

@@ -1,7 +1,5 @@
-﻿using IronPython.Runtime;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,22 +15,22 @@ using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Foundation.Model;
-using Wirehome.Core.Python;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Cloud
 {
     public class CloudService : IService
     {
+        readonly CloudMessageSerializer _cloudMessageSerializer = new CloudMessageSerializer();
         readonly Dictionary<string, RawCloudMessageHandler> _rawMessageHandlers = new Dictionary<string, RawCloudMessageHandler>();
         readonly HttpClient _httpClient = new HttpClient();
         readonly StorageService _storageService;
         readonly CloudMessageFactory _cloudMessageFactory;
-        readonly CloudMessageSerializer _cloudMessageSerializer;
-                
+                        
         readonly ILogger _logger;
 
         CancellationTokenSource _cancellationTokenSource;
+        CloudServiceOptions _options;
         ConnectorChannel _channel;
         bool _isConnected;
 
@@ -55,8 +53,9 @@ namespace Wirehome.Core.Cloud
             systemStatusService.Set("cloud.send_errors", () => _channel?.GetStatistics()?.SendErrors);
 
             _httpClient.BaseAddress = new Uri("http://127.0.0.1:80");
-
-            _cloudMessageSerializer = new CloudMessageSerializer();
+            // Disable compression for loopback connections
+            _httpClient.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("*;q=0");
+            
             _cloudMessageFactory = new CloudMessageFactory(_cloudMessageSerializer);
         }
 
@@ -94,42 +93,46 @@ namespace Wirehome.Core.Cloud
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                CloudServiceOptions options = null;
                 try
                 {
                     _isConnected = false;
 
-                    if (!_storageService.TryReadOrCreate(out options, CloudServiceOptions.Filename) || options == null)
+                    if (!_storageService.TryReadOrCreate(out _options, CloudServiceOptions.Filename) || _options == null)
                     {
                         continue;
                     }
 
-                    if (!options.IsEnabled)
+                    if (!_options.IsEnabled)
                     {
                         continue;
                     }
 
-                    if (string.IsNullOrEmpty(options.IdentityUid) || string.IsNullOrEmpty(options.Password))
+                    if (string.IsNullOrEmpty(_options.IdentityUid) || string.IsNullOrEmpty(_options.AccessToken))
                     {
                         continue;
                     }
 
                     using (var webSocketClient = new ClientWebSocket())
                     {
-                        using (var timeout = new CancellationTokenSource(options.ReconnectDelay))
+                        using (var timeout = new CancellationTokenSource(_options.ReconnectDelay))
                         {
-                            var url = $"wss://{options.Host}/Connector";
+                            var url = $"wss://{_options.Host}/Connector";
 
-                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.IdentityUid, options.IdentityUid);
-                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.ChannelUid, options.ChannelUid);
-                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.Password, options.Password);
+                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.IdentityUid, _options.IdentityUid);
+                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.ChannelUid, _options.ChannelUid);
+                            webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.AccessToken, _options.AccessToken);
                             webSocketClient.Options.SetRequestHeader(CustomCloudHeaderNames.Version, WirehomeCoreVersion.Version);
 
                             await webSocketClient.ConnectAsync(new Uri(url, UriKind.Absolute), timeout.Token).ConfigureAwait(false);
                         }
 
-                        _channel = new ConnectorChannel(webSocketClient, _cloudMessageSerializer, _logger);
-                        _logger.LogInformation($"Connected with Wirehome.Cloud at host '{options.Host}'.");
+                        var channelOptions = new ConnectorChannelOptions
+                        {
+                            UseCompression = _options.UseCompression
+                        };
+
+                        _channel = new ConnectorChannel(channelOptions, webSocketClient, _cloudMessageSerializer, _logger);
+                        _logger.LogInformation($"Connected with Wirehome.Cloud at host '{_options.Host}'.");
                         _isConnected = true;
 
                         while (_channel.IsConnected && !cancellationToken.IsCancellationRequested)
@@ -152,7 +155,7 @@ namespace Wirehome.Core.Cloud
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogError(exception, $"Error while connecting with Wirehome.Cloud service at host '{options?.Host}'.");
+                    _logger.LogError(exception, $"Error while connecting with Wirehome.Cloud service at host '{_options?.Host}'.");
                 }
                 finally
                 {
@@ -160,9 +163,9 @@ namespace Wirehome.Core.Cloud
                     _channel = null;
 
                     var delay = TimeSpan.FromSeconds(10);
-                    if (options != null && options.ReconnectDelay > TimeSpan.Zero)
+                    if (_options != null && _options.ReconnectDelay > TimeSpan.Zero)
                     {
-                        delay = options.ReconnectDelay;
+                        delay = _options.ReconnectDelay;
                     }
 
                     await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
@@ -251,9 +254,9 @@ namespace Wirehome.Core.Cloud
                     httpRequestMessage.Method = new HttpMethod(requestContent.Method);
                     httpRequestMessage.RequestUri = new Uri(requestContent.Uri, UriKind.Relative);
 
-                    if (requestContent.Content?.Any() == true)
+                    if (requestContent.Content.Count > 0)
                     {
-                        httpRequestMessage.Content = new ByteArrayContent(requestContent.Content);
+                        httpRequestMessage.Content = new ByteArrayContent(requestContent.Content.Array, requestContent.Content.Offset, requestContent.Content.Count);
                     }
 
                     if (requestContent.Headers?.Any() == true)
