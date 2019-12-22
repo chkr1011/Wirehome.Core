@@ -4,6 +4,8 @@ namespace Wirehome.Cloud.Services.Repository.Models
 {
     public class ChannelConfiguration
     {
-        public List<string> AllowedIdentities { get; set; }
+        public bool IsDefault { get; set; }
+
+        public Dictionary<string, AllowedIdentityConfiguration> AllowedIdentities { get; set; } = new Dictionary<string, AllowedIdentityConfiguration>();
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Wirehome.Cloud.Controllers
+﻿namespace Wirehome.Cloud.Controllers.Models
 {
     public class LoginModel
     {

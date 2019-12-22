@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Text;
 using System.Threading.Tasks;
+using Wirehome.Cloud.Services.Authorization;
 using Wirehome.Cloud.Services.DeviceConnector;
 using Wirehome.Core.Cloud.Protocol;
 
@@ -15,12 +15,12 @@ namespace Wirehome.Cloud.Controllers
     public class CloudController : Controller
     {
         private readonly DeviceConnectorService _deviceConnectorService;
-        private readonly CloudMessageFactory _cloudMessageFactory;
+        private readonly AuthorizationService _authorizationService;
 
-        public CloudController(DeviceConnectorService deviceConnectorService, CloudMessageFactory cloudMessageFactory)
+        public CloudController(DeviceConnectorService deviceConnectorService, AuthorizationService authorizationService)
         {
             _deviceConnectorService = deviceConnectorService ?? throw new ArgumentNullException(nameof(deviceConnectorService));
-            _cloudMessageFactory = cloudMessageFactory ?? throw new ArgumentNullException(nameof(cloudMessageFactory));
+            _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
         }
         
         [HttpGet]
@@ -52,15 +52,15 @@ namespace Wirehome.Cloud.Controllers
         [HttpPost]
         [Route("/api/v1/cloud/ping")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task GetPing()
+        public async Task GetPing()
         {
             var request = new CloudMessage
             {
                 Type = CloudMessageType.Ping
             };
 
-            var deviceSessionIdentifier = HttpContext.GetDeviceSessionIdentifier();
-            return _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted);
+            var deviceSessionIdentifier = await _authorizationService.GetDeviceSessionIdentifier(HttpContext).ConfigureAwait(false);
+            await _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted).ConfigureAwait(false);
         }
 
         [HttpPost]
@@ -76,7 +76,7 @@ namespace Wirehome.Cloud.Controllers
                 Payload = Encoding.UTF8.GetBytes(content.ToString())
             };
 
-            var deviceSessionIdentifier = HttpContext.GetDeviceSessionIdentifier();
+            var deviceSessionIdentifier = await _authorizationService.GetDeviceSessionIdentifier(HttpContext).ConfigureAwait(false);
             var responseMessage = await _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted).ConfigureAwait(false);
 
             return new ContentResult
@@ -84,17 +84,6 @@ namespace Wirehome.Cloud.Controllers
                 Content = Encoding.UTF8.GetString(responseMessage.Payload),
                 ContentType = "application/json"
             };
-        }
-
-        [HttpGet]
-        [Route("/api/v1/cloud/passwords/{password}/hash")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public string GetPasswordHash(string password)
-        {
-            if (password == null) throw new ArgumentNullException(nameof(password));
-
-            var passwordHasher = new PasswordHasher<string>();
-            return passwordHasher.HashPassword(string.Empty, password);
         }
     }
 }

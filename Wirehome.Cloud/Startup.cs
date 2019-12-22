@@ -34,8 +34,8 @@ namespace Wirehome.Cloud
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(o =>
             {
-                o.LoginPath = "/Cloud/Account/Login";
-                o.LogoutPath = "/Cloud/Account/Logout";
+                o.LoginPath = "/cloud/account/login";
+                o.LogoutPath = "/cloud/account/logout";
                 o.Events.OnRedirectToLogin = context =>
                 {
                     // This ensures that API calls are not forwarded to the login
@@ -100,13 +100,13 @@ namespace Wirehome.Cloud
 
         private static void ConfigureSwagger(IApplicationBuilder app)
         {
-            app.UseSwagger(o => o.RouteTemplate = "/Cloud/api/{documentName}/swagger.json");
+            app.UseSwagger(o => o.RouteTemplate = "/cloud/api/{documentName}/swagger.json");
 
             app.UseSwaggerUI(o =>
             {
-                o.RoutePrefix = "Cloud/api";
+                o.RoutePrefix = "cloud/api";
                 o.DocumentTitle = "Wirehome.Cloud.API";
-                o.SwaggerEndpoint("/Cloud/api/v1/swagger.json", "Wirehome.Cloud API v1");
+                o.SwaggerEndpoint("/cloud/api/v1/swagger.json", "Wirehome.Cloud API v1");
             });
         }
 

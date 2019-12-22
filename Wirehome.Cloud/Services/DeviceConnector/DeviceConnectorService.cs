@@ -153,7 +153,7 @@ namespace Wirehome.Cloud.Services.DeviceConnector
                     await _authorizationService.AuthorizeUser(httpContext, username, password).ConfigureAwait(false);
                 }
 
-                var deviceSessionIdentifier = httpContext.GetDeviceSessionIdentifier();
+                var deviceSessionIdentifier = await _authorizationService.GetDeviceSessionIdentifier(httpContext).ConfigureAwait(false);
                 if (deviceSessionIdentifier == null)
                 {
                     httpContext.Response.Redirect("/Cloud/Account/Login");
