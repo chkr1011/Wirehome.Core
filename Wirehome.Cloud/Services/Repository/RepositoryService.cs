@@ -2,11 +2,13 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Wirehome.Cloud.Services.Repository.Models;
+using Wirehome.Cloud.Services.Repository.Entities;
 using Wirehome.Core.Foundation;
 using Wirehome.Core.Storage;
 
@@ -32,14 +34,52 @@ namespace Wirehome.Cloud.Services.Repository
             }
         }
 
-        public async Task<IdentityConfiguration> TryGetIdentityConfigurationAsync(string identityUid)
+        public async Task<KeyValuePair<string, IdentityEntity>> FindIdentityEntityByChannelAccessToken(string channelAccessToken)
+        {
+            if (channelAccessToken == null) throw new ArgumentNullException(nameof(channelAccessToken));
+
+            await _lock.EnterAsync().ConfigureAwait(false);
+            try
+            {
+                foreach (var identityPath in Directory.GetDirectories(_rootPath))
+                {
+                    var identityUid = Path.GetFileName(identityPath);
+
+                    var identityEntity = await TryReadIdentityEntityAsync(identityUid).ConfigureAwait(false);
+                    if (identityEntity == null)
+                    {
+                        continue;
+                    }
+
+                    if (identityEntity.Channels == null)
+                    {
+                        continue;
+                    }
+
+                    var channelEntitiy = identityEntity.Channels.Values.FirstOrDefault(c => string.Equals(c.AccessToken?.Value, channelAccessToken, StringComparison.Ordinal));
+                    
+                    if (channelEntitiy != null && channelEntitiy.AccessToken.ValidUntil > DateTime.UtcNow)
+                    {
+                        return new KeyValuePair<string, IdentityEntity>(identityUid, identityEntity);
+                    }
+                }
+            }
+            finally
+            {
+                _lock.Exit();
+            }
+
+            return new KeyValuePair<string, IdentityEntity>(null, null);
+        }
+
+        public async Task<IdentityEntity> TryGetIdentityEntityAsync(string identityUid)
         {
             if (identityUid == null) throw new ArgumentNullException(nameof(identityUid));
 
             await _lock.EnterAsync().ConfigureAwait(false);
             try
             {
-                return await TryReadIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
+                return await TryReadIdentityEntityAsync(identityUid).ConfigureAwait(false);
             }
             finally
             {
@@ -47,20 +87,17 @@ namespace Wirehome.Cloud.Services.Repository
             }
         }
 
-        public async Task SetPasswordAsync(string identityUid, string newPassword)
+        public async Task UpdateIdentity(string identityUid, Action<IdentityEntity> updateCallback)
         {
-            if (identityUid == null) throw new ArgumentNullException(nameof(identityUid));
-            if (newPassword == null) throw new ArgumentNullException(nameof(newPassword));
+            if (updateCallback == null) throw new ArgumentNullException(nameof(updateCallback));
 
             await _lock.EnterAsync().ConfigureAwait(false);
             try
             {
-                var identityConfiguration = await TryReadIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
+                var identityEntity = await TryReadIdentityEntityAsync(identityUid).ConfigureAwait(false);
+                updateCallback(identityEntity);
 
-                var passwordHasher = new PasswordHasher<string>();
-                identityConfiguration.PasswordHash = passwordHasher.HashPassword(string.Empty, newPassword);
-
-                await WriteIdentityConfigurationAsync(identityUid, identityConfiguration).ConfigureAwait(false);
+                await WriteIdentityEntityAsync(identityUid, identityEntity).ConfigureAwait(false);
             }
             finally
             {
@@ -68,7 +105,7 @@ namespace Wirehome.Cloud.Services.Repository
             }
         }
 
-        async Task<IdentityConfiguration> TryReadIdentityConfigurationAsync(string identityUid)
+        async Task<IdentityEntity> TryReadIdentityEntityAsync(string identityUid)
         {
             var filename = Path.Combine(_rootPath, identityUid, DefaultFilenames.Configuration);
             if (!File.Exists(filename))
@@ -79,7 +116,7 @@ namespace Wirehome.Cloud.Services.Repository
             try
             {
                 var json = await File.ReadAllTextAsync(filename, Encoding.UTF8).ConfigureAwait(false);
-                var identityConfiguration = JsonConvert.DeserializeObject<IdentityConfiguration>(json);
+                var identityConfiguration = JsonConvert.DeserializeObject<IdentityEntity>(json);
 
                 return identityConfiguration;
             }
@@ -91,7 +128,7 @@ namespace Wirehome.Cloud.Services.Repository
             }
         }
 
-        Task WriteIdentityConfigurationAsync(string identityUid, IdentityConfiguration identityConfiguration)
+        Task WriteIdentityEntityAsync(string identityUid, IdentityEntity identityConfiguration)
         {
             if (identityUid == null) throw new ArgumentNullException(nameof(identityUid));
             if (identityConfiguration == null) throw new ArgumentNullException(nameof(identityConfiguration));

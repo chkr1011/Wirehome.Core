@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Wirehome.Core.Contracts;
@@ -8,7 +7,8 @@ namespace Wirehome.Core.App
 {
     public class AppService : IService
     {
-        private readonly ConcurrentDictionary<string, AppPanelDefinition> _panelDefinitions = new ConcurrentDictionary<string, AppPanelDefinition>();
+        readonly Dictionary<string, AppPanelDefinition> _panelDefinitions = new Dictionary<string, AppPanelDefinition>();
+        readonly Dictionary<string, Func<object>> _statusProviders = new Dictionary<string, Func<object>>();
 
         public void Start()
         {
@@ -16,24 +16,79 @@ namespace Wirehome.Core.App
 
         public List<AppPanelDefinition> GetRegisteredPanels()
         {
-            return _panelDefinitions.Values.ToList();
+            lock (_panelDefinitions)
+            {
+                return _panelDefinitions.Values.ToList();
+            }
         }
 
         public void RegisterPanel(AppPanelDefinition definition)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
 
-            _panelDefinitions[definition.Uid] = definition;
+            lock (_panelDefinitions)
+            {
+                _panelDefinitions[definition.Uid] = definition;
+            }
         }
 
         public bool UnregisterPanel(string uid)
         {
-            return _panelDefinitions.TryRemove(uid, out _);
+            if (uid is null) throw new ArgumentNullException(nameof(uid));
+
+            lock (_panelDefinitions)
+            {
+                return _panelDefinitions.Remove(uid);
+            }
         }
 
         public bool PanelRegistered(string uid)
         {
-            return _panelDefinitions.ContainsKey(uid);
+            if (uid is null) throw new ArgumentNullException(nameof(uid));
+            
+            lock (_panelDefinitions)
+            {
+                return _panelDefinitions.ContainsKey(uid);
+            }
+        }
+
+        public void RegisterStatusProvider(string uid, Func<object> provider)
+        {
+            if (uid is null) throw new ArgumentNullException(nameof(uid));
+            if (provider is null) throw new ArgumentNullException(nameof(provider));
+
+            lock (_statusProviders)
+            {
+                _statusProviders[uid] = provider;
+            }
+        }
+
+        public void UnregisterStatusProvider(string uid)
+        {
+            if (uid is null) throw new ArgumentNullException(nameof(uid));
+
+            lock (_statusProviders)
+            {
+                _statusProviders.Remove(uid);
+            }
+        }
+
+        public Dictionary<string, object> GenerateStatusContainer()
+        {
+            var statusContainer = new Dictionary<string, object>
+            {
+                ["panels"] = GetRegisteredPanels()
+            };
+
+            lock (_statusProviders)
+            {
+                foreach (var statusProvider in _statusProviders)
+                {
+                    statusContainer[statusProvider.Key] = statusProvider.Value();
+                }
+            }
+            
+            return statusContainer;
         }
     }
 }

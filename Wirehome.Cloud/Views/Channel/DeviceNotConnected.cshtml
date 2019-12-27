@@ -2,6 +2,8 @@
     Layout = "~/Views/Layout.cshtml";
 }
 
+@model System.String
+
 <style type="text/css">
     body {
         background-color: #DADADA;
@@ -20,7 +22,7 @@
                 <i class="dont icon"></i>
                 Your device is not connected. Please try again later.
             </div>
-            <button class="ui primary button blue" onclick="">Try again</button>
+            <a class="ui primary button blue" href="@Model">Try again (@Model)</a>
         </div>
     </div>
 </div>

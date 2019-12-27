@@ -21,6 +21,7 @@ namespace Wirehome.Core.HTTP.Controllers
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
         }
 
+        // TODO: Move to dedicated factory!
         public static object CreateComponentModel(Component component)
         {
             return new

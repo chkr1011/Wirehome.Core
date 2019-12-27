@@ -22,9 +22,9 @@ namespace Wirehome.Cloud.Filters
                 return true;
             }
 
-            if (exception is DeviceSessionNotFoundException)
+            if (exception is OpenChannelNotFoundException)
             {
-                httpContext.Response.Redirect("/Cloud/Channel/DeviceNotConnected");
+                httpContext.Response.Redirect("/Cloud/Channel/DeviceNotConnected?returnUrl=" + httpContext.Request.Path);
                 return true;
             }
 

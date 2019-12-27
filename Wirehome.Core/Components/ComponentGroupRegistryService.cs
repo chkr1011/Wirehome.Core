@@ -8,6 +8,8 @@ using Wirehome.Core.Diagnostics;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
+using Wirehome.Core.App;
+using Wirehome.Core.HTTP.Controllers;
 
 namespace Wirehome.Core.Components
 {
@@ -22,21 +24,28 @@ namespace Wirehome.Core.Components
 
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
-
+        private readonly AppService _appService;
         private readonly ILogger _logger;
 
         public ComponentGroupRegistryService(
             StorageService storageService,
             SystemStatusService systemInformationService,
             MessageBusService messageBusService,
+            AppService appService,
             ILogger<ComponentGroupRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
+            _appService = appService ?? throw new ArgumentNullException(nameof(appService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemInformationService == null) throw new ArgumentNullException(nameof(systemInformationService));
             systemInformationService.Set("component_group_registry.count", () => _componentGroups.Count);
+
+            appService.RegisterStatusProvider("componentGroups", () =>
+            {
+                return GetComponentGroups().Select(c => ComponentGroupsController.CreateComponentGroupModel(c));
+            });
         }
 
         public void Start()

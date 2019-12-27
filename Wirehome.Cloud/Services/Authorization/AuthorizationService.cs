@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Wirehome.Cloud.Services.DeviceConnector;
 using Wirehome.Cloud.Services.Repository;
+using Wirehome.Cloud.Services.Repository.Entities;
 using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Cloud.Services.Authorization
@@ -23,39 +25,38 @@ namespace Wirehome.Cloud.Services.Authorization
             _repositoryService = repositoryService ?? throw new ArgumentNullException(nameof(repositoryService));
         }
 
-        public async Task<DeviceAuthorizationContext> AuthorizeDevice(HttpContext httpContext)
+        public async Task<ChannelIdentifier> AuthorizeDevice(HttpContext httpContext)
         {
             if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 
-            httpContext.Request.Headers.TryGetValue(CloudHeaderNames.IdentityUid, out var identityUidHeaderValue);
-            httpContext.Request.Headers.TryGetValue(CloudHeaderNames.ChannelUid, out var channelUidHeaderValue);
-            httpContext.Request.Headers.TryGetValue(CloudHeaderNames.AccessToken, out var accessToken);
-
-            var identityUid = identityUidHeaderValue.ToString().ToLowerInvariant();
-            var channelUid = channelUidHeaderValue.ToString().ToLowerInvariant();
-
-            var identityConfiguration = await _repositoryService.TryGetIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
-            if (identityConfiguration == null)
+            if (!httpContext.Request.Headers.TryGetValue(CloudHeaderNames.ChannelAccessToken, out var channelAccessToken))
             {
                 throw new UnauthorizedAccessException();
             }
 
-            if (identityConfiguration.IsLocked)
+            var identityEntity = await _repositoryService.FindIdentityEntityByChannelAccessToken(channelAccessToken).ConfigureAwait(false);
+            if (identityEntity.Key == null)
             {
                 throw new UnauthorizedAccessException();
             }
 
-            if (!identityConfiguration.DeviceAccessTokens.TryGetValue(accessToken, out var accessTokenConfiguration))
+            if (identityEntity.Value.IsLocked)
             {
                 throw new UnauthorizedAccessException();
             }
 
-            return new DeviceAuthorizationContext(identityUid, channelUid);
+            var channelEntity = identityEntity.Value.Channels.First(c => string.Equals(c.Value.AccessToken.Value, channelAccessToken, StringComparison.Ordinal));
+            if (channelEntity.Key == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            return new ChannelIdentifier(identityEntity.Key, channelEntity.Key);
         }
 
         public async Task AuthorizeUser(HttpContext httpContext, string identityUid, string password)
         {
-            var identityConfiguration = await _repositoryService.TryGetIdentityConfigurationAsync(identityUid).ConfigureAwait(false);
+            var identityConfiguration = await _repositoryService.TryGetIdentityEntityAsync(identityUid).ConfigureAwait(false);
             if (identityConfiguration == null)
             {
                 throw new UnauthorizedAccessException();
@@ -71,9 +72,11 @@ namespace Wirehome.Cloud.Services.Authorization
                 throw new UnauthorizedAccessException();
             }
 
-            var claims = new List<Claim>();
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, identityUid)
+            };
 
-            claims.Add(new Claim(ClaimTypes.Name, identityUid));
             if (identityConfiguration.IsAdmin)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "admin"));
@@ -99,19 +102,23 @@ namespace Wirehome.Cloud.Services.Authorization
                 defaultChannel = identityConfiguration.Channels.FirstOrDefault();
             }
 
-            httpContext.Response.Cookies.Append(CloudCookieNames.ChannelUid, defaultChannel.Key);
+            httpContext.Response.Cookies.Append(CloudCookieNames.ChannelUid, defaultChannel.Key, new CookieOptions
+            {
+                IsEssential = true
+            });
         }
 
-        public Task SetPasswordAsync(string identityUid, string newPassword)
-        {
-            return _repositoryService.SetPasswordAsync(identityUid, newPassword);
-        }
-
-        public async Task<DeviceSessionIdentifier> GetDeviceSessionIdentifier(HttpContext httpContext)
+        public async Task<ChannelIdentifier> GetChannelIdentifier(HttpContext httpContext)
         {
             if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
 
             if (httpContext.User == null)
+            {
+                return null;
+            }
+
+            var identityUid = httpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            if (string.IsNullOrEmpty(identityUid))
             {
                 return null;
             }
@@ -136,19 +143,85 @@ namespace Wirehome.Cloud.Services.Authorization
                     throw new InvalidOperationException("Channel UID is invalid.");
                 }
 
-                return new DeviceSessionIdentifier(fragments[0], fragments[1]);
-                // TODO: Check if target user granted access!
-                await Task.CompletedTask;
+                var owningIdentityUid = fragments[0];
+                channelUid = fragments[1];
+
+                var owningIdentity = await _repositoryService.TryGetIdentityEntityAsync(owningIdentityUid).ConfigureAwait(false);
+                if (owningIdentity == null)
+                {
+                    return null;
+                }
+
+                if (!owningIdentity.Channels.TryGetValue(channelUid, out var owningChannel))
+                {
+                    return null;
+                }
+
+                if (!owningChannel.AllowedIdentities.TryGetValue(identityUid, out var allowedIdentityEntity))
+                {
+                    return null;
+                }
+
+                return new ChannelIdentifier(owningIdentityUid, channelUid);
             }
 
-            // Use the identity from the currently authenticated user.
-            var identityUid = httpContext.User.Claims.SingleOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-            if (string.IsNullOrEmpty(identityUid))
+            return new ChannelIdentifier(identityUid, channelUid);
+        }
+
+        public async Task<AccessTokenEntity> UpdateChannelAccessToken(string identityUid, string channelUid)
+        {
+            if (identityUid is null) throw new ArgumentNullException(nameof(identityUid));
+            if (channelUid is null) throw new ArgumentNullException(nameof(channelUid));
+
+            var accessTokenEntity = new AccessTokenEntity
             {
-                return null;
-            }
+                Value = GenerateAccessToken(),
+                ValidUntil = DateTime.UtcNow.AddDays(30)
+            };
 
-            return new DeviceSessionIdentifier(identityUid, channelUid);
+            await _repositoryService.UpdateIdentity(identityUid, e =>
+            {
+                if (!e.Channels.TryGetValue(channelUid, out var channel))
+                {
+                    channel = new ChannelEntity();
+                    e.Channels[channelUid] = channel;
+                }
+
+                channel.AccessToken = accessTokenEntity;
+
+            }).ConfigureAwait(false);
+
+            return accessTokenEntity;
+        }
+
+        public Task UpdatePassword(string identityUid, string newPassword)
+        {
+            if (identityUid is null) throw new ArgumentNullException(nameof(identityUid));
+            if (newPassword is null) throw new ArgumentNullException(nameof(newPassword));
+
+            return _repositoryService.UpdateIdentity(identityUid, e =>
+            {
+                var passwordHasher = new PasswordHasher<string>();
+                e.PasswordHash = passwordHasher.HashPassword(identityUid, newPassword);
+            });
+        }
+
+        public Task<KeyValuePair<string, IdentityEntity>> FindIdentityUidByChannelAccessToken(string channelAccessToken)
+        {
+            if (channelAccessToken is null) throw new ArgumentNullException(nameof(channelAccessToken));
+
+            return _repositoryService.FindIdentityEntityByChannelAccessToken(channelAccessToken);
+        }
+
+        string GenerateAccessToken()
+        {
+            using (var random = new RNGCryptoServiceProvider())
+            {
+                var buffer = new byte[64];
+                random.GetNonZeroBytes(buffer);
+
+                return Convert.ToBase64String(buffer);
+            }
         }
     }
 }

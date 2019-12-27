@@ -10,6 +10,7 @@ using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Resources;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
+using Wirehome.Core.App;
 
 namespace Wirehome.Core.Notifications
 {
@@ -29,7 +30,7 @@ namespace Wirehome.Core.Notifications
         private readonly ResourceService _resourcesService;
         private readonly MessageBusService _messageBusService;
         private readonly SystemCancellationToken _systemCancellationToken;
-
+        private readonly AppService _appService;
         private readonly ILogger _logger;
 
         public NotificationsService(
@@ -38,12 +39,14 @@ namespace Wirehome.Core.Notifications
             ResourceService resourcesService,
             MessageBusService messageBusService,
             SystemCancellationToken systemCancellationToken,
+            AppService appService,
             ILogger<NotificationsService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _resourcesService = resourcesService ?? throw new ArgumentNullException(nameof(resourcesService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
+            _appService = appService ?? throw new ArgumentNullException(nameof(appService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
@@ -53,6 +56,11 @@ namespace Wirehome.Core.Notifications
                 {
                     return _notifications.Count;
                 }
+            });
+
+            _appService.RegisterStatusProvider("notifications", () =>
+            {
+                return GetNotifications();
             });
         }
 

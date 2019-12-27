@@ -13,6 +13,8 @@ using Wirehome.Core.MessageBus;
 using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python.Models;
 using Wirehome.Core.Storage;
+using Wirehome.Core.App;
+using Wirehome.Core.HTTP.Controllers;
 
 namespace Wirehome.Core.Components
 {
@@ -26,6 +28,7 @@ namespace Wirehome.Core.Components
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
         private readonly ComponentInitializerService _componentInitializerService;
+        private readonly AppService _appService;
         private readonly ILogger _logger;
 
         public ComponentRegistryService(
@@ -33,17 +36,24 @@ namespace Wirehome.Core.Components
             SystemStatusService systemStatusService,
             MessageBusService messageBusService,
             ComponentInitializerService componentInitializerService,
+            AppService appService,
             ILogger<ComponentRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _componentInitializerService = componentInitializerService ?? throw new ArgumentNullException(nameof(componentInitializerService));
+            _appService = appService ?? throw new ArgumentNullException(nameof(appService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _messageBusWrapper = new ComponentRegistryMessageBusWrapper(messageBusService);
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("component_registry.count", () => _components.Count);
+
+            appService.RegisterStatusProvider("components", () =>
+            {
+                return GetComponents().Select(c => ComponentsController.CreateComponentModel(c));
+            });
         }
 
         public void Start()

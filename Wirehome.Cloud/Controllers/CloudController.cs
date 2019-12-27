@@ -36,7 +36,7 @@ namespace Wirehome.Cloud.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public IActionResult GetChannelStatistics(string identityUid, string channelUid = "default")
         {
-            var deviceSessionIdentifier = new DeviceSessionIdentifier(identityUid, channelUid);
+            var deviceSessionIdentifier = new ChannelIdentifier(identityUid, channelUid);
             return new ObjectResult(_deviceConnectorService.GetChannelStatistics(deviceSessionIdentifier));
         }
 
@@ -45,7 +45,7 @@ namespace Wirehome.Cloud.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteChannelStatistics(string identityUid, string channelUid = "default")
         {
-            var deviceSessionIdentifier = new DeviceSessionIdentifier(identityUid, channelUid);
+            var deviceSessionIdentifier = new ChannelIdentifier(identityUid, channelUid);
             _deviceConnectorService.ResetChannelStatistics(deviceSessionIdentifier);
         }
 
@@ -59,7 +59,7 @@ namespace Wirehome.Cloud.Controllers
                 Type = CloudMessageType.Ping
             };
 
-            var deviceSessionIdentifier = await _authorizationService.GetDeviceSessionIdentifier(HttpContext).ConfigureAwait(false);
+            var deviceSessionIdentifier = await _authorizationService.GetChannelIdentifier(HttpContext).ConfigureAwait(false);
             await _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted).ConfigureAwait(false);
         }
 
@@ -76,7 +76,7 @@ namespace Wirehome.Cloud.Controllers
                 Payload = Encoding.UTF8.GetBytes(content.ToString())
             };
 
-            var deviceSessionIdentifier = await _authorizationService.GetDeviceSessionIdentifier(HttpContext).ConfigureAwait(false);
+            var deviceSessionIdentifier = await _authorizationService.GetChannelIdentifier(HttpContext).ConfigureAwait(false);
             var responseMessage = await _deviceConnectorService.Invoke(deviceSessionIdentifier, request, HttpContext.RequestAborted).ConfigureAwait(false);
 
             return new ContentResult

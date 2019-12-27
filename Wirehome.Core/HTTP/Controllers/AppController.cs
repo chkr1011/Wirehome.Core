@@ -45,5 +45,13 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             return _appService.GetRegisteredPanels();
         }
+
+        [HttpGet]
+        [Route("api/v1/app/status")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public IActionResult GetStatus()
+        {
+            return new ObjectResult(_appService.GenerateStatusContainer());
+        }
     }
 }

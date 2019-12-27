@@ -159,7 +159,7 @@ namespace Wirehome.Cloud
                 config.UseWebSockets(new WebSocketOptions
                 {
                     KeepAliveInterval = TimeSpan.FromMinutes(2),
-                    ReceiveBufferSize = 4096
+                    ReceiveBufferSize = 1024 * 1024 // 1 MB
                 });
 
                 config.Use(async (context, next) =>
@@ -172,20 +172,21 @@ namespace Wirehome.Cloud
 
                     try
                     {
-                        var authorizationContext = await authorizationService.AuthorizeDevice(context).ConfigureAwait(false);
-
-                        var deviceSessionIdentifier = new DeviceSessionIdentifier(
-                            authorizationContext.IdentityUid,
-                            authorizationContext.ChannelUid);
+                        var channelIdentifier = await authorizationService.AuthorizeDevice(context).ConfigureAwait(false);
 
                         using (var webSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false))
                         {
-                            await deviceConnectorService.RunAsync(deviceSessionIdentifier, webSocket, context.RequestAborted).ConfigureAwait(false);
+                            await deviceConnectorService.RunAsync(channelIdentifier, webSocket, context.RequestAborted).ConfigureAwait(false);
                         }
                     }
                     catch (UnauthorizedAccessException)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    }
+                    catch (Exception exception)
+                    {
+                        //_logger.LogError(exception, "Error while handling device connection.");
+                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                     }
                     finally
                     {

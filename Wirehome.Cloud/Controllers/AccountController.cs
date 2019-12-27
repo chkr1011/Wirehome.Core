@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
+using System.Net;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Wirehome.Cloud.Controllers.Models;
 using Wirehome.Cloud.Services.Authorization;
@@ -17,6 +20,38 @@ namespace Wirehome.Cloud.Controllers
         public AccountController(AuthorizationService authorizationService)
         {
             _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
+        }
+
+        [Route("cloud/account/channel/{channelUid}/token")]
+        [HttpGet]
+        public async Task<IActionResult> GetToken(string channelUid, string refreshToken = null)
+        {
+            string identityUid;
+            if (HttpContext.User != null)
+            {
+                identityUid = HttpContext.User.Claims.First(c => c.Type == ClaimTypes.Name).Value;
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(refreshToken))
+                {
+                    return StatusCode((int)HttpStatusCode.Unauthorized);
+                }
+
+                var identityEntity = await _authorizationService.FindIdentityUidByChannelAccessToken(refreshToken).ConfigureAwait(false);
+                if (identityEntity.Key == null)
+                {
+                    throw new UnauthorizedAccessException();
+                }
+
+                identityUid = identityEntity.Key;
+
+                throw new NotImplementedException();
+            }
+
+            var newAccessToken = await _authorizationService.UpdateChannelAccessToken(identityUid, channelUid).ConfigureAwait(false);
+                
+            return new ObjectResult(newAccessToken);
         }
 
         [Route("cloud/account")]
@@ -76,7 +111,7 @@ namespace Wirehome.Cloud.Controllers
                 throw new InvalidOperationException();
             }
 
-            await _authorizationService.SetPasswordAsync(User.Identity.Name, newPassword).ConfigureAwait(false);
+            await _authorizationService.UpdatePassword(User.Identity.Name, newPassword).ConfigureAwait(false);
             return await Logout().ConfigureAwait(false);
         }
     }

@@ -18,6 +18,7 @@ namespace Wirehome.Core.HTTP.Controllers
             _componentGroupRegistryService = componentGroupRegistryService ?? throw new ArgumentNullException(nameof(componentGroupRegistryService));
         }
 
+        // TODO: Move to dedicated factory!
         public static object CreateComponentGroupModel(ComponentGroup componentGroup)
         {
             return new

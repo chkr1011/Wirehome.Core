@@ -107,7 +107,7 @@ namespace Wirehome.Core.Cloud
                         continue;
                     }
 
-                    if (string.IsNullOrEmpty(_options.IdentityUid) || string.IsNullOrEmpty(_options.AccessToken))
+                    if (string.IsNullOrEmpty(_options.ChannelAccessToken))
                     {
                         continue;
                     }
@@ -118,9 +118,7 @@ namespace Wirehome.Core.Cloud
                         {
                             var url = $"wss://{_options.Host}/Connector";
 
-                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.IdentityUid, _options.IdentityUid);
-                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.ChannelUid, _options.ChannelUid);
-                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.AccessToken, _options.AccessToken);
+                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.ChannelAccessToken, _options.ChannelAccessToken);
                             webSocketClient.Options.SetRequestHeader(CloudHeaderNames.Version, WirehomeCoreVersion.Version);
 
                             await webSocketClient.ConnectAsync(new Uri(url, UriKind.Absolute), timeout.Token).ConfigureAwait(false);

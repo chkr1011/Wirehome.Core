@@ -10,11 +10,7 @@ namespace Wirehome.Core.Cloud
 
         public string Host { get; set; } = "wirehomecloud.azurewebsites.net";
 
-        public string IdentityUid { get; set; }
-
-        public string AccessToken { get; set; }
-
-        public string ChannelUid { get; set; } = "default";
+        public string ChannelAccessToken { get; set; }
 
         public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(10);
 

@@ -8,14 +8,14 @@ using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Cloud.Services.DeviceConnector
 {
-    public class DeviceSession
+    public class OpenChannel
     {
         readonly Dictionary<string, TaskCompletionSource<CloudMessage>> _messageAwaiters = new Dictionary<string, TaskCompletionSource<CloudMessage>>();
-        readonly DeviceSessionIdentifier _identifier;
+        readonly ChannelIdentifier _identifier;
         readonly ConnectorChannel _channel;
         readonly ILogger _logger;
         
-        public DeviceSession(DeviceSessionIdentifier identifier, ConnectorChannel channel, ILogger logger)
+        public OpenChannel(ChannelIdentifier identifier, ConnectorChannel channel, ILogger logger)
         {
             _identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
             _channel = channel ?? throw new ArgumentNullException(nameof(channel));
@@ -69,7 +69,7 @@ namespace Wirehome.Cloud.Services.DeviceConnector
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogError(exception, $"Error while processing message of session '{_identifier}'.");
+                    _logger.LogError(exception, $"Error while processing message of channel '{_identifier}'.");
                 }
             }
         }

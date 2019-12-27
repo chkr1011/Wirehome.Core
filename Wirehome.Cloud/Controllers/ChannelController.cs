@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Wirehome.Cloud.Controllers.Models;
 using Wirehome.Cloud.Services.Repository;
+using Wirehome.Core.Cloud.Protocol;
 
 namespace Wirehome.Cloud.Controllers
 {
@@ -19,9 +20,9 @@ namespace Wirehome.Cloud.Controllers
 
         [Route("cloud/channel/deviceNotConnected")]
         [HttpGet]
-        public IActionResult DeviceNotConnected()
+        public IActionResult DeviceNotConnected(string returnUrl)
         {
-            return View(nameof(DeviceNotConnected));
+            return View(nameof(DeviceNotConnected), returnUrl);
         }
 
         [Route("cloud/channel")]
@@ -29,9 +30,7 @@ namespace Wirehome.Cloud.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            //HttpContext.Response.Cookies.Append(CloudCookieNames.ChannelUid, "default");
-
-            var identityConfiguration = await _repositoryService.TryGetIdentityConfigurationAsync(HttpContext.User.Identity.Name).ConfigureAwait(false);
+            var identityConfiguration = await _repositoryService.TryGetIdentityEntityAsync(HttpContext.User.Identity.Name).ConfigureAwait(false);
 
             var channelsModel = new ChannelsModel
             {
@@ -43,6 +42,18 @@ namespace Wirehome.Cloud.Controllers
             // Direct call will open the window always.
             // Other controllers can redirect to this view if required.
             return View(nameof(Index), channelsModel);
+        }
+
+        [Route("cloud/channel")]
+        [HttpPost]
+        public IActionResult PostChannel(string uid)
+        {
+            HttpContext.Response.Cookies.Append(CloudCookieNames.ChannelUid, uid, new Microsoft.AspNetCore.Http.CookieOptions
+            {
+                IsEssential = true
+            });
+
+            return Ok();
         }
     }
 }

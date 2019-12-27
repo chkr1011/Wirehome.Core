@@ -6,6 +6,7 @@ using Wirehome.Core.Contracts;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
+using Wirehome.Core.App;
 
 namespace Wirehome.Core.GlobalVariables
 {
@@ -14,16 +15,18 @@ namespace Wirehome.Core.GlobalVariables
         private const string GlobalVariablesFilename = "GlobalVariables.json";
 
         private readonly Dictionary<string, object> _variables = new Dictionary<string, object>();
-
+        private readonly AppService _appService;
         private readonly StorageService _storageService;
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
         public GlobalVariablesService(
+            AppService appService,
             StorageService storageService, 
             MessageBusService messageBusService, 
             ILogger<GlobalVariablesService> logger)
         {
+            _appService = appService ?? throw new ArgumentNullException(nameof(appService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));            
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -31,6 +34,8 @@ namespace Wirehome.Core.GlobalVariables
 
         public void Start()
         {
+            _appService.RegisterStatusProvider("globalVariables", () => GetValues());
+
             lock (_variables)
             {
                 Load();
