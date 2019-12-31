@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
@@ -80,10 +81,20 @@ namespace Wirehome.Core.History
             {
                 var stopwatch = Stopwatch.StartNew();
 
+                var serializedValue = Convert.ToString(updateOperation.Value, CultureInfo.InvariantCulture);
+                                
                 var formatter = new HistoryValueFormatter();
-                updateOperation.Value = formatter.FormatValue(updateOperation.Value, updateOperation.ValueFormatterOptions);
+                updateOperation.Value = formatter.FormatValue(serializedValue, updateOperation.ValueFormatterOptions);
 
-                await _repository.Write(updateOperation, cancellationToken).ConfigureAwait(false);
+                var repositoryUpdateOperation = new HistoryRepositoryUpdateOperation
+                {
+                    Path = updateOperation.Path,
+                    Timestamp = updateOperation.Timestamp,
+                    Value = serializedValue,
+                    OldValueTimeToLive = updateOperation.OldValueTimeToLive
+                };
+
+                await _repository.Write(repositoryUpdateOperation, cancellationToken).ConfigureAwait(false);
 
                 stopwatch.Stop();
 

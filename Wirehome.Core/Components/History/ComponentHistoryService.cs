@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.History;
-using Wirehome.Core.History.Repository;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
@@ -128,7 +127,7 @@ namespace Wirehome.Core.Components.History
                     ValueFormatterOptions = formatterOptions,
                     // Give the pulling code some time to complete before declaring an entity
                     // as outdated. 1.25 might be enough additional time.
-                    ValueTimeToLive = _options.ComponentStatusPullInterval * 1.25
+                    OldValueTimeToLive = _options.ComponentStatusPullInterval * 1.25
                 }, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
@@ -187,7 +186,7 @@ namespace Wirehome.Core.Components.History
                 {
                     Component = component,
                     StatusUid = statusUid,
-                    Value = Convert.ToString(value, CultureInfo.InvariantCulture),
+                    Value = value,
                     Timestamp = timestamp
                 };
 

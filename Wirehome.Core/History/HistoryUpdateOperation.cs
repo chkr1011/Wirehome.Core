@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Wirehome.Core.History.Repository
+namespace Wirehome.Core.History
 {
     public class HistoryUpdateOperation
     {
@@ -8,9 +8,9 @@ namespace Wirehome.Core.History.Repository
 
         public DateTime Timestamp { get; set; }
 
-        public string Value { get; set; }
+        public object Value { get; set; }
 
-        public TimeSpan ValueTimeToLive { get; set; }
+        public TimeSpan OldValueTimeToLive { get; set; }
 
         public HistoryValueFormatterOptions ValueFormatterOptions { get; set; }
     }

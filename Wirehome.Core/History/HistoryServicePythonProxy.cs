@@ -6,7 +6,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Threading;
-using Wirehome.Core.History.Repository;
 using Wirehome.Core.Python;
 using Wirehome.Core.Storage;
 
@@ -25,17 +24,17 @@ namespace Wirehome.Core.History
 
         public string ModuleName { get; } = "history";
 
-        public void publish(string uid, object value)
+        public void publish(string path, object value)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (path == null) throw new ArgumentNullException(nameof(path));
 
-            var path = Path.Combine(_storageService.DataPath, uid);
+            path = Path.Combine(_storageService.DataPath, path);
 
             _historyService.Update(new HistoryUpdateOperation()
             {
                 Path = path,
                 Timestamp = DateTime.UtcNow,
-                Value = Convert.ToString(value, CultureInfo.InvariantCulture)
+                Value = value
             }, CancellationToken.None).GetAwaiter().GetResult();
         }
     }

@@ -83,7 +83,7 @@ namespace Wirehome.Core.History.Repository
             return result;
         }
 
-        public async Task Write(HistoryUpdateOperation updateOperation, CancellationToken cancellationToken)
+        public async Task Write(HistoryRepositoryUpdateOperation updateOperation, CancellationToken cancellationToken)
         {
             if (updateOperation is null) throw new ArgumentNullException(nameof(updateOperation));
 
@@ -107,7 +107,7 @@ namespace Wirehome.Core.History.Repository
                     if (await valuesStream.MovePreviousAsync(cancellationToken).ConfigureAwait(false))
                     {
                         var endToken = (EndToken)valuesStream.CurrentToken;
-                        var valueIsExpired = updateOperation.Timestamp.TimeOfDay - endToken.Value > updateOperation.ValueTimeToLive;
+                        var valueIsExpired = updateOperation.Timestamp.TimeOfDay - endToken.Value > updateOperation.OldValueTimeToLive;
 
                         if (!valueIsExpired)
                         {

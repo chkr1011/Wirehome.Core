@@ -10,6 +10,6 @@ namespace Wirehome.Core.Components.History
 
         public DateTime Timestamp { get; set; }
 
-        public string Value { get; set; }
+        public object Value { get; set; }
     }
 }
