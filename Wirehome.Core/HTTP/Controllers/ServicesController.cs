@@ -86,7 +86,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/services/{id}/invoke_function")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object PostInvokeFunction(string id, string functionName, [FromBody] object[] parameters)
+        public object PostInvokeFunction(string id, string functionName, [FromBody] object[] parameters = null)
         {
             return _serviceHostService.InvokeFunction(id, functionName, parameters);
         }

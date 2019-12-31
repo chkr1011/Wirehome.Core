@@ -15,34 +15,36 @@ using Wirehome.Core.Python.Models;
 using Wirehome.Core.Storage;
 using Wirehome.Core.App;
 using Wirehome.Core.HTTP.Controllers;
+using Wirehome.Core.Components.History;
 
 namespace Wirehome.Core.Components
 {
     public class ComponentRegistryService : IService
     {
-        private const string ComponentsDirectory = "Components";
+        const string ComponentsDirectory = "Components";
 
-        private readonly Dictionary<string, Component> _components = new Dictionary<string, Component>();
+        readonly Dictionary<string, Component> _components = new Dictionary<string, Component>();
 
-        private readonly ComponentRegistryMessageBusWrapper _messageBusWrapper;
-        private readonly StorageService _storageService;
-        private readonly MessageBusService _messageBusService;
-        private readonly ComponentInitializerService _componentInitializerService;
-        private readonly AppService _appService;
-        private readonly ILogger _logger;
+        readonly ComponentRegistryMessageBusWrapper _messageBusWrapper;
+        readonly StorageService _storageService;
+        readonly ComponentHistoryService _componentHistoryService;
+        readonly MessageBusService _messageBusService;
+        readonly ComponentInitializerService _componentInitializerService;
+        readonly ILogger _logger;
 
         public ComponentRegistryService(
             StorageService storageService,
             SystemStatusService systemStatusService,
+            ComponentHistoryService componentHistoryService,
             MessageBusService messageBusService,
-            ComponentInitializerService componentInitializerService,
             AppService appService,
+            ComponentInitializerService componentInitializerService,
             ILogger<ComponentRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _componentHistoryService = componentHistoryService ?? throw new ArgumentNullException(nameof(componentHistoryService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _componentInitializerService = componentInitializerService ?? throw new ArgumentNullException(nameof(componentInitializerService));
-            _appService = appService ?? throw new ArgumentNullException(nameof(appService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _messageBusWrapper = new ComponentRegistryMessageBusWrapper(messageBusService);
@@ -50,10 +52,13 @@ namespace Wirehome.Core.Components
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("component_registry.count", () => _components.Count);
 
+            if (appService is null) throw new ArgumentNullException(nameof(appService));
             appService.RegisterStatusProvider("components", () =>
             {
                 return GetComponents().Select(c => ComponentsController.CreateComponentModel(c));
             });
+
+            _componentHistoryService.ComponentsProvider = () => GetComponents();
         }
 
         public void Start()
@@ -315,6 +320,7 @@ namespace Wirehome.Core.Components
                 newValueString);
 
             _messageBusWrapper.PublishStatusChangedEvent(component.Uid, uid, oldValue, value);
+            _componentHistoryService.OnComponentStatusChanged(component, uid, value);
         }
 
         public bool SetComponentTag(string componentUid, string uid)
@@ -477,13 +483,13 @@ namespace Wirehome.Core.Components
             return _storageService.EnumerateDirectories("*", ComponentsDirectory);
         }
 
-        private void AttachToMessageBus()
+        void AttachToMessageBus()
         {
             var filter = new WirehomeDictionary().WithType("component_registry.process_message");
             _messageBusService.Subscribe("component_registry.process_message", filter, OnBusMessageExecuteCommand);
         }
 
-        private Dictionary<string, ComponentConfiguration> ReadComponentConfigurations()
+        Dictionary<string, ComponentConfiguration> ReadComponentConfigurations()
         {
             var componentConfigurations = new Dictionary<string, ComponentConfiguration>();
             foreach (var componentUid in GetComponentUids())
@@ -497,7 +503,7 @@ namespace Wirehome.Core.Components
             return componentConfigurations;
         }
 
-        private void OnBusMessageExecuteCommand(MessageBusMessage busMessage)
+        void OnBusMessageExecuteCommand(MessageBusMessage busMessage)
         {
             var message = busMessage.Message;
             var componentUid = Convert.ToString(message["component_uid"], CultureInfo.InvariantCulture);

@@ -163,7 +163,6 @@ namespace Wirehome.Core.ServiceHost
         {
             if (serviceId == null) throw new ArgumentNullException(nameof(serviceId));
             if (functionName == null) throw new ArgumentNullException(nameof(functionName));
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
             ServiceInstance serviceInstance;
             lock (_services)

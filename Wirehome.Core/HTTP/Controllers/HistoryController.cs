@@ -2,19 +2,26 @@
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using Wirehome.Core.Components;
+using Wirehome.Core.Components.History;
 using Wirehome.Core.History;
 using Wirehome.Core.History.Extract;
+using Wirehome.Core.History.Repository;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
     [ApiController]
     public class HistoryController : Controller
     {
+        private readonly ComponentHistoryService _componentHistoryService;
         private readonly HistoryService _historyService;
+        private readonly ComponentRegistryService _componentRegistryService;
 
-        public HistoryController(HistoryService historyService)
+        public HistoryController(ComponentHistoryService componentHistoryService, HistoryService historyService, ComponentRegistryService componentRegistryService)
         {
+            _componentHistoryService = componentHistoryService ?? throw new ArgumentNullException(nameof(componentHistoryService));
             _historyService = historyService ?? throw new ArgumentNullException(nameof(historyService));
+            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
         }
 
         [HttpGet]
@@ -59,9 +66,10 @@ namespace Wirehome.Core.HTTP.Controllers
                 });
             }
 
+            var path = _componentHistoryService.BuildComponentStatusHistoryPath(componentUid, statusUid);
+
             var historyExtract = await _historyService.BuildHistoryExtractAsync(
-                componentUid,
-                statusUid,
+                path,
                 rangeStart.Value.UtcDateTime,
                 rangeEnd.Value.UtcDateTime,
                 interval,
@@ -77,11 +85,15 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<ActionResult<HistoryExtract>> GetComponentStatusHistoryRaw(string componentUid, string statusUid, int year, int month, int day)
         {
-            var result = await _historyService.GetComponentStatusValues(
-                componentUid,
-                statusUid,
-                new DateTime(year, month, day),
-                HttpContext.RequestAborted);
+            var readOperation = new HistoryReadOperation()
+            {
+                Path = _componentHistoryService.BuildComponentStatusHistoryPath(componentUid, statusUid),
+                RangeStart = new DateTime(year, month, day, 0, 0, 0),
+                RangeEnd = new DateTime(year, month, day, 23, 59, 59),
+                MaxEntityCount = null
+            };
+
+            var result = await _historyService.Read(readOperation, HttpContext.RequestAborted);
 
             return new ObjectResult(result);
         }
@@ -91,7 +103,9 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public Task<long> GetComponentStatusHistorySize(string componentUid, string statusUid)
         {
-            return _historyService.GetComponentStatusHistorySize(componentUid, statusUid, HttpContext.RequestAborted);
+            var path = _componentHistoryService.BuildComponentStatusHistoryPath(componentUid, statusUid);
+
+            return _historyService.GetHistorySize(path, HttpContext.RequestAborted);
         }
 
         [HttpGet]
@@ -99,7 +113,9 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public Task<long> GetComponentHistorySize(string componentUid)
         {
-            return _historyService.GetComponentHistorySize(componentUid, HttpContext.RequestAborted);
+            var path = _componentHistoryService.BuildComponentHistoryPath(componentUid);
+
+            return _historyService.GetHistorySize(path, HttpContext.RequestAborted);
         }
 
         [HttpDelete]
@@ -107,7 +123,9 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public Task DeleteComponentHistory(string componentUid)
         {
-            return _historyService.DeleteComponentHistory(componentUid, HttpContext.RequestAborted);
+            var path = _componentHistoryService.BuildComponentHistoryPath(componentUid);
+
+            return _historyService.DeleteHistory(path, HttpContext.RequestAborted);
         }
 
         [HttpDelete]
@@ -115,15 +133,20 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public Task DeleteComponentStatusHistory(string componentUid, string statusUid)
         {
-            return _historyService.DeleteComponentStatusHistory(componentUid, statusUid, HttpContext.RequestAborted);
+            var path = _componentHistoryService.BuildComponentStatusHistoryPath(componentUid, statusUid);
+
+            return _historyService.DeleteHistory(path, HttpContext.RequestAborted);
         }
 
         [HttpDelete]
         [Route("api/v1/history")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task DeleteEntireHistory()
+        public async Task DeleteEntireHistory()
         {
-            return _historyService.DeleteEntireHistory(HttpContext.RequestAborted);
+            foreach (var component in _componentRegistryService.GetComponents())
+            {
+                await _historyService.DeleteHistory(_componentHistoryService.BuildComponentHistoryPath(component.Uid), HttpContext.RequestAborted).ConfigureAwait(false);
+            }
         }
 
         [HttpDelete]

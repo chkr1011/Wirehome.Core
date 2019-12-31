@@ -111,8 +111,15 @@ namespace Wirehome.Core.Python
 
                 try
                 {
-                    var pythonParameters = parameters.Select(PythonConvert.ToPython).ToArray();
-                    result = _scriptScope.Engine.Operations.Invoke(function, pythonParameters);
+                    if (parameters?.Any() == false)
+                    {
+                        result = _scriptScope.Engine.Operations.Invoke(function);
+                    }
+                    else
+                    {
+                        var pythonParameters = parameters.Select(PythonConvert.ToPython).ToArray();
+                        result = _scriptScope.Engine.Operations.Invoke(function, pythonParameters);
+                    }                    
                 }
                 catch (Exception exception)
                 {

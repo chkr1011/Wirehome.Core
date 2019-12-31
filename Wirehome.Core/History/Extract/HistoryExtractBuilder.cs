@@ -18,8 +18,7 @@ namespace Wirehome.Core.History.Extract
         }
 
         public async Task<HistoryExtract> BuildAsync(
-            string componentUid,
-            string statusUid,
+            string path,
             DateTime rangeStart,
             DateTime rangeEnd,
             TimeSpan? interval,
@@ -27,13 +26,11 @@ namespace Wirehome.Core.History.Extract
             int maxEntityCount,
             CancellationToken cancellationToken)
         {
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-            if (statusUid == null) throw new ArgumentNullException(nameof(statusUid));
+            if (path == null) throw new ArgumentNullException(nameof(path));
 
-            var entities = await _repository.GetComponentStatusValues(new ComponentStatusFilter
+            var entities = await _repository.Read(new HistoryReadOperation
             {
-                ComponentUid = componentUid,
-                StatusUid = statusUid,
+                Path = path,
                 RangeStart = rangeStart,
                 RangeEnd = rangeEnd,
                 MaxEntityCount = maxEntityCount
@@ -41,8 +38,7 @@ namespace Wirehome.Core.History.Extract
 
             var historyExtract = new HistoryExtract
             {
-                ComponentUid = componentUid,
-                StatusUid = statusUid,
+                Path = path,
                 EntityCount = entities.Count
             };
 

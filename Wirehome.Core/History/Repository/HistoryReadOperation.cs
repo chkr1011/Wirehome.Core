@@ -2,11 +2,9 @@
 
 namespace Wirehome.Core.History.Repository
 {
-    public class ComponentStatusFilter
+    public class HistoryReadOperation
     {
-        public string ComponentUid { get; set; }
-
-        public string StatusUid { get; set; }
+        public string Path { get; set; }
 
         public DateTime RangeStart { get; set; }
 
