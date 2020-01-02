@@ -63,16 +63,16 @@ namespace Wirehome.Core.Components
             _messageBusService.Publish(message);
         }
 
-        public void PublishStatusChangedEvent(string componentUid, string statusUid, object oldValue, object newValue)
+        public void PublishStatusChangedEvent(ComponentStatusChangedEventArgs eventArgs)
         {
             var message = new WirehomeDictionary
             {
                 ["type"] = "component_registry.event.status_changed",
-                ["component_uid"] = componentUid,
-                ["status_uid"] = statusUid,
-                ["old_value"] = oldValue,
-                ["new_value"] = newValue,
-                ["timestamp"] = DateTime.Now.ToString("O")
+                ["timestamp"] = eventArgs.Timestamp.ToString("O"),
+                ["component_uid"] = eventArgs.Component.Uid,
+                ["status_uid"] = eventArgs.StatusUid,
+                ["old_value"] = eventArgs.OldValue,
+                ["new_value"] = eventArgs.NewValue
             };
 
             _messageBusService.Publish(message);

@@ -15,7 +15,7 @@ namespace Wirehome.Core.Hosts.Console
 
       {WirehomeCoreVersion.Version}
 
-      (c) Christian Kratky 2011 - 2019
+      (c) Christian Kratky 2011 - 2020
       https://github.com/chkr1011/Wirehome.Core
                                                                         
 ";

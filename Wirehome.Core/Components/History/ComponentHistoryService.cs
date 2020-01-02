@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +15,7 @@ namespace Wirehome.Core.Components.History
     public class ComponentHistoryService : IService
     {
         readonly BlockingCollection<ComponentStatusHistoryWorkItem> _pendingStatusWorkItems = new BlockingCollection<ComponentStatusHistoryWorkItem>();
+        private readonly ComponentRegistryService _componentRegistryService;
         readonly HistoryService _historyService;
         readonly StorageService _storageService;
         readonly SystemCancellationToken _systemCancellationToken;
@@ -25,12 +24,14 @@ namespace Wirehome.Core.Components.History
         ComponentHistoryServiceOptions _options;
 
         public ComponentHistoryService(
+            ComponentRegistryService componentRegistryService,
             HistoryService historyService,
             StorageService storageService,
             SystemStatusService systemStatusService,
             SystemCancellationToken systemCancellationToken,
             ILogger<ComponentHistoryService> logger)
         {
+            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
             _historyService = historyService ?? throw new ArgumentNullException(nameof(historyService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
@@ -38,6 +39,8 @@ namespace Wirehome.Core.Components.History
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("component_history.pending_status_work_items", _pendingStatusWorkItems.Count);
+
+            _componentRegistryService.ComponentStatusChanged += OnComponentStatusChanged;
         }
 
         public void Start()
@@ -53,8 +56,6 @@ namespace Wirehome.Core.Components.History
             Task.Run(() => TryUpdateComponentStatusValues(_systemCancellationToken.Token), _systemCancellationToken.Token);
         }
 
-        public Func<List<Component>> ComponentsProvider { get; set; }
-
         public string BuildComponentHistoryPath(string componentUid)
         {
             return Path.Combine(_storageService.DataPath, "Components", componentUid, "History");
@@ -65,23 +66,25 @@ namespace Wirehome.Core.Components.History
             return Path.Combine(BuildComponentHistoryPath(componentUid), "Status", statusUid);
         }
 
-        public void OnComponentStatusChanged(Component component, string statusUid, object newValue)
+        void OnComponentStatusChanged(object sender, ComponentStatusChangedEventArgs e)
         {
-            try
+            var updateOnValueChanged = true;
+
+            // TODO: Get filter settings and skip if disabled.
+
+            if (!updateOnValueChanged)
             {
-                TryEnqueueComponentStatusValue(
-                    component,
-                    statusUid,
-                    newValue,
-                    DateTime.UtcNow);
+                _logger.LogTrace($"Skipping value changed update trigger for '{e.Component.Uid}.{e.StatusUid}'.");
+                return;
             }
-            catch (OperationCanceledException)
+
+            TryEnqueueWorkItem(new ComponentStatusHistoryWorkItem
             {
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "Error while processing changed component status.");
-            }
+                Timestamp = e.Timestamp,
+                Component = e.Component,
+                StatusUid = e.StatusUid,
+                Value = e.NewValue
+            });
         }
 
         async Task TryProcessWorkItems(CancellationToken cancellationToken)
@@ -147,15 +150,17 @@ namespace Wirehome.Core.Components.History
                 {
                     await Task.Delay(_options.ComponentStatusPullInterval, cancellationToken).ConfigureAwait(false);
 
-                    foreach (var component in ComponentsProvider())
+                    foreach (var component in _componentRegistryService.GetComponents())
                     {
                         foreach (var status in component.GetStatus())
                         {
-                            TryEnqueueComponentStatusValue(
-                                component,
-                                status.Key,
-                                status.Value,
-                                DateTime.UtcNow);
+                            TryEnqueueWorkItem(new ComponentStatusHistoryWorkItem
+                            {
+                                Timestamp = DateTime.UtcNow,
+                                Component = component,
+                                StatusUid = status.Key,
+                                Value = status.Value
+                            });
                         }
                     }
                 }
@@ -169,35 +174,23 @@ namespace Wirehome.Core.Components.History
             }
         }
 
-        void TryEnqueueComponentStatusValue(
-            Component component,
-            string statusUid,
-            object value,
-            DateTime timestamp)
+        void TryEnqueueWorkItem(ComponentStatusHistoryWorkItem workItem)
         {
             try
             {
-                if (IsComponentStatusBlacklisted(component.Uid, statusUid))
+                if (IsComponentStatusBlacklisted(workItem.Component.Uid, workItem.StatusUid))
                 {
                     return;
                 }
-
-                var statusWorkItem = new ComponentStatusHistoryWorkItem
-                {
-                    Component = component,
-                    StatusUid = statusUid,
-                    Value = value,
-                    Timestamp = timestamp
-                };
-
-                _pendingStatusWorkItems.Add(statusWorkItem);
+                               
+                _pendingStatusWorkItems.Add(workItem);
             }
             catch (OperationCanceledException)
             {
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, $"Error while enqueue component status value '{component.Uid}.{statusUid}'.");
+                _logger.LogError(exception, $"Error while enqueue component status value '{workItem.Component.Uid}.{workItem.StatusUid}'.");
             }
         }
 
@@ -208,12 +201,12 @@ namespace Wirehome.Core.Components.History
                 return true;
             }
 
-            if (_options.ComponentStatusBlacklist?.Contains(statusUid) == true)
+            if (_options.StatusBlacklist?.Contains(statusUid) == true)
             {
                 return true;
             }
 
-            if (_options.FullComponentStatusBlacklist?.Contains(componentUid + "." + statusUid) == true)
+            if (_options.ComponentStatusBlacklist?.Contains(componentUid + "." + statusUid) == true)
             {
                 return true;
             }

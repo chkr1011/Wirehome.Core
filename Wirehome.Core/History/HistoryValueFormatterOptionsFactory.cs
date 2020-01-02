@@ -11,7 +11,7 @@ namespace Wirehome.Core.History
         {
             var options = new HistoryValueFormatterOptions();
 
-            if (TryGetSetting(HistorySettingName.RoundDigits, componentSettings, defaultSettings, out var roundDigitsValue))
+            if (TryGetSetting(HistorySettingName.Decimals, componentSettings, defaultSettings, out var roundDigitsValue))
             {
                 options.Decimals = Convert.ToInt32(roundDigitsValue, CultureInfo.InvariantCulture);
             }

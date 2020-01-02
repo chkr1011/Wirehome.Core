@@ -14,20 +14,25 @@ namespace Wirehome.Core.Components.History
 
         public HashSet<string> ComponentBlacklist { get; set; } = new HashSet<string>();
 
+        public HashSet<string> StatusBlacklist { get; set; } = new HashSet<string>();
+
         public HashSet<string> ComponentStatusBlacklist { get; set; } = new HashSet<string>();
-
-        public HashSet<string> FullComponentStatusBlacklist { get; set; } = new HashSet<string>();
-
-        public Dictionary<string, Dictionary<string, object>> ComponentStatusDefaultSettings { get; set; } = new Dictionary<string, Dictionary<string, object>>
+        
+        public Dictionary<string, Dictionary<string, object>> StatusDefaultSettings { get; set; } = new Dictionary<string, Dictionary<string, object>>
         {
             ["temperature.value"] = new Dictionary<string, object>
             {
-                [HistorySettingName.RoundDigits] = 1
+                [HistorySettingName.Decimals] = 1
             },
             ["humidity.value"] = new Dictionary<string, object>
             {
-                [HistorySettingName.RoundDigits] = 0
+                [HistorySettingName.Decimals] = 0,
+                [HistorySettingName.UpdateOnValueChange] = false
             }
+        };
+
+        public Dictionary<string, Dictionary<string, object>> ComponentStatusDefaultSettings { get; set; } = new Dictionary<string, Dictionary<string, object>>
+        {
         };
     }
 }

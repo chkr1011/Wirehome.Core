@@ -12,7 +12,7 @@ namespace Wirehome.Core.History.Repository
         const string ValuesFilename = "Values";
 
         readonly AsyncLock _lock = new AsyncLock();
-        
+
         public async Task<List<HistoryValueElement>> Read(HistoryReadOperation readOperation, CancellationToken cancellationToken)
         {
             if (readOperation is null) throw new ArgumentNullException(nameof(readOperation));
@@ -23,7 +23,7 @@ namespace Wirehome.Core.History.Repository
 
             await _lock.EnterAsync(cancellationToken).ConfigureAwait(false);
             try
-            {               
+            {
                 foreach (var dayPath in dayPaths)
                 {
                     var path = Path.Combine(readOperation.Path, dayPath.Path, ValuesFilename);
@@ -38,20 +38,21 @@ namespace Wirehome.Core.History.Repository
 
                         HistoryValueElement currentElement = null;
 
-                        while (await valueStream.MoveNextAsync())
+                        while (await valueStream.MoveNextAsync().ConfigureAwait(false))
                         {
                             if (valueStream.CurrentToken is BeginToken beginToken)
                             {
                                 currentElement = new HistoryValueElement
                                 {
                                     Begin = new DateTime(
-                                    dayPath.Year, dayPath.Month,
-                                    dayPath.Day,
-                                    beginToken.Value.Hours,
-                                    beginToken.Value.Minutes,
-                                    beginToken.Value.Seconds,
-                                    beginToken.Value.Milliseconds,
-                                    DateTimeKind.Utc)
+                                        dayPath.Year,
+                                        dayPath.Month,
+                                        dayPath.Day,
+                                        beginToken.Value.Hours,
+                                        beginToken.Value.Minutes,
+                                        beginToken.Value.Seconds,
+                                        beginToken.Value.Milliseconds,
+                                        DateTimeKind.Utc)
                                 };
                             }
                             else if (valueStream.CurrentToken is ValueToken valueToken)
@@ -61,7 +62,8 @@ namespace Wirehome.Core.History.Repository
                             else if (valueStream.CurrentToken is EndToken endToken)
                             {
                                 currentElement.End = new DateTime(
-                                    dayPath.Year, dayPath.Month,
+                                    dayPath.Year,
+                                    dayPath.Month,
                                     dayPath.Day,
                                     endToken.Value.Hours,
                                     endToken.Value.Minutes,
@@ -189,7 +191,7 @@ namespace Wirehome.Core.History.Repository
         static string BuildDayPath(DateTime date)
         {
             return Path.Combine(
-                date.Year.ToString(),
+                date.Year.ToString("0000"),
                 date.Month.ToString("00"),
                 date.Day.ToString("00"));
         }

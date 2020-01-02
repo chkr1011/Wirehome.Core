@@ -84,7 +84,7 @@ namespace Wirehome.Core.History
                 var serializedValue = Convert.ToString(updateOperation.Value, CultureInfo.InvariantCulture);
                                 
                 var formatter = new HistoryValueFormatter();
-                updateOperation.Value = formatter.FormatValue(serializedValue, updateOperation.ValueFormatterOptions);
+                serializedValue = formatter.FormatValue(serializedValue, updateOperation.ValueFormatterOptions);
 
                 var repositoryUpdateOperation = new HistoryRepositoryUpdateOperation
                 {

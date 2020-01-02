@@ -15,7 +15,6 @@ using Wirehome.Core.Python.Models;
 using Wirehome.Core.Storage;
 using Wirehome.Core.App;
 using Wirehome.Core.HTTP.Controllers;
-using Wirehome.Core.Components.History;
 
 namespace Wirehome.Core.Components
 {
@@ -27,7 +26,6 @@ namespace Wirehome.Core.Components
 
         readonly ComponentRegistryMessageBusWrapper _messageBusWrapper;
         readonly StorageService _storageService;
-        readonly ComponentHistoryService _componentHistoryService;
         readonly MessageBusService _messageBusService;
         readonly ComponentInitializerService _componentInitializerService;
         readonly ILogger _logger;
@@ -35,14 +33,12 @@ namespace Wirehome.Core.Components
         public ComponentRegistryService(
             StorageService storageService,
             SystemStatusService systemStatusService,
-            ComponentHistoryService componentHistoryService,
             MessageBusService messageBusService,
             AppService appService,
             ComponentInitializerService componentInitializerService,
             ILogger<ComponentRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _componentHistoryService = componentHistoryService ?? throw new ArgumentNullException(nameof(componentHistoryService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _componentInitializerService = componentInitializerService ?? throw new ArgumentNullException(nameof(componentInitializerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -57,9 +53,9 @@ namespace Wirehome.Core.Components
             {
                 return GetComponents().Select(c => ComponentsController.CreateComponentModel(c));
             });
-
-            _componentHistoryService.ComponentsProvider = () => GetComponents();
         }
+
+        public event EventHandler<ComponentStatusChangedEventArgs> ComponentStatusChanged;
 
         public void Start()
         {
@@ -319,8 +315,18 @@ namespace Wirehome.Core.Components
                 oldValueString,
                 newValueString);
 
-            _messageBusWrapper.PublishStatusChangedEvent(component.Uid, uid, oldValue, value);
-            _componentHistoryService.OnComponentStatusChanged(component, uid, value);
+            var componentStatusChangedEventArgs = new ComponentStatusChangedEventArgs
+            {
+                Timestamp = DateTime.UtcNow,
+                Component = component,
+                StatusUid = uid,
+                OldValue = oldValue,
+                NewValue = value
+            };
+
+            ComponentStatusChanged?.Invoke(this, componentStatusChangedEventArgs);
+
+            _messageBusWrapper.PublishStatusChangedEvent(componentStatusChangedEventArgs);
         }
 
         public bool SetComponentTag(string componentUid, string uid)
