@@ -49,7 +49,15 @@ namespace Wirehome.Core.History
             systemStatusService.Set("history.last_update_duration", () => _lastUpdateDuration);
             systemStatusService.Set("history.max_update_duration", () => _maxUpdateDuration);
             systemStatusService.Set("history.min_update_duration", () => _minUpdateDuration);
-            systemStatusService.Set("history.average_update_duration", () => _totalUpdateDuration / (decimal)_updatesCount);
+            systemStatusService.Set("history.average_update_duration", () =>
+            {
+                if (_updatesCount == 0)
+                {
+                    return double.NaN;
+                }
+
+                return _totalUpdateDuration / (decimal)_updatesCount;
+            });
         }
 
         public void Start()
@@ -82,7 +90,7 @@ namespace Wirehome.Core.History
                 var stopwatch = Stopwatch.StartNew();
 
                 var serializedValue = Convert.ToString(updateOperation.Value, CultureInfo.InvariantCulture);
-                                
+
                 var formatter = new HistoryValueFormatter();
                 serializedValue = formatter.FormatValue(serializedValue, updateOperation.ValueFormatterOptions);
 
