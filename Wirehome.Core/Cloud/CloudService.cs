@@ -26,21 +26,23 @@ namespace Wirehome.Core.Cloud
         readonly HttpClient _httpClient = new HttpClient();
         readonly StorageService _storageService;
         readonly CloudMessageFactory _cloudMessageFactory;
-                        
+
         readonly ILogger _logger;
 
         CancellationTokenSource _cancellationTokenSource;
         CloudServiceOptions _options;
         ConnectorChannel _channel;
         bool _isConnected;
+        Exception _connectionError;
 
         public CloudService(StorageService storageService, SystemStatusService systemStatusService, ILogger<CloudService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
+            if (systemStatusService is null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("cloud.is_connected", () => _isConnected);
+            systemStatusService.Set("cloud.connection_error", () => _connectionError?.ToString());
             systemStatusService.Set("cloud.bytes_sent", () => _channel?.GetStatistics()?.BytesSent);
             systemStatusService.Set("cloud.bytes_received", () => _channel?.GetStatistics()?.BytesReceived);
             systemStatusService.Set("cloud.connected", () => _channel?.GetStatistics()?.Connected.ToString("O"));
@@ -55,7 +57,7 @@ namespace Wirehome.Core.Cloud
             _httpClient.BaseAddress = new Uri("http://127.0.0.1:80");
             // Disable compression for loopback connections
             _httpClient.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("*;q=0");
-            
+
             _cloudMessageFactory = new CloudMessageFactory(_cloudMessageSerializer);
         }
 
@@ -130,8 +132,9 @@ namespace Wirehome.Core.Cloud
                         };
 
                         _channel = new ConnectorChannel(channelOptions, webSocketClient, _cloudMessageSerializer, _logger);
-                        _logger.LogInformation($"Connected with Wirehome.Cloud at host '{_options.Host}'.");
                         _isConnected = true;
+                        _connectionError = null;
+                        _logger.LogInformation($"Connected with Wirehome.Cloud at host '{_options.Host}'.");
 
                         while (_channel.IsConnected && !cancellationToken.IsCancellationRequested)
                         {
@@ -153,6 +156,8 @@ namespace Wirehome.Core.Cloud
                 }
                 catch (Exception exception)
                 {
+                    _connectionError = exception;
+
                     _logger.LogError(exception, $"Error while connecting with Wirehome.Cloud service at host '{_options?.Host}'.");
                 }
                 finally
@@ -211,7 +216,7 @@ namespace Wirehome.Core.Cloud
                 var jsonRequestPayload = Encoding.UTF8.GetString(requestMessage.Payload);
                 var invokeParameter = JsonConvert.DeserializeObject<WirehomeDictionary>(jsonRequestPayload);
 
-                if(!invokeParameter.TryGetValue("type", out var handlerType))
+                if (!invokeParameter.TryGetValue("type", out var handlerType))
                 {
                     throw new NotSupportedException("Mandatory key 'type' not found in request parameter.");
                 }
@@ -246,7 +251,7 @@ namespace Wirehome.Core.Cloud
             try
             {
                 var requestContent = _cloudMessageSerializer.Unpack<HttpRequestCloudMessageContent>(requestMessage.Payload);
-                
+
                 using (var httpRequestMessage = new HttpRequestMessage())
                 {
                     httpRequestMessage.Method = new HttpMethod(requestContent.Method);

@@ -117,7 +117,7 @@ namespace Wirehome.Cloud
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => 
+            app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute("default", "{controller=Account}/{action=Index}/{Id?}");
             });
@@ -182,11 +182,6 @@ namespace Wirehome.Cloud
                     catch (UnauthorizedAccessException)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    }
-                    catch (Exception exception)
-                    {
-                        //_logger.LogError(exception, "Error while handling device connection.");
-                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                     }
                     finally
                     {

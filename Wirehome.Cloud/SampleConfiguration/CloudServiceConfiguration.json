@@ -1,0 +1,7 @@
+﻿{
+    "IsEnabled": true,
+    "Host": "wirehomecloud.azurewebsites.net",
+    "ChannelAccessToken": "vRjriJ8pVhLLgbWcYWvN2jjTSWszZXBspjp1EpAobAdgjRzVh7BD6nSt3HVEgqYBYHPfZmup7PtCNoKA619WsQ==",
+    "ReconnectDelay": "00:00:10",
+    "UseCompression": true
+}
