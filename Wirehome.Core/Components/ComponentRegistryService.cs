@@ -3,18 +3,18 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Wirehome.Core.App;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
-using Wirehome.Core.MessageBus;
 using Wirehome.Core.Foundation.Model;
+using Wirehome.Core.HTTP.Controllers;
+using Wirehome.Core.MessageBus;
 using Wirehome.Core.Python.Models;
 using Wirehome.Core.Storage;
-using Wirehome.Core.App;
-using Wirehome.Core.HTTP.Controllers;
 
 namespace Wirehome.Core.Components
 {

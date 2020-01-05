@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
+using Wirehome.Core.Components.History;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
@@ -61,7 +62,7 @@ namespace Wirehome.Core.HTTP
             {
                 o.Filters.Add(new DefaultExceptionFilter());
             });
-                
+
             mvcBuilder.AddNewtonsoftJson(o =>
             {
                 o.SerializerSettings.Converters.Add(new StringEnumConverter());
@@ -108,7 +109,7 @@ namespace Wirehome.Core.HTTP
             {
                 services.AddSingleton(typeof(IPythonProxy), pythonProxy);
             }
-            
+
             services.AddCors();
             services.AddResponseCompression(options =>
             {
@@ -183,6 +184,7 @@ namespace Wirehome.Core.HTTP
 
             // Start data related services.
             serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
+            serviceProvider.GetRequiredService<ComponentHistoryService>().Start();
             serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
             serviceProvider.GetRequiredService<MacroRegistryService>().Start();
 
@@ -196,7 +198,7 @@ namespace Wirehome.Core.HTTP
             if (app == null) throw new ArgumentNullException(nameof(app));
 
             app.UseRouting();
-            
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
