@@ -195,7 +195,7 @@ namespace Wirehome.Core.Scheduler
                 return _activeCountdowns.ContainsKey(uid);
             }
         }
-        
+
         public string StartThread(string uid, Action<StartThreadCallbackParameters> action, object state = null)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
@@ -242,7 +242,7 @@ namespace Wirehome.Core.Scheduler
                         {
                             activeThread.Stop();
                         }
-                                               
+
                         return true;
                     }
                 }
@@ -287,7 +287,7 @@ namespace Wirehome.Core.Scheduler
                     UpdateActiveCountdowns(elapsed);
                     InvokeHighPrecisionTimerSubscribers();
 
-                    Thread.Sleep(10);
+                    Thread.Sleep(50);
                 }
             }
             catch (ThreadAbortException)

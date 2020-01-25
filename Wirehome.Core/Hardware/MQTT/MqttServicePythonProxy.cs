@@ -108,7 +108,7 @@ namespace Wirehome.Core.Hardware.MQTT
         {
             if (topic_filter == null) throw new ArgumentNullException(nameof(topic_filter));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
-            
+
             return _mqttService.Subscribe(uid, topic_filter, message =>
             {
                 var pythonMessage = new PythonDictionary
@@ -182,7 +182,7 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 return b.ToArray();
             }
-            
+
             if (payload is IEnumerable<int> i)
             {
                 return i.Select(Convert.ToByte).ToArray();

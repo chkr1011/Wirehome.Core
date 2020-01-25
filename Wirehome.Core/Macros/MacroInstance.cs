@@ -3,8 +3,8 @@ using System;
 using System.Collections.Generic;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
-using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.Foundation.Model;
+using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 
@@ -82,7 +82,7 @@ namespace Wirehome.Core.Macros
                 catch (Exception exception)
                 {
                     return new ExceptionPythonModel(exception).ConvertToWirehomeDictionary();
-                }                
+                }
             }
 
             return new WirehomeDictionary().WithType(ControlType.Success);

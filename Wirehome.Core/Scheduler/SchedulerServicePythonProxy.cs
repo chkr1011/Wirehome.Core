@@ -23,8 +23,12 @@ namespace Wirehome.Core.Scheduler
         {
             return _schedulerService.StartThread(uid, p =>
             {
-                var pythonDictionary = PythonConvert.ToPythonDictionary(p);
-                pythonDictionary["thread_uid"] = uid;
+                var pythonDictionary = new PythonDictionary
+                {
+                    ["thread_uid"] = uid,
+                    ["state"] = p.State
+                };
+
                 callback(pythonDictionary);
             }, state);
         }
@@ -43,8 +47,13 @@ namespace Wirehome.Core.Scheduler
         {
             return _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), p =>
             {
-                var pythonDictionary = PythonConvert.ToPythonDictionary(p);
-                pythonDictionary["timer_uid"] = uid;
+                var pythonDictionary = new PythonDictionary
+                {
+                    ["timer_uid"] = uid,
+                    ["elapsed_millis"] = p.ElapsedMillis,
+                    ["state"] = p.State
+                };
+
                 callback(pythonDictionary);
             }, state);
         }
@@ -63,8 +72,13 @@ namespace Wirehome.Core.Scheduler
         {
             return _schedulerService.AttachToHighPrecisionTimer(uid, p =>
             {
-                var pythonDictionary = PythonConvert.ToPythonDictionary(p);
-                pythonDictionary["timer_uid"] = uid;
+                var pythonDictionary = new PythonDictionary
+                {
+                    ["timer_uid"] = uid,
+                    ["elapsed_millis"] = p.ElapsedMillis,
+                    ["state"] = p.State
+                };
+
                 callback(pythonDictionary);
             }, state);
         }
@@ -78,8 +92,12 @@ namespace Wirehome.Core.Scheduler
         {
             return _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), p =>
             {
-                var pythonDictionary = PythonConvert.ToPythonDictionary(p);
-                pythonDictionary["countdown_uid"] = uid;
+                var pythonDictionary = new PythonDictionary
+                {
+                    ["countdown_uid"] = uid,
+                    ["state"] = p.State
+                };
+
                 callback(pythonDictionary);
             }, state);
         }
