@@ -18,7 +18,7 @@ namespace Wirehome.Core.Discovery
         private readonly DiscoveryServiceOptions _options;
 
         private SsdpDevicePublisher _publisher;
-        
+
         public DiscoveryService(StorageService storageService, ILogger<DiscoveryService> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -33,7 +33,7 @@ namespace Wirehome.Core.Discovery
             //var rootDevice = new SsdpRootDevice
             //{
             //    Uuid = "c6faa85a-d7e9-48b7-8c54-7459c4d9c329",
-                
+
             //    CacheLifetime = TimeSpan.Zero,
             //    //UrlBase = new Uri("http://localhost"),
             //    //PresentationUrl = new Uri("configurator", UriKind.Relative),
@@ -47,7 +47,7 @@ namespace Wirehome.Core.Discovery
             //    ModelName = "Wirehome.Core",
             //    ModelDescription = "Wirehome.Core",
             //};
-            
+
             //_publisher.AddDevice(rootDevice);
 
             ParallelTask.Start(SearchAsync, CancellationToken.None, _logger);
@@ -66,7 +66,8 @@ namespace Wirehome.Core.Discovery
             while (true)
             {
                 await TryDiscoverSsdpDevicesAsync().ConfigureAwait(false);
-                await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+
+                await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
             }
         }
 
@@ -89,6 +90,11 @@ namespace Wirehome.Core.Discovery
                     var devices = new List<DiscoveredSsdpDevice>(await deviceLocator.SearchAsync(_options.SearchDuration).ConfigureAwait(false));
                     foreach (var device in devices)
                     {
+                        if (Convert.ToString(device.DescriptionLocation).Contains("0.0.0.0"))
+                        {
+                            continue;
+                        }
+
                         try
                         {
                             await device.GetDeviceInfo().ConfigureAwait(false);

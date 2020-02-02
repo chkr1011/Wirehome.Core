@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using Wirehome.Core.Foundation;
 
 namespace Wirehome.Core.Components
 {
@@ -160,9 +160,9 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public ConcurrentDictionary<string, ComponentGroupAssociation> Components { get; } = new ConcurrentDictionary<string, ComponentGroupAssociation>();
+        public ThreadSafeDictionary<string, ComponentGroupAssociation> Components { get; } = new ThreadSafeDictionary<string, ComponentGroupAssociation>();
 
-        public ConcurrentDictionary<string, ComponentGroupAssociation> Macros { get; } = new ConcurrentDictionary<string, ComponentGroupAssociation>();
+        public ThreadSafeDictionary<string, ComponentGroupAssociation> Macros { get; } = new ThreadSafeDictionary<string, ComponentGroupAssociation>();
 
         private void IncrementHash()
         {

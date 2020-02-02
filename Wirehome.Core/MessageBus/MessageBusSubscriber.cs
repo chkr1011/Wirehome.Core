@@ -31,7 +31,7 @@ namespace Wirehome.Core.MessageBus
         public int FaultedMessagesCount { get; private set; }
 
         public int PendingMessagesCount => _messageQueue.Count;
-        
+
         public void EnqueueMessage(MessageBusMessage message)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));

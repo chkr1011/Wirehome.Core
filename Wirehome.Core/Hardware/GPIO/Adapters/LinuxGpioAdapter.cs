@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using Wirehome.Core.Diagnostics;
 
 namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
@@ -11,12 +12,14 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
     {
         readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new Dictionary<int, InterruptMonitor>();
         readonly object _syncRoot = new object();
+        readonly SystemStatusService _systemStatusService;
         readonly ILogger _logger;
 
         Thread _workerThread;
 
-        public LinuxGpioAdapter(ILogger logger)
+        public LinuxGpioAdapter(SystemStatusService systemStatusService, ILogger logger)
         {
+            _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -27,11 +30,12 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
             _workerThread = new Thread(PollGpios)
             {
                 Priority = ThreadPriority.AboveNormal,
+                Name = nameof(LinuxGpioAdapter),
                 IsBackground = true
             };
 
             _workerThread.Start();
-            
+
             _logger.LogInformation("Started GPIO polling thread.");
         }
 
@@ -93,11 +97,14 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                     //File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/edge", edge.ToString().ToLowerInvariant());
                 }
 
+                var valuePath = $"/sys/class/gpio/gpio{gpioId}/value";
+
                 var initialState = ReadState(gpioId);
                 _interruptMonitors.Add(gpioId, new InterruptMonitor
                 {
                     LatestState = initialState,
-                    GpioValuePath = $"/sys/class/gpio/gpio{gpioId}/value"
+                    ValuePath = valuePath,
+                    ValueFile = File.Open(valuePath, FileMode.Open, FileAccess.Read, FileShare.Read)
                 });
             }
         }
@@ -117,6 +124,11 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         void PollGpios()
         {
+            //var threadId = (int)SafeNativeMethods.Syscall(186);
+            //_systemStatusService.Set("thread_" + threadId, "gio_monitor");
+
+            var readBuffer = new byte[1];
+
             while (true)
             {
                 try
@@ -129,8 +141,13 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
                         foreach (var interruptMonitor in _interruptMonitors)
                         {
-                            var fileContent = File.ReadAllText(interruptMonitor.Value.GpioValuePath, Encoding.ASCII).Trim();
-                            var currentState = fileContent == "1" ? GpioState.High : GpioState.Low;
+                            interruptMonitor.Value.ValueFile.Seek(0, SeekOrigin.Begin);
+                            interruptMonitor.Value.ValueFile.Read(readBuffer, 0, 1);
+
+                            //var fileContent = File.ReadAllText(interruptMonitor.Value.GpioValuePath, Encoding.ASCII).Trim();
+                            //var currentState = fileContent == "1" ? GpioState.High : GpioState.Low;
+
+                            var currentState = readBuffer[0] == '1' ? GpioState.High : GpioState.Low;
 
                             if (currentState == interruptMonitor.Value.LatestState)
                             {

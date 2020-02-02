@@ -8,11 +8,11 @@ namespace Wirehome.Core.Scheduler
 {
     public sealed class ActiveTimer : IDisposable
     {
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-        private readonly Action<TimerTickCallbackParameters> _callback;
-        private readonly object _state;
-        private readonly ILogger _logger;
+        readonly Action<TimerTickCallbackParameters> _callback;
+        readonly object _state;
+        readonly ILogger _logger;
 
         public ActiveTimer(string uid, TimeSpan interval, Action<TimerTickCallbackParameters> callback, object state, ILogger logger)
         {
@@ -38,7 +38,8 @@ namespace Wirehome.Core.Scheduler
         public void Stop()
         {
             _cancellationTokenSource.Cancel(false);
-            _logger.Log(LogLevel.Debug, "Stopped timer '{0}'.", Uid);
+
+            _logger.LogTrace($"Stopped timer '{Uid}'.");
         }
 
         public void Dispose()
@@ -46,7 +47,7 @@ namespace Wirehome.Core.Scheduler
             _cancellationTokenSource?.Dispose();
         }
 
-        private async Task RunAsync(CancellationToken cancellationToken)
+        async Task RunAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -77,7 +78,7 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        private void TryTick(TimeSpan elapsed)
+        void TryTick(TimeSpan elapsed)
         {
             try
             {
@@ -90,7 +91,7 @@ namespace Wirehome.Core.Scheduler
             {
                 LastException = exception;
 
-                _logger.Log(LogLevel.Error, exception, $"Error while executing callback of timer '{Uid}'.");
+                _logger.LogError(exception, $"Error while executing callback of timer '{Uid}'.");
 
                 Thread.Sleep(TimeSpan.FromSeconds(1)); // Prevent flooding the log.
             }

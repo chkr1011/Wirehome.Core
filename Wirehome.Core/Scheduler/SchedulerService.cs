@@ -7,35 +7,34 @@ using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Scheduler
 {
     public class SchedulerService : IService
     {
-        private readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
-        private readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
-        private readonly Dictionary<string, ActiveThread> _activeThreads = new Dictionary<string, ActiveThread>();
-        private readonly Dictionary<string, TimerSubscriber> _highPrecisionTimerSubscribers = new Dictionary<string, TimerSubscriber>();
+        readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
+        readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
 
-        private readonly ILogger _logger;
-        private readonly SystemCancellationToken _systemCancellationToken;
-        private readonly StorageService _storageService;
+        readonly Dictionary<string, ActiveThread> _activeThreads = new Dictionary<string, ActiveThread>();
+
+        readonly Dictionary<string, DefaultTimerSubscriber> _defaultTimerSubscribers = new Dictionary<string, DefaultTimerSubscriber>();
+
+        readonly ILogger _logger;
+        readonly SystemCancellationToken _systemCancellationToken;
 
         public SchedulerService(
             SystemStatusService systemStatusService,
             SystemCancellationToken systemCancellationToken,
-            StorageService storageService,
             ILogger<SchedulerService> logger)
         {
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             systemStatusService.Set("scheduler.active_threads", () => _activeThreads.Count);
             systemStatusService.Set("scheduler.active_timers", () => _activeTimers.Count);
             systemStatusService.Set("scheduler.active_countdowns", () => _activeCountdowns.Count);
+            systemStatusService.Set("scheduler.active_default_timer_subscribers", () => _defaultTimerSubscribers.Count);
         }
 
         public void Start()
@@ -58,9 +57,9 @@ namespace Wirehome.Core.Scheduler
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            lock (_highPrecisionTimerSubscribers)
+            lock (_defaultTimerSubscribers)
             {
-                _highPrecisionTimerSubscribers[uid] = new TimerSubscriber(uid, callback, state, _logger);
+                _defaultTimerSubscribers[uid] = new DefaultTimerSubscriber(uid, callback, state, _logger);
             }
 
             return uid;
@@ -70,17 +69,17 @@ namespace Wirehome.Core.Scheduler
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            lock (_highPrecisionTimerSubscribers)
+            lock (_defaultTimerSubscribers)
             {
-                _highPrecisionTimerSubscribers.Remove(uid);
+                _defaultTimerSubscribers.Remove(uid, out _);
             }
         }
 
-        public List<TimerSubscriber> GetHighPrecisionTimerSubscribers()
+        public List<DefaultTimerSubscriber> GetHighPrecisionTimerSubscribers()
         {
-            lock (_highPrecisionTimerSubscribers)
+            lock (_defaultTimerSubscribers)
             {
-                return _highPrecisionTimerSubscribers.Values.ToList();
+                return _defaultTimerSubscribers.Values.ToList();
             }
         }
 
@@ -205,8 +204,6 @@ namespace Wirehome.Core.Scheduler
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            _logger.LogDebug($"Starting new thread '{uid}'.");
-
             lock (_activeThreads)
             {
                 StopThread(uid);
@@ -273,7 +270,7 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        private void ScheduleTasks()
+        void ScheduleTasks()
         {
             try
             {
@@ -285,7 +282,7 @@ namespace Wirehome.Core.Scheduler
                     stopwatch.Restart();
 
                     UpdateActiveCountdowns(elapsed);
-                    InvokeHighPrecisionTimerSubscribers();
+                    InvokeHighPrecisionTimerSubscribers(elapsed);
 
                     Thread.Sleep(50);
                 }
@@ -295,18 +292,22 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        private void InvokeHighPrecisionTimerSubscribers()
+        void InvokeHighPrecisionTimerSubscribers(TimeSpan elapsed)
         {
-            lock (_highPrecisionTimerSubscribers)
+            List<DefaultTimerSubscriber> subscribers;
+
+            lock (_defaultTimerSubscribers)
             {
-                foreach (var defaultTimerSubscriber in _highPrecisionTimerSubscribers)
-                {
-                    defaultTimerSubscriber.Value.TryInvokeCallback();
-                }
+                subscribers = new List<DefaultTimerSubscriber>(_defaultTimerSubscribers.Values);
+            }
+
+            foreach (var defaultTimerSubscriber in subscribers)
+            {
+                defaultTimerSubscriber.TryInvokeCallback(elapsed);
             }
         }
 
-        private void UpdateActiveCountdowns(TimeSpan elapsed)
+        void UpdateActiveCountdowns(TimeSpan elapsed)
         {
             lock (_activeCountdowns)
             {
@@ -316,15 +317,18 @@ namespace Wirehome.Core.Scheduler
 
                     activeCountdown.TimeLeft -= elapsed;
 
-                    if (activeCountdown.TimeLeft <= TimeSpan.Zero)
+                    if (activeCountdown.TimeLeft > TimeSpan.Zero)
                     {
-                        _activeCountdowns.Remove(key);
-
-                        Task.Run(() =>
-                        {
-                            activeCountdown.TryInvokeCallback();
-                        });
+                        continue;
                     }
+
+                    _activeCountdowns.Remove(key);
+
+                    _logger.LogTrace($"Countdown '{key}' elapsed. Invoking callback.");
+                    Task.Run(() =>
+                    {
+                        activeCountdown.TryInvokeCallback();
+                    });
                 }
             }
         }

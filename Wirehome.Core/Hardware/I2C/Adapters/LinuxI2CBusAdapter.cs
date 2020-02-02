@@ -2,6 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Wirehome.Core.Extensions;
+using Wirehome.Core.Interop;
 
 namespace Wirehome.Core.Hardware.I2C.Adapters
 {
@@ -27,7 +28,7 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
         {
             lock (_accessLock)
             {
-                _handle = NativeOpen(_filename, OpenReadWrite);
+                _handle = SafeNativeMethods.Open(_filename, OpenReadWrite);
             }
 
             if (_handle != 0)
@@ -44,15 +45,15 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
         {
             lock (_accessLock)
             {
-                var ioCtlResult = NativeIoctl(_handle, I2CSlave, deviceAddress);
-                var writeResult = NativeWrite(_handle, buffer.Array, buffer.Count, buffer.Offset);
-                
+                var ioCtlResult = SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
+                var writeResult = SafeNativeMethods.Write(_handle, buffer.Array, buffer.Count, buffer.Offset);
+
                 _logger.Log(
                     LogLevel.Debug,
-                    "Written on '{0}' (Device address = {1}; Buffer = {2}; IOCTL result = {3}; Write result = {4}; Error = {5}).", 
+                    "Written on '{0}' (Device address = {1}; Buffer = {2}; IOCTL result = {3}; Write result = {4}; Error = {5}).",
                     _filename,
                     deviceAddress,
-                    buffer.ToHexString(), 
+                    buffer.ToHexString(),
                     ioCtlResult,
                     writeResult,
                     Marshal.GetLastWin32Error());
@@ -63,8 +64,8 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
         {
             lock (_accessLock)
             {
-                NativeIoctl(_handle, I2CSlave, deviceAddress);
-                NativeRead(_handle, buffer.Array, buffer.Count, buffer.Offset);
+                SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
+                SafeNativeMethods.Read(_handle, buffer.Array, buffer.Count, buffer.Offset);
             }
         }
 
@@ -72,22 +73,10 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
         {
             lock (_accessLock)
             {
-                NativeIoctl(_handle, I2CSlave, deviceAddress);
-                NativeWrite(_handle, writeBuffer.Array, writeBuffer.Count, writeBuffer.Offset);
-                NativeRead(_handle, readBuffer.Array, readBuffer.Count, readBuffer.Offset);
+                SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
+                SafeNativeMethods.Write(_handle, writeBuffer.Array, writeBuffer.Count, writeBuffer.Offset);
+                SafeNativeMethods.Read(_handle, readBuffer.Array, readBuffer.Count, readBuffer.Offset);
             }
         }
-
-        [DllImport("libc.so.6", EntryPoint = "open", SetLastError = true)]
-        private static extern int NativeOpen(string fileName, int mode);
-
-        [DllImport("libc.so.6", EntryPoint = "ioctl", SetLastError = true)]
-        private static extern int NativeIoctl(int fd, int request, int data);
-
-        [DllImport("libc.so.6", EntryPoint = "read", SetLastError = true)]
-        private static extern int NativeRead(int handle, byte[] data, int length, int offset);
-
-        [DllImport("libc.so.6", EntryPoint = "write", SetLastError = true)]
-        private static extern int NativeWrite(int handle, byte[] data, int length, int offset);
     }
 }

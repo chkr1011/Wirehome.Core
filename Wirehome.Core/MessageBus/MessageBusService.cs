@@ -120,7 +120,10 @@ namespace Wirehome.Core.MessageBus
                     requestCorrelationUid = Guid.NewGuid().ToString("D");
                 }
 
-                _responseSubscribers.TryAdd(requestCorrelationUid, responseSubscriber);
+                lock (_responseSubscribers)
+                {
+                    _responseSubscribers.Add(requestCorrelationUid, responseSubscriber);
+                }
 
                 Publish(request);
 
@@ -136,7 +139,7 @@ namespace Wirehome.Core.MessageBus
                 {
                     lock (_responseSubscribers)
                     {
-                        _responseSubscribers.Remove(requestCorrelationUid);
+                        _responseSubscribers.Remove(requestCorrelationUid, out _);
                     }
                 }
             }
@@ -176,10 +179,7 @@ namespace Wirehome.Core.MessageBus
 
         public List<MessageBusSubscriber> GetSubscribers()
         {
-            lock (_subscribers)
-            {
-                return new List<MessageBusSubscriber>(_subscribers.Values);
-            }     
+            return new List<MessageBusSubscriber>(_subscribers.Values);
         }
 
         public string Subscribe(string uid, WirehomeDictionary filter, Action<MessageBusMessage> callback)
@@ -192,12 +192,11 @@ namespace Wirehome.Core.MessageBus
                 uid = Guid.NewGuid().ToString("D");
             }
 
-            var subscriber = new MessageBusSubscriber(uid, filter, callback, _logger);
             lock (_subscribers)
             {
-                _subscribers[uid] = subscriber;
+                _subscribers[uid] = new MessageBusSubscriber(uid, filter, callback, _logger);
             }
-            
+
             return uid;
         }
 
@@ -282,13 +281,13 @@ namespace Wirehome.Core.MessageBus
             {
                 while (!_systemCancellationToken.Token.IsCancellationRequested)
                 {
-                    List<MessageBusSubscriber> currentSubscribers;
+                    List<MessageBusSubscriber> subscribers;
                     lock (_subscribers)
                     {
-                        currentSubscribers = new List<MessageBusSubscriber>(_subscribers.Values);
+                        subscribers = new List<MessageBusSubscriber>(_subscribers.Values);
                     }
 
-                    foreach (var subscriber in currentSubscribers)
+                    foreach (var subscriber in subscribers)
                     {
                         if (subscriber.TryProcessNextMessage())
                         {
@@ -296,7 +295,7 @@ namespace Wirehome.Core.MessageBus
                         }
                     }
 
-                    Thread.Sleep(10);
+                    Thread.Sleep(50);
                 }
             }
             catch (ThreadAbortException)

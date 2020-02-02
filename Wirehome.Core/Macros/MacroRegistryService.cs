@@ -6,10 +6,10 @@ using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.Macros.Exceptions;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Macros
@@ -107,7 +107,13 @@ namespace Wirehome.Core.Macros
             if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
 
             var macro = GetMacro(macroUid);
-            return macro.Settings.GetValueOrDefault(settingUid, defaultValue);
+
+            if (macro.Settings.TryGetValue(settingUid, out var value))
+            {
+                return value;
+            }
+
+            return defaultValue;
         }
 
         public void SetMacroSetting(string macroUid, string settingUid, object value)

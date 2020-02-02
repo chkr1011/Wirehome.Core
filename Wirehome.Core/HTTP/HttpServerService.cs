@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
@@ -12,7 +12,7 @@ namespace Wirehome.Core.HTTP
 {
     public class HttpServerService : IService
     {
-        private readonly ConcurrentDictionary<string, HttpRequestInterceptor> _interceptors = new ConcurrentDictionary<string, HttpRequestInterceptor>();
+        private readonly Dictionary<string, HttpRequestInterceptor> _interceptors = new Dictionary<string, HttpRequestInterceptor>();
 
         private readonly JsonSerializerService _jsonSerializerService;
         private readonly ILogger _logger;
@@ -38,7 +38,11 @@ namespace Wirehome.Core.HTTP
             }
 
             var interceptor = new HttpRequestInterceptor(uriTemplate, handler, _jsonSerializerService, _logger);
-            _interceptors[uid] = interceptor;
+
+            lock (_interceptors)
+            {
+                _interceptors[uid] = interceptor;
+            }
 
             return uid;
         }
@@ -47,16 +51,26 @@ namespace Wirehome.Core.HTTP
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _interceptors.TryRemove(uid, out _);
+            lock (_interceptors)
+            {
+                _interceptors.Remove(uid, out _);
+            }
         }
 
         public Task HandleRequestAsync(HttpContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            foreach (var interceptor in _interceptors)
+            List<HttpRequestInterceptor> interceptors;
+
+            lock (_interceptors)
             {
-                if (interceptor.Value.HandleRequest(context))
+                interceptors = new List<HttpRequestInterceptor>(_interceptors.Values);
+            }
+
+            foreach (var interceptor in interceptors)
+            {
+                if (interceptor.HandleRequest(context))
                 {
                     return Task.CompletedTask;
                 }

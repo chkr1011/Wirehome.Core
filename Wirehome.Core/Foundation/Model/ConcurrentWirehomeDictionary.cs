@@ -1,10 +1,9 @@
 ﻿using IronPython.Runtime;
-using System.Collections.Concurrent;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Foundation.Model
 {
-    public class ConcurrentWirehomeDictionary : ConcurrentDictionary<string, object>
+    public class ConcurrentWirehomeDictionary : ThreadSafeDictionary<string, object>
     {
         public static implicit operator ConcurrentWirehomeDictionary(PythonDictionary pythonDictionary)
         {

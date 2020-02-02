@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Wirehome.Core.Diagnostics.Log
 {
-    public class LogServiceLoggerProvider : ILoggerProvider
+    public sealed class LogServiceLoggerProvider : ILoggerProvider
     {
-        private readonly ConcurrentDictionary<string, ILogger> _loggers = new ConcurrentDictionary<string, ILogger>();
+        private readonly Dictionary<string, ILogger> _loggers = new Dictionary<string, ILogger>();
 
         private readonly LogService _logService;
 

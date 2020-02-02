@@ -41,11 +41,19 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
+        [Route("api/v1/resources/{uid}/definition")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public IDictionary<string, string> GetResourceDefinition(string uid)
+        {
+            return _resourceService.GetResourceDefinition(uid);
+        }
+
+        [HttpGet]
         [Route("api/v1/resources/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IDictionary<string, string> GetResource(string uid)
+        public string GetResource(string uid)
         {
-            return _resourceService.GetResource(uid);
+            return _resourceService.GetResourceValue(uid);
         }
 
         [HttpDelete]

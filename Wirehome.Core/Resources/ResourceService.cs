@@ -25,9 +25,9 @@ namespace Wirehome.Core.Resources
         private readonly ILogger _logger;
 
         public ResourceService(
-            StorageService storageService, 
-            JsonSerializerService jsonSerializerService, 
-            GlobalVariablesService globalVariablesService, 
+            StorageService storageService,
+            JsonSerializerService jsonSerializerService,
+            GlobalVariablesService globalVariablesService,
             ILogger<ResourceService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
@@ -50,12 +50,26 @@ namespace Wirehome.Core.Resources
             TryRegisterDefaultResources(filename);
         }
 
+        public Dictionary<string, string> GetResources(string languageCode)
+        {
+            lock (_resources)
+            {
+                var resources = new Dictionary<string, string>();
+                foreach (var resource in _resources)
+                {
+                    resources.Add(resource.Key, GetLanguageResourceValue(resource.Key, languageCode));
+                }
+
+                return resources;
+            }
+        }
+
         public IList<string> GetResourceUids()
         {
             return _storageService.EnumerateDirectories("*", ResourcesDirectory);
         }
 
-        public IDictionary<string, string> GetResource(string uid)
+        public IDictionary<string, string> GetResourceDefinition(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 

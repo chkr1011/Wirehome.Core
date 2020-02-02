@@ -3,21 +3,24 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Wirehome.Core.Contracts;
+using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Exceptions;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Hardware.GPIO.Adapters;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Hardware.GPIO
 {
     public class GpioRegistryService : IService
     {
         private readonly Dictionary<string, IGpioAdapter> _adapters = new Dictionary<string, IGpioAdapter>();
+        private readonly SystemStatusService _systemStatusService;
         private readonly MessageBusService _messageBusService;
         private readonly ILogger _logger;
 
-        public GpioRegistryService(MessageBusService messageBusService, ILogger<GpioRegistryService> logger)
+        public GpioRegistryService(SystemStatusService systemStatusService, MessageBusService messageBusService, ILogger<GpioRegistryService> logger)
         {
+            _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -26,7 +29,7 @@ namespace Wirehome.Core.Hardware.GPIO
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var gpioAdapter = new LinuxGpioAdapter(_logger);
+                var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _logger);
                 gpioAdapter.Enable();
                 RegisterAdapter(string.Empty, gpioAdapter);
             }

@@ -46,25 +46,27 @@ namespace Wirehome.Core.Scheduler
         public void Start()
         {
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                _ownCancellationTokenSource.Token, 
+                _ownCancellationTokenSource.Token,
                 _externalCancellationToken);
 
             Task.Factory.StartNew(() =>
             {
                 try
-                {                    
+                {
                     ManagedThreadId = Thread.CurrentThread.ManagedThreadId;
+
+                    _logger.LogInformation($"Thread '{Uid}' started.");
 
                     _action(new StartThreadCallbackParameters(Uid, _state));
 
-                    _logger.Log(LogLevel.Information, $"Thread '{Uid}' exited normally.");
+                    _logger.LogInformation($"Thread '{Uid}' exited normally.");
                 }
                 catch (OperationCanceledException)
                 {
                 }
                 catch (Exception exception)
                 {
-                    _logger.Log(LogLevel.Error, exception, $"Error while executing thread '{Uid}'.");
+                    _logger.LogError(exception, $"Error while executing thread '{Uid}'.");
                 }
                 finally
                 {

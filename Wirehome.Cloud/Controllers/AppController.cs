@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Wirehome.Core.App;
 
 namespace Wirehome.Cloud.Controllers
 {

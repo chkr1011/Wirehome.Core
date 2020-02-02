@@ -5,9 +5,9 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.HTTP.Controllers.Models;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -56,9 +56,14 @@ namespace Wirehome.Core.HTTP.Controllers
                 }
 
                 using (var timeoutToken = new CancellationTokenSource(TimeSpan.FromSeconds(timeout)))
-                using (timeoutToken.Token.Register(() => { tcs.TrySetCanceled(); }))
                 {
-                    return (await tcs.Task).Message;
+                    using (var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, HttpContext.RequestAborted))
+                    {
+                        using (linkedToken.Token.Register(() => { tcs.TrySetCanceled(); }))
+                        {
+                            return (await tcs.Task).Message;
+                        }
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -94,7 +99,7 @@ namespace Wirehome.Core.HTTP.Controllers
                     return !string.Equals(type, typeFilter, StringComparison.Ordinal);
                 });
             }
-            
+
             return history;
         }
 
