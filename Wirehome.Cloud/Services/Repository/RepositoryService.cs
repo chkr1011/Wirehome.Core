@@ -107,7 +107,7 @@ namespace Wirehome.Cloud.Services.Repository
 
         async Task<IdentityEntity> TryReadIdentityEntityAsync(string identityUid)
         {
-            var filename = Path.Combine(_rootPath, identityUid, DefaultFilenames.Configuration);
+            var filename = Path.Combine(_rootPath, identityUid, DefaultFileNames.Configuration);
             if (!File.Exists(filename))
             {
                 return null;
@@ -139,7 +139,7 @@ namespace Wirehome.Cloud.Services.Repository
                 Directory.CreateDirectory(filename);
             }
 
-            filename = Path.Combine(filename, DefaultFilenames.Configuration);
+            filename = Path.Combine(filename, DefaultFileNames.Configuration);
 
             var json = JsonConvert.SerializeObject(identityConfiguration);
             return File.WriteAllTextAsync(filename, json, Encoding.UTF8);

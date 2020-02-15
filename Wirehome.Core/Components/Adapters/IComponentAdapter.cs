@@ -1,12 +1,12 @@
-﻿using System;
-using Wirehome.Core.Foundation.Model;
+﻿using IronPython.Runtime;
+using System;
 
 namespace Wirehome.Core.Components.Adapters
 {
     public interface IComponentAdapter
     {
-        Func<WirehomeDictionary, WirehomeDictionary> MessagePublishedCallback { get; set; }
+        Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
 
-        WirehomeDictionary ProcessMessage(WirehomeDictionary message);
+        PythonDictionary ProcessMessage(PythonDictionary message);
     }
 }

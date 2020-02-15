@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using System;
 using Wirehome.Core.Constants;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components.Logic
@@ -21,11 +20,11 @@ namespace Wirehome.Core.Components.Logic
 
         public ScriptComponentLogic(
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
-            ComponentRegistryService componentRegistryService, 
+            ComponentRegistryService componentRegistryService,
             ILogger<ScriptComponentLogic> logger)
         {
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
-            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));            
+            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -59,37 +58,40 @@ namespace Wirehome.Core.Components.Logic
             _scriptHost.AddToWirehomeWrapper(name, value);
         }
 
-        public WirehomeDictionary ProcessMessage(WirehomeDictionary message)
+        public PythonDictionary ProcessMessage(PythonDictionary message)
         {
-            var result = _scriptHost.InvokeFunction(ProcessLogicMessageFunctionName, message);
-            return result as WirehomeDictionary ?? new WirehomeDictionary();
+            return _scriptHost.InvokeFunction(ProcessLogicMessageFunctionName, message) as PythonDictionary ?? new PythonDictionary();
         }
 
-        public WirehomeDictionary GetDebugInformation(WirehomeDictionary parameters)
+        public PythonDictionary ProcessAdapterMessage(PythonDictionary message)
+        {
+            return _scriptHost.InvokeFunction(ProcessAdapterMessageFunctionName, message) as PythonDictionary ?? new PythonDictionary();
+        }
+
+        public PythonDictionary GetDebugInformation(PythonDictionary parameters)
         {
             if (!_scriptHost.FunctionExists(GetDebugInformationFunctionName))
             {
-                return new WirehomeDictionary().WithType(ControlType.NotSupportedException);
+                return new PythonDictionary
+                {
+                    ["type"] = ControlType.NotSupportedException
+                };
             }
 
-            if (!(_scriptHost.InvokeFunction(GetDebugInformationFunctionName, parameters) is WirehomeDictionary result))
+            if (!(_scriptHost.InvokeFunction(GetDebugInformationFunctionName, parameters) is PythonDictionary result))
             {
-                return new WirehomeDictionary().WithType(ControlType.ReturnValueTypeMismatchException);
+                return new PythonDictionary
+                {
+                    ["type"] = ControlType.ReturnValueTypeMismatchException
+                };
             }
 
             return result;
         }
 
-        public WirehomeDictionary ProcessAdapterMessage(WirehomeDictionary message)
+        PythonDictionary OnAdapterMessagePublished(PythonDictionary message)
         {
-            var result = _scriptHost.InvokeFunction(ProcessAdapterMessageFunctionName, message);
-            return result as WirehomeDictionary ?? new WirehomeDictionary();
-        }
-
-        private PythonDictionary OnAdapterMessagePublished(PythonDictionary message)
-        {
-            var result = AdapterMessagePublishedCallback?.Invoke(message);
-            return result ?? new PythonDictionary();
+            return AdapterMessagePublishedCallback?.Invoke(message) ?? new PythonDictionary();
         }
     }
 }

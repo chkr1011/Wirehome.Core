@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 
@@ -21,7 +20,7 @@ namespace Wirehome.Core.Hardware.MQTT
 {
     public class MqttServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly MqttService _mqttService;
+        readonly MqttService _mqttService;
 
         public MqttServicePythonProxy(MqttService mqttService)
         {
@@ -30,9 +29,11 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public string ModuleName { get; } = "mqtt";
 
+        public delegate void MqttMessageCallback(PythonDictionary eventArgs);
+
         public void publish(PythonDictionary parameters)
         {
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 
             var topic = Convert.ToString(parameters.get("topic"));
             var payload = parameters.get("payload", new byte[0]);
@@ -48,8 +49,10 @@ namespace Wirehome.Core.Hardware.MQTT
             });
         }
 
-        public WirehomeDictionary publish_external(PythonDictionary parameters)
+        public PythonDictionary publish_external(PythonDictionary parameters)
         {
+            if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+
             var server = Convert.ToString(parameters.get("server"));
             var port = Convert.ToInt32(parameters.get("port", 1883));
             var username = Convert.ToString(parameters.get("username"));
@@ -87,15 +90,21 @@ namespace Wirehome.Core.Hardware.MQTT
 
                 mqttClient.PublishAsync(message).GetAwaiter().GetResult();
 
-                return new WirehomeDictionary().WithType("success");
+                return new PythonDictionary
+                {
+                    ["type"] = "success"
+                };
             }
             catch (MqttConnectingFailedException)
             {
-                return new WirehomeDictionary().WithType("exception.connecting_failed");
+                return new PythonDictionary
+                {
+                    ["type"] = "exception.connecting_failed"
+                };
             }
             catch (Exception exception)
             {
-                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                return PythonConvert.ToPythonDictionary(new ExceptionPythonModel(exception).ToDictionary());
             }
             finally
             {
@@ -104,7 +113,7 @@ namespace Wirehome.Core.Hardware.MQTT
             }
         }
 
-        public string subscribe(string uid, string topic_filter, Action<PythonDictionary> callback)
+        public string subscribe(string uid, string topic_filter, MqttMessageCallback callback)
         {
             if (topic_filter == null) throw new ArgumentNullException(nameof(topic_filter));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
@@ -160,7 +169,7 @@ namespace Wirehome.Core.Hardware.MQTT
         {
             if (payload == null)
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             if (payload is ByteArray byteArray)

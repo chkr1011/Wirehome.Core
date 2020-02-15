@@ -12,8 +12,8 @@ namespace Wirehome.Core.Python.Proxies
 {
     public class DebuggerPythonProxy : IPythonProxy
     {
-        private readonly List<object> _trace = new List<object>();
-        private bool _isEnabled;
+        readonly List<object> _trace = new List<object>();
+        bool _isEnabled;
 
         public string ModuleName { get; } = "debugger";
 

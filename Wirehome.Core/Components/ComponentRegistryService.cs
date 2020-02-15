@@ -9,8 +9,6 @@ using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Extensions;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.HTTP.Controllers;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Python.Models;
@@ -78,14 +76,14 @@ namespace Wirehome.Core.Components
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, ComponentsDirectory, uid, DefaultFilenames.Configuration);
+            _storageService.Write(configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration);
         }
 
         public ComponentConfiguration ReadComponentConfiguration(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFilenames.Configuration))
+            if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration))
             {
                 throw new ComponentNotFoundException(uid);
             }
@@ -100,21 +98,29 @@ namespace Wirehome.Core.Components
             _storageService.DeleteDirectory(ComponentsDirectory, uid);
         }
 
-        public WirehomeDictionary EnableComponent(string uid)
+        public IDictionary<object, object> EnableComponent(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var result = ProcessComponentMessage(uid, new WirehomeDictionary().WithType(ControlType.Enable));
+            var result = ProcessComponentMessage(uid, new Dictionary<object, object>
+            {
+                ["type"] = ControlType.Enable
+            });
+
             _messageBusWrapper.PublishEnabledEvent(uid);
 
             return result;
         }
 
-        public WirehomeDictionary DisableComponent(string uid)
+        public IDictionary<object, object> DisableComponent(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            var result = ProcessComponentMessage(uid, new WirehomeDictionary().WithType(ControlType.Disable));
+            var result = ProcessComponentMessage(uid, new Dictionary<object, object>
+            {
+                ["type"] = ControlType.Disable
+            });
+
             _messageBusWrapper.PublishDisabledEvent(uid);
 
             return result;
@@ -126,7 +132,7 @@ namespace Wirehome.Core.Components
 
             try
             {
-                if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFilenames.Configuration))
+                if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration))
                 {
                     throw new ComponentNotFoundException(uid);
                 }
@@ -139,12 +145,12 @@ namespace Wirehome.Core.Components
 
                 var component = new Component(uid);
 
-                if (_storageService.TryReadText(out var script, ComponentsDirectory, uid, DefaultFilenames.Script))
+                if (_storageService.TryReadText(out var script, ComponentsDirectory, uid, DefaultFileNames.Script))
                 {
                     configuration.Script = script;
                 }
 
-                if (_storageService.TryRead(out WirehomeDictionary settings, ComponentsDirectory, uid, DefaultFilenames.Settings))
+                if (_storageService.TryRead(out IDictionary<string, object> settings, ComponentsDirectory, uid, DefaultFileNames.Settings))
                 {
                     foreach (var setting in settings)
                     {
@@ -152,7 +158,7 @@ namespace Wirehome.Core.Components
                     }
                 }
 
-                if (_storageService.TryRead(out WirehomeHashSet<string> tags, ComponentsDirectory, uid, DefaultFilenames.Tags))
+                if (_storageService.TryRead(out HashSet<string> tags, ComponentsDirectory, uid, DefaultFileNames.Tags))
                 {
                     foreach (var tag in tags)
                     {
@@ -164,14 +170,20 @@ namespace Wirehome.Core.Components
                 {
                     if (_components.TryGetValue(uid, out var existingComponent))
                     {
-                        existingComponent.ProcessMessage(new WirehomeDictionary().WithType(ControlType.Destroy));
+                        existingComponent.ProcessMessage(new Dictionary<object, object>
+                        {
+                            ["type"] = ControlType.Destroy
+                        });
                     }
 
                     _components[uid] = component;
                 }
 
                 _componentInitializerService.Create(this).InitializeComponent(component, configuration);
-                component.ProcessMessage(new WirehomeDictionary().WithType(ControlType.Initialize));
+                component.ProcessMessage(new Dictionary<object, object>
+                {
+                    ["type"] = ControlType.Initialize
+                });
 
                 _logger.LogInformation($"Component initialized: [Component={component.Uid}].");
             }
@@ -342,7 +354,7 @@ namespace Wirehome.Core.Components
 
             _logger.LogDebug("Component tag set: [Component={0}] [Tag UID={1}].", component.Uid, uid);
 
-            _storageService.Write(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFilenames.Tags);
+            _storageService.Write(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFileNames.Tags);
             _messageBusWrapper.PublishTagAddedEvent(component.Uid, uid);
 
             return true;
@@ -361,7 +373,7 @@ namespace Wirehome.Core.Components
 
             _logger.LogDebug("Component tag removed: [Component={0}] [Tag UID={1}].", component.Uid, uid);
 
-            _storageService.Write(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFilenames.Tags);
+            _storageService.Write(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFileNames.Tags);
             _messageBusWrapper.PublishTagRemovedEvent(component.Uid, uid);
 
             return true;
@@ -441,7 +453,7 @@ namespace Wirehome.Core.Components
                 oldValueString,
                 newValueString);
 
-            _storageService.Write(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFilenames.Settings);
+            _storageService.Write(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFileNames.Settings);
             _messageBusWrapper.PublishSettingChangedEvent(component.Uid, uid, oldValue, value);
         }
 
@@ -461,13 +473,13 @@ namespace Wirehome.Core.Components
                 component.Uid,
                 uid);
 
-            _storageService.Write(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFilenames.Settings);
+            _storageService.Write(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFileNames.Settings);
             _messageBusWrapper.PublishSettingRemovedEvent(component.Uid, uid, value);
 
             return value;
         }
 
-        public WirehomeDictionary ProcessComponentMessage(string componentUid, WirehomeDictionary message)
+        public IDictionary<object, object> ProcessComponentMessage(string componentUid, IDictionary<object, object> message)
         {
             if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
             if (message == null) throw new ArgumentNullException(nameof(message));
@@ -480,7 +492,7 @@ namespace Wirehome.Core.Components
             }
             catch (Exception exception)
             {
-                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                return new ExceptionPythonModel(exception).ToDictionary();
             }
         }
 
@@ -491,7 +503,11 @@ namespace Wirehome.Core.Components
 
         void AttachToMessageBus()
         {
-            var filter = new WirehomeDictionary().WithType("component_registry.process_message");
+            var filter = new Dictionary<object, object>
+            {
+                ["type"] = "component_registry.process_message"
+            };
+
             _messageBusService.Subscribe("component_registry.process_message", filter, OnBusMessageExecuteCommand);
         }
 
@@ -500,7 +516,7 @@ namespace Wirehome.Core.Components
             var componentConfigurations = new Dictionary<string, ComponentConfiguration>();
             foreach (var componentUid in GetComponentUids())
             {
-                if (_storageService.TryRead(out ComponentConfiguration componentConfiguration, ComponentsDirectory, componentUid, DefaultFilenames.Configuration))
+                if (_storageService.TryRead(out ComponentConfiguration componentConfiguration, ComponentsDirectory, componentUid, DefaultFileNames.Configuration))
                 {
                     componentConfigurations.Add(componentUid, componentConfiguration);
                 }
@@ -515,7 +531,7 @@ namespace Wirehome.Core.Components
             var componentUid = Convert.ToString(message["component_uid"], CultureInfo.InvariantCulture);
 
             // TODO: Refactor this conversion!
-            var innerMessage = (WirehomeDictionary)message["message"];
+            var innerMessage = (IDictionary<object, object>)message["message"];
 
             _messageBusService.PublishResponse(message, ProcessComponentMessage(componentUid, innerMessage));
         }

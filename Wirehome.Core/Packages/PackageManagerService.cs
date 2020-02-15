@@ -27,7 +27,7 @@ namespace Wirehome.Core.Packages
         }
 
         public void Start()
-        {           
+        {
         }
 
         public Package LoadPackage(PackageUid uid)
@@ -57,7 +57,7 @@ namespace Wirehome.Core.Packages
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.TryReadOrCreate(out PackageManagerServiceOptions options, PackageManagerServiceOptions.Filename);
+            _storageService.TryReadOrCreate(out PackageManagerServiceOptions options, DefaultDirectoryNames.Configuration, PackageManagerServiceOptions.Filename);
 
             var downloader = new GitHubRepositoryPackageDownloader(options, _logger);
             return downloader.DownloadAsync(uid, GetPackageRootPath(uid));

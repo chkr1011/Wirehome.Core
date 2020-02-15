@@ -1,12 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using Wirehome.Core.App;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
-using Wirehome.Core.App;
 
 namespace Wirehome.Core.GlobalVariables
 {
@@ -22,13 +21,13 @@ namespace Wirehome.Core.GlobalVariables
 
         public GlobalVariablesService(
             AppService appService,
-            StorageService storageService, 
-            MessageBusService messageBusService, 
+            StorageService storageService,
+            MessageBusService messageBusService,
             ILogger<GlobalVariablesService> logger)
         {
             _appService = appService ?? throw new ArgumentNullException(nameof(appService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));            
+            _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -99,19 +98,21 @@ namespace Wirehome.Core.GlobalVariables
                         return;
                     }
                 }
-                
+
                 _variables[uid] = value;
 
                 Save();
             }
 
-            var busMessage = new WirehomeDictionary()
-                .WithValue("type", "global_variables.event.value_set")
-                .WithValue("uid", uid)
-                .WithValue("old_value", oldValue)
-                .WithValue("new_value", value);
+            var busMessage = new Dictionary<object, object>
+            {
+                ["type"] = "global_variables.event.value_set",
+                ["uid"] = uid,
+                ["old_value"] = oldValue,
+                ["new_value"] = value
+            };
 
-            _logger.LogInformation("Global variable '{0}' changed to '{1}'.", uid, value);
+            _logger.LogInformation($"Global variable '{uid}' changed to '{value}'.");
             _messageBusService.Publish(busMessage);
         }
 
@@ -127,11 +128,13 @@ namespace Wirehome.Core.GlobalVariables
                 }
             }
 
-            var busMessage = new WirehomeDictionary()
-                .WithValue("type", "global_variables.event.value_deleted")
-                .WithValue("uid", uid);
+            var busMessage = new Dictionary<object, object>
+            {
+                ["type"] = "global_variables.event.value_deleted",
+                ["uid"] = uid,
+            };
 
-            _logger.LogInformation("Global variable '{0}' removed.", uid);
+            _logger.LogInformation($"Global variable '{uid}' removed.");
             _messageBusService.Publish(busMessage);
         }
 
@@ -154,7 +157,7 @@ namespace Wirehome.Core.GlobalVariables
                 {
                     return;
                 }
-                
+
                 foreach (var variable in globalVariables)
                 {
                     _variables[variable.Key] = variable.Value;

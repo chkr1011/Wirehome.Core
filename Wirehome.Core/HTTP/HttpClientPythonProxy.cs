@@ -65,7 +65,7 @@ namespace Wirehome.Core.HTTP
                             }
                             catch (Exception exception)
                             {
-                                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                                return PythonConvert.ToPythonDictionary(new ExceptionPythonModel(exception).ToDictionary());
                             }
                         }
                     }
@@ -75,11 +75,11 @@ namespace Wirehome.Core.HTTP
             }
             catch (Exception exception)
             {
-                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                return PythonConvert.ToPythonDictionary(new ExceptionPythonModel(exception).ToDictionary());
             }
         }
 
-        private static HttpRequestMessage CreateRequest(PythonDictionary parameters)
+        static HttpRequestMessage CreateRequest(PythonDictionary parameters)
         {
             var uri = Convert.ToString(parameters.get("uri"));
             var method = Convert.ToString(parameters.get("method", "get"));

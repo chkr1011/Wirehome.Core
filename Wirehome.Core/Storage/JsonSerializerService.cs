@@ -9,7 +9,7 @@ namespace Wirehome.Core.Storage
 {
     public class JsonSerializerService : IService
     {
-        private readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
+        readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
         {
             ContractResolver = new DefaultContractResolver
             {
@@ -18,13 +18,6 @@ namespace Wirehome.Core.Storage
             Formatting = Formatting.Indented,
             DateParseHandling = DateParseHandling.None
         };
-
-        private readonly JsonSerializer _serializer;
-
-        public JsonSerializerService()
-        {
-            _serializer = JsonSerializer.Create(_serializerSettings);
-        }
 
         public void Start()
         {
@@ -39,39 +32,23 @@ namespace Wirehome.Core.Storage
         {
             if (json == null) throw new ArgumentNullException(nameof(json));
 
-            using (var streamReader = new StringReader(json))
-            {
-                return (TValue)_serializer.Deserialize(streamReader, typeof(TValue));
-            }
-        }
-
-        public TValue Deserialize<TValue>(byte[] json)
-        {
-            if (json == null) throw new ArgumentNullException(nameof(json));
-
-            using (var streamReader = new StreamReader(new MemoryStream(json), Encoding.UTF8))
-            {
-                return (TValue)_serializer.Deserialize(streamReader, typeof(TValue));
-            }
+            return JsonConvert.DeserializeObject<TValue>(json, _serializerSettings);
         }
 
         public bool TryDeserializeFile<TContent>(string filename, out TContent content)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
 
-            if (!File.Exists(filename))
+            try
             {
-                content = default(TContent);
-                return false;
-            }
-
-            using (var fileStream = File.OpenRead(filename))
-            using (var streamReader = new StreamReader(fileStream, Encoding.UTF8))
-            {
-                var jsonReader = new JsonTextReader(streamReader);
-                
-                content = _serializer.Deserialize<TContent>(jsonReader);
+                var buffer = File.ReadAllText(filename, Encoding.UTF8);
+                content = Deserialize<TContent>(buffer);
                 return true;
+            }
+            catch (Exception)
+            {
+                content = default;
+                return false;
             }
         }
     }

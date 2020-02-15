@@ -3,6 +3,7 @@
 // ReSharper disable UnusedMember.Global
 
 using IronPython.Runtime;
+using System.Runtime.InteropServices;
 
 namespace Wirehome.Core.Python.Proxies
 {
@@ -27,7 +28,7 @@ namespace Wirehome.Core.Python.Proxies
             };
         }
 
-        public PythonDictionary exception(string message = null)
+        public PythonDictionary exception([DefaultParameterValue(null)] string message)
         {
             return new PythonDictionary
             {
@@ -45,7 +46,7 @@ namespace Wirehome.Core.Python.Proxies
             };
         }
 
-        public PythonDictionary parameter_invalid(string parameter_name, string parameter_value = null, string message = null)
+        public PythonDictionary parameter_invalid(string parameter_name, [DefaultParameterValue(null)] string parameter_value, [DefaultParameterValue(null)] string message)
         {
             return new PythonDictionary
             {

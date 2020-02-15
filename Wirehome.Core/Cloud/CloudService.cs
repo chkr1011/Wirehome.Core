@@ -14,7 +14,6 @@ using Wirehome.Core.Cloud.Protocol.Content;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Cloud
@@ -80,7 +79,7 @@ namespace Wirehome.Core.Cloud
             Start();
         }
 
-        public void RegisterMessageHandler(string type, Func<WirehomeDictionary, WirehomeDictionary> handler)
+        public void RegisterMessageHandler(string type, Func<IDictionary<object, object>, IDictionary<object, object>> handler)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
             if (handler == null) throw new ArgumentNullException(nameof(handler));
@@ -99,7 +98,7 @@ namespace Wirehome.Core.Cloud
                 {
                     _isConnected = false;
 
-                    if (!_storageService.TryReadOrCreate(out _options, CloudServiceOptions.Filename) || _options == null)
+                    if (!_storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, CloudServiceOptions.Filename) || _options == null)
                     {
                         continue;
                     }
@@ -214,7 +213,7 @@ namespace Wirehome.Core.Cloud
             try
             {
                 var jsonRequestPayload = Encoding.UTF8.GetString(requestMessage.Payload);
-                var invokeParameter = JsonConvert.DeserializeObject<WirehomeDictionary>(jsonRequestPayload);
+                var invokeParameter = JsonConvert.DeserializeObject<IDictionary<object, object>>(jsonRequestPayload);
 
                 if (!invokeParameter.TryGetValue("type", out var handlerType))
                 {

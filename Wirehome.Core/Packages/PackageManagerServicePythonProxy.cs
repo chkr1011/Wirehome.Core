@@ -9,7 +9,7 @@ namespace Wirehome.Core.Packages
 {
     public class PackageManagerServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly PackageManagerService _packageManagerService;
+        readonly PackageManagerService _packageManagerService;
 
         public PackageManagerServicePythonProxy(PackageManagerService packageManagerService)
         {

@@ -10,7 +10,7 @@ namespace Wirehome.Core.Macros
 {
     public class MacroRegistryServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly MacroRegistryService _macroRegistryService;
+        readonly MacroRegistryService _macroRegistryService;
 
         public MacroRegistryServicePythonProxy(MacroRegistryService macroRegistryService)
         {
@@ -32,7 +32,7 @@ namespace Wirehome.Core.Macros
 
         public PythonDictionary execute_macro(string uid)
         {
-            return _macroRegistryService.ExecuteMacro(uid);
+            return PythonConvert.ToPythonDictionary(_macroRegistryService.ExecuteMacro(uid));
         }
     }
 }

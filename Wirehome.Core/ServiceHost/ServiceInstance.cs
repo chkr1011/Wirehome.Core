@@ -6,8 +6,7 @@ namespace Wirehome.Core.ServiceHost
 {
     public class ServiceInstance
     {
-        private readonly object _syncRoot = new object();
-        private readonly PythonScriptHost _scriptHost;
+        readonly PythonScriptHost _scriptHost;
 
         public ServiceInstance(string id, ServiceConfiguration configuration, PythonScriptHost scriptHost)
         {
@@ -25,18 +24,17 @@ namespace Wirehome.Core.ServiceHost
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            lock (_syncRoot)
-            {
-                _scriptHost.SetVariable(key, value);
-            }
+            _scriptHost.SetVariable(key, value);
         }
 
-        public object ExecuteFunction(string name, params object[] parameters)
+        public object ExecuteFunction(string name, object[] parameters)
         {
-            lock (_syncRoot)
-            {
-                return _scriptHost.InvokeFunction(name, parameters);
-            }
+            return _scriptHost.InvokeFunction(name, parameters);
+        }
+
+        public object ExecuteFunction(string name)
+        {
+            return _scriptHost.InvokeFunction(name, null);
         }
     }
 }

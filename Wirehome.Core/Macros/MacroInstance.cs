@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
@@ -30,36 +30,43 @@ namespace Wirehome.Core.Macros
 
         public string Uid { get; }
 
-        public ConcurrentWirehomeDictionary Settings { get; } = new ConcurrentWirehomeDictionary();
+        public ConcurrentDictionary<string, object> Settings { get; } = new ConcurrentDictionary<string, object>();
 
-        public WirehomeDictionary Destroy()
+        public IDictionary<object, object> Destroy()
         {
             if (_scriptHost == null)
             {
-                return new WirehomeDictionary().WithType(ControlType.Success);
+                return new Dictionary<object, object>
+                {
+                    ["type"] = ControlType.Success
+                };
             }
 
             if (_scriptHost.FunctionExists("destroy"))
             {
-                var result = _scriptHost.InvokeFunction("destroy") as WirehomeDictionary;
-                return result;
+                return _scriptHost.InvokeFunction("destroy") as IDictionary<object, object>;
             }
 
-            return new WirehomeDictionary().WithType(ControlType.Success);
+            return new Dictionary<object, object>
+            {
+                ["type"] = ControlType.Success
+            };
         }
 
-        public WirehomeDictionary Initialize()
+        public IDictionary<object, object> Initialize()
         {
             if (_scriptHost == null)
             {
-                return new WirehomeDictionary().WithType(ControlType.Success);
+                return new Dictionary<object, object>
+                {
+                    ["type"] = ControlType.Success
+                };
             }
 
-            var result = _scriptHost.InvokeFunction("initialize") as WirehomeDictionary;
-            return result;
+            return _scriptHost.InvokeFunction("initialize") as IDictionary<object, object>;
         }
 
-        public WirehomeDictionary TryExecute()
+        public IDictionary<object, object> TryExecute()
         {
             if (_actions != null)
             {
@@ -73,19 +80,18 @@ namespace Wirehome.Core.Macros
             {
                 try
                 {
-                    var scriptResult = _scriptHost.InvokeFunction("execute");
-                    if (scriptResult is WirehomeDictionary wirehomeDictionary)
-                    {
-                        return wirehomeDictionary;
-                    }
+                    return _scriptHost.InvokeFunction("execute") as IDictionary<object, object>;
                 }
                 catch (Exception exception)
                 {
-                    return new ExceptionPythonModel(exception).ConvertToWirehomeDictionary();
+                    return new ExceptionPythonModel(exception).ToDictionary();
                 }
             }
 
-            return new WirehomeDictionary().WithType(ControlType.Success);
+            return new Dictionary<object, object>
+            {
+                ["type"] = ControlType.Success
+            };
         }
 
         private void TryExecuteAction(MacroActionConfiguration action)

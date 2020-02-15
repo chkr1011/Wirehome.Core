@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.Storage
 {
-    public static class DefaultFilenames
+    public static class DefaultFileNames
     {
         public const string Configuration = "Configuration.json";
 

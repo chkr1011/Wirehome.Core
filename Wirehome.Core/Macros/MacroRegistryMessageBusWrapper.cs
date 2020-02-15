@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Macros
 {
@@ -15,7 +15,7 @@ namespace Wirehome.Core.Macros
 
         public void PublishSettingChangedBusMessage(string macroUid, string settingUid, object oldValue, object newValue)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "macro_registry.event.setting_changed",
                 ["macro_uid"] = macroUid,
@@ -30,7 +30,7 @@ namespace Wirehome.Core.Macros
 
         public void PublishSettingRemovedBusMessage(string macroUid, string settingUid, object value)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "macro_registry.event.setting_removed",
                 ["macro_uid"] = macroUid,
@@ -42,9 +42,9 @@ namespace Wirehome.Core.Macros
             _messageBusService.Publish(message);
         }
 
-        public void PublishMacroExecutedBusMessage(string macroUid, WirehomeDictionary result)
+        public void PublishMacroExecutedBusMessage(string macroUid, IDictionary<object, object> result)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "macro_registry.event.macro_executed",
                 ["macro_uid"] = macroUid,

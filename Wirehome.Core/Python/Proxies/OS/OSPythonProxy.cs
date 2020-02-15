@@ -29,11 +29,11 @@ namespace Wirehome.Core.Python.Proxies.OS
                     result.Pid = process.Id;
                 }
 
-                return result.ConvertToPythonDictionary();
+                return ConvertToPythonDictionary(result);
             }
             catch (Exception exception)
             {
-                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                return PythonConvert.ToPythonDictionary(new ExceptionPythonModel(exception).ToDictionary());
             }
         }
 
@@ -61,11 +61,11 @@ namespace Wirehome.Core.Python.Proxies.OS
                     result.ExitCode = process.ExitCode;
                 }
 
-                return result.ConvertToPythonDictionary();
+                return ConvertToPythonDictionary(result);
             }
             catch (Exception exception)
             {
-                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                return PythonConvert.ToPythonDictionary(new ExceptionPythonModel(exception).ToDictionary());
             }
         }
 
@@ -82,7 +82,7 @@ namespace Wirehome.Core.Python.Proxies.OS
                 RedirectStandardError = true,
                 StandardOutputEncoding = Encoding.UTF8
             };
-            
+
             if (parameters.Arguments.Count > 1)
             {
                 startInfo.ArgumentList.AddRange(parameters.Arguments);
@@ -101,7 +101,25 @@ namespace Wirehome.Core.Python.Proxies.OS
             return process;
         }
 
-        private static LaunchParamters ParseLaunchParameters(PythonDictionary pythonDictionary)
+        static PythonDictionary ConvertToPythonDictionary(LaunchResult launchResult)
+        {
+            return new PythonDictionary
+            {
+                ["pid"] = launchResult.Pid
+            };
+        }
+
+        static PythonDictionary ConvertToPythonDictionary(ExecuteResult executeResult)
+        {
+            return new PythonDictionary
+            {
+                ["exit_code"] = executeResult.ExitCode,
+                ["output_data"] = executeResult.OutputData,
+                ["error_data"] = executeResult.ErrorData,
+            };
+        }
+
+        static LaunchParamters ParseLaunchParameters(PythonDictionary pythonDictionary)
         {
             var launchParameters = new LaunchParamters
             {

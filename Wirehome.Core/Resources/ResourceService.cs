@@ -15,7 +15,7 @@ namespace Wirehome.Core.Resources
     public class ResourceService : IService
     {
         private const string ResourcesDirectory = "Resources";
-        private const string StringsFilename = "Strings.js";
+        private const string StringsFilename = "Strings.json";
 
         private readonly Dictionary<string, Dictionary<string, string>> _resources = new Dictionary<string, Dictionary<string, string>>();
 
@@ -44,9 +44,6 @@ namespace Wirehome.Core.Resources
             }
 
             var filename = Path.Combine(_storageService.BinPath, "Resources.json");
-            TryRegisterDefaultResources(filename);
-
-            filename = Path.Combine(_storageService.BinPath, "WebApp", "resources.json");
             TryRegisterDefaultResources(filename);
         }
 
@@ -222,6 +219,7 @@ namespace Wirehome.Core.Resources
 
         private void TryRegisterDefaultResources(string filename)
         {
+            // TODO: Refactor to use the resource service.
             if (!_jsonSerializerService.TryDeserializeFile(filename, out Dictionary<string, Dictionary<string, string>> defaultResources))
             {
                 return;

@@ -1,9 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using IronPython.Runtime;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Logic;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Packages;
 using Wirehome.Core.Python;
 
@@ -36,7 +37,7 @@ namespace Wirehome.Core.Components
             if (component == null) throw new ArgumentNullException(nameof(component));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            var context = new WirehomeDictionary
+            var context = new PythonDictionary
             {
                 ["component_uid"] = component.Uid
             };
@@ -51,7 +52,7 @@ namespace Wirehome.Core.Components
             SetupComponentBasedOnPackages(component, configuration, context);
         }
 
-        private void SetupComponentBasedOnScript(Component component, ComponentConfiguration configuration, WirehomeDictionary context)
+        private void SetupComponentBasedOnScript(Component component, ComponentConfiguration configuration, IDictionary<object, object> context)
         {
             var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentLogicLogger);
             logic.Compile(component.Uid, configuration.Script);
@@ -60,7 +61,7 @@ namespace Wirehome.Core.Components
             component.SetLogic(logic);
         }
 
-        private void SetupComponentBasedOnPackages(Component component, ComponentConfiguration configuration, WirehomeDictionary context)
+        private void SetupComponentBasedOnPackages(Component component, ComponentConfiguration configuration, IDictionary<object, object> context)
         {
             Package adapterPackage = null;
             IComponentAdapter adapter;

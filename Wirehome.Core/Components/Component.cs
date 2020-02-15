@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Wirehome.Core.Components.Logic;
-using Wirehome.Core.Foundation.Model;
+using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
@@ -37,7 +37,7 @@ namespace Wirehome.Core.Components
             lock (_status)
             {
                 return _status.TryGetValue(uid, out value);
-            }            
+            }
         }
 
         public SetValueResult SetStatusValue(string uid, object value)
@@ -193,7 +193,7 @@ namespace Wirehome.Core.Components
                 return false;
             }
         }
-               
+
         public bool RemoveTag(string uid)
         {
             lock (_tags)
@@ -216,16 +216,16 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public WirehomeDictionary ProcessMessage(WirehomeDictionary message)
+        public IDictionary<object, object> ProcessMessage(IDictionary<object, object> message)
         {
             ThrowIfLogicNotSet();
-            return _logic.ProcessMessage(message);
+            return _logic.ProcessMessage(PythonConvert.ToPythonDictionary(message));
         }
 
-        public WirehomeDictionary GetDebugInformation(WirehomeDictionary parameters)
+        public IDictionary<object, object> GetDebugInformation(IDictionary<object, object> parameters)
         {
             ThrowIfLogicNotSet();
-            return _logic.GetDebugInformation(parameters);
+            return _logic.GetDebugInformation(PythonConvert.ToPythonDictionary(parameters));
         }
 
         public void SetLogic(IComponentLogic logic)

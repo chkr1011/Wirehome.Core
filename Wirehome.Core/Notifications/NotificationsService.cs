@@ -3,14 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Wirehome.Core.App;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Resources;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
-using Wirehome.Core.App;
 
 namespace Wirehome.Core.Notifications
 {
@@ -96,7 +95,7 @@ namespace Wirehome.Core.Notifications
         {
             if (!timeToLive.HasValue)
             {
-                if (!_storageService.TryReadOrCreate(out NotificationsServiceOptions options, NotificationsServiceOptions.Filename))
+                if (!_storageService.TryReadOrCreate(out NotificationsServiceOptions options, DefaultDirectoryNames.Configuration, NotificationsServiceOptions.Filename))
                 {
                     options = new NotificationsServiceOptions();
                 }
@@ -157,11 +156,13 @@ namespace Wirehome.Core.Notifications
                 Save();
             }
 
-            _messageBusService.Publish(new WirehomeDictionary()
-                .WithType("notifications.event.published")
-                .WithValue("notification_type", notification.Type.ToString().ToLowerInvariant())
-                .WithValue("message", notification.Message)
-                .WithValue("time_to_live", notification.TimeToLive.ToString("c")));
+            _messageBusService.Publish(new Dictionary<object, object>
+            {
+                ["type"] = "notifications.event.published",
+                ["notification_type"] = notification.Type.ToString().ToLowerInvariant(),
+                ["message"] = notification.Message,
+                ["time_to_live"] = notification.TimeToLive.ToString("c"),
+            });
         }
 
         private async Task RemoveNotificationsAsync(CancellationToken cancellationToken)

@@ -26,7 +26,21 @@ namespace Wirehome.Core.Python
         {
             _logger.LogInformation("Starting Python engine...");
 
-            _scriptEngine = IronPython.Hosting.Python.CreateEngine();
+            // The light weight scopes store the variables in a field or an array instead of storing
+            // them in static fields.To do that we need to pass in the field or close over it and then
+            // on each access we need to do the field or array access(and if it's an array access, it
+            // needs to be bounds checked).  But the end result is that the only thing which is keeping
+            // the global variable / call site objects alive are the delegate which implements the
+            // ScriptCode.Once the ScriptCode goes away all of those call sites and PythonGlobal
+            // objects can be collected.
+            // 
+            // So lightweight scopes come at a performance cost, but they are more applicable
+            // Where you're actually re-compiling code regularly.
+            _scriptEngine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>
+            {
+                ["LightweightScopes"] = true
+            });
+
             _scriptEngine.Runtime.IO.SetOutput(new PythonIOToLogStream(_logger), Encoding.UTF8);
 
             AddSearchPaths(_scriptEngine);

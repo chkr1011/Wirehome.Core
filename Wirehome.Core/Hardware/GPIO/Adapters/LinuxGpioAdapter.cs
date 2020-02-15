@@ -11,6 +11,8 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
     public class LinuxGpioAdapter : IGpioAdapter
     {
         readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new Dictionary<int, InterruptMonitor>();
+        readonly Dictionary<int, FileStream> _openGpios = new Dictionary<int, FileStream>();
+
         readonly object _syncRoot = new object();
         readonly SystemStatusService _systemStatusService;
         readonly ILogger _logger;
@@ -63,18 +65,16 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         public GpioState ReadState(int gpioId)
         {
-            lock (_interruptMonitors)
-            {
-                if (_interruptMonitors.TryGetValue(gpioId, out var interruptMonitor))
-                {
-                    return interruptMonitor.LatestState;
-                }
-            }
-
             lock (_syncRoot)
             {
-                var fileContent = File.ReadAllText("/sys/class/gpio/gpio" + gpioId + "/value", Encoding.ASCII).Trim();
-                return fileContent == "1" ? GpioState.High : GpioState.Low;
+                if (!_openGpios.TryGetValue(gpioId, out var valueFile))
+                {
+                    var path = "/sys/class/gpio/gpio" + gpioId + "/value";
+                    valueFile = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    _openGpios[gpioId] = valueFile;
+                }
+
+                return ReadGpioState(valueFile);
             }
         }
 
@@ -99,12 +99,11 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
                 var valuePath = $"/sys/class/gpio/gpio{gpioId}/value";
 
-                var initialState = ReadState(gpioId);
                 _interruptMonitors.Add(gpioId, new InterruptMonitor
                 {
-                    LatestState = initialState,
+                    LatestState = null,
                     ValuePath = valuePath,
-                    ValueFile = File.Open(valuePath, FileMode.Open, FileAccess.Read, FileShare.Read)
+                    ValueFile = File.Open(valuePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
                 });
             }
         }
@@ -127,28 +126,23 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
             //var threadId = (int)SafeNativeMethods.Syscall(186);
             //_systemStatusService.Set("thread_" + threadId, "gio_monitor");
 
-            var readBuffer = new byte[1];
+            var eventArgsList = new List<GpioAdapterStateChangedEventArgs>(_interruptMonitors.Count);
 
             while (true)
             {
                 try
                 {
-                    List<GpioAdapterStateChangedEventArgs> eventArgsList;
+                    var hasInterruptMonitors = false;
 
                     lock (_interruptMonitors)
                     {
-                        eventArgsList = new List<GpioAdapterStateChangedEventArgs>(_interruptMonitors.Count);
+                        hasInterruptMonitors = _interruptMonitors.Count > 0;
+
+                        eventArgsList.Clear();
 
                         foreach (var interruptMonitor in _interruptMonitors)
                         {
-                            interruptMonitor.Value.ValueFile.Seek(0, SeekOrigin.Begin);
-                            interruptMonitor.Value.ValueFile.Read(readBuffer, 0, 1);
-
-                            //var fileContent = File.ReadAllText(interruptMonitor.Value.GpioValuePath, Encoding.ASCII).Trim();
-                            //var currentState = fileContent == "1" ? GpioState.High : GpioState.Low;
-
-                            var currentState = readBuffer[0] == '1' ? GpioState.High : GpioState.Low;
-
+                            var currentState = ReadGpioState(interruptMonitor.Value.ValueFile);
                             if (currentState == interruptMonitor.Value.LatestState)
                             {
                                 continue;
@@ -166,7 +160,15 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                         OnGpioChanged(eventArgs);
                     }
 
-                    Thread.Sleep(10);
+                    if (hasInterruptMonitors)
+                    {
+                        Thread.Sleep(10);
+                    }
+                    else
+                    {
+                        // Do not waste CPU time if this feature is not used.
+                        Thread.Sleep(1000);
+                    }
                 }
                 catch (ThreadAbortException)
                 {
@@ -177,6 +179,21 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                     Thread.Sleep(TimeSpan.FromSeconds(1));
                 }
             }
+        }
+
+        GpioState ReadGpioState(FileStream fileStream)
+        {
+            var buffer = new byte[1];
+
+            fileStream.Seek(0, SeekOrigin.Begin);
+            fileStream.Read(buffer, 0, 1);
+
+            if (buffer[0] == (byte)'1')
+            {
+                return GpioState.High;
+            }
+
+            return GpioState.Low;
         }
 
         void OnGpioChanged(GpioAdapterStateChangedEventArgs eventArgs)

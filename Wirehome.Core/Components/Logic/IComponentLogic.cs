@@ -1,11 +1,11 @@
-﻿using Wirehome.Core.Foundation.Model;
+﻿using IronPython.Runtime;
 
 namespace Wirehome.Core.Components.Logic
 {
     public interface IComponentLogic
     {
-        WirehomeDictionary ProcessMessage(WirehomeDictionary message);
+        PythonDictionary ProcessMessage(PythonDictionary message);
 
-        WirehomeDictionary GetDebugInformation(WirehomeDictionary parameters);
+        PythonDictionary GetDebugInformation(PythonDictionary parameters);
     }
 }

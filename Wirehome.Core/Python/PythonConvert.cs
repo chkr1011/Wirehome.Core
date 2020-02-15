@@ -5,45 +5,17 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
-using System.Reflection;
-using System.Text;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Python
 {
     public static class PythonConvert
     {
-        public static TModel CreateModel<TModel>(PythonDictionary pythonDictionary) where TModel : class, new()
-        {
-            if (pythonDictionary == null)
-            {
-                return null;
-            }
-
-            var model = Activator.CreateInstance<TModel>();
-
-            var properties = typeof(TModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var property in properties)
-            {
-                var key = PythonfyPropertyName(property.Name);
-                if (!pythonDictionary.TryGetValue(key, out var value))
-                {
-                    continue;
-                }
-
-                value = Convert.ChangeType(value, property.PropertyType);
-                property.SetValue(model, value);
-            }
-
-            return model;
-        }
-
         public static JToken FromPythonToJson(object value)
         {
-            if (value is PythonDictionary d)
+            if (value is PythonDictionary pythonDictionary)
             {
                 var @object = new JObject();
-                foreach (var item in d)
+                foreach (var item in pythonDictionary)
                 {
                     @object[Convert.ToString(item.Key, CultureInfo.InvariantCulture)] = FromPythonToJson(item.Value);
                 }
@@ -51,10 +23,10 @@ namespace Wirehome.Core.Python
                 return @object;
             }
 
-            if (value is List l) // Python list
+            if (value is List pythonList) // Python list
             {
                 var array = new JArray();
-                foreach (var item in l)
+                foreach (var item in pythonList)
                 {
                     array.Add(FromPythonToJson(item));
                 }
@@ -70,10 +42,10 @@ namespace Wirehome.Core.Python
                 return null;
             }
 
-            if (value is PythonDictionary pythonDictionary)
-            {
-                return ToWirehomeDictionary(pythonDictionary);
-            }
+            //if (value is PythonDictionary pythonDictionary)
+            //{
+            //    return ToWirehomeDictionary(pythonDictionary);
+            //}
 
             if (value is List pythonList)
             {
@@ -91,6 +63,16 @@ namespace Wirehome.Core.Python
 
         public static object ToPython(object value)
         {
+            if (value is PythonDictionary)
+            {
+                return value;
+            }
+
+            if (value is List)
+            {
+                return value;
+            }
+
             if (value is null || value is string || value is bool)
             {
                 return value;
@@ -101,22 +83,7 @@ namespace Wirehome.Core.Python
                 return value;
             }
 
-            if (value is MulticastDelegate)
-            {
-                return value;
-            }
-
-            if (value is IPythonConvertible pythonConvertible)
-            {
-                return pythonConvertible.ConvertToPython();
-            }
-
-            if (value is WirehomeDictionary wirehomeDictionary)
-            {
-                return ToPythonDictionary(wirehomeDictionary);
-            }
-
-            if (value is IDictionary dictionary)
+            if (value is IDictionary<object, object> dictionary)
             {
                 var pythonDictionary = new PythonDictionary();
                 foreach (var entryKey in dictionary.Keys)
@@ -127,6 +94,17 @@ namespace Wirehome.Core.Python
                 return pythonDictionary;
             }
 
+            if (value is MulticastDelegate)
+            {
+                return value;
+            }
+
+            if (value is Delegate)
+            {
+                return value;
+            }
+
+            // Convert JSON stuff.
             if (value is JArray array)
             {
                 var result = new List(); // This is a python list.
@@ -156,7 +134,7 @@ namespace Wirehome.Core.Python
                     return null;
                 }
 
-                return jValue.ToObject<object>();
+                return ToPython(jValue.ToObject<object>());
             }
 
             if (value is IEnumerable items)
@@ -171,62 +149,6 @@ namespace Wirehome.Core.Python
             }
 
             return value;
-        }
-
-        public static PythonDictionary ToPythonDictionary(IDictionary dictionary)
-        {
-            if (dictionary == null)
-            {
-                return null;
-            }
-
-            if (dictionary is PythonDictionary pythonDictionary)
-            {
-                return pythonDictionary;
-            }
-
-            var newPythonDictionary = new PythonDictionary();
-            foreach (var entry in dictionary.Keys)
-            {
-                var key = Convert.ToString(entry, CultureInfo.InvariantCulture);
-                newPythonDictionary.Add(key, ToPython(dictionary[entry]));
-            }
-
-            return newPythonDictionary;
-        }
-
-        public static WirehomeDictionary ToWirehomeDictionary(PythonDictionary pythonDictionary)
-        {
-            if (pythonDictionary == null)
-            {
-                return null;
-            }
-
-            var wirehomeDictionary = new WirehomeDictionary();
-            foreach (var entry in pythonDictionary)
-            {
-                var key = Convert.ToString(entry.Key, CultureInfo.InvariantCulture);
-                wirehomeDictionary.Add(key, FromPython(entry.Value));
-            }
-
-            return wirehomeDictionary;
-        }
-
-        public static ConcurrentWirehomeDictionary ToConcurrentWirehomeDictionary(PythonDictionary pythonDictionary)
-        {
-            if (pythonDictionary == null)
-            {
-                return null;
-            }
-
-            var wirehomeDictionary = new ConcurrentWirehomeDictionary();
-            foreach (var entry in pythonDictionary)
-            {
-                var key = Convert.ToString(entry.Key, CultureInfo.InvariantCulture);
-                wirehomeDictionary.TryAdd(key, FromPython(entry.Value));
-            }
-
-            return wirehomeDictionary;
         }
 
         public static List ToPythonList(IEnumerable items)
@@ -245,49 +167,25 @@ namespace Wirehome.Core.Python
             return list;
         }
 
-        public static PythonDictionary ToPythonDictionary(object source)
+        public static PythonDictionary ToPythonDictionary(IDictionary<object, object> source)
         {
             if (source == null)
             {
                 return null;
             }
 
-            if (source is WirehomeDictionary wirehomeDictionary)
+            if (source is PythonDictionary pythonDictionary)
             {
-                return ToPythonDictionary(wirehomeDictionary);
+                return pythonDictionary;
             }
 
-            var result = new PythonDictionary();
-
-            var properties = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var property in properties)
+            pythonDictionary = new PythonDictionary();
+            foreach (var item in source)
             {
-                var key = PythonfyPropertyName(property.Name);
-                var value = ToPython(property.GetValue(source));
-                result[key] = value;
+                pythonDictionary.Add(item.Key, item.Value);
             }
 
-            return result;
-        }
-
-        public static string PythonfyPropertyName(string name)
-        {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-
-            var output = new StringBuilder();
-            for (var i = 0; i < name.Length; i++)
-            {
-                var @char = name[i];
-
-                if (i > 0 && (char.IsUpper(@char) || char.IsNumber(@char)))
-                {
-                    output.Append('_');
-                }
-
-                output.Append(char.ToLowerInvariant(@char));
-            }
-
-            return output.ToString();
+            return pythonDictionary;
         }
     }
 }

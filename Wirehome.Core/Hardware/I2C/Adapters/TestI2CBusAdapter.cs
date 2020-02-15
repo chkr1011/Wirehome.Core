@@ -12,17 +12,17 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void Write(int deviceAddress, ArraySegment<byte> buffer)
+        public void Write(int deviceAddress, ReadOnlySpan<byte> buffer)
         {
             //_logger.Log(LogLevel.Information, $"Fake Write: Device = {deviceAddress}; Buffer = {buffer.ToHexString()}");
         }
 
-        public void Read(int deviceAddress, ArraySegment<byte> buffer)
+        public void Read(int deviceAddress, Span<byte> buffer)
         {
             //_logger.Log(LogLevel.Information, $"Fake Read: Device = {deviceAddress}");
         }
 
-        public void WriteRead(int deviceAddress, ArraySegment<byte> writeBuffer, ArraySegment<byte> readBuffer)
+        public void WriteRead(int deviceAddress, ReadOnlySpan<byte> writeBuffer, Span<byte> readBuffer)
         {
             //_logger.Log(LogLevel.Information, $"Fake WriteRead: Device = {deviceAddress}; WriteBuffer = {writeBuffer.ToHexString()}");
         }

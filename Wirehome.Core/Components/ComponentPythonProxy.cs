@@ -3,14 +3,15 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
+using System.Runtime.InteropServices;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
     public class ComponentPythonProxy : IPythonProxy
     {
-        private readonly ComponentRegistryService _componentRegistryService;
-        private readonly string _componentUid;
+        readonly ComponentRegistryService _componentRegistryService;
+        readonly string _componentUid;
 
         public ComponentPythonProxy(string componentUid, ComponentRegistryService componentRegistryService)
         {
@@ -50,7 +51,7 @@ namespace Wirehome.Core.Components
             return _componentRegistryService.ComponentHasStatusValue(_componentUid, status_uid);
         }
 
-        public object get_status(string status_uid, object default_value = null)
+        public object get_status(string status_uid, [DefaultParameterValue(null)] object default_value)
         {
             return PythonConvert.ToPython(_componentRegistryService.GetComponentStatusValue(_componentUid, status_uid, default_value));
         }
@@ -65,11 +66,11 @@ namespace Wirehome.Core.Components
             return _componentRegistryService.ComponentHasSetting(_componentUid, setting_uid);
         }
 
-        public object get_setting(string setting_uid, object default_value = null)
+        public object get_setting(string setting_uid, [DefaultParameterValue(null)] object default_value)
         {
             return PythonConvert.ToPython(_componentRegistryService.GetComponentSetting(_componentUid, setting_uid, default_value));
         }
-        
+
         public void set_setting(string setting_uid, object value)
         {
             _componentRegistryService.SetComponentSetting(_componentUid, setting_uid, PythonConvert.FromPython(value));
@@ -79,8 +80,8 @@ namespace Wirehome.Core.Components
         {
             _componentRegistryService.RegisterComponentSetting(_componentUid, setting_uid, PythonConvert.FromPython(value));
         }
-        
-        public object get_configuration(string configuration_uid, object default_value = null)
+
+        public object get_configuration(string configuration_uid, [DefaultParameterValue(null)] object default_value)
         {
             return PythonConvert.ToPython(_componentRegistryService.GetComponentConfigurationValue(_componentUid, configuration_uid, default_value));
         }

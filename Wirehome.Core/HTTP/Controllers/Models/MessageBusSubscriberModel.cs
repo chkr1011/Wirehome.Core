@@ -1,10 +1,10 @@
-﻿using Wirehome.Core.Foundation.Model;
+﻿using System.Collections.Generic;
 
 namespace Wirehome.Core.HTTP.Controllers.Models
 {
     public class MessageBusSubscriberModel
     {
-        public WirehomeDictionary Filter { get; set; }
+        public IDictionary<object, object> Filter { get; set; }
 
         public int ProcessedMessagesCount { get; set; }
 

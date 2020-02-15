@@ -10,7 +10,7 @@ namespace Wirehome.Core.MessageBus
 {
     public class MessageBusServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly MessageBusService _messageBusService;
+        readonly MessageBusService _messageBusService;
 
         public MessageBusServicePythonProxy(MessageBusService messageBusService)
         {
@@ -19,17 +19,14 @@ namespace Wirehome.Core.MessageBus
 
         public string ModuleName { get; } = "message_bus";
 
+        public delegate void MessageCallback(PythonDictionary eventArgs);
+
         public void publish(PythonDictionary message)
         {
             _messageBusService.Publish(message);
         }
 
-        //public void publish_response(PythonDictionary request, PythonDictionary response)
-        //{
-        //    _messageBusService.PublishResponse(request, response);
-        //}
-
-        public string subscribe(string uid, PythonDictionary filter, Action<PythonDictionary> callback)
+        public string subscribe(string uid, PythonDictionary filter, MessageCallback callback)
         {
             return _messageBusService.Subscribe(uid, filter, m =>
             {

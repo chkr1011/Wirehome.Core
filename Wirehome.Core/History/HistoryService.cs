@@ -15,10 +15,11 @@ namespace Wirehome.Core.History
 {
     public partial class HistoryService : IService
     {
-        readonly StorageService _storageService;
-        readonly HistoryRepository _repository;
-        readonly ILogger _logger;
+        readonly HistoryValueFormatter _valueFormatter = new HistoryValueFormatter();
 
+        readonly StorageService _storageService;
+        readonly ILogger _logger;
+        readonly HistoryRepository _historyRepository;
         readonly OperationsPerSecondCounter _updateRateCounter;
 
         HistoryServiceOptions _options;
@@ -38,7 +39,7 @@ namespace Wirehome.Core.History
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _repository = new HistoryRepository();
+            _historyRepository = new HistoryRepository();
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _updateRateCounter = diagnosticsService.CreateOperationsPerSecondCounter("history.update_rate");
@@ -62,7 +63,8 @@ namespace Wirehome.Core.History
 
         public void Start()
         {
-            _storageService.TryReadOrCreate(out _options, HistoryServiceOptions.Filename);
+            _storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, HistoryServiceOptions.Filename);
+
             if (!_options.IsEnabled)
             {
                 _logger.LogInformation("History is disabled.");
@@ -72,7 +74,7 @@ namespace Wirehome.Core.History
 
         public Task<List<HistoryValueElement>> Read(HistoryReadOperation readOperation, CancellationToken cancellationToken)
         {
-            return _repository.Read(readOperation, cancellationToken);
+            return _historyRepository.Read(readOperation, cancellationToken);
         }
 
         public async Task Update(HistoryUpdateOperation updateOperation, CancellationToken cancellationToken)
@@ -91,8 +93,7 @@ namespace Wirehome.Core.History
 
                 var serializedValue = Convert.ToString(updateOperation.Value, CultureInfo.InvariantCulture);
 
-                var formatter = new HistoryValueFormatter();
-                serializedValue = formatter.FormatValue(serializedValue, updateOperation.ValueFormatterOptions);
+                serializedValue = _valueFormatter.FormatValue(serializedValue, updateOperation.ValueFormatterOptions);
 
                 var repositoryUpdateOperation = new HistoryRepositoryUpdateOperation
                 {
@@ -102,7 +103,7 @@ namespace Wirehome.Core.History
                     OldValueTimeToLive = updateOperation.OldValueTimeToLive
                 };
 
-                await _repository.Write(repositoryUpdateOperation, cancellationToken).ConfigureAwait(false);
+                await _historyRepository.Write(repositoryUpdateOperation, cancellationToken).ConfigureAwait(false);
 
                 stopwatch.Stop();
 
@@ -138,12 +139,12 @@ namespace Wirehome.Core.History
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
-            if (_repository == null)
+            if (_historyRepository == null)
             {
                 return null;
             }
 
-            return new HistoryExtractBuilder(_repository).BuildAsync(path, rangeStart, rangeEnd, interval, dataType, maxRowCount, cancellationToken);
+            return new HistoryExtractBuilder(_historyRepository).BuildAsync(path, rangeStart, rangeEnd, interval, dataType, maxRowCount, cancellationToken);
         }
 
         public void ResetStatistics()
@@ -156,12 +157,12 @@ namespace Wirehome.Core.History
 
         public Task DeleteHistory(string path, CancellationToken cancellationToken)
         {
-            return _repository.DeleteHistory(path, cancellationToken);
+            return _historyRepository.DeleteHistory(path, cancellationToken);
         }
 
         public Task<long> GetHistorySize(string path, CancellationToken cancellationToken)
         {
-            return _repository.GetHistorySize(path, cancellationToken);
+            return _historyRepository.GetHistorySize(path, cancellationToken);
         }
     }
 }

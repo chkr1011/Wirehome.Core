@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using Wirehome.Core.FunctionPool;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -27,7 +26,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/function_pool/functions/{uid}/invoke")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostInvokeFunction(string uid, [FromBody] WirehomeDictionary parameters)
+        public IDictionary<object, object> PostInvokeFunction(string uid, [FromBody] IDictionary<object, object> parameters)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));

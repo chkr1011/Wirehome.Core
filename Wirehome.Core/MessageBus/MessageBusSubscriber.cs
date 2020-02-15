@@ -1,20 +1,19 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.MessageBus
 {
     public class MessageBusSubscriber
     {
-        private readonly ConcurrentQueue<MessageBusMessage> _messageQueue = new ConcurrentQueue<MessageBusMessage>();
+        private readonly Queue<MessageBusMessage> _messageQueue = new Queue<MessageBusMessage>();
         private readonly Action<MessageBusMessage> _callback;
         private readonly ILogger _logger;
 
         private int _processorGate;
 
-        public MessageBusSubscriber(string uid, WirehomeDictionary filter, Action<MessageBusMessage> callback, ILogger logger)
+        public MessageBusSubscriber(string uid, IDictionary<object, object> filter, Action<MessageBusMessage> callback, ILogger logger)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             Filter = filter ?? throw new ArgumentNullException(nameof(filter));
@@ -24,7 +23,7 @@ namespace Wirehome.Core.MessageBus
 
         public string Uid { get; }
 
-        public WirehomeDictionary Filter { get; }
+        public IDictionary<object, object> Filter { get; }
 
         public int ProcessedMessagesCount { get; private set; }
 
@@ -36,12 +35,10 @@ namespace Wirehome.Core.MessageBus
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
-            if (!MessageBusFilterComparer.IsMatch(message.Message, Filter))
+            lock (_messageQueue)
             {
-                return;
+                _messageQueue.Enqueue(message);
             }
-
-            _messageQueue.Enqueue(message);
         }
 
         public bool TryProcessNextMessage()
@@ -57,9 +54,13 @@ namespace Wirehome.Core.MessageBus
                     return false;
                 }
 
-                if (!_messageQueue.TryDequeue(out var message))
+                MessageBusMessage message;
+                lock (_messageQueue)
                 {
-                    return false;
+                    if (!_messageQueue.TryDequeue(out message))
+                    {
+                        return false;
+                    }
                 }
 
                 _callback.Invoke(message);

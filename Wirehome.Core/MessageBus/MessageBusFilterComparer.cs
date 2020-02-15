@@ -1,12 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.MessageBus
 {
     public static class MessageBusFilterComparer
     {
-        public static bool IsMatch(WirehomeDictionary message, WirehomeDictionary filter)
+        public static bool IsMatch(IDictionary<object, object> message, IDictionary<object, object> filter)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
             if (filter == null) throw new ArgumentNullException(nameof(filter));

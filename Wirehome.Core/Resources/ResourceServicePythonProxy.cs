@@ -4,6 +4,7 @@
 
 using IronPython.Runtime;
 using System;
+using System.Runtime.InteropServices;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Resources
@@ -23,18 +24,18 @@ namespace Wirehome.Core.Resources
         {
             return _resourceService.RegisterResource(uid, languageCode, value);
         }
-        
-        public string get_value(string uid, string defaultValue = "")
+
+        public string get_value(string uid, [DefaultParameterValue("")] string defaultValue)
         {
             return _resourceService.GetResourceValue(uid, defaultValue);
         }
 
-        public string get_language_value(string uid, string languageCode, string defaultValue = "")
+        public string get_language_value(string uid, string languageCode, [DefaultParameterValue("")] string defaultValue)
         {
             return _resourceService.GetLanguageResourceValue(uid, languageCode, defaultValue);
         }
 
-        public string get_formatted_value(string uid, PythonDictionary parameters, string defaultValue = "")
+        public string get_formatted_value(string uid, PythonDictionary parameters, [DefaultParameterValue("")] string defaultValue)
         {
             var value = _resourceService.GetResourceValue(uid, defaultValue);
             value = _resourceService.FormatValue(value, parameters);

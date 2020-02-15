@@ -1,7 +1,7 @@
-﻿using System;
+﻿using IronPython.Runtime;
+using System;
 using Wirehome.Core.Components.Adapters;
 using Wirehome.Core.Constants;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Components.Logic
 {
@@ -14,14 +14,17 @@ namespace Wirehome.Core.Components.Logic
             _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         }
 
-        public WirehomeDictionary ProcessMessage(WirehomeDictionary parameters)
+        public PythonDictionary ProcessMessage(PythonDictionary parameters)
         {
             return _adapter.ProcessMessage(parameters);
         }
 
-        public WirehomeDictionary GetDebugInformation(WirehomeDictionary parameters)
+        public PythonDictionary GetDebugInformation(PythonDictionary parameters)
         {
-            return new WirehomeDictionary().WithType(ControlType.NotSupportedException);
+            return new PythonDictionary
+            {
+                ["type"] = ControlType.NotSupportedException
+            };
         }
     }
 }

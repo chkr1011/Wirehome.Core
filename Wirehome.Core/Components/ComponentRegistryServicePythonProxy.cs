@@ -4,15 +4,15 @@
 
 using IronPython.Runtime;
 using System;
+using System.Runtime.InteropServices;
 using Wirehome.Core.Components.Exceptions;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
     public class ComponentRegistryServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly ComponentRegistryService _componentRegistryService;
+        readonly ComponentRegistryService _componentRegistryService;
 
         public ComponentRegistryServicePythonProxy(ComponentRegistryService componentRegistryService)
         {
@@ -57,7 +57,7 @@ namespace Wirehome.Core.Components
             return _componentRegistryService.ComponentHasStatusValue(component_uid, status_uid);
         }
 
-        public object get_status(string component_uid, string status_uid, object default_value = null)
+        public object get_status(string component_uid, string status_uid, [DefaultParameterValue(null)] object default_value)
         {
             return PythonConvert.ToPython(_componentRegistryService.GetComponentStatusValue(component_uid, status_uid, default_value));
         }
@@ -72,7 +72,7 @@ namespace Wirehome.Core.Components
             return _componentRegistryService.ComponentHasSetting(component_uid, setting_uid);
         }
 
-        public object get_setting(string component_uid, string setting_uid, object default_value = null)
+        public object get_setting(string component_uid, string setting_uid, [DefaultParameterValue(null)] object default_value)
         {
             return PythonConvert.ToPython(_componentRegistryService.GetComponentSetting(component_uid, setting_uid, default_value));
         }
@@ -97,13 +97,15 @@ namespace Wirehome.Core.Components
         {
             try
             {
-                return _componentRegistryService.ProcessComponentMessage(component_uid, message);
+                return (PythonDictionary)_componentRegistryService.ProcessComponentMessage(component_uid, message);
             }
             catch (ComponentNotFoundException)
             {
-                return new WirehomeDictionary()
-                    .WithValue("type", "exception.component_not_found")
-                    .WithValue("component_uid", component_uid);
+                return new PythonDictionary
+                {
+                    ["type"] = "exception.component_not_found",
+                    ["component_uid"] = component_uid
+                };
             }
         }
     }

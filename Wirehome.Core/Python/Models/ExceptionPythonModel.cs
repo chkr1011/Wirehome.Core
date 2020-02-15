@@ -1,11 +1,11 @@
 ﻿using System;
-using Wirehome.Core.Foundation.Model;
+using System.Collections.Generic;
 
 namespace Wirehome.Core.Python.Models
 {
     // TODO: Convert to "ExceptionModel" and add implicit operator for conversion to dictionaries.
     // TODO: Or use PythonConvert or WirehomeConvert.
-    public class ExceptionPythonModel : TypedWirehomeDictionary
+    public class ExceptionPythonModel
     {
         public ExceptionPythonModel(Exception exception)
         {
@@ -17,13 +17,24 @@ namespace Wirehome.Core.Python.Models
             StackTrace = exception.StackTrace;
         }
 
-        //public string Type { get; }
+        public string Type { get; }
 
         public string ExceptionType { get; }
 
         public string Message { get; }
 
         public string StackTrace { get; }
+
+        public IDictionary<object, object> ToDictionary()
+        {
+            return new Dictionary<object, object>
+            {
+                ["type"] = Type,
+                ["exception.type"] = ExceptionType,
+                ["exception.message"] = Message,
+                ["exception.stack_trace"] = StackTrace,
+            };
+        }
 
         private static string GetTypeFromException(Exception exception)
         {

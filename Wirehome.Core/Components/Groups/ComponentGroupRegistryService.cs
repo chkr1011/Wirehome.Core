@@ -2,14 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Wirehome.Core.App;
 using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
-using Wirehome.Core.Storage;
-using Wirehome.Core.App;
 using Wirehome.Core.HTTP.Controllers;
+using Wirehome.Core.MessageBus;
+using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Components
 {
@@ -65,7 +64,7 @@ namespace Wirehome.Core.Components
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out ComponentGroupConfiguration configuration, ComponentGroupsDirectory, uid, DefaultFilenames.Configuration))
+            if (!_storageService.TryRead(out ComponentGroupConfiguration configuration, ComponentGroupsDirectory, uid, DefaultFileNames.Configuration))
             {
                 throw new ComponentGroupNotFoundException(uid);
             }
@@ -78,7 +77,7 @@ namespace Wirehome.Core.Components
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, ComponentGroupsDirectory, uid, DefaultFilenames.Configuration);
+            _storageService.Write(configuration, ComponentGroupsDirectory, uid, DefaultFileNames.Configuration);
         }
 
         public void DeleteComponentGroup(string uid)
@@ -97,14 +96,14 @@ namespace Wirehome.Core.Components
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out ComponentGroupConfiguration configuration, ComponentGroupsDirectory, uid, DefaultFilenames.Configuration))
+            if (!_storageService.TryRead(out ComponentGroupConfiguration configuration, ComponentGroupsDirectory, uid, DefaultFileNames.Configuration))
             {
                 throw new ComponentGroupNotFoundException(uid);
             }
 
-            if (!_storageService.TryRead(out WirehomeDictionary settings, ComponentGroupsDirectory, uid, DefaultFilenames.Settings))
+            if (!_storageService.TryRead(out IDictionary<string, object> settings, ComponentGroupsDirectory, uid, DefaultFileNames.Settings))
             {
-                settings = new WirehomeDictionary();
+                settings = new Dictionary<string, object>();
             }
 
             var componentGroup = new ComponentGroup(uid);
@@ -116,9 +115,9 @@ namespace Wirehome.Core.Components
             var associationUids = _storageService.EnumerateDirectories("*", ComponentGroupsDirectory, uid, "Components");
             foreach (var associationUid in associationUids)
             {
-                if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Components", associationUid, DefaultFilenames.Settings))
+                if (!_storageService.TryRead(out IDictionary<string, object> associationSettings, ComponentGroupsDirectory, uid, "Components", associationUid, DefaultFileNames.Settings))
                 {
-                    associationSettings = new WirehomeDictionary();
+                    associationSettings = new Dictionary<string, object>();
                 }
 
                 var componentAssociation = new ComponentGroupAssociation();
@@ -133,9 +132,9 @@ namespace Wirehome.Core.Components
             associationUids = _storageService.EnumerateDirectories("*", ComponentGroupsDirectory, uid, "Macros");
             foreach (var associationUid in associationUids)
             {
-                if (!_storageService.TryRead(out WirehomeDictionary associationSettings, ComponentGroupsDirectory, uid, "Macros", associationUid, DefaultFilenames.Settings))
+                if (!_storageService.TryRead(out IDictionary<string, object> associationSettings, ComponentGroupsDirectory, uid, "Macros", associationUid, DefaultFileNames.Settings))
                 {
-                    associationSettings = new WirehomeDictionary();
+                    associationSettings = new Dictionary<string, object>();
                 }
 
                 var componentAssociation = new ComponentGroupAssociation();
@@ -199,7 +198,7 @@ namespace Wirehome.Core.Components
                 return _componentGroups.Values.Where(g => g.HasTag(tag)).ToList();
             }
         }
-        
+
         public void AssignComponent(string componentGroupUid, string componentUid)
         {
             if (componentGroupUid == null) throw new ArgumentNullException(nameof(componentGroupUid));
@@ -247,7 +246,7 @@ namespace Wirehome.Core.Components
                 return false;
             }
 
-            _storageService.Write(componentGroup.GetTags(), ComponentGroupsDirectory, componentGroup.Uid, DefaultFilenames.Tags);
+            _storageService.Write(componentGroup.GetTags(), ComponentGroupsDirectory, componentGroup.Uid, DefaultFileNames.Tags);
 
             //_messageBusWrapper.PublishTagAddedEvent(componentGroup.Uid, tag);
 
@@ -267,7 +266,7 @@ namespace Wirehome.Core.Components
                 return false;
             }
 
-            _storageService.Write(componentGroup.GetTags(), ComponentGroupsDirectory, componentGroup.Uid, DefaultFilenames.Tags);
+            _storageService.Write(componentGroup.GetTags(), ComponentGroupsDirectory, componentGroup.Uid, DefaultFileNames.Tags);
 
             //_messageBusWrapper.PublishTagRemovedEvent(componentGroup.Uid, tag);
 
@@ -423,8 +422,8 @@ namespace Wirehome.Core.Components
                     return;
                 }
             }
-            
-            _storageService.Write(componentGroup.GetSettings(), ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
+
+            _storageService.Write(componentGroup.GetSettings(), ComponentGroupsDirectory, componentGroupUid, DefaultFileNames.Settings);
 
             _logger.Log(
                 LogLevel.Debug,
@@ -434,12 +433,14 @@ namespace Wirehome.Core.Components
                 setSettingResult.OldValue ?? "<null>",
                 value ?? "<null>");
 
-            _messageBusService.Publish(new WirehomeDictionary()
-                .WithType("component_group_registry.event.setting_changed")
-                .WithValue("component_group_uid", componentGroupUid)
-                .WithValue("setting_uid", settingUid)
-                .WithValue("old_value", setSettingResult.OldValue)
-                .WithValue("new_value", setSettingResult.OldValue));
+            _messageBusService.Publish(new Dictionary<object, object>
+            {
+                ["type"] = "component_group_registry.event.setting_changed",
+                ["component_group_uid"] = componentGroupUid,
+                ["setting_uid"] = settingUid,
+                ["old_value"] = setSettingResult.OldValue,
+                ["new_value"] = value
+            });
         }
 
         public object RemoveComponentGroupSetting(string componentGroupUid, string settingUid)
@@ -454,7 +455,7 @@ namespace Wirehome.Core.Components
                 return null;
             }
 
-            _storageService.Write(componentGroup.GetSettings(), ComponentGroupsDirectory, componentGroupUid, DefaultFilenames.Settings);
+            _storageService.Write(componentGroup.GetSettings(), ComponentGroupsDirectory, componentGroupUid, DefaultFileNames.Settings);
 
             _logger.Log(
                 LogLevel.Debug,
@@ -463,11 +464,13 @@ namespace Wirehome.Core.Components
                 settingUid,
                 oldValue ?? "<null>");
 
-            _messageBusService.Publish(new WirehomeDictionary()
-                .WithType("component_group_registry.event.setting_removed")
-                .WithValue("component_group_uid", componentGroupUid)
-                .WithValue("setting_uid", settingUid)
-                .WithValue("old_value", oldValue));
+            _messageBusService.Publish(new Dictionary<object, object>
+            {
+                ["type"] = "component_group_registry.event.setting_removed",
+                ["component_group_uid"] = componentGroupUid,
+                ["setting_uid"] = settingUid,
+                ["old_value"] = oldValue
+            });
 
             return oldValue;
         }
@@ -475,7 +478,7 @@ namespace Wirehome.Core.Components
         private void Save(ComponentGroup componentGroup)
         {
             var configuration = new ComponentGroupConfiguration();
-            _storageService.Write(configuration, ComponentGroupsDirectory, componentGroup.Uid, DefaultFilenames.Configuration);
+            _storageService.Write(configuration, ComponentGroupsDirectory, componentGroup.Uid, DefaultFileNames.Configuration);
 
             foreach (var componentAssociation in componentGroup.Components)
             {
@@ -490,12 +493,12 @@ namespace Wirehome.Core.Components
 
         private void SaveComponentAssociationSettings(ComponentGroup componentGroup, string componentUid, ComponentGroupAssociation association)
         {
-            _storageService.Write(association.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Components", componentUid, DefaultFilenames.Settings);
+            _storageService.Write(association.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Components", componentUid, DefaultFileNames.Settings);
         }
-        
+
         private void SaveMacroAssociationSettings(ComponentGroup componentGroup, string componentUid, ComponentGroupAssociation association)
         {
-            _storageService.Write(association.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Macros", componentUid, DefaultFilenames.Settings);
+            _storageService.Write(association.Settings, ComponentGroupsDirectory, componentGroup.Uid, "Macros", componentUid, DefaultFileNames.Settings);
         }
     }
 }

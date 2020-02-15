@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.System;
@@ -15,10 +14,9 @@ namespace Wirehome.Core.Scheduler
     {
         readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
         readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
-
         readonly Dictionary<string, ActiveThread> _activeThreads = new Dictionary<string, ActiveThread>();
 
-        readonly Dictionary<string, DefaultTimerSubscriber> _defaultTimerSubscribers = new Dictionary<string, DefaultTimerSubscriber>();
+        //readonly Dictionary<string, DefaultTimerSubscriber> _defaultTimerSubscribers = new Dictionary<string, DefaultTimerSubscriber>();
 
         readonly ILogger _logger;
         readonly SystemCancellationToken _systemCancellationToken;
@@ -34,7 +32,7 @@ namespace Wirehome.Core.Scheduler
             systemStatusService.Set("scheduler.active_threads", () => _activeThreads.Count);
             systemStatusService.Set("scheduler.active_timers", () => _activeTimers.Count);
             systemStatusService.Set("scheduler.active_countdowns", () => _activeCountdowns.Count);
-            systemStatusService.Set("scheduler.active_default_timer_subscribers", () => _defaultTimerSubscribers.Count);
+            //systemStatusService.Set("scheduler.active_default_timer_subscribers", () => _defaultTimerSubscribers.Count);
         }
 
         public void Start()
@@ -48,40 +46,40 @@ namespace Wirehome.Core.Scheduler
             taskScheduler.Start();
         }
 
-        public string AttachToHighPrecisionTimer(string uid, Action<TimerTickCallbackParameters> callback, object state = null)
-        {
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
+        //public string AttachToHighPrecisionTimer(string uid, Action<TimerTickCallbackParameters> callback, object state = null)
+        //{
+        //    if (callback == null) throw new ArgumentNullException(nameof(callback));
 
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("D");
-            }
+        //    if (string.IsNullOrEmpty(uid))
+        //    {
+        //        uid = Guid.NewGuid().ToString("D");
+        //    }
 
-            lock (_defaultTimerSubscribers)
-            {
-                _defaultTimerSubscribers[uid] = new DefaultTimerSubscriber(uid, callback, state, _logger);
-            }
+        //    lock (_defaultTimerSubscribers)
+        //    {
+        //        _defaultTimerSubscribers[uid] = new DefaultTimerSubscriber(uid, callback, state, _logger);
+        //    }
 
-            return uid;
-        }
+        //    return uid;
+        //}
 
-        public void DetachFromHighPrecisionTimer(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+        //public void DetachFromHighPrecisionTimer(string uid)
+        //{
+        //    if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            lock (_defaultTimerSubscribers)
-            {
-                _defaultTimerSubscribers.Remove(uid, out _);
-            }
-        }
+        //    lock (_defaultTimerSubscribers)
+        //    {
+        //        _defaultTimerSubscribers.Remove(uid, out _);
+        //    }
+        //}
 
-        public List<DefaultTimerSubscriber> GetHighPrecisionTimerSubscribers()
-        {
-            lock (_defaultTimerSubscribers)
-            {
-                return _defaultTimerSubscribers.Values.ToList();
-            }
-        }
+        //public List<DefaultTimerSubscriber> GetHighPrecisionTimerSubscribers()
+        //{
+        //    lock (_defaultTimerSubscribers)
+        //    {
+        //        return _defaultTimerSubscribers.Values.ToList();
+        //    }
+        //}
 
         public string StartTimer(string uid, TimeSpan interval, Action<TimerTickCallbackParameters> callback, object state = null)
         {
@@ -282,9 +280,9 @@ namespace Wirehome.Core.Scheduler
                     stopwatch.Restart();
 
                     UpdateActiveCountdowns(elapsed);
-                    InvokeHighPrecisionTimerSubscribers(elapsed);
+                    //InvokeHighPrecisionTimerSubscribers(elapsed);
 
-                    Thread.Sleep(50);
+                    Thread.Sleep(10);
                 }
             }
             catch (ThreadAbortException)
@@ -292,20 +290,20 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
-        void InvokeHighPrecisionTimerSubscribers(TimeSpan elapsed)
-        {
-            List<DefaultTimerSubscriber> subscribers;
+        //void InvokeHighPrecisionTimerSubscribers(TimeSpan elapsed)
+        //{
+        //    List<DefaultTimerSubscriber> subscribers;
 
-            lock (_defaultTimerSubscribers)
-            {
-                subscribers = new List<DefaultTimerSubscriber>(_defaultTimerSubscribers.Values);
-            }
+        //    lock (_defaultTimerSubscribers)
+        //    {
+        //        subscribers = new List<DefaultTimerSubscriber>(_defaultTimerSubscribers.Values);
+        //    }
 
-            foreach (var defaultTimerSubscriber in subscribers)
-            {
-                defaultTimerSubscriber.TryInvokeCallback(elapsed);
-            }
-        }
+        //    foreach (var defaultTimerSubscriber in subscribers)
+        //    {
+        //        defaultTimerSubscriber.TryInvokeCallback(elapsed);
+        //    }
+        //}
 
         void UpdateActiveCountdowns(TimeSpan elapsed)
         {
@@ -325,10 +323,18 @@ namespace Wirehome.Core.Scheduler
                     _activeCountdowns.Remove(key);
 
                     _logger.LogTrace($"Countdown '{key}' elapsed. Invoking callback.");
-                    Task.Run(() =>
+
+                    var workerThread = new Thread(activeCountdown.TryInvokeCallback)
                     {
-                        activeCountdown.TryInvokeCallback();
-                    });
+                        IsBackground = true
+                    };
+
+                    workerThread.Start();
+
+                    //Task.Run(() =>
+                    //{
+                    //    activeCountdown.TryInvokeCallback();
+                    //});
                 }
             }
         }

@@ -13,18 +13,20 @@ namespace Wirehome.Core.HTTP
 {
     public class HttpServerPythonProxy : IInjectedPythonProxy
     {
-        private readonly HttpServerService _httpServerService;
+        readonly HttpServerService _httpServerService;
 
         public HttpServerPythonProxy(HttpServerService httpServerService)
         {
             _httpServerService = httpServerService ?? throw new ArgumentNullException(nameof(httpServerService));
         }
 
+        public delegate PythonDictionary RequestHandler(PythonDictionary request);
+
         public string ModuleName { get; } = "http_server";
 
-        public string register_route(string uid, string uri_template, Func<PythonDictionary, PythonDictionary> handler)
+        public string register_route(string uid, string uri_template, RequestHandler handler)
         {
-            return _httpServerService.RegisterRoute(uid, uri_template, request => handler(request));
+            return _httpServerService.RegisterRoute(uid, uri_template, request => handler(PythonConvert.ToPythonDictionary(request)));
         }
 
         public void unregister_route(string uid)
@@ -52,7 +54,7 @@ namespace Wirehome.Core.HTTP
             {
                 ["is_match"] = isMatch,
                 ["values"] = resultValues
-            };            
+            };
         }
     }
 }

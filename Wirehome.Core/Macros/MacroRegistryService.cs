@@ -6,7 +6,6 @@ using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.Macros.Exceptions;
 using Wirehome.Core.MessageBus;
@@ -79,14 +78,14 @@ namespace Wirehome.Core.Macros
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, MacrosDirectory, uid, DefaultFilenames.Configuration);
+            _storageService.Write(configuration, MacrosDirectory, uid, DefaultFileNames.Configuration);
         }
 
         public MacroConfiguration ReadMacroConfiguration(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFilenames.Configuration))
+            if (!_storageService.TryRead(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
             {
                 throw new MacroNotFoundException(uid);
             }
@@ -131,7 +130,7 @@ namespace Wirehome.Core.Macros
 
             macro.Settings[settingUid] = value;
 
-            _storageService.Write(macro.Settings, MacrosDirectory, macro.Uid, DefaultFilenames.Settings);
+            _storageService.Write(macro.Settings, MacrosDirectory, macro.Uid, DefaultFileNames.Settings);
             _messageBusWrapper.PublishSettingChangedBusMessage(macroUid, settingUid, oldValue, value);
         }
 
@@ -143,7 +142,7 @@ namespace Wirehome.Core.Macros
             var macro = GetMacro(macroUid);
             macro.Settings.Remove(settingUid, out var value);
 
-            _storageService.Write(macro.Settings, MacrosDirectory, macroUid, DefaultFilenames.Settings);
+            _storageService.Write(macro.Settings, MacrosDirectory, macroUid, DefaultFileNames.Settings);
             _messageBusWrapper.PublishSettingRemovedBusMessage(macroUid, settingUid, value);
 
             return value;
@@ -169,7 +168,7 @@ namespace Wirehome.Core.Macros
 
             try
             {
-                if (!_storageService.TryRead(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFilenames.Configuration))
+                if (!_storageService.TryRead(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
                 {
                     throw new MacroNotFoundException(uid);
                 }
@@ -212,7 +211,7 @@ namespace Wirehome.Core.Macros
             }
         }
 
-        public WirehomeDictionary ExecuteMacro(string uid)
+        public IDictionary<object, object> ExecuteMacro(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
@@ -221,7 +220,10 @@ namespace Wirehome.Core.Macros
             {
                 if (!_macros.TryGetValue(uid, out macroInstance))
                 {
-                    return new WirehomeDictionary().WithType(ControlType.ParameterInvalidException);
+                    return new Dictionary<object, object>
+                    {
+                        ["type"] = ControlType.ParameterInvalidException
+                    };
                 }
             }
 
@@ -232,7 +234,12 @@ namespace Wirehome.Core.Macros
 
         private void AttachToMessageBus()
         {
-            _messageBusService.Subscribe("macro_registry.execute", new WirehomeDictionary().WithType("macro_registry.execute"), OnExecuteMacroBusMessage);
+            var filter = new Dictionary<object, object>
+            {
+                ["type"] = "macro_registry.execute"
+            };
+
+            _messageBusService.Subscribe("macro_registry.execute", filter, OnExecuteMacroBusMessage);
         }
 
         private MacroActionConfiguration ParseActionConfiguration(JObject actionConfiguration)
@@ -242,7 +249,7 @@ namespace Wirehome.Core.Macros
                 return new SendComponentMessageMacroActionConfiguration
                 {
                     ComponentUid = actionConfiguration["component_uid"].Value<string>(),
-                    Message = (WirehomeDictionary)WirehomeConvert.FromJson(actionConfiguration["message"])
+                    Message = actionConfiguration["message"].ToObject<IDictionary<object, object>>()
                 };
             }
 

@@ -3,6 +3,7 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
+using System.Runtime.InteropServices;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.ServiceHost
@@ -10,7 +11,7 @@ namespace Wirehome.Core.ServiceHost
     public class ServiceHostServicePythonProxy : IInjectedPythonProxy
     {
         private readonly ServiceHostService _serviceHostService;
-        
+
         public ServiceHostServicePythonProxy(ServiceHostService serviceHostService)
         {
             _serviceHostService = serviceHostService ?? throw new ArgumentNullException(nameof(serviceHostService));
@@ -18,7 +19,7 @@ namespace Wirehome.Core.ServiceHost
 
         public string ModuleName { get; } = "services";
 
-        public object invoke(string service_id, string function_name, params object[] parameters)
+        public object invoke(string service_id, string function_name, [DefaultParameterValue(null)] params object[] parameters)
         {
             return PythonConvert.ToPython(_serviceHostService.InvokeFunction(service_id, function_name, parameters));
         }

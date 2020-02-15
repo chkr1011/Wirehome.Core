@@ -7,7 +7,6 @@ using System.Net;
 using Wirehome.Core.Components;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Exceptions;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -102,7 +101,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/components/{uid}/enable")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IDictionary PostEnable(string uid)
+        public IDictionary<object, object> PostEnable(string uid)
         {
             return _componentRegistryService.EnableComponent(uid);
         }
@@ -110,7 +109,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/components/{uid}/disable")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IDictionary PostDisable(string uid)
+        public IDictionary<object, object> PostDisable(string uid)
         {
             return _componentRegistryService.DisableComponent(uid);
         }
@@ -118,7 +117,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/components/{uid}/process_message")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IDictionary PostProcessMessage(string uid, [FromBody] WirehomeDictionary message, bool returnUpdatedComponent = true)
+        public IDictionary<object, object> PostProcessMessage(string uid, [FromBody] IDictionary<object, object> message, bool returnUpdatedComponent = true)
         {
             var result = _componentRegistryService.ProcessComponentMessage(uid, message);
 
@@ -173,7 +172,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/components/{uid}/debug_information")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public IDictionary GetDebugInformation(string uid, [FromBody] WirehomeDictionary parameters)
+        public IDictionary<object, object> GetDebugInformation(string uid, [FromBody] IDictionary<object, object> parameters)
         {
             return _componentRegistryService.GetComponent(uid).GetDebugInformation(parameters);
         }

@@ -29,6 +29,9 @@ namespace Wirehome.Core.Hardware.MQTT
         readonly MqttTopicImportManager _topicImportManager;
 
         readonly ILogger _logger;
+
+
+        MqttServiceOptions _options;
         Thread _workerThread;
 
         IMqttServer _mqttServer;
@@ -61,11 +64,11 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public void Start()
         {
-            _storageService.TryReadOrCreate(out MqttServiceOptions options, MqttServiceOptions.Filename);
+            _storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, MqttServiceOptions.Filename);
 
             var mqttFactory = new MqttFactory();
 
-            IsLowLevelMqttLoggingEnabled = options.EnableLogging;
+            IsLowLevelMqttLoggingEnabled = _options.EnableLogging;
             if (IsLowLevelMqttLoggingEnabled)
             {
                 _mqttServer = mqttFactory.CreateMqttServer(new LoggerAdapter(_logger));
@@ -78,10 +81,11 @@ namespace Wirehome.Core.Hardware.MQTT
             _mqttServer.UseApplicationMessageReceivedHandler(new MqttApplicationMessageReceivedHandlerDelegate(e => OnApplicationMessageReceived(e)));
 
             var serverOptions = new MqttServerOptionsBuilder()
-                .WithDefaultEndpointPort(options.ServerPort)
+                .WithDefaultEndpointPort(_options.ServerPort)
+                .WithConnectionValidator(ValidateClientConnection)
                 .WithPersistentSessions();
 
-            if (options.PersistRetainedMessages)
+            if (_options.PersistRetainedMessages)
             {
                 var storage = new MqttServerStorage(_storageService, _logger);
                 storage.Start();
@@ -92,7 +96,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             _workerThread = new Thread(ProcessIncomingMqttMessages)
             {
-                Priority = ThreadPriority.AboveNormal,
+                Priority = ThreadPriority.Normal,
                 IsBackground = true
             };
 
@@ -165,7 +169,8 @@ namespace Wirehome.Core.Hardware.MQTT
             // Enqueue all retained messages to match the expected MQTT behavior.
             // Here we have no client per subscription. So we need to adopt some
             // features here manually.
-            foreach (var retainedMessage in _mqttServer.GetRetainedApplicationMessagesAsync().GetAwaiter().GetResult())
+            var retainedMessages = _mqttServer.GetRetainedApplicationMessagesAsync().GetAwaiter().GetResult();
+            foreach (var retainedMessage in retainedMessages)
             {
                 _incomingMessages.Add(new MqttApplicationMessageReceivedEventArgs(null, retainedMessage));
             }
@@ -257,6 +262,21 @@ namespace Wirehome.Core.Hardware.MQTT
         {
             _inboundCounter.Increment();
             _incomingMessages.Add(eventArgs);
+        }
+
+        void ValidateClientConnection(MqttConnectionValidatorContext context)
+        {
+            context.ReasonCode = MQTTnet.Protocol.MqttConnectReasonCode.Success;
+
+            if (_options.BlockedClients == null)
+            {
+                return;
+            }
+
+            if (_options.BlockedClients.Contains(context.ClientId ?? string.Empty))
+            {
+                context.ReasonCode = MQTTnet.Protocol.MqttConnectReasonCode.Banned;
+            }
         }
     }
 }

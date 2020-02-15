@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
@@ -40,7 +39,7 @@ namespace Wirehome.Core.MessageBus
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (storageService == null) throw new ArgumentNullException(nameof(storageService));
-            storageService.TryReadOrCreate(out _options, MessageBusServiceOptions.Filename);
+            storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, MessageBusServiceOptions.Filename);
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _inboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("message_bus.inbound_rate");
@@ -63,6 +62,7 @@ namespace Wirehome.Core.MessageBus
 
             dispatcherThread.Start();
 
+            _options.MessageProcessorsCount = 1;
             for (var i = 0; i < _options.MessageProcessorsCount; i++)
             {
                 var workerThread = new Thread(ProcessMessages)
@@ -75,7 +75,7 @@ namespace Wirehome.Core.MessageBus
             }
         }
 
-        public void Publish(WirehomeDictionary message)
+        public void Publish(IDictionary<object, object> message)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
@@ -97,7 +97,7 @@ namespace Wirehome.Core.MessageBus
             _inboundCounter.Increment();
         }
 
-        public async Task<WirehomeDictionary> PublishRequestAsync(WirehomeDictionary message, TimeSpan timeout)
+        public async Task<IDictionary<object, object>> PublishRequestAsync(IDictionary<object, object> message, TimeSpan timeout)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
@@ -145,7 +145,7 @@ namespace Wirehome.Core.MessageBus
             }
         }
 
-        public void PublishResponse(WirehomeDictionary request, WirehomeDictionary responseMessage)
+        public void PublishResponse(IDictionary<object, object> request, IDictionary<object, object> responseMessage)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (responseMessage == null) throw new ArgumentNullException(nameof(responseMessage));
@@ -182,7 +182,7 @@ namespace Wirehome.Core.MessageBus
             return new List<MessageBusSubscriber>(_subscribers.Values);
         }
 
-        public string Subscribe(string uid, WirehomeDictionary filter, Action<MessageBusMessage> callback)
+        public string Subscribe(string uid, IDictionary<object, object> filter, Action<MessageBusMessage> callback)
         {
             if (filter == null) throw new ArgumentNullException(nameof(filter));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
@@ -252,9 +252,15 @@ namespace Wirehome.Core.MessageBus
                     }
                     else
                     {
+                        List<MessageBusSubscriber> subscribers;
                         lock (_subscribers)
                         {
-                            foreach (var subscriber in _subscribers.Values)
+                            subscribers = new List<MessageBusSubscriber>(_subscribers.Values);
+                        }
+
+                        foreach (var subscriber in subscribers)
+                        {
+                            if (MessageBusFilterComparer.IsMatch(message.Message, subscriber.Filter))
                             {
                                 subscriber.EnqueueMessage(message);
                             }
@@ -295,7 +301,7 @@ namespace Wirehome.Core.MessageBus
                         }
                     }
 
-                    Thread.Sleep(50);
+                    Thread.Sleep(10);
                 }
             }
             catch (ThreadAbortException)

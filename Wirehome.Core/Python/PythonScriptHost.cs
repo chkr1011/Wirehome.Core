@@ -10,9 +10,16 @@ namespace Wirehome.Core.Python
 {
     public class PythonScriptHost
     {
-        private readonly ScriptScope _scriptScope;
-        private readonly IDictionary<string, object> _wirehomeWrapper;
-        
+        readonly object[] _emptyParameters = new object[0];
+
+        readonly object _syncRoot = new object();
+        readonly Dictionary<string, PythonFunction> _functionsCache = new Dictionary<string, PythonFunction>();
+
+        readonly ScriptScope _scriptScope;
+        readonly IDictionary<string, object> _wirehomeWrapper;
+
+        ObjectOperations _operations;
+
         public PythonScriptHost(ScriptScope scriptScope, IDictionary<string, object> wirehomeWrapper)
         {
             _scriptScope = scriptScope ?? throw new ArgumentNullException(nameof(scriptScope));
@@ -23,20 +30,27 @@ namespace Wirehome.Core.Python
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            _wirehomeWrapper.Add(name, value);
+            lock (_syncRoot)
+            {
+                _wirehomeWrapper.Add(name, value);
+            }
         }
 
         public void Compile(string scriptCode)
         {
             if (scriptCode == null) throw new ArgumentNullException(nameof(scriptCode));
 
-            lock (_scriptScope)
+            lock (_syncRoot)
             {
                 try
                 {
                     var source = _scriptScope.Engine.CreateScriptSourceFromString(scriptCode, SourceCodeKind.File);
                     var compiledCode = source.Compile();
                     compiledCode.Execute(_scriptScope);
+
+                    _operations = compiledCode.Engine.CreateOperations(_scriptScope);
+
+                    CreatePythonFunctionCache();
                 }
                 catch (Exception exception)
                 {
@@ -53,7 +67,7 @@ namespace Wirehome.Core.Python
             if (name == null) throw new ArgumentNullException(nameof(name));
 
             var pythonValue = PythonConvert.ToPython(value);
-            lock (_scriptScope)
+            lock (_syncRoot)
             {
                 _scriptScope.SetVariable(name, pythonValue);
             }
@@ -64,7 +78,7 @@ namespace Wirehome.Core.Python
             if (name == null) throw new ArgumentNullException(nameof(name));
 
             object pythonValue;
-            lock (_scriptScope)
+            lock (_syncRoot)
             {
                 pythonValue = _scriptScope.GetVariable(name);
             }
@@ -76,20 +90,10 @@ namespace Wirehome.Core.Python
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            lock (_scriptScope)
+            lock (_syncRoot)
             {
-                if (!_scriptScope.Engine.Operations.TryGetMember(_scriptScope, name, out var member))
-                {
-                    return false;
-                }
-
-                if (!(member is PythonFunction))
-                {
-                    return false;
-                }
+                return _functionsCache.TryGetValue(name, out _);
             }
-
-            return true;
         }
 
         public object InvokeFunction(string name, params object[] parameters)
@@ -97,40 +101,44 @@ namespace Wirehome.Core.Python
             if (name == null) throw new ArgumentNullException(nameof(name));
 
             object result;
-            lock (_scriptScope)
+            lock (_syncRoot)
             {
-                if (!_scriptScope.Engine.Operations.TryGetMember(_scriptScope, name, out var member))
-                {
-                    throw new PythonProxyException($"Function '{name}' not found.");
-                }
-
-                if (!(member is PythonFunction function))
-                {
-                    throw new PythonProxyException($"Member '{name}' is no Python function.");
-                }
-
                 try
                 {
-                    if (parameters?.Any() == false)
+                    if (!_functionsCache.TryGetValue(name, out var pythonFunction))
                     {
-                        result = _scriptScope.Engine.Operations.Invoke(function);
+                        throw new PythonProxyException($"Python function '{name}' not found.");
                     }
-                    else
-                    {
-                        var pythonParameters = parameters.Select(PythonConvert.ToPython).ToArray();
-                        result = _scriptScope.Engine.Operations.Invoke(function, pythonParameters);
-                    }                    
+
+                    var pythonParameters = parameters?.Select(PythonConvert.ToPython).ToArray() ?? _emptyParameters;
+                    result = _operations.Invoke(pythonFunction, pythonParameters);
                 }
                 catch (Exception exception)
                 {
                     var details = _scriptScope.Engine.GetService<ExceptionOperations>().FormatException(exception);
-                    var message = "Error while invoking function. " + Environment.NewLine + details;
+                    var message = $"Error while Python invoking function '{name}'. " + Environment.NewLine + details;
 
                     throw new PythonProxyException(message, exception);
                 }
             }
 
-            return PythonConvert.FromPython(result);
+            return result;
+        }
+
+        void CreatePythonFunctionCache()
+        {
+            foreach (var memberName in _operations.GetMemberNames(_scriptScope))
+            {
+                if (!_operations.TryGetMember(_scriptScope, memberName, out var member))
+                {
+                    continue;
+                }
+
+                if (member is PythonFunction pythonFunction)
+                {
+                    _functionsCache.Add(memberName, pythonFunction);
+                }
+            }
         }
     }
 }

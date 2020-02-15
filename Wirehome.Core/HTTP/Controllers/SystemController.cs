@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Packages;
@@ -33,6 +30,14 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void GetPing()
         {
+        }
+
+        [HttpPost]
+        [Route("/api/v1/system/run_garbage_collector")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void PostRunGarbageCollector()
+        {
+            _systemService.RunGarbageCollector();
         }
 
         [HttpGet]
@@ -72,8 +77,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task PostSetup(
             string appPackageUid = "wirehome.app@1.0.0",
-            string configuratorPackageUid = "wirehome.configurator@1.0.0", 
-            bool fixStartupScripts = true)
+            string configuratorPackageUid = "wirehome.configurator@1.0.0")
         {
             if (!string.IsNullOrWhiteSpace(appPackageUid.Trim()))
             {
@@ -83,11 +87,6 @@ namespace Wirehome.Core.HTTP.Controllers
             if (!string.IsNullOrWhiteSpace(configuratorPackageUid.Trim()))
             {
                 await _packageManagerService.DownloadPackageAsync(PackageUid.Parse(configuratorPackageUid));
-            }
-            
-            if (fixStartupScripts)
-            {
-                await FixStartupScripts();
             }
         }
 
@@ -113,31 +112,6 @@ namespace Wirehome.Core.HTTP.Controllers
         public string GetVersion()
         {
             return WirehomeCoreVersion.Version;
-        }
-
-        private async Task FixStartupScripts()
-        {
-            var path = _storageService.BinPath;
-
-            await FixFile(Path.Combine(path, "run.sh")).ConfigureAwait(false);
-            await FixFile(Path.Combine(path, "rund.sh")).ConfigureAwait(false);
-        }
-
-        private static async Task FixFile(string filename)
-        {
-            if (!global::System.IO.File.Exists(filename))
-            {
-                return;
-            }
-
-            var content = await global::System.IO.File.ReadAllTextAsync(filename, Encoding.UTF8).ConfigureAwait(false);
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                content = content.Replace("\r\n", "\n");
-            }
-
-            await global::System.IO.File.WriteAllTextAsync(filename, content, Encoding.UTF8).ConfigureAwait(false);
         }
     }
 }

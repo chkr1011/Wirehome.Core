@@ -1,16 +1,16 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using IronPython.Runtime;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.FunctionPool
 {
     public class FunctionPoolService : IService
     {
-        private readonly Dictionary<string, Func<WirehomeDictionary, WirehomeDictionary>> _functions = new Dictionary<string, Func<WirehomeDictionary, WirehomeDictionary>>();
+        private readonly Dictionary<string, Func<IDictionary<object, object>, IDictionary<object, object>>> _functions = new Dictionary<string, Func<IDictionary<object, object>, IDictionary<object, object>>>();
 
         private readonly ILogger<FunctionPoolService> _logger;
 
@@ -31,7 +31,7 @@ namespace Wirehome.Core.FunctionPool
             }
         }
 
-        public void RegisterFunction(string uid, Func<WirehomeDictionary, WirehomeDictionary> function)
+        public void RegisterFunction(string uid, Func<IDictionary<object, object>, IDictionary<object, object>> function)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (function == null) throw new ArgumentNullException(nameof(function));
@@ -54,11 +54,11 @@ namespace Wirehome.Core.FunctionPool
             }
         }
 
-        public WirehomeDictionary InvokeFunction(string uid, WirehomeDictionary parameters)
+        public IDictionary<object, object> InvokeFunction(string uid, IDictionary<object, object> parameters)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            Func<WirehomeDictionary, WirehomeDictionary> function;
+            Func<IDictionary<object, object>, IDictionary<object, object>> function;
             lock (_functions)
             {
                 if (!_functions.TryGetValue(uid, out function))
@@ -69,15 +69,17 @@ namespace Wirehome.Core.FunctionPool
 
             try
             {
-                return function(parameters ?? new WirehomeDictionary());
+                return function(parameters ?? new PythonDictionary());
             }
             catch (Exception exception)
             {
-                return new WirehomeDictionary()
-                    .WithType(ControlType.Exception)
-                    .WithValue("exception.type", exception.GetType().Name)
-                    .WithValue("exception.message", exception.Message)
-                    .WithValue("exception.stack_trace", exception.StackTrace);
+                return new Dictionary<object, object>
+                {
+                    ["type"] = ControlType.Exception,
+                    ["exception.type"] = exception.GetType().Name,
+                    ["exception.message"] = exception.Message,
+                    ["exception.stack_trace"] = exception.StackTrace,
+                };
             }
         }
     }

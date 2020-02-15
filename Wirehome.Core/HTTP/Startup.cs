@@ -110,6 +110,8 @@ namespace Wirehome.Core.HTTP
                 services.AddSingleton(typeof(IPythonProxy), pythonProxy);
             }
 
+            services.AddSingleton<PythonProxyFactory>();
+
             services.AddCors();
             services.AddResponseCompression(options =>
             {
@@ -146,12 +148,23 @@ namespace Wirehome.Core.HTTP
             StartServices(serviceProvider);
         }
 
-        private void StartServices(IServiceProvider serviceProvider)
+        void StartServices(IServiceProvider serviceProvider)
         {
+            // Start low level system services.
             var systemService = serviceProvider.GetRequiredService<SystemService>();
             systemService.Start();
 
             serviceProvider.GetRequiredService<StorageService>().Start();
+
+            // Start hardware related services.
+            serviceProvider.GetRequiredService<GpioRegistryService>().Start();
+            serviceProvider.GetRequiredService<I2CBusService>().Start();
+            serviceProvider.GetRequiredService<MqttService>().Start();
+            serviceProvider.GetRequiredService<HttpServerService>().Start();
+            serviceProvider.GetRequiredService<DiscoveryService>().Start();
+
+
+
             serviceProvider.GetRequiredService<DiagnosticsService>().Start();
             serviceProvider.GetRequiredService<MessageBusService>().Start();
 
@@ -161,28 +174,21 @@ namespace Wirehome.Core.HTTP
 
             serviceProvider.GetRequiredService<SchedulerService>().Start();
 
-            // Start hardware related services.
-            serviceProvider.GetRequiredService<GpioRegistryService>().Start();
-            serviceProvider.GetRequiredService<I2CBusService>().Start();
-            serviceProvider.GetRequiredService<MqttService>().Start();
-            serviceProvider.GetRequiredService<HttpServerService>().Start();
-            serviceProvider.GetRequiredService<DiscoveryService>().Start();
-
             serviceProvider.GetRequiredService<PythonEngineService>().Start();
+            serviceProvider.GetRequiredService<FunctionPoolService>().Start();
+            serviceProvider.GetRequiredService<PythonProxyFactory>().PreparePythonProxies();
+
 
             var startupScriptsService = serviceProvider.GetRequiredService<StartupScriptsService>();
             startupScriptsService.Start();
 
-            serviceProvider.GetRequiredService<FunctionPoolService>().Start();
-            serviceProvider.GetRequiredService<ServiceHostService>().Start();
-
             serviceProvider.GetRequiredService<NotificationsService>().Start();
-
+            serviceProvider.GetRequiredService<ServiceHostService>().Start();
             serviceProvider.GetRequiredService<HistoryService>().Start();
 
             systemService.OnServicesInitialized();
 
-            // Start data related services.
+            // Start component related services.
             serviceProvider.GetRequiredService<ComponentGroupRegistryService>().Start();
             serviceProvider.GetRequiredService<ComponentHistoryService>().Start();
             serviceProvider.GetRequiredService<ComponentRegistryService>().Start();
@@ -193,7 +199,7 @@ namespace Wirehome.Core.HTTP
             systemService.OnStartupCompleted();
         }
 
-        private static void ConfigureMvc(IApplicationBuilder app)
+        static void ConfigureMvc(IApplicationBuilder app)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
 
@@ -205,7 +211,7 @@ namespace Wirehome.Core.HTTP
             });
         }
 
-        private static void ConfigureWebApps(IApplicationBuilder app, GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
+        static void ConfigureWebApps(IApplicationBuilder app, GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
         {
             var storagePaths = new StoragePaths();
             var customContentRootPath = Path.Combine(storagePaths.DataPath, "CustomContent");
@@ -242,7 +248,7 @@ namespace Wirehome.Core.HTTP
             ExposeDirectory(app, "/packages", new PhysicalFileProvider(packagesRootPath));
         }
 
-        private static void ExposeDirectory(IApplicationBuilder app, string requestPath, IFileProvider fileProvider)
+        static void ExposeDirectory(IApplicationBuilder app, string requestPath, IFileProvider fileProvider)
         {
             var fileServerOptions = new FileServerOptions
             {
@@ -261,7 +267,7 @@ namespace Wirehome.Core.HTTP
             app.UseFileServer(fileServerOptions);
         }
 
-        private static void ConfigureSwagger(IApplicationBuilder app)
+        static void ConfigureSwagger(IApplicationBuilder app)
         {
             app.UseSwagger(o => o.RouteTemplate = "/api/{documentName}/swagger.json");
 

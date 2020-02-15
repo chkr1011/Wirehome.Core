@@ -16,9 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="IronPython" Version="2.7.10-candidate1" />
-    <PackageReference Include="IronPython.StdLib" Version="2.7.10-candidate1" />
-    <PackageReference Include="MessagePack" Version="2.1.80" />
+    <PackageReference Include="IronPython" Version="2.7.9" />
+    <PackageReference Include="IronPython.StdLib" Version="2.7.9" />
+    <PackageReference Include="MessagePack" Version="2.1.90" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
@@ -39,6 +39,7 @@
     <PackageReference Include="Rssdp" Version="4.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="5.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="5.0.0" />
+    <PackageReference Include="System.Device.Gpio" Version="1.0.0" />
     <PackageReference Include="System.IO.Packaging" Version="4.7.0" />
     <PackageReference Include="System.Net.WebSockets.Client" Version="4.3.2" />
   </ItemGroup>

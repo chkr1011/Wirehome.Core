@@ -20,7 +20,7 @@ namespace Wirehome.Core.Diagnostics.Log
         {
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
 
-            if (!storageService.TryReadOrCreate(out _options, LogServiceOptions.Filename))
+            if (!storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, LogServiceOptions.Filename))
             {
                 _options = new LogServiceOptions();
             }
@@ -29,7 +29,7 @@ namespace Wirehome.Core.Diagnostics.Log
         public void Start()
         {
         }
-        
+
         public void Publish(DateTime timestamp, LogLevel logLevel, string source, string message, Exception exception)
         {
             var newLogEntry = new LogEntry(timestamp, logLevel, source, message, exception?.ToString());

@@ -4,14 +4,13 @@
 
 using IronPython.Runtime;
 using System;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.FunctionPool
 {
     public class FunctionPoolServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly FunctionPoolService _functionPoolService;
+        readonly FunctionPoolService _functionPoolService;
 
         public FunctionPoolServicePythonProxy(FunctionPoolService functionPoolService)
         {
@@ -27,11 +26,11 @@ namespace Wirehome.Core.FunctionPool
             return _functionPoolService.GetRegisteredFunctions().Contains(uid);
         }
 
-        public WirehomeDictionary invoke(string uid, PythonDictionary parameters)
+        public PythonDictionary invoke(string uid, PythonDictionary parameters)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            return _functionPoolService.InvokeFunction(uid, parameters);
+            return PythonConvert.ToPythonDictionary(_functionPoolService.InvokeFunction(uid, parameters));
         }
 
         public void register(string uid, PythonDelegates.CallbackWithResultDelegate function)
@@ -39,7 +38,7 @@ namespace Wirehome.Core.FunctionPool
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (function == null) throw new ArgumentNullException(nameof(function));
 
-            _functionPoolService.RegisterFunction(uid, p => function(PythonConvert.ToWirehomeDictionary(p)));
+            _functionPoolService.RegisterFunction(uid, p => function(PythonConvert.ToPythonDictionary(p)));
         }
     }
 }

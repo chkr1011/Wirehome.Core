@@ -13,7 +13,7 @@ namespace Wirehome.Core.Discovery
 {
     public class DiscoveryServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly DiscoveryService _discoveryService;
+        readonly DiscoveryService _discoveryService;
 
         public DiscoveryServicePythonProxy(DiscoveryService discoveryService)
         {
@@ -28,7 +28,7 @@ namespace Wirehome.Core.Discovery
             return PythonConvert.ToPythonList(devices);
         }
 
-        private PythonDictionary ToPythonDictionary(DiscoveredSsdpDevice device)
+        PythonDictionary ToPythonDictionary(DiscoveredSsdpDevice device)
         {
             var headersWrapper = new List();
             foreach (var header in device.ResponseHeaders)

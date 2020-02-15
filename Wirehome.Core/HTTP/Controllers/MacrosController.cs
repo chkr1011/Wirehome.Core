@@ -5,7 +5,6 @@ using System.Net;
 using Wirehome.Core.Macros;
 using Wirehome.Core.Macros.Configuration;
 using Wirehome.Core.Macros.Exceptions;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.HTTP.Controllers
 {
@@ -58,7 +57,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             _macroRegistryService.DeleteMacro(uid);
         }
-        
+
         [HttpPost]
         [Route("api/v1/macros/{uid}/initialize")]
         [ApiExplorerSettings(GroupName = "v1")]
@@ -70,7 +69,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/macros/{uid}/execute")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public WirehomeDictionary PostExecuteMacro(string uid)
+        public IDictionary<object, object> PostExecuteMacro(string uid)
         {
             return _macroRegistryService.ExecuteMacro(uid);
         }
@@ -78,7 +77,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpGet]
         [Route("/api/v1/macros/{uid}/settings")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public ConcurrentWirehomeDictionary GetSettingValues(string uid)
+        public IDictionary<string, object> GetSettingValues(string uid)
         {
             return _macroRegistryService.GetMacro(uid).Settings;
         }

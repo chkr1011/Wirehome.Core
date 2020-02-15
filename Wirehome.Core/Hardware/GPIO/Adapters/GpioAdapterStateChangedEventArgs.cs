@@ -4,7 +4,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
     public class GpioAdapterStateChangedEventArgs : EventArgs
     {
-        public GpioAdapterStateChangedEventArgs(int gpioId, GpioState oldState, GpioState newState)
+        public GpioAdapterStateChangedEventArgs(int gpioId, GpioState? oldState, GpioState newState)
         {
             GpioId = gpioId;
             OldState = oldState;
@@ -13,7 +13,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         public int GpioId { get; }
 
-        public GpioState OldState { get; }
+        public GpioState? OldState { get; }
 
         public GpioState NewState { get; }
     }

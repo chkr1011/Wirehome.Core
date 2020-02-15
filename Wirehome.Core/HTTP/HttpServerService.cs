@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
@@ -27,7 +26,7 @@ namespace Wirehome.Core.HTTP
         {
         }
 
-        public string RegisterRoute(string uid, string uriTemplate, Func<WirehomeDictionary, WirehomeDictionary> handler)
+        public string RegisterRoute(string uid, string uriTemplate, Func<IDictionary<object, object>, IDictionary<object, object>> handler)
         {
             if (uriTemplate == null) throw new ArgumentNullException(nameof(uriTemplate));
             if (handler == null) throw new ArgumentNullException(nameof(handler));

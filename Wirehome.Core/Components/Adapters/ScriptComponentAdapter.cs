@@ -1,7 +1,6 @@
 ﻿using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
 using System;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components.Adapters
@@ -21,7 +20,7 @@ namespace Wirehome.Core.Components.Adapters
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Func<WirehomeDictionary, WirehomeDictionary> MessagePublishedCallback { get; set; }
+        public Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
 
         public void Compile(string componentUid, string script)
         {
@@ -34,7 +33,7 @@ namespace Wirehome.Core.Components.Adapters
 
             _scriptHost.Compile(script);
         }
-        
+
         public void SetVariable(string name, object value)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
@@ -49,16 +48,14 @@ namespace Wirehome.Core.Components.Adapters
             _scriptHost.AddToWirehomeWrapper(name, value);
         }
 
-        public WirehomeDictionary ProcessMessage(WirehomeDictionary message)
+        public PythonDictionary ProcessMessage(PythonDictionary message)
         {
-            var result = _scriptHost.InvokeFunction("process_adapter_message", message);
-            return result as WirehomeDictionary ?? new WirehomeDictionary();
+            return _scriptHost.InvokeFunction("process_adapter_message", message) as PythonDictionary ?? new PythonDictionary();
         }
 
         private PythonDictionary OnMessageReceived(PythonDictionary message)
         {
-            var result = MessagePublishedCallback?.Invoke(message);
-            return result ?? new PythonDictionary();
+            return MessagePublishedCallback?.Invoke(message) as PythonDictionary ?? new PythonDictionary();
         }
     }
 }

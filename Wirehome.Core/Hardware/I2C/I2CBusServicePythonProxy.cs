@@ -12,7 +12,7 @@ namespace Wirehome.Core.Hardware.I2C
 {
     public class I2CBusServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly I2CBusService _i2CBusService;
+        readonly I2CBusService _i2CBusService;
 
         public I2CBusServicePythonProxy(I2CBusService i2CBusService)
         {

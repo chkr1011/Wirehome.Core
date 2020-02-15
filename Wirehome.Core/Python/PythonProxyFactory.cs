@@ -2,26 +2,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Python
 {
-    public class PythonProxyFactory : IService
+    public class PythonProxyFactory
     {
-        private readonly IServiceProvider _serviceProvider;
-        
+        readonly IServiceProvider _serviceProvider;
+
+        List<IPythonProxy> _pythonProxies;
+
         public PythonProxyFactory(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
-        public void Start()
+        public void PreparePythonProxies()
         {
+            _pythonProxies = _serviceProvider.GetServices<IPythonProxy>().ToList();
         }
 
         public List<IPythonProxy> GetPythonProxies()
         {
-            return _serviceProvider.GetServices<IPythonProxy>().ToList();
+            // Create a copy of the list that the callers can modify it without danger!
+            return new List<IPythonProxy>(_pythonProxies);
         }
     }
 }

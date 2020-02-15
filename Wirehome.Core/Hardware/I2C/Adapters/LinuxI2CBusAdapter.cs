@@ -41,12 +41,14 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
             }
         }
 
-        public void Write(int deviceAddress, ArraySegment<byte> buffer)
+        public void Write(int deviceAddress, ReadOnlySpan<byte> buffer)
         {
             lock (_accessLock)
             {
+                var writeBuffer = buffer.ToArray();
+
                 var ioCtlResult = SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
-                var writeResult = SafeNativeMethods.Write(_handle, buffer.Array, buffer.Count, buffer.Offset);
+                var writeResult = SafeNativeMethods.Write(_handle, writeBuffer, writeBuffer.Length, 0);
 
                 _logger.Log(
                     LogLevel.Debug,
@@ -60,22 +62,32 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
             }
         }
 
-        public void Read(int deviceAddress, ArraySegment<byte> buffer)
+        public void Read(int deviceAddress, Span<byte> buffer)
         {
             lock (_accessLock)
             {
                 SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
-                SafeNativeMethods.Read(_handle, buffer.Array, buffer.Count, buffer.Offset);
+
+                var readBuffer = new byte[buffer.Length];
+                SafeNativeMethods.Read(_handle, readBuffer, readBuffer.Length, 0);
+
+                readBuffer.CopyTo(buffer);
             }
         }
 
-        public void WriteRead(int deviceAddress, ArraySegment<byte> writeBuffer, ArraySegment<byte> readBuffer)
+        public void WriteRead(int deviceAddress, ReadOnlySpan<byte> writeBuffer, Span<byte> readBuffer)
         {
+            // TODO: Consider keeping instance of the arrays and work with them inside the lock.
+            var writeBufferArray = writeBuffer.ToArray();
+            var readBufferArray = new byte[readBuffer.Length];
+
             lock (_accessLock)
             {
                 SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
-                SafeNativeMethods.Write(_handle, writeBuffer.Array, writeBuffer.Count, writeBuffer.Offset);
-                SafeNativeMethods.Read(_handle, readBuffer.Array, readBuffer.Count, readBuffer.Offset);
+                SafeNativeMethods.Write(_handle, writeBufferArray, writeBufferArray.Length, 0);
+                SafeNativeMethods.Read(_handle, readBufferArray, readBufferArray.Length, 0);
+
+                readBufferArray.CopyTo(readBuffer);
             }
         }
     }

@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Exceptions;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Hardware.GPIO.Adapters;
 using Wirehome.Core.MessageBus;
 
@@ -88,14 +87,14 @@ namespace Wirehome.Core.Hardware.GPIO
             return adapter;
         }
 
-        private void DispatchGpioStateChangedEvent(string gpioHostId, int gpioId, GpioState oldState, GpioState newState)
+        private void DispatchGpioStateChangedEvent(string gpioHostId, int gpioId, GpioState? oldState, GpioState newState)
         {
-            var properties = new WirehomeDictionary
+            var properties = new Dictionary<object, object>
             {
                 ["type"] = "gpio_registry.event.state_changed",
                 ["gpio_host_id"] = gpioHostId,
                 ["gpio_id"] = gpioId,
-                ["old_state"] = oldState.ToString().ToLowerInvariant(),
+                ["old_state"] = oldState?.ToString().ToLowerInvariant(),
                 ["new_state"] = newState.ToString().ToLowerInvariant()
             };
 

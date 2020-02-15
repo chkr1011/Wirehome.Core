@@ -1,6 +1,6 @@
 ﻿using IronPython.Runtime;
 using System;
-using Wirehome.Core.Foundation.Model;
+using System.Collections.Generic;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Storage
@@ -33,9 +33,9 @@ namespace Wirehome.Core.Storage
 
         public PythonDictionary read_object(string container, string key, PythonDictionary defaultValue)
         {
-            if (_valueStorageService.TryRead<WirehomeDictionary>(container, key, out var value))
+            if (_valueStorageService.TryRead<IDictionary<object, object>>(container, key, out var value))
             {
-                return value;
+                return PythonConvert.ToPythonDictionary(value);
             }
 
             return defaultValue;

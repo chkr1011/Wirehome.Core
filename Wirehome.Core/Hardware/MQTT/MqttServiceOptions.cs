@@ -1,4 +1,6 @@
-﻿namespace Wirehome.Core.Hardware.MQTT
+﻿using System.Collections.Generic;
+
+namespace Wirehome.Core.Hardware.MQTT
 {
     public class MqttServiceOptions
     {
@@ -9,5 +11,7 @@
         public bool PersistRetainedMessages { get; set; } = true;
 
         public int ServerPort { get; set; } = 1883;
+
+        public List<string> BlockedClients { get; set; }
     }
 }

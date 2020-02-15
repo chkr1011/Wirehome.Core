@@ -11,11 +11,11 @@ namespace Wirehome.Core.Storage
     public class StorageService : IService
     {
         private readonly JsonSerializerService _jsonSerializerService;
-        
+
         public StorageService(JsonSerializerService jsonSerializerService, ILogger<StorageService> logger)
         {
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
-            
+
             var paths = new StoragePaths();
             BinPath = paths.BinPath;
             DataPath = paths.DataPath;

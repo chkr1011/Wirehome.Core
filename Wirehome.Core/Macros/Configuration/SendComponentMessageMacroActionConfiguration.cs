@@ -1,4 +1,4 @@
-﻿using Wirehome.Core.Foundation.Model;
+﻿using System.Collections.Generic;
 
 namespace Wirehome.Core.Macros.Configuration
 {
@@ -6,6 +6,6 @@ namespace Wirehome.Core.Macros.Configuration
     {
         public string ComponentUid { get; set; }
 
-        public WirehomeDictionary Message { get; set; }
+        public IDictionary<object, object> Message { get; set; }
     }
 }

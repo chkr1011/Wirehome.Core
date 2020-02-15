@@ -11,7 +11,7 @@ namespace Wirehome.Core.HTTP.Controllers
     public class PythonScratchpadController : Controller
     {
         private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        
+
         public PythonScratchpadController(PythonScriptHostFactoryService pythonScriptHostFactoryService)
         {
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
@@ -37,12 +37,12 @@ namespace Wirehome.Core.HTTP.Controllers
                 {
                     return null;
                 }
-                
+
                 return scriptHost.InvokeFunction(function_name);
             }
             catch (Exception exception)
             {
-                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                return new ExceptionPythonModel(exception).ToDictionary();
             }
         }
     }

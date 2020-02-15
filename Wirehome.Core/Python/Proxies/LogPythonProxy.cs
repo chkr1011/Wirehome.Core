@@ -10,7 +10,7 @@ namespace Wirehome.Core.Python.Proxies
 {
     public class LogPythonProxy : IPythonProxy
     {
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
         public LogPythonProxy(ILogger logger)
         {

@@ -2,11 +2,9 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using Wirehome.Core.Foundation.Model;
-
 namespace Wirehome.Core.Python.Proxies.OS
 {
-    public class ExecuteResult : TypedWirehomeDictionary
+    public class ExecuteResult
     {
         public string OutputData { get; set; }
 

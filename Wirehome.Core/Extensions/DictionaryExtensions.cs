@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace Wirehome.Core.Extensions
@@ -16,6 +17,16 @@ namespace Wirehome.Core.Extensions
             var value = dictionary[key];
 
             return (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
+        }
+
+        public static object GetValueOrDefault(this IDictionary<object, object> dictionary, object key, object defaultValue = null)
+        {
+            if (dictionary.TryGetValue(key, out var result))
+            {
+                return result;
+            }
+
+            return defaultValue;
         }
 
         public static void SetValue(this IDictionary dictionary, string key, object value)

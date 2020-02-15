@@ -198,6 +198,11 @@ namespace Wirehome.Core.History.Repository
 
         List<DayPath> BuildDayPaths(DateTime begin, DateTime end)
         {
+            if (end < begin)
+            {
+                throw new InvalidOperationException("End must be larger than begin.");
+            }
+
             var paths = new List<DayPath>();
 
             while (begin <= end)

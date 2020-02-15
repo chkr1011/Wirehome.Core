@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using IronPython.Runtime;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Packages;
 using Wirehome.Core.Python;
 using Wirehome.Core.ServiceHost.Configuration;
@@ -66,14 +66,14 @@ namespace Wirehome.Core.ServiceHost
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, ServicesDirectory, id, DefaultFilenames.Configuration);
+            _storageService.Write(configuration, ServicesDirectory, id, DefaultFileNames.Configuration);
         }
 
         public ServiceConfiguration ReadServiceConfiguration(string id)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
 
-            if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFilenames.Configuration))
+            if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFileNames.Configuration))
             {
                 throw new ServiceNotFoundException(id);
             }
@@ -102,7 +102,7 @@ namespace Wirehome.Core.ServiceHost
 
             try
             {
-                if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFilenames.Configuration))
+                if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFileNames.Configuration))
                 {
                     throw new ServiceNotFoundException(id);
                 }
@@ -191,7 +191,7 @@ namespace Wirehome.Core.ServiceHost
             var serviceConfigurations = new Dictionary<string, ServiceConfiguration>();
             foreach (var serviceUid in GetServiceUids())
             {
-                if (_storageService.TryRead(out ServiceConfiguration serviceConfiguration, ServicesDirectory, serviceUid, DefaultFilenames.Configuration))
+                if (_storageService.TryRead(out ServiceConfiguration serviceConfiguration, ServicesDirectory, serviceUid, DefaultFileNames.Configuration))
                 {
                     serviceConfigurations.Add(serviceUid, serviceConfiguration);
                 }
@@ -208,10 +208,10 @@ namespace Wirehome.Core.ServiceHost
             var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
             scriptHost.Compile(package.Script);
 
-            var context = new WirehomeDictionary
+            var context = new PythonDictionary
             {
                 ["service_id"] = id,
-                ["service_version" ] = configuration.Version,
+                ["service_version"] = configuration.Version,
                 ["service_uid"] = new PackageUid(id, configuration.Version).ToString()
             };
 

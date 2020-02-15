@@ -45,7 +45,7 @@ namespace Wirehome.Core.Components.History
 
         public void Start()
         {
-            _storageService.TryReadOrCreate(out _options, ComponentHistoryServiceOptions.Filename);
+            _storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, ComponentHistoryServiceOptions.Filename);
             if (!_options.IsEnabled)
             {
                 _logger.LogInformation("Component history is disabled.");
@@ -114,7 +114,7 @@ namespace Wirehome.Core.Components.History
                 {
                     return;
                 }
-                
+
                 HistoryValueFormatterOptions formatterOptions = null;
 
                 _options.ComponentStatusDefaultSettings.TryGetValue(statusWorkItem.StatusUid, out var defaultSettings);
@@ -182,7 +182,7 @@ namespace Wirehome.Core.Components.History
                 {
                     return;
                 }
-                               
+
                 _pendingStatusWorkItems.Add(workItem);
             }
             catch (OperationCanceledException)

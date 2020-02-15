@@ -53,7 +53,7 @@ namespace Wirehome.Core.HTTP.Controllers
             }
             catch (Exception exception)
             {
-                return new ExceptionPythonModel(exception).ConvertToPythonDictionary();
+                return new ExceptionPythonModel(exception).ToDictionary();
             }
         }
     }

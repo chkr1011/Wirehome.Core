@@ -1,5 +1,5 @@
 ﻿using System;
-using Wirehome.Core.Foundation.Model;
+using System.Collections.Generic;
 
 namespace Wirehome.Core.MessageBus
 {
@@ -9,6 +9,6 @@ namespace Wirehome.Core.MessageBus
 
         public DateTime EnqueuedTimestamp { get; set; }
 
-        public WirehomeDictionary Message { get; set; } = new WirehomeDictionary();
+        public IDictionary<object, object> Message { get; set; } = new Dictionary<object, object>();
     }
 }

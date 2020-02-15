@@ -54,9 +54,16 @@ namespace Wirehome.Core.Scheduler
                 var stopwatch = Stopwatch.StartNew();
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    // TODO: Consider adding a flag "HighPrecision=true|false". Then use Thread.Sleep or await to safe threads.
-                    //Thread.Sleep(Interval);
-                    await Task.Delay(Interval, cancellationToken).ConfigureAwait(false);
+                    if (Interval < TimeSpan.FromSeconds(1))
+                    {
+                        Thread.Sleep(Interval);
+                    }
+                    else
+                    {
+                        // TODO: Consider adding a flag "HighPrecision=true|false". Then use Thread.Sleep or await to safe threads.
+                        //Thread.Sleep(Interval);
+                        await Task.Delay(Interval, cancellationToken).ConfigureAwait(false);
+                    }
 
                     // Ensure that the tick is not called when the task was canceled during the sleep time.
                     if (cancellationToken.IsCancellationRequested)

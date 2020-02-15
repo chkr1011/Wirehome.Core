@@ -9,12 +9,14 @@ namespace Wirehome.Core.Diagnostics
 {
     public class SystemStatusPythonProxy : IInjectedPythonProxy
     {
-        private readonly SystemStatusService _systemStatusService;
+        readonly SystemStatusService _systemStatusService;
 
         public SystemStatusPythonProxy(SystemStatusService systemInformationService)
         {
             _systemStatusService = systemInformationService ?? throw new ArgumentNullException(nameof(systemInformationService));
         }
+
+        public delegate object ValueProvider();
 
         public string ModuleName { get; } = "system_status";
 
@@ -25,7 +27,7 @@ namespace Wirehome.Core.Diagnostics
             _systemStatusService.Set(key, value);
         }
 
-        public void set(string key, Func<object> valueProvider)
+        public void set(string key, ValueProvider valueProvider)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 

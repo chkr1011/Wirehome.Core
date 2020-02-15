@@ -1,9 +1,9 @@
-﻿using Wirehome.Core.Foundation.Model;
+﻿using Wirehome.Core.Foundation;
 
 namespace Wirehome.Core.Components
 {
     public class ComponentGroupAssociation
     {
-        public ConcurrentWirehomeDictionary Settings { get; set; } = new ConcurrentWirehomeDictionary();
+        public ThreadSafeDictionary<string, object> Settings { get; set; } = new ThreadSafeDictionary<string, object>();
     }
 }

@@ -11,8 +11,8 @@ namespace Wirehome.Core.Hardware.GPIO
 {
     public class DeviceRegistryServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly ILogger _logger;
-        private readonly GpioRegistryService _gpioRegistryService;
+        readonly ILogger _logger;
+        readonly GpioRegistryService _gpioRegistryService;
 
         public DeviceRegistryServicePythonProxy(GpioRegistryService gpioRegistryService, ILogger<DeviceRegistryServicePythonProxy> logger)
         {

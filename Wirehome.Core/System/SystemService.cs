@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -8,7 +9,6 @@ using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.Notifications;
 
 namespace Wirehome.Core.System
@@ -43,7 +43,7 @@ namespace Wirehome.Core.System
         public event EventHandler ServicesInitialized;
         public event EventHandler ConfigurationLoaded;
         public event EventHandler StartupCompleted;
-        
+
         public void Start()
         {
             _systemStatusService.Set("startup.timestamp", _creationTimestamp);
@@ -56,7 +56,7 @@ namespace Wirehome.Core.System
 
             _systemStatusService.Set("system.date_time", () => DateTime.Now);
             _systemStatusService.Set("system.processor_count", Environment.ProcessorCount);
-            
+
             _systemStatusService.Set("up_time", () => DateTime.Now - _creationTimestamp);
 
             _systemStatusService.Set("arguments", string.Join(" ", _systemLaunchArguments.Values));
@@ -82,16 +82,21 @@ namespace Wirehome.Core.System
                     target.Add("process.working_set", currentProcess.WorkingSet64);
                     target.Add("process.max_working_set", currentProcess.MaxWorkingSet.ToInt64());
                     target.Add("process.peak_working_set", currentProcess.PeakWorkingSet64);
-                    
+
                     target.Add("process.private_memory", currentProcess.PrivateMemorySize64);
 
                     target.Add("process.virtual_memory", currentProcess.VirtualMemorySize64);
                     target.Add("process.peak_virtual_memory", currentProcess.PeakVirtualMemorySize64);
                 }
             });
-                       
+
             AddOSInformation();
             AddThreadPoolInformation();
+        }
+
+        public void RunGarbageCollector()
+        {
+            GC.Collect(3, GCCollectionMode.Forced, true, true);
         }
 
         public void Reboot(int waitTime)
@@ -102,13 +107,16 @@ namespace Wirehome.Core.System
             {
                 Type = NotificationType.Warning,
                 ResourceUid = NotificationResourceUids.RebootInitiated,
-                Parameters = new WirehomeDictionary
+                Parameters = new Dictionary<object, object>
                 {
                     ["wait_time"] = 0 // TODO: Add to event args.
                 }
             });
 
-            _messageBusService.Publish(new WirehomeDictionary().WithType("system.reboot_initiated"));
+            _messageBusService.Publish(new Dictionary<object, object>
+            {
+                ["type"] = "system.reboot_initiated"
+            });
 
             Task.Run(() =>
             {
@@ -144,7 +152,10 @@ namespace Wirehome.Core.System
 
         private void PublishBootedNotification()
         {
-            _messageBusService.Publish(new WirehomeDictionary().WithType("system.booted"));
+            _messageBusService.Publish(new Dictionary<object, object>
+            {
+                ["type"] = "system.booted"
+            });
 
             _notificationsService.PublishFromResource(new PublishFromResourceParameters
             {

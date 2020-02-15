@@ -4,13 +4,14 @@
 
 using IronPython.Runtime;
 using System;
+using System.Runtime.InteropServices;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Scheduler
 {
     public class SchedulerServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly SchedulerService _schedulerService;
+        readonly SchedulerService _schedulerService;
 
         public SchedulerServicePythonProxy(SchedulerService schedulerService)
         {
@@ -19,7 +20,13 @@ namespace Wirehome.Core.Scheduler
 
         public string ModuleName { get; } = "scheduler";
 
-        public string start_thread(string uid, Action<PythonDictionary> callback, object state = null)
+        public delegate void TimerCallback(PythonDictionary eventArgs);
+
+        public delegate void CountdownCallback(PythonDictionary eventArgs);
+
+        public delegate void ThreadCallback(PythonDictionary eventArgs);
+
+        public string start_thread(string uid, ThreadCallback callback, [DefaultParameterValue(null)] object state)
         {
             return _schedulerService.StartThread(uid, p =>
             {
@@ -43,7 +50,7 @@ namespace Wirehome.Core.Scheduler
             return _schedulerService.ThreadExists(uid);
         }
 
-        public string start_timer(string uid, int interval, Action<PythonDictionary> callback, object state = null)
+        public string start_timer(string uid, int interval, TimerCallback callback, [DefaultParameterValue(null)] object state)
         {
             return _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), p =>
             {
@@ -68,27 +75,27 @@ namespace Wirehome.Core.Scheduler
             return _schedulerService.TimerExists(uid);
         }
 
-        public string attach_to_default_timer(string uid, Action<PythonDictionary> callback, object state = null)
-        {
-            return _schedulerService.AttachToHighPrecisionTimer(uid, p =>
-            {
-                var pythonDictionary = new PythonDictionary
-                {
-                    ["timer_uid"] = uid,
-                    ["elapsed_millis"] = p.ElapsedMillis,
-                    ["state"] = p.State
-                };
+        //public string attach_to_default_timer(string uid, TimerCallback callback, [DefaultParameterValue(null)] object state)
+        //{
+        //    return _schedulerService.AttachToHighPrecisionTimer(uid, p =>
+        //    {
+        //        var pythonDictionary = new PythonDictionary
+        //        {
+        //            ["timer_uid"] = uid,
+        //            ["elapsed_millis"] = p.ElapsedMillis,
+        //            ["state"] = p.State
+        //        };
 
-                callback(pythonDictionary);
-            }, state);
-        }
+        //        callback(pythonDictionary);
+        //    }, state);
+        //}
 
-        public void detach_from_default_timer(string uid)
-        {
-            _schedulerService.DetachFromHighPrecisionTimer(uid);
-        }
+        //public void detach_from_default_timer(string uid)
+        //{
+        //    _schedulerService.DetachFromHighPrecisionTimer(uid);
+        //}
 
-        public string start_countdown(string uid, long duration, Action<PythonDictionary> callback, object state = null)
+        public string start_countdown(string uid, long duration, CountdownCallback callback, [DefaultParameterValue(null)] object state)
         {
             return _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), p =>
             {

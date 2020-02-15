@@ -1,8 +1,6 @@
-﻿using Wirehome.Core.Foundation.Model;
-
-namespace Wirehome.Core.Python.Proxies.OS
+﻿namespace Wirehome.Core.Python.Proxies.OS
 {
-    public class LaunchResult : TypedWirehomeDictionary
+    public class LaunchResult
     {
         public int Pid { get; set; }
     }

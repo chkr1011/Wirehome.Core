@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using Wirehome.Core.MessageBus;
-using Wirehome.Core.Foundation.Model;
 
 namespace Wirehome.Core.Components
 {
@@ -15,7 +15,7 @@ namespace Wirehome.Core.Components
 
         public void PublishEnabledEvent(string componentUid)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "component_registry.event.enabled",
                 ["component_uid"] = componentUid,
@@ -27,7 +27,7 @@ namespace Wirehome.Core.Components
 
         public void PublishDisabledEvent(string componentUid)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "component_registry.event.disabled",
                 ["component_uid"] = componentUid,
@@ -39,7 +39,7 @@ namespace Wirehome.Core.Components
 
         public void PublishTagAddedEvent(string componentUid, string tag)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "component_registry.event.tag_added",
                 ["component_uid"] = componentUid,
@@ -52,7 +52,7 @@ namespace Wirehome.Core.Components
 
         public void PublishTagRemovedEvent(string componentUid, string tag)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "component_registry.event.tag_removed",
                 ["component_uid"] = componentUid,
@@ -65,7 +65,7 @@ namespace Wirehome.Core.Components
 
         public void PublishStatusChangedEvent(ComponentStatusChangedEventArgs eventArgs)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "component_registry.event.status_changed",
                 ["timestamp"] = eventArgs.Timestamp.ToString("O"),
@@ -80,7 +80,7 @@ namespace Wirehome.Core.Components
 
         public void PublishSettingChangedEvent(string componentUid, string settingUid, object oldValue, object newValue)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "component_registry.event.setting_changed",
                 ["component_uid"] = componentUid,
@@ -95,7 +95,7 @@ namespace Wirehome.Core.Components
 
         public void PublishSettingRemovedEvent(string componentUid, string settingUid, object value)
         {
-            var message = new WirehomeDictionary
+            var message = new Dictionary<object, object>
             {
                 ["type"] = "component_registry.event.setting_removed",
                 ["component_uid"] = componentUid,

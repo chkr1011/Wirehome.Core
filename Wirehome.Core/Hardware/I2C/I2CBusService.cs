@@ -23,9 +23,11 @@ namespace Wirehome.Core.Hardware.I2C
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var i2CAdapter = new LinuxI2CBusAdapter(1, _logger);
-                i2CAdapter.Enable();
-                RegisterAdapter(string.Empty, i2CAdapter);
+                //var i2CAdapter = new LinuxI2CBusAdapter(1, _logger);
+                //i2CAdapter.Enable();
+                //RegisterAdapter(string.Empty, i2CAdapter);
+
+                RegisterAdapter(string.Empty, new LiveI2CBusAdapter(_logger));
             }
             else
             {
@@ -42,7 +44,7 @@ namespace Wirehome.Core.Hardware.I2C
             _logger.Log(LogLevel.Information, $"Registered I2C bus ID '{busId}'.");
         }
 
-        public void Write(string busId, int deviceAddress, ArraySegment<byte> buffer)
+        public void Write(string busId, int deviceAddress, ReadOnlySpan<byte> buffer)
         {
             if (busId == null) throw new ArgumentNullException(nameof(busId));
 
@@ -56,7 +58,7 @@ namespace Wirehome.Core.Hardware.I2C
             GetAdapter(busId).Read(deviceAddress, buffer);
         }
 
-        public void WriteRead(string busId, int deviceAddress, ArraySegment<byte> writeBuffer, ArraySegment<byte> readBuffer)
+        public void WriteRead(string busId, int deviceAddress, ReadOnlySpan<byte> writeBuffer, ArraySegment<byte> readBuffer)
         {
             if (busId == null) throw new ArgumentNullException(nameof(busId));
 

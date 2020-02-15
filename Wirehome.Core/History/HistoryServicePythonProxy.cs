@@ -3,7 +3,6 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using Wirehome.Core.Python;
@@ -13,8 +12,8 @@ namespace Wirehome.Core.History
 {
     public class HistoryServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly StorageService _storageService;
-        private readonly HistoryService _historyService;
+        readonly StorageService _storageService;
+        readonly HistoryService _historyService;
 
         public HistoryServicePythonProxy(StorageService storageService, HistoryService historyService)
         {

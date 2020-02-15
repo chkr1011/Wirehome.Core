@@ -23,7 +23,7 @@ namespace Wirehome.Core.Discovery
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            storageService.TryReadOrCreate(out _options, DiscoveryServiceOptions.Filename);
+            storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, DiscoveryServiceOptions.Filename);
         }
 
         public void Start()

@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Wirehome.Core.Foundation.Model;
 using Wirehome.Core.HTTP.Controllers.Models;
 using Wirehome.Core.MessageBus;
 
@@ -24,7 +23,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/message_bus/message")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostMessage([FromBody] WirehomeDictionary messsage)
+        public void PostMessage([FromBody] IDictionary<object, object> messsage)
         {
             _messageBusService.Publish(messsage);
         }
@@ -32,7 +31,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/message_bus/message_with_reply")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task<WirehomeDictionary> PostMessageWithReply(TimeSpan timeout, [FromBody] WirehomeDictionary messsage)
+        public Task<IDictionary<object, object>> PostMessageWithReply(TimeSpan timeout, [FromBody] IDictionary<object, object> messsage)
         {
             return _messageBusService.PublishRequestAsync(messsage, timeout);
         }
@@ -40,7 +39,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("/api/v1/message_bus/wait_for")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public async Task<WirehomeDictionary> PostWaitForAsync([FromBody] IEnumerable<WirehomeDictionary> filters, int timeout = 60)
+        public async Task<IDictionary<object, object>> PostWaitForAsync([FromBody] IEnumerable<IDictionary<object, object>> filters, int timeout = 60)
         {
             if (filters == null) throw new ArgumentNullException(nameof(filters));
 
@@ -68,7 +67,10 @@ namespace Wirehome.Core.HTTP.Controllers
             }
             catch (OperationCanceledException)
             {
-                return new WirehomeDictionary().WithType("exception.timeout");
+                return new Dictionary<object, object>
+                {
+                    ["type"] = "exception.timeout"
+                };
             }
             finally
             {

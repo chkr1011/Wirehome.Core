@@ -37,12 +37,6 @@
     <None Update="run.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="run.sh">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="rund.sh">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="Wirehome.ConsoleHost.Config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

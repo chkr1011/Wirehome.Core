@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Wirehome.Core.Contracts;
-using Wirehome.Core.Resources;
 
 namespace Wirehome.Core.App
 {
@@ -11,12 +10,12 @@ namespace Wirehome.Core.App
         readonly Dictionary<string, AppPanelDefinition> _panelDefinitions = new Dictionary<string, AppPanelDefinition>();
         readonly Dictionary<string, Func<object>> _statusProviders = new Dictionary<string, Func<object>>();
 
-        readonly ResourceService _resourceService;
+        //readonly ResourceService _resourceService;
 
-        public AppService(ResourceService resourceService)
-        {
-            _resourceService = resourceService ?? throw new ArgumentNullException(nameof(resourceService));
-        }
+        //public AppService(ResourceService resourceService)
+        //{
+        //    _resourceService = resourceService ?? throw new ArgumentNullException(nameof(resourceService));
+        //}
 
         public void Start()
         {
@@ -86,7 +85,7 @@ namespace Wirehome.Core.App
             var statusContainer = new Dictionary<string, object>
             {
                 ["panels"] = GetRegisteredPanels(),
-                ["resources"] = _resourceService.GetResources("")
+                //["resources"] = _resourceService.GetResources("")
             };
 
             lock (_statusProviders)

@@ -3,19 +3,19 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.Extensions.Logging;
 using System;
-using Wirehome.Core.Foundation.Model;
+using System.Collections.Generic;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
 {
     public class HttpRequestInterceptor
     {
-        private readonly Func<WirehomeDictionary, WirehomeDictionary> _handler;
+        private readonly Func<IDictionary<object, object>, IDictionary<object, object>> _handler;
         private readonly JsonSerializerService _jsonSerializerService;
         private readonly ILogger _logger;
         private readonly RouteTemplate _routeTemplate;
 
-        public HttpRequestInterceptor(string uriTemplate, Func<WirehomeDictionary, WirehomeDictionary> handler, JsonSerializerService jsonSerializerService, ILogger logger)
+        public HttpRequestInterceptor(string uriTemplate, Func<IDictionary<object, object>, IDictionary<object, object>> handler, JsonSerializerService jsonSerializerService, ILogger logger)
         {
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
@@ -43,7 +43,7 @@ namespace Wirehome.Core.HTTP
 
             try
             {
-                var result = _handler(arguments) ?? new WirehomeDictionary();
+                var result = _handler(arguments) ?? new Dictionary<object, object>();
                 converter.UnwrapContext(result, context);
                 return true;
             }
