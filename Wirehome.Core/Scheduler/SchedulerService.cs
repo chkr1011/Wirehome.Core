@@ -39,7 +39,6 @@ namespace Wirehome.Core.Scheduler
         {
             var taskScheduler = new Thread(ScheduleTasks)
             {
-                Priority = ThreadPriority.AboveNormal,
                 IsBackground = true
             };
 
@@ -309,32 +308,21 @@ namespace Wirehome.Core.Scheduler
         {
             lock (_activeCountdowns)
             {
-                foreach (var key in _activeCountdowns.Keys.ToList())
+                var activeCountdowns = _activeCountdowns.ToList();
+
+                foreach (var activeCountdown in activeCountdowns)
                 {
-                    var activeCountdown = _activeCountdowns[key];
+                    activeCountdown.Value.TimeLeft -= elapsed;
 
-                    activeCountdown.TimeLeft -= elapsed;
-
-                    if (activeCountdown.TimeLeft > TimeSpan.Zero)
+                    if (activeCountdown.Value.TimeLeft > TimeSpan.Zero)
                     {
                         continue;
                     }
 
-                    _activeCountdowns.Remove(key);
+                    _activeCountdowns.Remove(activeCountdown.Key);
+                    _logger.LogTrace($"Countdown '{activeCountdown.Key}' elapsed. Invoking callback.");
 
-                    _logger.LogTrace($"Countdown '{key}' elapsed. Invoking callback.");
-
-                    var workerThread = new Thread(activeCountdown.TryInvokeCallback)
-                    {
-                        IsBackground = true
-                    };
-
-                    workerThread.Start();
-
-                    //Task.Run(() =>
-                    //{
-                    //    activeCountdown.TryInvokeCallback();
-                    //});
+                    ThreadPool.QueueUserWorkItem(_ => activeCountdown.Value.TryInvokeCallback());
                 }
             }
         }

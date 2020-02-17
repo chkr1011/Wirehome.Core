@@ -11,7 +11,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
     public class LinuxGpioAdapter : IGpioAdapter
     {
         readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new Dictionary<int, InterruptMonitor>();
-        readonly Dictionary<int, FileStream> _openGpios = new Dictionary<int, FileStream>();
+        ////readonly Dictionary<int, FileStream> _openGpios = new Dictionary<int, FileStream>();
 
         readonly object _syncRoot = new object();
         readonly SystemStatusService _systemStatusService;
@@ -31,7 +31,6 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
             // cancellation, async/await, thread pool) is not needed.
             _workerThread = new Thread(PollGpios)
             {
-                Priority = ThreadPriority.AboveNormal,
                 Name = nameof(LinuxGpioAdapter),
                 IsBackground = true
             };
@@ -47,10 +46,12 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
         {
             lock (_syncRoot)
             {
-                Export(gpioId);
+                ExportGpio(gpioId);
 
                 var fileContent = direction == GpioDirection.Output ? "out" : "in";
-                File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/direction", fileContent, Encoding.ASCII);
+                WriteGpioDirection(gpioId, fileContent);
+
+                _logger.Log(LogLevel.Information, $"Exported GPIO {gpioId}.");
             }
         }
 
@@ -58,8 +59,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
         {
             lock (_syncRoot)
             {
-                var fileContent = state == GpioState.Low ? "0" : "1";
-                File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/value", fileContent, Encoding.ASCII);
+                WrtieGpioState(gpioId, state);
             }
         }
 
@@ -67,14 +67,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
         {
             lock (_syncRoot)
             {
-                if (!_openGpios.TryGetValue(gpioId, out var valueFile))
-                {
-                    var path = "/sys/class/gpio/gpio" + gpioId + "/value";
-                    valueFile = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    _openGpios[gpioId] = valueFile;
-                }
-
-                return ReadGpioState(valueFile);
+                return ReadGpioState(gpioId);
             }
         }
 
@@ -89,36 +82,17 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
                 lock (_syncRoot)
                 {
-                    Export(gpioId);
+                    ExportGpio(gpioId);
+                    WriteGpioDirection(gpioId, "in");
 
-                    File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/direction", "in", Encoding.ASCII);
+                    _logger.Log(LogLevel.Information, $"Exported GPIO {gpioId}.");
 
                     // TODO: Edge is only required if the state is read via blocked thread.
                     //File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/edge", edge.ToString().ToLowerInvariant());
                 }
 
-                var valuePath = $"/sys/class/gpio/gpio{gpioId}/value";
-
-                _interruptMonitors.Add(gpioId, new InterruptMonitor
-                {
-                    LatestState = null,
-                    ValuePath = valuePath,
-                    ValueFile = File.Open(valuePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-                });
+                _interruptMonitors.Add(gpioId, new InterruptMonitor());
             }
-        }
-
-        void Export(int gpioId)
-        {
-            var path = "/sys/class/gpio/gpio" + gpioId;
-            if (Directory.Exists(path))
-            {
-                return;
-            }
-
-            File.WriteAllText("/sys/class/gpio/export", gpioId.ToString(), Encoding.ASCII);
-
-            _logger.Log(LogLevel.Debug, $"Exported GPIO {gpioId}.");
         }
 
         void PollGpios()
@@ -142,13 +116,18 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
                         foreach (var interruptMonitor in _interruptMonitors)
                         {
-                            var currentState = ReadGpioState(interruptMonitor.Value.ValueFile);
+                            var currentState = ReadGpioState(interruptMonitor.Key);
                             if (currentState == interruptMonitor.Value.LatestState)
                             {
                                 continue;
                             }
 
-                            eventArgsList.Add(new GpioAdapterStateChangedEventArgs(interruptMonitor.Key, interruptMonitor.Value.LatestState, currentState));
+                            eventArgsList.Add(new GpioAdapterStateChangedEventArgs
+                            {
+                                GpioId = interruptMonitor.Key,
+                                OldState = interruptMonitor.Value.LatestState,
+                                NewState = currentState
+                            });
 
                             interruptMonitor.Value.LatestState = currentState;
                             interruptMonitor.Value.Timestamp = DateTime.UtcNow;
@@ -159,16 +138,6 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                     {
                         OnGpioChanged(eventArgs);
                     }
-
-                    if (hasInterruptMonitors)
-                    {
-                        Thread.Sleep(10);
-                    }
-                    else
-                    {
-                        // Do not waste CPU time if this feature is not used.
-                        Thread.Sleep(1000);
-                    }
                 }
                 catch (ThreadAbortException)
                 {
@@ -176,29 +145,49 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                 catch (Exception exception)
                 {
                     _logger.Log(LogLevel.Error, exception, "Error while polling interrupt inputs.");
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                }
+                finally
+                {
+                    Thread.Sleep(50);
                 }
             }
         }
 
-        GpioState ReadGpioState(FileStream fileStream)
+        static void ExportGpio(int gpioId)
         {
-            var buffer = new byte[1];
-
-            fileStream.Seek(0, SeekOrigin.Begin);
-            fileStream.Read(buffer, 0, 1);
-
-            if (buffer[0] == (byte)'1')
+            var path = "/sys/class/gpio/gpio" + gpioId;
+            if (Directory.Exists(path))
             {
-                return GpioState.High;
+                return;
             }
 
-            return GpioState.Low;
+            File.WriteAllText("/sys/class/gpio/export", gpioId.ToString(), Encoding.ASCII);
+        }
+
+        static void WriteGpioDirection(int gpioId, string direction)
+        {
+            var path = "/sys/class/gpio/gpio" + gpioId + "/direction";
+            File.WriteAllText(path, direction, Encoding.ASCII);
+        }
+
+        static GpioState ReadGpioState(int gpioId)
+        {
+            var path = "/sys/class/gpio/gpio" + gpioId + "/value";
+            var gpioValue = File.ReadAllText(path, Encoding.ASCII);
+
+            return gpioValue.Trim() == "1" ? GpioState.High : GpioState.Low;
+        }
+
+        static void WrtieGpioState(int gpioId, GpioState state)
+        {
+            var fileContent = state == GpioState.Low ? "0" : "1";
+            File.WriteAllText("/sys/class/gpio/gpio" + gpioId + "/value", fileContent, Encoding.ASCII);
         }
 
         void OnGpioChanged(GpioAdapterStateChangedEventArgs eventArgs)
         {
-            _logger.Log(LogLevel.Information, "GPIO {0} changed from {1} to {2}.", eventArgs.GpioId, eventArgs.OldState, eventArgs.NewState);
+            _logger.Log(LogLevel.Information, $"GPIO {eventArgs.GpioId} changed from {eventArgs.OldState} to {eventArgs.NewState}.");
+
             GpioStateChanged?.Invoke(this, eventArgs);
         }
     }

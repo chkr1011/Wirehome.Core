@@ -16,7 +16,12 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         public void NotifyGpioStateChanged(int gpioId, GpioState oldState, GpioState newState)
         {
-            GpioStateChanged?.Invoke(this, new GpioAdapterStateChangedEventArgs(gpioId, oldState, newState));
+            GpioStateChanged?.Invoke(this, new GpioAdapterStateChangedEventArgs
+            {
+                GpioId = gpioId,
+                OldState = oldState,
+                NewState = newState
+            });
         }
 
         public void SetDirection(int gpio, GpioDirection direction)

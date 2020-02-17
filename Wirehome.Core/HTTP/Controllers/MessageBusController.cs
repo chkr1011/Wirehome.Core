@@ -29,14 +29,6 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpPost]
-        [Route("/api/v1/message_bus/message_with_reply")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public Task<IDictionary<object, object>> PostMessageWithReply(TimeSpan timeout, [FromBody] IDictionary<object, object> messsage)
-        {
-            return _messageBusService.PublishRequestAsync(messsage, timeout);
-        }
-
-        [HttpPost]
         [Route("/api/v1/message_bus/wait_for")]
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<IDictionary<object, object>> PostWaitForAsync([FromBody] IEnumerable<IDictionary<object, object>> filters, int timeout = 60)
@@ -46,7 +38,7 @@ namespace Wirehome.Core.HTTP.Controllers
             var subscriptions = new List<string>();
             try
             {
-                var tcs = new TaskCompletionSource<MessageBusMessage>();
+                var tcs = new TaskCompletionSource<IDictionary<object, object>>();
 
                 foreach (var filter in filters)
                 {
@@ -60,7 +52,7 @@ namespace Wirehome.Core.HTTP.Controllers
                     {
                         using (linkedToken.Token.Register(() => { tcs.TrySetCanceled(); }))
                         {
-                            return (await tcs.Task).Message;
+                            return await tcs.Task.ConfigureAwait(false);
                         }
                     }
                 }
@@ -79,6 +71,22 @@ namespace Wirehome.Core.HTTP.Controllers
                     _messageBusService.Unsubscribe(subscription);
                 }
             }
+        }
+
+        [HttpPost]
+        [Route("/api/v1/message_bus/history/enable")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void EnableHistory(int maxMessagesCount = 100)
+        {
+            _messageBusService.EnableHistory(maxMessagesCount);
+        }
+
+        [HttpPost]
+        [Route("/api/v1/message_bus/history/disable")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public void DisableHistory()
+        {
+            _messageBusService.DisableHistory();
         }
 
         [HttpGet]

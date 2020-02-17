@@ -28,8 +28,10 @@ namespace Wirehome.Core.Hardware.GPIO
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _logger);
-                gpioAdapter.Enable();
+                //var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _logger);
+                //gpioAdapter.Enable();
+
+                var gpioAdapter = new LiveLinuxGpioAdapter(_logger);
                 RegisterAdapter(string.Empty, gpioAdapter);
             }
             else
@@ -44,7 +46,7 @@ namespace Wirehome.Core.Hardware.GPIO
             if (hostId == null) throw new ArgumentNullException(nameof(hostId));
 
             _adapters[hostId] = adapter ?? throw new ArgumentNullException(nameof(adapter));
-            adapter.GpioStateChanged += (s, e) => DispatchGpioStateChangedEvent(hostId, e.GpioId, e.OldState, e.NewState);
+            adapter.GpioStateChanged += (s, e) => OnGpioStateChanged(hostId, e);
 
             _logger.Log(LogLevel.Information, $"Registered GPIO host '{hostId}'.");
         }
@@ -77,7 +79,7 @@ namespace Wirehome.Core.Hardware.GPIO
             GetAdapter(hostId).EnableInterrupt(gpioId, edge);
         }
 
-        private IGpioAdapter GetAdapter(string hostId)
+        IGpioAdapter GetAdapter(string hostId)
         {
             if (!_adapters.TryGetValue(hostId, out var adapter))
             {
@@ -87,15 +89,15 @@ namespace Wirehome.Core.Hardware.GPIO
             return adapter;
         }
 
-        private void DispatchGpioStateChangedEvent(string gpioHostId, int gpioId, GpioState? oldState, GpioState newState)
+        void OnGpioStateChanged(string hostId, GpioAdapterStateChangedEventArgs e)
         {
             var properties = new Dictionary<object, object>
             {
                 ["type"] = "gpio_registry.event.state_changed",
-                ["gpio_host_id"] = gpioHostId,
-                ["gpio_id"] = gpioId,
-                ["old_state"] = oldState?.ToString().ToLowerInvariant(),
-                ["new_state"] = newState.ToString().ToLowerInvariant()
+                ["gpio_host_id"] = hostId,
+                ["gpio_id"] = e.GpioId,
+                ["old_state"] = e.OldState?.ToString().ToLowerInvariant(),
+                ["new_state"] = e.NewState.ToString().ToLowerInvariant()
             };
 
             _messageBusService.Publish(properties);

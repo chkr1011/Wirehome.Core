@@ -67,8 +67,6 @@ namespace Wirehome.Core.Components
                     TryInitializeComponent(componentUid.Key);
                 }
             }
-
-            AttachToMessageBus();
         }
 
         public void WriteComponentConfiguration(string uid, ComponentConfiguration configuration)
@@ -501,16 +499,6 @@ namespace Wirehome.Core.Components
             return _storageService.EnumerateDirectories("*", ComponentsDirectory);
         }
 
-        void AttachToMessageBus()
-        {
-            var filter = new Dictionary<object, object>
-            {
-                ["type"] = "component_registry.process_message"
-            };
-
-            _messageBusService.Subscribe("component_registry.process_message", filter, OnBusMessageExecuteCommand);
-        }
-
         Dictionary<string, ComponentConfiguration> ReadComponentConfigurations()
         {
             var componentConfigurations = new Dictionary<string, ComponentConfiguration>();
@@ -523,17 +511,6 @@ namespace Wirehome.Core.Components
             }
 
             return componentConfigurations;
-        }
-
-        void OnBusMessageExecuteCommand(MessageBusMessage busMessage)
-        {
-            var message = busMessage.Message;
-            var componentUid = Convert.ToString(message["component_uid"], CultureInfo.InvariantCulture);
-
-            // TODO: Refactor this conversion!
-            var innerMessage = (IDictionary<object, object>)message["message"];
-
-            _messageBusService.PublishResponse(message, ProcessComponentMessage(componentUid, innerMessage));
         }
     }
 }

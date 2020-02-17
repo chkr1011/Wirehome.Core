@@ -2,9 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Threading;
-using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Storage;
@@ -15,7 +13,7 @@ namespace Wirehome.Core.MessageBus
     public class MessageBusService : IService
     {
         readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
-        readonly LinkedList<MessageBusMessage> _history = new LinkedList<MessageBusMessage>();
+        readonly MessageBusMessageHistory _messageHistory = new MessageBusMessageHistory();
         readonly Dictionary<string, MessageBusSubscriber> _subscribers = new Dictionary<string, MessageBusSubscriber>();
         readonly Dictionary<string, MessageBusResponseSubscriber> _responseSubscribers = new Dictionary<string, MessageBusResponseSubscriber>();
 
@@ -56,23 +54,28 @@ namespace Wirehome.Core.MessageBus
         {
             var dispatcherThread = new Thread(DispatchMessageBusMessages)
             {
-                Priority = ThreadPriority.AboveNormal,
                 IsBackground = true
             };
 
             dispatcherThread.Start();
 
-            _options.MessageProcessorsCount = 1;
-            for (var i = 0; i < _options.MessageProcessorsCount; i++)
-            {
-                var workerThread = new Thread(ProcessMessages)
-                {
-                    Priority = ThreadPriority.AboveNormal,
-                    IsBackground = true
-                };
+            //var workerThread = new Thread(ProcessMessages)
+            //{
+            //    IsBackground = true
+            //};
 
-                workerThread.Start();
-            }
+            //workerThread.Start();
+
+            //_options.MessageProcessorsCount = 1;
+            //for (var i = 0; i < _options.MessageProcessorsCount; i++)
+            //{
+            //    var workerThread = new Thread(ProcessMessages)
+            //    {
+            //        IsBackground = true
+            //    };
+
+            //    workerThread.Start();
+            //}
         }
 
         public void Publish(IDictionary<object, object> message)
@@ -97,54 +100,6 @@ namespace Wirehome.Core.MessageBus
             _inboundCounter.Increment();
         }
 
-        public async Task<IDictionary<object, object>> PublishRequestAsync(IDictionary<object, object> message, TimeSpan timeout)
-        {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-
-            var request = new MessageBusMessage
-            {
-                Message = message
-            };
-
-            string requestCorrelationUid = null;
-            try
-            {
-                var responseSubscriber = new MessageBusResponseSubscriber();
-
-                if (message.TryGetValue(MessageBusMessagePropertyName.CorrelationUid, out var buffer))
-                {
-                    requestCorrelationUid = Convert.ToString(buffer, CultureInfo.InvariantCulture);
-                }
-                else
-                {
-                    requestCorrelationUid = Guid.NewGuid().ToString("D");
-                }
-
-                lock (_responseSubscribers)
-                {
-                    _responseSubscribers.Add(requestCorrelationUid, responseSubscriber);
-                }
-
-                Publish(request);
-
-                using (var timeoutCts = new CancellationTokenSource(timeout))
-                {
-                    var responseMessage = await Task.Run(() => responseSubscriber.Task, timeoutCts.Token).ConfigureAwait(false);
-                    return responseMessage.Message;
-                }
-            }
-            finally
-            {
-                if (requestCorrelationUid != null)
-                {
-                    lock (_responseSubscribers)
-                    {
-                        _responseSubscribers.Remove(requestCorrelationUid, out _);
-                    }
-                }
-            }
-        }
-
         public void PublishResponse(IDictionary<object, object> request, IDictionary<object, object> responseMessage)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -161,20 +116,24 @@ namespace Wirehome.Core.MessageBus
             Publish(response);
         }
 
+        public void EnableHistory(int maxMessagesCount)
+        {
+            _messageHistory.Enable(maxMessagesCount);
+        }
+
+        public void DisableHistory()
+        {
+            _messageHistory.Disable();
+        }
+
         public void ClearHistory()
         {
-            lock (_history)
-            {
-                _history.Clear();
-            }
+            _messageHistory.Clear();
         }
 
         public List<MessageBusMessage> GetHistory()
         {
-            lock (_history)
-            {
-                return new List<MessageBusMessage>(_history);
-            }
+            return _messageHistory.GetMessages();
         }
 
         public List<MessageBusSubscriber> GetSubscribers()
@@ -182,7 +141,7 @@ namespace Wirehome.Core.MessageBus
             return new List<MessageBusSubscriber>(_subscribers.Values);
         }
 
-        public string Subscribe(string uid, IDictionary<object, object> filter, Action<MessageBusMessage> callback)
+        public string Subscribe(string uid, IDictionary<object, object> filter, Action<IDictionary<object, object>> callback)
         {
             if (filter == null) throw new ArgumentNullException(nameof(filter));
             if (callback == null) throw new ArgumentNullException(nameof(callback));
@@ -217,53 +176,31 @@ namespace Wirehome.Core.MessageBus
                 try
                 {
                     var message = _messageQueue.Take(_systemCancellationToken.Token);
-                    if (message == null || _systemCancellationToken.Token.IsCancellationRequested)
+                    if (_systemCancellationToken.Token.IsCancellationRequested)
                     {
                         return;
                     }
 
-                    lock (_history)
+                    if (message == null)
                     {
-                        _history.AddFirst(message);
-                        if (_history.Count > _options.HistoryItemsCount)
-                        {
-                            _history.RemoveLast();
-                        }
+                        continue;
                     }
 
-                    if (message.Message.TryGetValue(MessageBusMessagePropertyName.CorrelationUid, out var correlationUid))
+                    _messageHistory.Add(message);
+
+                    List<MessageBusSubscriber> subscribers;
+                    lock (_subscribers)
                     {
-                        var responseCorrelationUid = Convert.ToString(correlationUid, CultureInfo.InvariantCulture);
-
-                        Dictionary<string, MessageBusResponseSubscriber> currentResponseSubscribers;
-                        lock (_responseSubscribers)
-                        {
-                            currentResponseSubscribers = new Dictionary<string, MessageBusResponseSubscriber>(_responseSubscribers);
-                        }
-
-                        foreach (var responseSubscriber in currentResponseSubscribers)
-                        {
-                            if (responseSubscriber.Key.Equals(responseCorrelationUid, StringComparison.Ordinal))
-                            {
-                                responseSubscriber.Value.SetResponse(message);
-                                break;
-                            }
-                        }
+                        subscribers = new List<MessageBusSubscriber>(_subscribers.Values);
                     }
-                    else
-                    {
-                        List<MessageBusSubscriber> subscribers;
-                        lock (_subscribers)
-                        {
-                            subscribers = new List<MessageBusSubscriber>(_subscribers.Values);
-                        }
 
-                        foreach (var subscriber in subscribers)
+                    foreach (var subscriber in subscribers)
+                    {
+                        if (MessageBusFilterComparer.IsMatch(message.Message, subscriber.Filter))
                         {
-                            if (MessageBusFilterComparer.IsMatch(message.Message, subscriber.Filter))
-                            {
-                                subscriber.EnqueueMessage(message);
-                            }
+                            ThreadPool.QueueUserWorkItem(_ => subscriber.ProcessMessage(message.Message));
+
+                            //subscriber.EnqueueMessage(message);
                         }
                     }
                 }
@@ -281,39 +218,39 @@ namespace Wirehome.Core.MessageBus
             }
         }
 
-        void ProcessMessages()
-        {
-            try
-            {
-                while (!_systemCancellationToken.Token.IsCancellationRequested)
-                {
-                    List<MessageBusSubscriber> subscribers;
-                    lock (_subscribers)
-                    {
-                        subscribers = new List<MessageBusSubscriber>(_subscribers.Values);
-                    }
+        //void ProcessMessages()
+        //{
+        //    try
+        //    {
+        //        while (!_systemCancellationToken.Token.IsCancellationRequested)
+        //        {
+        //            List<MessageBusSubscriber> subscribers;
+        //            lock (_subscribers)
+        //            {
+        //                subscribers = new List<MessageBusSubscriber>(_subscribers.Values);
+        //            }
 
-                    foreach (var subscriber in subscribers)
-                    {
-                        if (subscriber.TryProcessNextMessage())
-                        {
-                            _processingRateCounter.Increment();
-                        }
-                    }
+        //            foreach (var subscriber in subscribers)
+        //            {
+        //                if (subscriber.TryProcessNextMessage())
+        //                {
+        //                    _processingRateCounter.Increment();
+        //                }
+        //            }
 
-                    Thread.Sleep(10);
-                }
-            }
-            catch (ThreadAbortException)
-            {
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "Message processor faulted.");
-            }
-        }
+        //            Thread.Sleep(10);
+        //        }
+        //    }
+        //    catch (ThreadAbortException)
+        //    {
+        //    }
+        //    catch (OperationCanceledException)
+        //    {
+        //    }
+        //    catch (Exception exception)
+        //    {
+        //        _logger.LogError(exception, "Message processor faulted.");
+        //    }
+        //}
     }
 }

@@ -256,7 +256,7 @@ namespace Wirehome.Core.Macros
             throw new NotSupportedException("Macro action type not supported.");
         }
 
-        private void OnExecuteMacroBusMessage(MessageBusMessage busMessage)
+        private void OnExecuteMacroBusMessage(IDictionary<object, object> busMessage)
         {
         }
     }

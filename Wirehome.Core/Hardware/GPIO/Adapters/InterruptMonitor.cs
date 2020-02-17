@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
@@ -8,9 +7,5 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
         public GpioState? LatestState { get; set; }
 
         public DateTime Timestamp { get; set; }
-
-        public string ValuePath { get; set; }
-
-        public FileStream ValueFile { get; set; }
     }
 }
