@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 
 namespace Wirehome.Core.Diagnostics.Log
@@ -18,7 +16,6 @@ namespace Wirehome.Core.Diagnostics.Log
 
         public DateTime Timestamp { get; }
 
-        [JsonConverter(typeof(StringEnumConverter))]
         public LogLevel Level { get; }
 
         public string Source { get; }

@@ -19,14 +19,14 @@ namespace Wirehome.Core.Python
         {
         }
 
-        public PythonScriptHost CreateScriptHost(ILogger logger, params IPythonProxy[] transientPythonProxies)
+        public PythonScriptHost CreateScriptHost(params IPythonProxy[] transientPythonProxies)
         {
             if (transientPythonProxies == null) throw new ArgumentNullException(nameof(transientPythonProxies));
 
             var pythonProxies = _pythonProxyFactory.GetPythonProxies();
             pythonProxies.AddRange(transientPythonProxies);
 
-            return _pythonEngineService.CreateScriptHost(pythonProxies, logger);
+            return _pythonEngineService.CreateScriptHost(pythonProxies);
         }
     }
 }

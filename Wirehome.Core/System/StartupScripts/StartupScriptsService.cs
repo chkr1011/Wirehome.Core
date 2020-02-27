@@ -193,7 +193,7 @@ namespace Wirehome.Core.System.StartupScripts
                 throw new InvalidOperationException("Script file not found.");
             }
 
-            var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
+            var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost();
             scriptHost.Compile(scriptCode);
 
             return new StartupScriptInstance(uid, configuration, scriptHost);

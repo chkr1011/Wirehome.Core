@@ -30,7 +30,7 @@ namespace Wirehome.Core.Diagnostics.Log
                 }
 
                 logger = new LogServiceLogger(_logService, categoryName);
-                _loggers[categoryName] = logger;
+                _loggers.Add(categoryName, logger);
 
                 return logger;
             }

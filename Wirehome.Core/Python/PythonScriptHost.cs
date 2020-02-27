@@ -3,27 +3,137 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using Wirehome.Core.Python.Exceptions;
 
 namespace Wirehome.Core.Python
 {
+    //public class PythonScriptHostStorage : IDictionary<string, object>
+    //{
+    //    readonly Dictionary<string, object> _storage = new Dictionary<string, object>();
+
+    //    public object this[string key]
+    //    {
+    //        get
+    //        {
+    //            Debug.WriteLine("Python.this get " + key);
+
+    //            lock (_storage)
+    //            {
+    //                return _storage[key];
+    //            }
+    //        }
+
+    //        set
+    //        {
+    //            Debug.WriteLine("Python.this set " + key);
+
+    //            lock (_storage)
+    //            {
+    //                _storage[key] = value;
+    //            }
+    //        }
+    //    }
+
+    //    public ICollection<string> Keys
+    //    {
+    //        get
+    //        {
+    //            lock (_storage)
+    //            {
+    //                return _storage.Keys;
+    //            }
+    //        }
+    //    }
+
+    //    public ICollection<object> Values => throw new NotImplementedException();
+
+    //    public int Count => throw new NotImplementedException();
+
+    //    public bool IsReadOnly => throw new NotImplementedException();
+
+    //    public void Add(string key, object value)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public void Add(KeyValuePair<string, object> item)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public void Clear()
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public bool Contains(KeyValuePair<string, object> item)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public bool ContainsKey(string key)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public bool Remove(string key)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public bool Remove(KeyValuePair<string, object> item)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value)
+    //    {
+    //        Debug.WriteLine("Python.TryGetValue " + key);
+
+    //        lock (_storage)
+    //        {
+    //            return _storage.TryGetValue(key, out value);
+    //        }
+    //    }
+
+    //    IEnumerator IEnumerable.GetEnumerator()
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+    //}
+
     public class PythonScriptHost
     {
-        readonly object[] _emptyParameters = new object[0];
-
+        readonly object[] _emptyParameters = Array.Empty<object>();
         readonly object _syncRoot = new object();
+        //readonly PythonScriptHostStorage _storage = new PythonScriptHostStorage();
+        readonly IDictionary<string, object> _wirehomeWrapper = new ExpandoObject();
         readonly Dictionary<string, PythonFunction> _functionsCache = new Dictionary<string, PythonFunction>();
 
-        readonly ScriptScope _scriptScope;
-        readonly IDictionary<string, object> _wirehomeWrapper;
+        readonly ScriptEngine _scriptEngine;
+        readonly List<IPythonProxy> _pythonProxies;
 
+        ScriptScope _scriptScope;
         ObjectOperations _operations;
 
-        public PythonScriptHost(ScriptScope scriptScope, IDictionary<string, object> wirehomeWrapper)
+        public PythonScriptHost(ScriptEngine scriptEngine, List<IPythonProxy> pythonProxies)
         {
-            _scriptScope = scriptScope ?? throw new ArgumentNullException(nameof(scriptScope));
-            _wirehomeWrapper = wirehomeWrapper ?? throw new ArgumentNullException(nameof(wirehomeWrapper));
+            _scriptEngine = scriptEngine ?? throw new ArgumentNullException(nameof(scriptEngine));
+            _pythonProxies = pythonProxies ?? throw new ArgumentNullException(nameof(pythonProxies));
+
+            _scriptScope = _scriptEngine.CreateScope();
         }
 
         public void AddToWirehomeWrapper(string name, object value)
@@ -44,11 +154,17 @@ namespace Wirehome.Core.Python
             {
                 try
                 {
-                    var source = _scriptScope.Engine.CreateScriptSourceFromString(scriptCode, SourceCodeKind.File);
+                    var source = _scriptEngine.CreateScriptSourceFromString(scriptCode, SourceCodeKind.File);
                     var compiledCode = source.Compile();
                     compiledCode.Execute(_scriptScope);
+                    _operations = _scriptEngine.CreateOperations(_scriptScope);
 
-                    _operations = compiledCode.Engine.CreateOperations(_scriptScope);
+                    foreach (var pythonProxy in _pythonProxies)
+                    {
+                        _wirehomeWrapper.Add(pythonProxy.ModuleName, pythonProxy);
+                    }
+
+                    _scriptScope.SetVariable("wirehome", _wirehomeWrapper);
 
                     CreatePythonFunctionCache();
                 }

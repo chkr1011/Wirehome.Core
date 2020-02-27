@@ -2,7 +2,6 @@
 using Microsoft.Scripting.Hosting;
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
 using System.Text;
 using Wirehome.Core.Contracts;
@@ -13,13 +12,16 @@ namespace Wirehome.Core.Python
 {
     public class PythonEngineService : IService
     {
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
-        private ScriptEngine _scriptEngine;
+        LogPythonProxy _logPythonProxy;
+        ScriptEngine _scriptEngine;
 
         public PythonEngineService(ILogger<PythonEngineService> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            _logPythonProxy = new LogPythonProxy(_logger);
         }
 
         public void Start()
@@ -38,42 +40,46 @@ namespace Wirehome.Core.Python
             // Where you're actually re-compiling code regularly.
             _scriptEngine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>
             {
-                ["LightweightScopes"] = true
+                ["LightweightScopes"] = false
             });
 
             _scriptEngine.Runtime.IO.SetOutput(new PythonIOToLogStream(_logger), Encoding.UTF8);
 
             AddSearchPaths(_scriptEngine);
 
-            var scriptHost = CreateScriptHost(new List<IPythonProxy>(), _logger);
-            scriptHost.Compile("def test():\r\n    return 0");
-            scriptHost.InvokeFunction("test");
+            RunTestScript();
 
             _logger.LogInformation("Python engine started.");
         }
 
-        public PythonScriptHost CreateScriptHost(ICollection<IPythonProxy> pythonProxies, ILogger logger)
+        private void RunTestScript()
+        {
+            var testScript = new StringBuilder();
+            testScript.AppendLine("def test():");
+            testScript.AppendLine("    wirehome.log.information('Test message from test script.')");
+            testScript.AppendLine("    return 1234");
+
+            var scriptHost = CreateScriptHost(new List<IPythonProxy>());
+            scriptHost.Compile(testScript.ToString());
+            var result = scriptHost.InvokeFunction("test");
+
+            if (result as int? != 1234)
+            {
+                throw new InvalidOperationException("Python test script failed.");
+            }
+        }
+
+        public PythonScriptHost CreateScriptHost(ICollection<IPythonProxy> pythonProxies)
         {
             if (pythonProxies == null) throw new ArgumentNullException(nameof(pythonProxies));
 
-            var scriptScope = _scriptEngine.CreateScope();
-
-            pythonProxies = new List<IPythonProxy>(pythonProxies)
+            var allPythonProxies = new List<IPythonProxy>(pythonProxies)
             {
-                new LogPythonProxy(logger ?? _logger),
+                _logPythonProxy,
                 new DebuggerPythonProxy()
             };
 
-            var wirehomeWrapper = (IDictionary<string, object>)new ExpandoObject();
-
-            foreach (var pythonProxy in pythonProxies)
-            {
-                wirehomeWrapper.Add(pythonProxy.ModuleName, pythonProxy);
-            }
-
-            scriptScope.SetVariable("wirehome", wirehomeWrapper);
-
-            return new PythonScriptHost(scriptScope, wirehomeWrapper);
+            return new PythonScriptHost(_scriptEngine, allPythonProxies);
         }
 
         private void AddSearchPaths(ScriptEngine scriptEngine)

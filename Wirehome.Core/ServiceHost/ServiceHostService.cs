@@ -205,7 +205,7 @@ namespace Wirehome.Core.ServiceHost
             var packageUid = new PackageUid(id, configuration.Version);
             var package = _repositoryService.LoadPackage(packageUid);
 
-            var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(_logger);
+            var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost();
             scriptHost.Compile(package.Script);
 
             var context = new PythonDictionary
