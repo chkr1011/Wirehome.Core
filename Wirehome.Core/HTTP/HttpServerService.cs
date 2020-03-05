@@ -5,16 +5,17 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
+using Wirehome.Core.HTTP.PythonProxies;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
 {
     public class HttpServerService : IService
     {
-        private readonly Dictionary<string, HttpRequestInterceptor> _interceptors = new Dictionary<string, HttpRequestInterceptor>();
+        readonly Dictionary<string, HttpRequestInterceptor> _interceptors = new Dictionary<string, HttpRequestInterceptor>();
 
-        private readonly JsonSerializerService _jsonSerializerService;
-        private readonly ILogger _logger;
+        readonly JsonSerializerService _jsonSerializerService;
+        readonly ILogger _logger;
 
         public HttpServerService(JsonSerializerService jsonSerializerService, ILogger<HttpServerService> logger)
         {

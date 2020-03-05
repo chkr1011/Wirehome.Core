@@ -15,11 +15,11 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpGet]
-        [Route("api/v1/value_storage/{container}/{key}")]
+        [Route("api/v1/value_storage/{*path}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public object GetValueStorageValue(string container, string key)
+        public object GetValueStorageValue(string path)
         {
-            if (_valueStorageService.TryRead<object>(container, key, out var value))
+            if (_valueStorageService.TryRead<object>(RelativeValueStoragePath.Parse(path), out var value))
             {
                 return value;
             }
@@ -28,19 +28,19 @@ namespace Wirehome.Core.HTTP.Controllers
         }
 
         [HttpPost]
-        [Route("api/v1/value_storage/{container}/{key}")]
+        [Route("api/v1/value_storage/{*path}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostValueStorageValue(string container, string key, [FromBody] object value)
+        public void PostValueStorageValue(string path, [FromBody] object value)
         {
-            _valueStorageService.Write(container, key, value);
+            _valueStorageService.Write(RelativeValueStoragePath.Parse(path), value);
         }
 
         [HttpDelete]
-        [Route("api/v1/value_storage/{container}/{key}")]
+        [Route("api/v1/value_storage/{*path}")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void DeleteValueStorageValue(string container, string key)
+        public void DeleteValueStorageValue(string path)
         {
-            _valueStorageService.Delete(container, key);
+            _valueStorageService.Delete(RelativeValueStoragePath.Parse(path));
         }
     }
 }

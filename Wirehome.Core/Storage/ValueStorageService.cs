@@ -1,15 +1,16 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Storage
 {
     public class ValueStorageService : IService
     {
-        private const string ValueStorageDirectoryName = "ValueStorage";
+        const string ValueStorageDirectoryName = "ValueStorage";
 
-        private readonly StorageService _storageService;
-        private readonly ILogger<ValueStorageService> _logger;
+        readonly StorageService _storageService;
+        readonly ILogger<ValueStorageService> _logger;
 
         public ValueStorageService(StorageService storageService, ILogger<ValueStorageService> logger)
         {
@@ -21,46 +22,54 @@ namespace Wirehome.Core.Storage
         {
         }
 
-        public void Write(string container, string key, object value)
+        public void Write(RelativeValueStoragePath relativePath, object value)
         {
-            if (container is null) throw new ArgumentNullException(nameof(container));
-            if (key is null) throw new ArgumentNullException(nameof(key));
+            if (relativePath is null) throw new ArgumentNullException(nameof(relativePath));
 
-            _storageService.Write(value, ValueStorageDirectoryName, container, key);
-            _logger.LogTrace($"Value '{container}/{key}' written ({value}).");
+            var path = BuildPath(relativePath);
+
+            _storageService.Write(value, path);
+            _logger.LogTrace($"Value '{relativePath}' written ({value}).");
         }
 
-        public bool TryRead<TValue>(string container, string key, out TValue value)
+        public bool TryRead<TValue>(RelativeValueStoragePath relativePath, out TValue value)
         {
-            if (container is null) throw new ArgumentNullException(nameof(container));
-            if (key is null) throw new ArgumentNullException(nameof(key));
+            if (relativePath is null) throw new ArgumentNullException(nameof(relativePath));
 
-            if (_storageService.TryRead(out value, ValueStorageDirectoryName, container, key))
+            var path = BuildPath(relativePath);
+
+            if (_storageService.TryRead(out value, path))
             {
-                _logger.LogTrace($"Value '{container}/{key}' read ({value}).");
+                _logger.LogTrace($"Value '{relativePath}' read ({value}).");
                 return true;
             }
 
-            _logger.LogTrace($"Value '{container}/{key}' not found.");
+            _logger.LogTrace($"Value '{relativePath}' not found.");
             return false;
         }
 
-        public void Delete(string container)
+        public void Delete(RelativeValueStoragePath relativePath)
         {
-            if (container is null) throw new ArgumentNullException(nameof(container));
+            if (relativePath is null) throw new ArgumentNullException(nameof(relativePath));
 
-            _storageService.DeleteFile(ValueStorageDirectoryName, container);
-            _logger.LogTrace($"Value container '{container}' deleted.");
+            var path = BuildPath(relativePath);
+
+            _storageService.DeletePath(path);
+            _logger.LogTrace($"Value '{relativePath}' deleted.");
         }
 
-        public void Delete(string container, string key)
+        string BuildPath(RelativeValueStoragePath relativePath)
         {
-            if (container is null) throw new ArgumentNullException(nameof(container));
-            if (key is null) throw new ArgumentNullException(nameof(key));
+            if (relativePath.Paths.Any(p => p.Contains("/")) || relativePath.Paths.Any(p => p.Contains("\\")))
+            {
+                throw new InvalidOperationException("The path is invalid.");
+            }
 
-            _storageService.DeleteFile(ValueStorageDirectoryName, container, key);
-            _logger.LogTrace($"Value '{container}/{key}' deleted.");
+            var path = global::System.IO.Path.Combine(relativePath.Paths.ToArray());
+            path = global::System.IO.Path.Combine(ValueStorageDirectoryName, path);
+
+            return path;
         }
     }
-    
+
 }

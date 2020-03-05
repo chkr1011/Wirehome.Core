@@ -23,9 +23,11 @@ namespace Wirehome.Core.App
 
         public void register_panel(PythonDictionary panel_definition)
         {
+            if (panel_definition is null) throw new ArgumentNullException(nameof(panel_definition));
+
             _appService.RegisterPanel(new AppPanelDefinition
             {
-                Uid = (string)panel_definition.get("uid", null),
+                Uid = panel_definition.get("uid", null) as string,
                 PositionIndex = (int)panel_definition.get("position_index", 0),
                 ViewSource = (string)panel_definition.get("view_source", null)
             });

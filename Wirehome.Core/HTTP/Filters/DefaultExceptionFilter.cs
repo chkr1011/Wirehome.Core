@@ -6,7 +6,7 @@ using Wirehome.Core.Exceptions;
 
 namespace Wirehome.Core.HTTP.Filters
 {
-    public class DefaultExceptionFilter : ExceptionFilterAttribute
+    public sealed class DefaultExceptionFilter : ExceptionFilterAttribute
     {
         public override void OnException(ExceptionContext exceptionContext)
         {

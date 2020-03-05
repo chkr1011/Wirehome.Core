@@ -23,6 +23,7 @@ namespace Wirehome.Core.MessageBus
 
         public void publish(PythonDictionary message)
         {
+            //_messageBusService.Publish(PythonConvert.ToWirehomeDictionary(message));
             _messageBusService.Publish(message);
         }
 
@@ -32,6 +33,11 @@ namespace Wirehome.Core.MessageBus
             {
                 callback(PythonConvert.ToPythonDictionary(m));
             });
+
+            //return _messageBusService.Subscribe(uid, PythonConvert.ToWirehomeDictionary(filter), m =>
+            //{
+            //    callback(PythonConvert.ToPythonDictionary(m));
+            //});
         }
 
         public void unsubscribe(string uid)

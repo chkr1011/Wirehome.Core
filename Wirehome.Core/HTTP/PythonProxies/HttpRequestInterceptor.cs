@@ -6,14 +6,14 @@ using System;
 using System.Collections.Generic;
 using Wirehome.Core.Storage;
 
-namespace Wirehome.Core.HTTP
+namespace Wirehome.Core.HTTP.PythonProxies
 {
     public class HttpRequestInterceptor
     {
-        private readonly Func<IDictionary<object, object>, IDictionary<object, object>> _handler;
-        private readonly JsonSerializerService _jsonSerializerService;
-        private readonly ILogger _logger;
-        private readonly RouteTemplate _routeTemplate;
+        readonly Func<IDictionary<object, object>, IDictionary<object, object>> _handler;
+        readonly JsonSerializerService _jsonSerializerService;
+        readonly ILogger _logger;
+        readonly RouteTemplate _routeTemplate;
 
         public HttpRequestInterceptor(string uriTemplate, Func<IDictionary<object, object>, IDictionary<object, object>> handler, JsonSerializerService jsonSerializerService, ILogger logger)
         {
@@ -34,17 +34,15 @@ namespace Wirehome.Core.HTTP
             var isMatch = templateMatcher.TryMatch(context.Request.Path, values);
 
             if (!isMatch)
-            {
                 return false;
-            }
 
-            var converter = new HttpRequestConverter(_jsonSerializerService);
-            var arguments = converter.WrapContext(context);
+            var httpRequestConverter = new HttpRequestConverter(_jsonSerializerService);
+            var arguments = httpRequestConverter.WrapContext(context);
 
             try
             {
                 var result = _handler(arguments) ?? new Dictionary<object, object>();
-                converter.UnwrapContext(result, context);
+                httpRequestConverter.UnwrapContext(result, context);
                 return true;
             }
             catch (Exception exception)

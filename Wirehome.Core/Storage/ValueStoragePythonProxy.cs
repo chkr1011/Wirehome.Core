@@ -16,14 +16,14 @@ namespace Wirehome.Core.Storage
 
         public string ModuleName => "value_storage";
 
-        public void write(string container, string key, object value)
+        public void write(string path, object value)
         {
-            _valueStorageService.Write(container, key, value);
+            _valueStorageService.Write(RelativeValueStoragePath.Parse(path), value);
         }
 
-        public object read(string container, string key, object defaultValue)
+        public object read(string path, object defaultValue)
         {
-            if (_valueStorageService.TryRead<object>(container, key, out var value))
+            if (_valueStorageService.TryRead<object>(RelativeValueStoragePath.Parse(path), out var value))
             {
                 return value;
             }
@@ -31,9 +31,9 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public PythonDictionary read_object(string container, string key, PythonDictionary defaultValue)
+        public PythonDictionary read_object(string path, PythonDictionary defaultValue)
         {
-            if (_valueStorageService.TryRead<IDictionary<object, object>>(container, key, out var value))
+            if (_valueStorageService.TryRead<IDictionary<object, object>>(RelativeValueStoragePath.Parse(path), out var value))
             {
                 return PythonConvert.ToPythonDictionary(value);
             }
@@ -41,9 +41,9 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public string read_string(string container, string key, string defaultValue)
+        public string read_string(string path, string defaultValue)
         {
-            if (_valueStorageService.TryRead<string>(container, key, out var value))
+            if (_valueStorageService.TryRead<string>(RelativeValueStoragePath.Parse(path), out var value))
             {
                 return value;
             }
@@ -51,9 +51,9 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public int read_int(string container, string key, int defaultValue)
+        public int read_int(string path, int defaultValue)
         {
-            if (_valueStorageService.TryRead<int>(container, key, out var value))
+            if (_valueStorageService.TryRead<int>(RelativeValueStoragePath.Parse(path), out var value))
             {
                 return value;
             }
@@ -61,9 +61,9 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public float read_float(string container, string key, float defaultValue)
+        public float read_float(string path, float defaultValue)
         {
-            if (_valueStorageService.TryRead<float>(container, key, out var value))
+            if (_valueStorageService.TryRead<float>(RelativeValueStoragePath.Parse(path), out var value))
             {
                 return value;
             }
@@ -71,9 +71,9 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public bool read_bool(string container, string key, bool defaultValue)
+        public bool read_bool(string path, bool defaultValue)
         {
-            if (_valueStorageService.TryRead<bool>(container, key, out var value))
+            if (_valueStorageService.TryRead<bool>(RelativeValueStoragePath.Parse(path), out var value))
             {
                 return value;
             }
@@ -81,14 +81,9 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public void delete(string container, string key)
+        public void delete(string path)
         {
-            _valueStorageService.Delete(container, key);
-        }
-
-        public void delete(string container)
-        {
-            _valueStorageService.Delete(container);
+            _valueStorageService.Delete(RelativeValueStoragePath.Parse(path));
         }
     }
 }

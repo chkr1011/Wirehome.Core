@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
-    public class LiveLinuxGpioAdapter : IGpioAdapter
+    public sealed class LiveLinuxGpioAdapter : IGpioAdapter, IDisposable
     {
         readonly GpioController _gpioController = new GpioController(PinNumberingScheme.Logical, UnixDriver.Create());
         private readonly ILogger _logger;
@@ -84,6 +84,11 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
             var targetState = state == GpioState.High ? PinValue.High : PinValue.Low;
             _gpioController.Write(gpioId, targetState);
+        }
+
+        public void Dispose()
+        {
+            _gpioController.Dispose();
         }
 
         void OnPinChanged(int gpioId, PinEventTypes changeType)

@@ -13,7 +13,7 @@ namespace Wirehome.Core.Python.Proxies
     {
         public string ModuleName { get; } = "response_validator";
 
-        public bool is_success(PythonDictionary response)
+        public static bool is_success(PythonDictionary response)
         {
             if (response == null)
             {

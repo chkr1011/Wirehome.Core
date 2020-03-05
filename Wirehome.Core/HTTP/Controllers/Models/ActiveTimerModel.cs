@@ -1,4 +1,5 @@
-﻿using Wirehome.Core.Python.Models;
+﻿using System;
+using Wirehome.Core.Python.Models;
 
 namespace Wirehome.Core.HTTP.Controllers.Models
 {
@@ -7,5 +8,7 @@ namespace Wirehome.Core.HTTP.Controllers.Models
         public int Interval { get; set; }
 
         public ExceptionPythonModel LastException { get; set; }
+
+        public TimeSpan LastDuration { get; set; }
     }
 }

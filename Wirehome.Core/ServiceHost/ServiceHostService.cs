@@ -75,7 +75,7 @@ namespace Wirehome.Core.ServiceHost
 
             if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFileNames.Configuration))
             {
-                throw new ServiceNotFoundException(id);
+                throw new ServiceNotFoundException(id, null);
             }
 
             return configuration;
@@ -104,7 +104,7 @@ namespace Wirehome.Core.ServiceHost
             {
                 if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFileNames.Configuration))
                 {
-                    throw new ServiceNotFoundException(id);
+                    throw new ServiceNotFoundException(id, null);
                 }
 
                 if (!configuration.IsEnabled)

@@ -36,7 +36,7 @@ namespace Wirehome.Core.Hardware.MQTT
             if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 
             var topic = Convert.ToString(parameters.get("topic"));
-            var payload = parameters.get("payload", new byte[0]);
+            var payload = parameters.get("payload", Array.Empty<byte>());
             var qos = Convert.ToInt32(parameters.get("qos", 0));
             var retain = Convert.ToBoolean(parameters.get("retain", false));
 
@@ -49,7 +49,7 @@ namespace Wirehome.Core.Hardware.MQTT
             });
         }
 
-        public PythonDictionary publish_external(PythonDictionary parameters)
+        public static PythonDictionary publish_external(PythonDictionary parameters)
         {
             if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 

@@ -58,7 +58,7 @@ namespace Wirehome.Core.HTTP.Controllers
         public void DeleteNote(string uid)
         {
             var filename = $"{uid}.md";
-            _storageService.DeleteFile(NotesDirectory, filename);
+            _storageService.DeletePath(NotesDirectory, filename);
         }
     }
 }

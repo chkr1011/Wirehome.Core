@@ -16,7 +16,7 @@ namespace Wirehome.Core.Python.Proxies
     {
         public string ModuleName { get; } = "convert";
 
-        public object to_bool(object value)
+        public static object to_bool(object value)
         {
             if (value is bool b)
             {
@@ -32,7 +32,7 @@ namespace Wirehome.Core.Python.Proxies
             return result;
         }
 
-        public object to_double(object value)
+        public static object to_double(object value)
         {
             if (value is double d)
             {
@@ -48,7 +48,7 @@ namespace Wirehome.Core.Python.Proxies
             return result;
         }
 
-        public object to_int(object value)
+        public static object to_int(object value)
         {
             if (value is int i)
             {
@@ -64,7 +64,7 @@ namespace Wirehome.Core.Python.Proxies
             return result;
         }
 
-        public string to_string(object value)
+        public static string to_string(object value)
         {
             if (value == null)
             {
@@ -89,7 +89,7 @@ namespace Wirehome.Core.Python.Proxies
             return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
-        public List to_list(object value)
+        public static List to_list(object value)
         {
             if (value is IEnumerable enumerable)
             {
@@ -99,12 +99,12 @@ namespace Wirehome.Core.Python.Proxies
             return new List { PythonConvert.ToPython(value) };
         }
 
-        public List ulong_to_list(ulong buffer, int length)
+        public static List ulong_to_list(ulong buffer, int length)
         {
             return PythonConvert.ToPythonList(ULongToArray(buffer, length));
         }
 
-        public ulong list_to_ulong(List list)
+        public static ulong list_to_ulong(List list)
         {
             if (list == null)
             {
@@ -115,7 +115,7 @@ namespace Wirehome.Core.Python.Proxies
             return ArrayToULong(buffer);
         }
 
-        public string list_to_hex_string(List list)
+        public static string list_to_hex_string(List list)
         {
             if (list == null)
             {
@@ -131,7 +131,7 @@ namespace Wirehome.Core.Python.Proxies
             return BitConverter.ToString(buffer).Replace("-", string.Empty);
         }
 
-        public List hex_string_to_list(string hexString)
+        public static List hex_string_to_list(string hexString)
         {
             if (hexString == null)
             {
@@ -158,7 +158,7 @@ namespace Wirehome.Core.Python.Proxies
             return PythonConvert.ToPythonList(buffer);
         }
 
-        public string list_to_bit_string(List list)
+        public static string list_to_bit_string(List list)
         {
             if (list == null)
             {

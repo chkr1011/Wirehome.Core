@@ -85,12 +85,12 @@ namespace Wirehome.Core.Packages
 
             foreach (var directory in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
             {
-                Directory.CreateDirectory(directory.Replace(sourcePath, destinationPath));
+                Directory.CreateDirectory(directory.Replace(sourcePath, destinationPath, StringComparison.Ordinal));
             }
 
             foreach (var file in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
             {
-                File.Copy(file, file.Replace(sourcePath, destinationPath), true);
+                File.Copy(file, file.Replace(sourcePath, destinationPath, StringComparison.Ordinal), true);
             }
 
             return Task.CompletedTask;
@@ -98,7 +98,7 @@ namespace Wirehome.Core.Packages
 
         public async Task<List<PackageUid>> FetchRemotePackageUidsAsync()
         {
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             // TODO: Implement.
             return new List<PackageUid>();
         }
@@ -110,7 +110,7 @@ namespace Wirehome.Core.Packages
             var packagesRootPath = GetPackagesRootPath();
             foreach (var packageId in _storageService.EnumerateDirectories("*", packagesRootPath))
             {
-                if (packageId.StartsWith("."))
+                if (packageId.StartsWith(".", StringComparison.Ordinal))
                 {
                     continue;
                 }

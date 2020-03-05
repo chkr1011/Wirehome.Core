@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <URLBase>http://192.168.1.140:5000/</URLBase>
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:urn:schemas-upnp-org:device:MediaRenderer:1:1</deviceType>
+    <friendlyName>Wirehome.Core</friendlyName>
+    <manufacturer>Christian Kratky</manufacturer>
+    <manufacturerURL>http://senssoft.com/</manufacturerURL>
+    <modelDescription>Smart Home System.</modelDescription>
+    <modelName>Wirehome.Core</modelName>
+    <modelNumber>001</modelNumber>
+    <UDN>uuid:c6faa85a-d7e9-48b7-8c54-7459c4d9c329</UDN>
+    <serviceList>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:urn:schemas-upnp-org:service:RenderingControl:1:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:00962552-891c-453c-96fb-f3c14804e8f2</serviceId>
+        <SCPDURL>dmr_avts.xml</SCPDURL>
+        <controlURL>control/AVTransport</controlURL>
+        <eventSubURL>event/AVTransport</eventSubURL>
+      </service>
+    </serviceList>
+  </device>
+</root>

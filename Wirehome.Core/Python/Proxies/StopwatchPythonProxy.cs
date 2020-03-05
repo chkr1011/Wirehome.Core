@@ -51,7 +51,7 @@ namespace Wirehome.Core.Python.Proxies
 
             return uid;
         }
-        
+
         public void stop(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));

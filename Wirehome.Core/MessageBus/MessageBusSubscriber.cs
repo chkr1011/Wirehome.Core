@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Wirehome.Core.MessageBus
 {
@@ -8,6 +9,10 @@ namespace Wirehome.Core.MessageBus
     {
         readonly Action<IDictionary<object, object>> _callback;
         readonly ILogger _logger;
+
+        long _processedMessagesCount;
+        long _pendingMessagesCount;
+        long _faultedMessagesCount;
 
         public MessageBusSubscriber(string uid, IDictionary<object, object> filter, Action<IDictionary<object, object>> callback, ILogger logger)
         {
@@ -21,11 +26,11 @@ namespace Wirehome.Core.MessageBus
 
         public IDictionary<object, object> Filter { get; }
 
-        public int ProcessedMessagesCount { get; private set; }
+        public long ProcessedMessagesCount => Interlocked.Read(ref _processedMessagesCount);
 
-        public int FaultedMessagesCount { get; private set; }
+        public long FaultedMessagesCount => Interlocked.Read(ref _faultedMessagesCount);
 
-        public int PendingMessagesCount { get; private set; }
+        public long PendingMessagesCount => Interlocked.Read(ref _pendingMessagesCount);
 
         public void ProcessMessage(IDictionary<object, object> message)
         {
@@ -33,11 +38,11 @@ namespace Wirehome.Core.MessageBus
 
             try
             {
-                PendingMessagesCount++;
+                Interlocked.Increment(ref _pendingMessagesCount);
 
                 _callback.Invoke(message);
 
-                ProcessedMessagesCount++;
+                Interlocked.Increment(ref _processedMessagesCount);
             }
             catch (Exception exception)
             {
@@ -46,7 +51,11 @@ namespace Wirehome.Core.MessageBus
                     _logger.LogError(exception, $"Error while processing bus message for subscriber '{Uid}'.");
                 }
 
-                FaultedMessagesCount++;
+                Interlocked.Increment(ref _faultedMessagesCount);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _pendingMessagesCount);
             }
         }
 

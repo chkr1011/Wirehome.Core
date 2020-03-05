@@ -2,6 +2,7 @@
 using Rssdp;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
@@ -10,14 +11,13 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Discovery
 {
-    // TODO: Create own model with all information in place.
     public class DiscoveryService : IService
     {
-        private readonly List<DiscoveredSsdpDevice> _discoveredSsdpDevices = new List<DiscoveredSsdpDevice>();
-        private readonly ILogger _logger;
-        private readonly DiscoveryServiceOptions _options;
-
-        private SsdpDevicePublisher _publisher;
+        readonly List<SsdpDevice> _discoveredSsdpDevices = new List<SsdpDevice>();
+        readonly ILogger _logger;
+        readonly DiscoveryServiceOptions _options;
+        readonly HttpClient _httpClient = new HttpClient();
+        readonly SsdpDevicePublisher _publisher = new SsdpDevicePublisher();
 
         public DiscoveryService(StorageService storageService, ILogger<DiscoveryService> logger)
         {
@@ -28,36 +28,28 @@ namespace Wirehome.Core.Discovery
 
         public void Start()
         {
-            _publisher = new SsdpDevicePublisher();
+            var deviceDefinition = new SsdpRootDevice()
+            {
+                CacheLifetime = TimeSpan.FromHours(1),
+                Location = new Uri("http://wirehome.local/upnp.xml"), // TODO: Must point to the URL that serves your devices UPnP description document. 
+                DeviceTypeNamespace = "my-namespace",
+                DeviceType = "Wirehome.Core",
+                FriendlyName = "Wirehome Core",
+                Manufacturer = "Christian Kratky",
+                ModelName = "Wirehome.Core",
+                Uuid = "uuid:c6faa85a-d7e9-48b7-8c54-7459c4d9c329"
+            };
 
-            //var rootDevice = new SsdpRootDevice
-            //{
-            //    Uuid = "c6faa85a-d7e9-48b7-8c54-7459c4d9c329",
-
-            //    CacheLifetime = TimeSpan.Zero,
-            //    //UrlBase = new Uri("http://localhost"),
-            //    //PresentationUrl = new Uri("configurator", UriKind.Relative),
-            //    FriendlyName = "Wirehome.Core",
-
-            //    Manufacturer = "Wirehome",
-            //    //ManufacturerUrl = new Uri("https://github.com/chkr1011/Wirehome.Core/"),
-
-            //    ModelNumber = WirehomeCoreVersion.Version,
-            //    //ModelUrl = new Uri("app", UriKind.Relative),
-            //    ModelName = "Wirehome.Core",
-            //    ModelDescription = "Wirehome.Core",
-            //};
-
-            //_publisher.AddDevice(rootDevice);
+            _publisher.AddDevice(deviceDefinition);
 
             ParallelTask.Start(SearchAsync, CancellationToken.None, _logger);
         }
 
-        public List<DiscoveredSsdpDevice> GetDiscoveredDevices()
+        public List<SsdpDevice> GetDiscoveredDevices()
         {
             lock (_discoveredSsdpDevices)
             {
-                return new List<DiscoveredSsdpDevice>(_discoveredSsdpDevices);
+                return new List<SsdpDevice>(_discoveredSsdpDevices);
             }
         }
 
@@ -65,9 +57,18 @@ namespace Wirehome.Core.Discovery
         {
             while (true)
             {
-                await TryDiscoverSsdpDevicesAsync().ConfigureAwait(false);
-
-                await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+                try
+                {
+                    await TryDiscoverSsdpDevicesAsync().ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Error while discovering SSDP devices.");
+                }
+                finally
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+                }
             }
         }
 
@@ -83,41 +84,48 @@ namespace Wirehome.Core.Discovery
 
         private async Task TryDiscoverSsdpDevicesAsync()
         {
-            try
+            using (var deviceLocator = new SsdpDeviceLocator())
             {
-                using (var deviceLocator = new SsdpDeviceLocator())
+                var devices = new List<SsdpDevice>();
+                foreach (var discoveredSsdpDevice in await deviceLocator.SearchAsync(_options.SearchDuration).ConfigureAwait(false))
                 {
-                    var devices = new List<DiscoveredSsdpDevice>(await deviceLocator.SearchAsync(_options.SearchDuration).ConfigureAwait(false));
-                    foreach (var device in devices)
+                    if (Convert.ToString(discoveredSsdpDevice.DescriptionLocation).Contains("0.0.0.0"))
                     {
-                        if (Convert.ToString(device.DescriptionLocation).Contains("0.0.0.0"))
-                        {
-                            continue;
-                        }
-
-                        try
-                        {
-                            await device.GetDeviceInfo().ConfigureAwait(false);
-                        }
-                        catch (Exception exception)
-                        {
-                            _logger.LogDebug(exception, $"Error while loading device info from '{device.DescriptionLocation}.'");
-                        }
+                        continue;
                     }
 
-                    lock (_discoveredSsdpDevices)
+                    try
                     {
-                        _discoveredSsdpDevices.Clear();
-                        _discoveredSsdpDevices.AddRange(devices);
-
-                        _logger.LogInformation($"Discovered {_discoveredSsdpDevices.Count} SSDP devices.");
+                        var ssdpDevice = await discoveredSsdpDevice.GetDeviceInfo(_httpClient).ConfigureAwait(false);
+                        devices.Add(CreateSsdpDeviceModel(discoveredSsdpDevice, ssdpDevice));
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.LogDebug(exception, $"Error while loading device info from '{discoveredSsdpDevice.DescriptionLocation}.'");
                     }
                 }
+
+                lock (_discoveredSsdpDevices)
+                {
+                    _discoveredSsdpDevices.Clear();
+                    _discoveredSsdpDevices.AddRange(devices);
+
+                    _logger.LogInformation($"Discovered {_discoveredSsdpDevices.Count} SSDP devices.");
+                }
             }
-            catch (Exception exception)
+        }
+
+        static SsdpDevice CreateSsdpDeviceModel(DiscoveredSsdpDevice discoveredSsdpDevice, Rssdp.SsdpDevice ssdpDevice)
+        {
+            return new SsdpDevice
             {
-                _logger.LogError(exception, "Error while discovering SSDP devices.");
-            }
+                Usn = discoveredSsdpDevice.Usn,
+                DescriptionLocation = discoveredSsdpDevice.DescriptionLocation?.ToString(),
+                CacheLifetime = discoveredSsdpDevice.CacheLifetime,
+                DeviceType = ssdpDevice.DeviceType,
+                NotificationType = discoveredSsdpDevice.NotificationType,
+                DeviceTypeNamespace = ssdpDevice.DeviceTypeNamespace,
+            };
         }
     }
 }

@@ -9,7 +9,7 @@ using Wirehome.Core.Python;
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-namespace Wirehome.Core.HTTP
+namespace Wirehome.Core.HTTP.PythonProxies
 {
     public class HttpServerPythonProxy : IInjectedPythonProxy
     {
@@ -34,7 +34,7 @@ namespace Wirehome.Core.HTTP
             _httpServerService.UnregisterRoute(uid);
         }
 
-        public PythonDictionary match_template(string template, string path)
+        public static PythonDictionary match_template(string template, string path)
         {
             if (template == null) throw new ArgumentNullException(nameof(template));
             if (path == null) throw new ArgumentNullException(nameof(path));

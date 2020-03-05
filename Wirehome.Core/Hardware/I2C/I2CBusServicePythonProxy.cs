@@ -53,6 +53,8 @@ namespace Wirehome.Core.Hardware.I2C
 
         public List write_read(string bus_id, int device_address, List write_buffer, int read_buffer_length)
         {
+            if (write_buffer is null) throw new ArgumentNullException(nameof(write_buffer));
+
             var readBuffer = new byte[read_buffer_length];
             _i2CBusService.WriteRead(
                 bus_id,

@@ -6,10 +6,10 @@ namespace Wirehome.Core.HTTP.Controllers.Models
     {
         public IDictionary<object, object> Filter { get; set; }
 
-        public int ProcessedMessagesCount { get; set; }
+        public long ProcessedMessagesCount { get; set; }
 
-        public int PendingMessagesCount { get; set; }
+        public long PendingMessagesCount { get; set; }
 
-        public int FaultedMessagesCount { get; set; }
+        public long FaultedMessagesCount { get; set; }
     }
 }

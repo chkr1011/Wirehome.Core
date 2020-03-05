@@ -47,7 +47,8 @@ namespace Wirehome.Core.HTTP.Controllers
             return _schedulerService.GetActiveTimers().ToDictionary(t => t.Uid, t => new ActiveTimerModel
             {
                 Interval = (int)t.Interval.TotalMilliseconds,
-                LastException = t.LastException != null ? new ExceptionPythonModel(t.LastException) : null
+                LastException = t.LastException != null ? new ExceptionPythonModel(t.LastException) : null,
+                LastDuration = t.LastDuration
             });
         }
 
@@ -58,22 +59,6 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             _schedulerService.StopTimer(uid);
         }
-
-        //[HttpGet]
-        //[Route("/api/v1/scheduler/default_timer_subscribers")]
-        //[ApiExplorerSettings(GroupName = "v1")]
-        //public IList<string> GetDefaultTimerSubscribers()
-        //{
-        //    return _schedulerService.GetHighPrecisionTimerSubscribers().Select(s => s.Uid).ToList();
-        //}
-
-        //[HttpDelete]
-        //[Route("/api/v1/scheduler/default_timer_subscribers/{uid}")]
-        //[ApiExplorerSettings(GroupName = "v1")]
-        //public void DeleteDefaultTimerSubscriber(string uid)
-        //{
-        //    _schedulerService.DetachFromHighPrecisionTimer(uid);
-        //}
 
         [HttpGet]
         [Route("/api/v1/scheduler/active_countdowns")]

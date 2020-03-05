@@ -17,6 +17,7 @@ namespace Wirehome.Core.System
     {
         private readonly SystemStatusService _systemStatusService;
         private readonly SystemLaunchArguments _systemLaunchArguments;
+        private readonly SystemCancellationToken _systemCancellationToken;
         private readonly NotificationsService _notificationsService;
         private readonly MessageBusService _messageBusService;
 
@@ -33,6 +34,7 @@ namespace Wirehome.Core.System
         {
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _systemLaunchArguments = systemLaunchArguments ?? throw new ArgumentNullException(nameof(systemLaunchArguments));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -96,6 +98,8 @@ namespace Wirehome.Core.System
 
         public void RunGarbageCollector()
         {
+            _logger.LogInformation("Performing garbage collection.");
+
             GC.Collect(3, GCCollectionMode.Forced, true, true);
         }
 

@@ -2,11 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IncludeOpenAPIAnalyzers>true</IncludeOpenAPIAnalyzers>
     <LangVersion>7.1</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <DefineConstants>RELEASE;NETCOREAPP;NETCOREAPP2_1</DefineConstants>
+    <DefineConstants>RELEASE;NETCOREAPP;NETCOREAPP3_1</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>NETCOREAPP;NETCOREAPP3_1</DefineConstants>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <NoWarn>1701;1702;CA1031;IDE1006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,64 +24,41 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="IronPython" Version="2.7.10-candidate1" />
+    <PackageReference Include="IronPython.StdLib" Version="2.7.10-candidate1" />
     <PackageReference Include="MessagePack" Version="2.1.90" />
-    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.2" />
-    <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Rewrite" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.9.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeQuality.Analyzers" Version="2.9.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.2" />
+    <PackageReference Include="Microsoft.NetCore.Analyzers" Version="2.9.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="MQTTnet" Version="3.0.9-rc1" />
     <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="3.0.9-rc1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Rssdp" Version="4.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="5.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="5.0.0" />
-    <PackageReference Include="System.Device.Gpio" Version="1.0.0" />
+    <PackageReference Include="System.Device.Gpio" Version="1.1.0-prerelease.20153.1" />
     <PackageReference Include="System.IO.Packaging" Version="4.7.0" />
     <PackageReference Include="System.Net.WebSockets.Client" Version="4.3.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="IronPython">
-      <HintPath>C:\Users\chris\Downloads\IronPython.2.7.10-candidate1\netcoreapp2.1\IronPython.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="IronPython.Modules">
-      <HintPath>C:\Users\chris\Downloads\IronPython.2.7.10-candidate1\netcoreapp2.1\IronPython.Modules.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="Microsoft.Dynamic">
-      <HintPath>C:\Users\chris\Downloads\IronPython.2.7.10-candidate1\netcoreapp2.1\Microsoft.Dynamic.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="Microsoft.Scripting">
-      <HintPath>C:\Users\chris\Downloads\IronPython.2.7.10-candidate1\netcoreapp2.1\Microsoft.Scripting.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="System.CodeDom">
-      <HintPath>C:\Users\chris\Downloads\IronPython.2.7.10-candidate1\netcoreapp2.1\System.CodeDom.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="System.Configuration.ConfigurationManager">
-      <HintPath>C:\Users\chris\Downloads\IronPython.2.7.10-candidate1\netcoreapp2.1\System.Configuration.ConfigurationManager.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.ProtectedData">
-      <HintPath>C:\Users\chris\Downloads\IronPython.2.7.10-candidate1\netcoreapp2.1\System.Security.Cryptography.ProtectedData.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
+    <None Update="Discovery\upnp.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Resources.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Wirehome.Core.Foundation
 {
@@ -129,7 +128,7 @@ namespace Wirehome.Core.Foundation
             throw new NotSupportedException();
         }
 
-        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+        public bool TryGetValue(TKey key, out TValue value)
         {
             lock (_dictionary)
             {

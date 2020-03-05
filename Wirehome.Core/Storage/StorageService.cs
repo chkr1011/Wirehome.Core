@@ -179,7 +179,7 @@ namespace Wirehome.Core.Storage
 
             if (value == null)
             {
-                File.WriteAllBytes(filename, new byte[0]);
+                File.WriteAllBytes(filename, Array.Empty<byte>());
                 return;
             }
 
@@ -199,7 +199,7 @@ namespace Wirehome.Core.Storage
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllBytes(filename, content ?? new byte[0]);
+            File.WriteAllBytes(filename, content ?? Array.Empty<byte>());
         }
 
         public void WriteText(string value, params string[] path)
@@ -217,11 +217,18 @@ namespace Wirehome.Core.Storage
             File.WriteAllText(filename, value ?? string.Empty, Encoding.UTF8);
         }
 
-        public void DeleteFile(params string[] path)
+        public void DeletePath(params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var fullPath = Path.Combine(DataPath, Path.Combine(path));
+
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Delete(fullPath, true);
+                return;
+            }
+
             if (File.Exists(fullPath))
             {
                 File.Delete(fullPath);

@@ -42,7 +42,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteSettings(string uid)
         {
-            _storageService.DeleteFile(uid.Split("/"));
+            _storageService.DeletePath(uid.Split("/"));
         }
     }
 }

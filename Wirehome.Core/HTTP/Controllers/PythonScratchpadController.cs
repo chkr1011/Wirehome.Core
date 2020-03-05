@@ -30,7 +30,7 @@ namespace Wirehome.Core.HTTP.Controllers
                     script = await streamReader.ReadToEndAsync().ConfigureAwait(false);
                 }
 
-                var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(null);
+                var scriptHost = _pythonScriptHostFactoryService.CreateScriptHost();
                 scriptHost.Compile(script);
 
                 if (string.IsNullOrEmpty(function_name))

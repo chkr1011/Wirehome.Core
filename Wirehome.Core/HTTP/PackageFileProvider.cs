@@ -12,10 +12,10 @@ namespace Wirehome.Core.HTTP
 {
     public class PackageFileProvider : IFileProvider
     {
-        private readonly HashSet<string> _defaultFileNames = new HashSet<string> { "index.htm", "index.html", "default.htm", "default.html" };
-        private readonly string _packageUidGlobalVariableUid;
-        private readonly GlobalVariablesService _globalVariablesService;
-        private readonly PackageManagerService _packageManagerService;
+        readonly HashSet<string> _defaultFileNames = new HashSet<string> { "index.htm", "index.html", "default.htm", "default.html" };
+        readonly string _packageUidGlobalVariableUid;
+        readonly GlobalVariablesService _globalVariablesService;
+        readonly PackageManagerService _packageManagerService;
 
         public PackageFileProvider(string packageUidGlobalVariableUid, GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
         {

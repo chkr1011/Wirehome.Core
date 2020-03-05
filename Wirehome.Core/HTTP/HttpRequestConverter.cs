@@ -15,7 +15,7 @@ namespace Wirehome.Core.HTTP
 {
     public class HttpRequestConverter
     {
-        private readonly JsonSerializerService _jsonSerializerService;
+        readonly JsonSerializerService _jsonSerializerService;
 
         public HttpRequestConverter(JsonSerializerService jsonSerializerService)
         {
@@ -59,11 +59,7 @@ namespace Wirehome.Core.HTTP
                 {
                     ["id"] = context.Connection.Id,
                     ["remote_address"] = context.Connection.RemoteIpAddress.ToString()
-                },
-                //["session"] = new WirehomeDictionary
-                //{
-                //    ["id"] = context.Session?.Id
-                //}
+                }
             };
         }
 

@@ -35,6 +35,8 @@ namespace Wirehome.Core.Scheduler
 
         public Exception LastException { get; private set; }
 
+        public TimeSpan LastDuration { get; private set; }
+
         public void Stop()
         {
             _cancellationTokenSource.Cancel(false);
@@ -60,8 +62,6 @@ namespace Wirehome.Core.Scheduler
                     }
                     else
                     {
-                        // TODO: Consider adding a flag "HighPrecision=true|false". Then use Thread.Sleep or await to safe threads.
-                        //Thread.Sleep(Interval);
                         await Task.Delay(Interval, cancellationToken).ConfigureAwait(false);
                     }
 
@@ -87,6 +87,7 @@ namespace Wirehome.Core.Scheduler
 
         void TryTick(TimeSpan elapsed)
         {
+            var stopwatch = Stopwatch.StartNew();
             try
             {
                 _callback(new TimerTickCallbackParameters(Uid, (int)elapsed.TotalMilliseconds, _state));
@@ -101,6 +102,10 @@ namespace Wirehome.Core.Scheduler
                 _logger.LogError(exception, $"Error while executing callback of timer '{Uid}'.");
 
                 Thread.Sleep(TimeSpan.FromSeconds(1)); // Prevent flooding the log.
+            }
+            finally
+            {
+                LastDuration = stopwatch.Elapsed;
             }
         }
     }

@@ -24,20 +24,22 @@ namespace Wirehome.Core.Hardware.GPIO
 
         public void set_direction(string hostId, int gpioId, string direction)
         {
-            direction = direction.ToLowerInvariant();
+            if (direction is null) throw new ArgumentNullException(nameof(direction));
+
+            direction = direction.ToUpperInvariant();
 
             GpioDirection directionValue;
             switch (direction)
             {
-                case "o":
-                case "out":
-                case "output":
+                case "O":
+                case "OUT":
+                case "OUTPUT":
                     directionValue = GpioDirection.Output;
                     break;
 
-                case "i":
-                case "in":
-                case "input":
+                case "I":
+                case "IN":
+                case "INPUT":
                     directionValue = GpioDirection.Input;
                     break;
 
@@ -50,17 +52,19 @@ namespace Wirehome.Core.Hardware.GPIO
 
         public void write_state(string hostId, int gpioId, string state)
         {
-            state = state.ToLowerInvariant();
+            if (state is null) throw new ArgumentNullException(nameof(state));
+
+            state = state.ToUpperInvariant();
 
             GpioState stateValue;
             switch (state)
             {
-                case "low":
+                case "LOW":
                 case "0":
                     stateValue = GpioState.Low;
                     break;
 
-                case "high":
+                case "HIGH":
                 case "1":
                     stateValue = GpioState.High;
                     break;
@@ -75,6 +79,7 @@ namespace Wirehome.Core.Hardware.GPIO
         public string read_state(string hostId, int gpioId)
         {
             var state = _gpioRegistryService.ReadState(hostId, gpioId);
+
             return state.ToString().ToLowerInvariant();
         }
 

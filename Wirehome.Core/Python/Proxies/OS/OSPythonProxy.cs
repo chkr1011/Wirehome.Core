@@ -15,7 +15,7 @@ namespace Wirehome.Core.Python.Proxies.OS
     {
         public string ModuleName { get; } = "os";
 
-        public PythonDictionary launch(PythonDictionary parameters)
+        public static PythonDictionary launch(PythonDictionary parameters)
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
@@ -37,7 +37,7 @@ namespace Wirehome.Core.Python.Proxies.OS
             }
         }
 
-        public PythonDictionary execute(PythonDictionary parameters)
+        public static PythonDictionary execute(PythonDictionary parameters)
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
@@ -52,7 +52,6 @@ namespace Wirehome.Core.Python.Proxies.OS
                     if (!hasExited)
                     {
                         process.Kill();
-                        process.WaitForExit(launchParameters.Timeout);
                     }
 
                     result.OutputData = process.StandardOutput.ReadToEnd();
@@ -69,7 +68,7 @@ namespace Wirehome.Core.Python.Proxies.OS
             }
         }
 
-        private static Process StartProcess(LaunchParamters parameters)
+        static Process StartProcess(LaunchParamters parameters)
         {
             var startInfo = new ProcessStartInfo(parameters.FileName)
             {

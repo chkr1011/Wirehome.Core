@@ -12,10 +12,12 @@ using Wirehome.Core.Python.Models;
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-namespace Wirehome.Core.HTTP
+namespace Wirehome.Core.HTTP.PythonProxies
 {
     public class HttpClientPythonProxy : IInjectedPythonProxy
     {
+        readonly HttpClient _httpClient = new HttpClient();
+
         public string ModuleName { get; } = "http_client";
 
         public PythonDictionary send(PythonDictionary parameters)
@@ -24,10 +26,9 @@ namespace Wirehome.Core.HTTP
 
             try
             {
-                using (var httpClient = new HttpClient())
                 using (var request = CreateRequest(parameters))
                 {
-                    var response = httpClient.SendAsync(request).GetAwaiter().GetResult();
+                    var response = _httpClient.SendAsync(request).GetAwaiter().GetResult();
                     var content = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
 
                     var result = new PythonDictionary

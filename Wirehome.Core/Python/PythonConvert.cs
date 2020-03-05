@@ -42,10 +42,10 @@ namespace Wirehome.Core.Python
                 return null;
             }
 
-            //if (value is PythonDictionary pythonDictionary)
-            //{
-            //    return ToWirehomeDictionary(pythonDictionary);
-            //}
+            if (value is PythonDictionary pythonDictionary)
+            {
+                return ToWirehomeDictionary(pythonDictionary);
+            }
 
             if (value is List pythonList)
             {
@@ -186,6 +186,22 @@ namespace Wirehome.Core.Python
             }
 
             return pythonDictionary;
+        }
+
+        public static IDictionary<object, object> ToWirehomeDictionary(PythonDictionary pythonDictionary)
+        {
+            if (pythonDictionary == null)
+            {
+                return null;
+            }
+
+            var result = new Dictionary<object, object>();
+            foreach (var item in pythonDictionary)
+            {
+                result.Add(FromPython(item.Key), FromPython(item.Value));
+            }
+
+            return result;
         }
     }
 }

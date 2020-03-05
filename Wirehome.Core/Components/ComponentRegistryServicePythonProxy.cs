@@ -97,7 +97,7 @@ namespace Wirehome.Core.Components
         {
             try
             {
-                return (PythonDictionary)_componentRegistryService.ProcessComponentMessage(component_uid, message);
+                return PythonConvert.ToPythonDictionary(_componentRegistryService.ProcessComponentMessage(component_uid, message));
             }
             catch (ComponentNotFoundException)
             {

@@ -53,7 +53,7 @@ namespace Wirehome.Core.HTTP
 
             services.AddLogging(options =>
             {
-                options.AddFilter("Wirehome", LogLevel.Trace);
+                options.SetMinimumLevel(LogLevel.Debug);
                 options.AddFilter("Microsoft", LogLevel.Warning);
                 options.AddConsole();
             });
@@ -162,8 +162,6 @@ namespace Wirehome.Core.HTTP
             serviceProvider.GetRequiredService<MqttService>().Start();
             serviceProvider.GetRequiredService<HttpServerService>().Start();
             serviceProvider.GetRequiredService<DiscoveryService>().Start();
-
-
 
             serviceProvider.GetRequiredService<DiagnosticsService>().Start();
             serviceProvider.GetRequiredService<MessageBusService>().Start();

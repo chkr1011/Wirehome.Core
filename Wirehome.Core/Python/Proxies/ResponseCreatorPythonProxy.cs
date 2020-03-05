@@ -11,7 +11,7 @@ namespace Wirehome.Core.Python.Proxies
     {
         public string ModuleName { get; } = "response_creator";
 
-        public PythonDictionary not_supported(string origin_type)
+        public static PythonDictionary not_supported(string origin_type)
         {
             return new PythonDictionary
             {
@@ -20,7 +20,7 @@ namespace Wirehome.Core.Python.Proxies
             };
         }
 
-        public PythonDictionary success()
+        public static PythonDictionary success()
         {
             return new PythonDictionary
             {
@@ -28,7 +28,7 @@ namespace Wirehome.Core.Python.Proxies
             };
         }
 
-        public PythonDictionary exception([DefaultParameterValue(null)] string message)
+        public static PythonDictionary exception([DefaultParameterValue(null)] string message)
         {
             return new PythonDictionary
             {
@@ -37,7 +37,7 @@ namespace Wirehome.Core.Python.Proxies
             };
         }
 
-        public PythonDictionary parameter_missing(string parameter_name)
+        public static PythonDictionary parameter_missing(string parameter_name)
         {
             return new PythonDictionary
             {
@@ -46,7 +46,7 @@ namespace Wirehome.Core.Python.Proxies
             };
         }
 
-        public PythonDictionary parameter_invalid(string parameter_name, [DefaultParameterValue(null)] string parameter_value, [DefaultParameterValue(null)] string message)
+        public static PythonDictionary parameter_invalid(string parameter_name, [DefaultParameterValue(null)] string parameter_value, [DefaultParameterValue(null)] string message)
         {
             return new PythonDictionary
             {
@@ -57,7 +57,7 @@ namespace Wirehome.Core.Python.Proxies
             };
         }
 
-        public PythonDictionary disabled()
+        public static PythonDictionary disabled()
         {
             return new PythonDictionary
             {

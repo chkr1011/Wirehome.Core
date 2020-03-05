@@ -10,7 +10,7 @@ using Wirehome.Core.MessageBus;
 
 namespace Wirehome.Core.Hardware.GPIO
 {
-    public class GpioRegistryService : IService
+    public sealed class GpioRegistryService : IService
     {
         private readonly Dictionary<string, IGpioAdapter> _adapters = new Dictionary<string, IGpioAdapter>();
         private readonly SystemStatusService _systemStatusService;
