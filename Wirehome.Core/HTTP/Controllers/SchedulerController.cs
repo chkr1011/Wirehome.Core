@@ -48,7 +48,7 @@ namespace Wirehome.Core.HTTP.Controllers
             {
                 Interval = (int)t.Interval.TotalMilliseconds,
                 LastException = t.LastException != null ? new ExceptionPythonModel(t.LastException) : null,
-                LastDuration = t.LastDuration
+                LastDuration = (long)t.LastDuration.TotalMilliseconds
             });
         }
 
