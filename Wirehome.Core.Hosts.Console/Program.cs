@@ -33,7 +33,6 @@ namespace Wirehome.Core.Hosts.Console
             catch (Exception exception)
             {
                 global::System.Console.WriteLine(exception);
-                throw;
             }
         }
     }

@@ -10,12 +10,13 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Backup
 {
+    // TODO: Add support for excluded directories via "no_backup" file.
     public class BackupService : IService
     {
         private const string BackupsDirectory = "Backups";
 
         private readonly StorageService _storageService;
-        
+
         public BackupService(StorageService storageService)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
@@ -30,14 +31,14 @@ namespace Wirehome.Core.Backup
             var now = DateTime.Now;
 
             var tempFilename = Path.GetTempFileName();
-            
+
             using (var zip = Package.Open(tempFilename, FileMode.OpenOrCreate))
             {
                 zip.PackageProperties.Title = "Wirehome.Backup";
                 zip.PackageProperties.Creator = "Wirehome.Core";
                 zip.PackageProperties.Description = "Backup package for Wirehome.Core data.";
                 zip.PackageProperties.Created = now;
-                
+
                 foreach (var file in Directory.GetFiles(_storageService.DataPath, "*.*", SearchOption.AllDirectories))
                 {
                     var relativePath = file.Replace(_storageService.DataPath, ".");
@@ -71,7 +72,7 @@ namespace Wirehome.Core.Backup
             var uids = new List<string>();
 
             var backupsPath = Path.Combine(_storageService.DataPath, BackupsDirectory);
-            
+
             foreach (var file in Directory.GetFiles(backupsPath, "*.zip", SearchOption.TopDirectoryOnly))
             {
                 uids.Add(Path.GetFileName(file.Replace(".zip", string.Empty)));
