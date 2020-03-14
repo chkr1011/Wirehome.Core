@@ -8,18 +8,19 @@ namespace Wirehome.Core.Diagnostics.Log
 {
     public class LogService : IService
     {
-        private readonly LinkedList<LogEntry> _logEntries = new LinkedList<LogEntry>();
-        private readonly SystemStatusService _systemStatusService;
-        private readonly LogServiceOptions _options;
+        readonly LinkedList<LogEntry> _logEntries = new LinkedList<LogEntry>();
+        readonly SystemStatusService _systemStatusService;
+        readonly LogServiceOptions _options;
 
-        private int _informationsCount;
-        private int _warningsCount;
-        private int _errorsCount;
+        int _informationsCount;
+        int _warningsCount;
+        int _errorsCount;
 
         public LogService(StorageService storageService, SystemStatusService systemStatusService)
         {
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
 
+            if (storageService is null) throw new ArgumentNullException(nameof(storageService));
             if (!storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, LogServiceOptions.Filename))
             {
                 _options = new LogServiceOptions();

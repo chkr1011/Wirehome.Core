@@ -10,11 +10,12 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Python
 {
-    public class PythonEngineService : IService
+    public sealed class PythonEngineService : IService, IDisposable
     {
         readonly ILogger _logger;
+        readonly PythonIOToLogStream _pythonIOToLogStream;
 
-        LogPythonProxy _logPythonProxy;
+        readonly LogPythonProxy _logPythonProxy;
         ScriptEngine _scriptEngine;
 
         public PythonEngineService(ILogger<PythonEngineService> logger)
@@ -22,6 +23,7 @@ namespace Wirehome.Core.Python
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _logPythonProxy = new LogPythonProxy(_logger);
+            _pythonIOToLogStream = new PythonIOToLogStream(_logger);
         }
 
         public void Start()
@@ -43,7 +45,7 @@ namespace Wirehome.Core.Python
                 ["LightweightScopes"] = false
             });
 
-            _scriptEngine.Runtime.IO.SetOutput(new PythonIOToLogStream(_logger), Encoding.UTF8);
+            _scriptEngine.Runtime.IO.SetOutput(_pythonIOToLogStream, Encoding.UTF8);
 
             AddSearchPaths(_scriptEngine);
 
@@ -82,7 +84,12 @@ namespace Wirehome.Core.Python
             return new PythonScriptHost(_scriptEngine, allPythonProxies);
         }
 
-        private void AddSearchPaths(ScriptEngine scriptEngine)
+        public void Dispose()
+        {
+            _pythonIOToLogStream.Dispose();
+        }
+
+        void AddSearchPaths(ScriptEngine scriptEngine)
         {
             var storagePaths = new StoragePaths();
 
@@ -94,7 +101,7 @@ namespace Wirehome.Core.Python
             AddSearchPaths(scriptEngine, paths);
         }
 
-        private void AddSearchPaths(ScriptEngine scriptEngine, IEnumerable<string> paths)
+        void AddSearchPaths(ScriptEngine scriptEngine, IEnumerable<string> paths)
         {
             var searchPaths = scriptEngine.GetSearchPaths();
 

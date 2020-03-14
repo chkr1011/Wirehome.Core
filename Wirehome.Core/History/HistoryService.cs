@@ -13,7 +13,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.History
 {
-    public partial class HistoryService : IService
+    public sealed class HistoryService : IService, IDisposable
     {
         readonly HistoryValueFormatter _valueFormatter = new HistoryValueFormatter();
 
@@ -163,6 +163,11 @@ namespace Wirehome.Core.History
         public Task<long> GetHistorySize(string path, CancellationToken cancellationToken)
         {
             return _historyRepository.GetHistorySize(path, cancellationToken);
+        }
+
+        public void Dispose()
+        {
+            _historyRepository.Dispose();
         }
     }
 }

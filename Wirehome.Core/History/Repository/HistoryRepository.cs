@@ -7,7 +7,7 @@ using Wirehome.Core.Foundation;
 
 namespace Wirehome.Core.History.Repository
 {
-    public class HistoryRepository
+    public sealed class HistoryRepository : IDisposable
     {
         const string ValuesFilename = "Values";
 
@@ -34,44 +34,45 @@ namespace Wirehome.Core.History.Repository
 
                     using (var fileStream = File.OpenRead(path))
                     {
-                        var valueStream = new HistoryValuesStream(fileStream);
-
-                        HistoryValueElement currentElement = null;
-
-                        while (await valueStream.MoveNextAsync().ConfigureAwait(false))
+                        using (var valueStream = new HistoryValuesStream(fileStream))
                         {
-                            if (valueStream.CurrentToken is BeginToken beginToken)
+                            HistoryValueElement currentElement = null;
+
+                            while (await valueStream.MoveNextAsync().ConfigureAwait(false))
                             {
-                                currentElement = new HistoryValueElement
+                                if (valueStream.CurrentToken is BeginToken beginToken)
                                 {
-                                    Begin = new DateTime(
+                                    currentElement = new HistoryValueElement
+                                    {
+                                        Begin = new DateTime(
+                                            dayPath.Year,
+                                            dayPath.Month,
+                                            dayPath.Day,
+                                            beginToken.Value.Hours,
+                                            beginToken.Value.Minutes,
+                                            beginToken.Value.Seconds,
+                                            beginToken.Value.Milliseconds,
+                                            DateTimeKind.Utc)
+                                    };
+                                }
+                                else if (valueStream.CurrentToken is ValueToken valueToken)
+                                {
+                                    currentElement.Value = valueToken.Value;
+                                }
+                                else if (valueStream.CurrentToken is EndToken endToken)
+                                {
+                                    currentElement.End = new DateTime(
                                         dayPath.Year,
                                         dayPath.Month,
                                         dayPath.Day,
-                                        beginToken.Value.Hours,
-                                        beginToken.Value.Minutes,
-                                        beginToken.Value.Seconds,
-                                        beginToken.Value.Milliseconds,
-                                        DateTimeKind.Utc)
-                                };
-                            }
-                            else if (valueStream.CurrentToken is ValueToken valueToken)
-                            {
-                                currentElement.Value = valueToken.Value;
-                            }
-                            else if (valueStream.CurrentToken is EndToken endToken)
-                            {
-                                currentElement.End = new DateTime(
-                                    dayPath.Year,
-                                    dayPath.Month,
-                                    dayPath.Day,
-                                    endToken.Value.Hours,
-                                    endToken.Value.Minutes,
-                                    endToken.Value.Seconds,
-                                    endToken.Value.Milliseconds,
-                                    DateTimeKind.Utc);
+                                        endToken.Value.Hours,
+                                        endToken.Value.Minutes,
+                                        endToken.Value.Seconds,
+                                        endToken.Value.Milliseconds,
+                                        DateTimeKind.Utc);
 
-                                result.Add(currentElement);
+                                    result.Add(currentElement);
+                                }
                             }
                         }
                     }
@@ -173,6 +174,11 @@ namespace Wirehome.Core.History.Repository
             {
                 _lock.Exit();
             }
+        }
+
+        public void Dispose()
+        {
+            _lock.Dispose();
         }
 
         void TryDeleteEntireDirectory(string path)

@@ -7,11 +7,11 @@ namespace Wirehome.Core.History.Repository
 {
     public class HistoryValueStreamSerializer
     {
-        private readonly byte _separator = (byte)' ';
-        private readonly byte[] _separatorBuffer = new byte[] { (byte)' ' };
-        private readonly byte[] _beginTokenIdBuffer = new byte[] { (byte)'b' };
-        private readonly byte[] _endTokenIdBuffer = new byte[] { (byte)'e' };
-        private readonly byte[] _valueTokenIdBuffer = new byte[] { (byte)'v' };
+        readonly byte _separator = (byte)' ';
+        readonly byte[] _separatorBuffer = new byte[] { (byte)' ' };
+        readonly byte[] _beginTokenIdBuffer = new byte[] { (byte)'b' };
+        readonly byte[] _endTokenIdBuffer = new byte[] { (byte)'e' };
+        readonly byte[] _valueTokenIdBuffer = new byte[] { (byte)'v' };
 
         public bool IsSeparator(byte source)
         {
@@ -32,7 +32,7 @@ namespace Wirehome.Core.History.Repository
         {
             if (string.IsNullOrEmpty(value))
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             var buffer = HttpUtility.UrlEncode(value);

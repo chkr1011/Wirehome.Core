@@ -24,7 +24,7 @@ namespace Wirehome.Core.Cloud.Protocol
             using (var buffer = new MemoryStream(data.Array, data.Offset, data.Count))
             {
                 return MessagePackSerializer.Deserialize<TValue>(buffer);
-            }                
+            }
         }
 
         public ArraySegment<byte> Compress(ArraySegment<byte> data)

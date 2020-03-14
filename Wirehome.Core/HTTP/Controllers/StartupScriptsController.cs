@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Wirehome.Core.System.StartupScripts;
 
 namespace Wirehome.Core.HTTP.Controllers
@@ -41,7 +42,7 @@ namespace Wirehome.Core.HTTP.Controllers
             var startupScript = _startupScriptsService.GetStartupScripts().FirstOrDefault(s => s.Uid == uid);
             if (startupScript == null)
             {
-                HttpContext.Response.StatusCode = (int) HttpStatusCode.NotFound;
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return null;
             }
 
@@ -91,10 +92,13 @@ namespace Wirehome.Core.HTTP.Controllers
         [HttpPost]
         [Route("api/v1/startup_scripts/{uid}/script")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public void PostScript(string uid)
+        public async Task PostScript(string uid)
         {
-            var scriptCode = new StreamReader(HttpContext.Request.Body).ReadToEnd();
-            _startupScriptsService.WriteStartupScriptCode(uid, scriptCode);
+            using (var streamReader = new StreamReader(HttpContext.Request.Body))
+            {
+                var scriptCode = await streamReader.ReadToEndAsync().ConfigureAwait(false);
+                _startupScriptsService.WriteStartupScriptCode(uid, scriptCode);
+            }
         }
     }
 }

@@ -11,7 +11,6 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
     public class LinuxGpioAdapter : IGpioAdapter
     {
         readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new Dictionary<int, InterruptMonitor>();
-        ////readonly Dictionary<int, FileStream> _openGpios = new Dictionary<int, FileStream>();
 
         readonly object _syncRoot = new object();
         readonly SystemStatusService _systemStatusService;
@@ -97,8 +96,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         void PollGpios()
         {
-            //var threadId = (int)SafeNativeMethods.Syscall(186);
-            //_systemStatusService.Set("thread_" + threadId, "gio_monitor");
+            // Consider using  Interop.epoll_wait. But this will require a thread per GPIO.
 
             var eventArgsList = new List<GpioAdapterStateChangedEventArgs>(_interruptMonitors.Count);
 

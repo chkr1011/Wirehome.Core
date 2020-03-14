@@ -25,7 +25,7 @@ namespace Wirehome.Core.Packages
             var parts = source.Split(new[] { "@" }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length < 1 || parts.Length > 2)
             {
-                throw new ArgumentException(nameof(source));
+                throw new ArgumentException("The source is invalid.", nameof(source));
             }
 
             string version = null;

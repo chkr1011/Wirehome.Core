@@ -9,7 +9,7 @@ using Wirehome.Core.Foundation;
 
 namespace Wirehome.Core.Cloud.Channel
 {
-    public class ConnectorChannel
+    public sealed class ConnectorChannel : IDisposable
     {
         private const int MessageContentCompressionThreshold = 4096;
         private const int ReceiveBufferSize = 1024 * 1024; // 1 MB
@@ -135,6 +135,13 @@ namespace Wirehome.Core.Cloud.Channel
             _lastMessageReceived = null;
             _lastMessageSent = null;
             _statisticsReset = DateTime.UtcNow;
+        }
+
+
+        public void Dispose()
+        {
+            _lock.Dispose();
+            _webSocket.Dispose();
         }
 
         async Task<ArraySegment<byte>> ReceiveInternalAsync(CancellationToken cancellationToken)

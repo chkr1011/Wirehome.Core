@@ -1,16 +1,22 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 
 namespace Wirehome.Core.System
 {
-    public class SystemCancellationToken
+    public sealed class SystemCancellationToken : IDisposable
     {
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         public CancellationToken Token => _cancellationTokenSource.Token;
 
         public void Cancel()
         {
-            _cancellationTokenSource?.Cancel(false);
+            _cancellationTokenSource.Cancel(false);
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource.Dispose();
         }
     }
 }

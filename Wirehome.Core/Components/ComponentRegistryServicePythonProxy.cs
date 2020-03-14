@@ -87,7 +87,6 @@ namespace Wirehome.Core.Components
             _componentRegistryService.SetComponentSetting(component_uid, setting_uid, PythonConvert.FromPython(value));
         }
 
-        [Obsolete]
         public PythonDictionary execute_command(string component_uid, PythonDictionary message)
         {
             return process_message(component_uid, message);

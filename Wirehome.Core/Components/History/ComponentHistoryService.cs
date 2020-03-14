@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Wirehome.Core.Backup;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.History;
@@ -12,13 +13,14 @@ using Wirehome.Core.System;
 
 namespace Wirehome.Core.Components.History
 {
-    public class ComponentHistoryService : IService
+    public sealed class ComponentHistoryService : IService, IDisposable
     {
         readonly BlockingCollection<ComponentStatusHistoryWorkItem> _pendingStatusWorkItems = new BlockingCollection<ComponentStatusHistoryWorkItem>();
-        private readonly ComponentRegistryService _componentRegistryService;
+        readonly ComponentRegistryService _componentRegistryService;
         readonly HistoryService _historyService;
         readonly StorageService _storageService;
         readonly SystemCancellationToken _systemCancellationToken;
+        private readonly BackupService _backupService;
         readonly ILogger<ComponentHistoryService> _logger;
 
         ComponentHistoryServiceOptions _options;
@@ -29,12 +31,14 @@ namespace Wirehome.Core.Components.History
             StorageService storageService,
             SystemStatusService systemStatusService,
             SystemCancellationToken systemCancellationToken,
+            BackupService backupService,
             ILogger<ComponentHistoryService> logger)
         {
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
             _historyService = historyService ?? throw new ArgumentNullException(nameof(historyService));
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
+            _backupService = backupService ?? throw new ArgumentNullException(nameof(backupService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
@@ -45,6 +49,8 @@ namespace Wirehome.Core.Components.History
 
         public void Start()
         {
+            _backupService.ExcludePathFromBackup(Path.Combine(_storageService.DataPath, "History"));
+
             _storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, ComponentHistoryServiceOptions.Filename);
             if (!_options.IsEnabled)
             {
@@ -58,12 +64,17 @@ namespace Wirehome.Core.Components.History
 
         public string BuildComponentHistoryPath(string componentUid)
         {
-            return Path.Combine(_storageService.DataPath, "Components", componentUid, "History");
+            return Path.Combine(_storageService.DataPath, "History", "Components", componentUid);
         }
 
         public string BuildComponentStatusHistoryPath(string componentUid, string statusUid)
         {
             return Path.Combine(BuildComponentHistoryPath(componentUid), "Status", statusUid);
+        }
+
+        public void Dispose()
+        {
+            _pendingStatusWorkItems.Dispose();
         }
 
         void OnComponentStatusChanged(object sender, ComponentStatusChangedEventArgs e)

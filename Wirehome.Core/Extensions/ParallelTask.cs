@@ -12,7 +12,11 @@ namespace Wirehome.Core.Extensions
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
 
-            Task.Factory.StartNew(action, cancellationToken, TaskCreationOptions.None, TaskScheduler.Default).ContinueWith(
+            Task.Factory.StartNew(
+                action,
+                cancellationToken,
+                TaskCreationOptions.None,
+                TaskScheduler.Default).ContinueWith(
                 t =>
                 {
                     logger.LogWarning(t.Exception, "Error while executing a parallel task.");

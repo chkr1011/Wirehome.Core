@@ -55,7 +55,7 @@ namespace Wirehome.Core.Packages.GitHub
             Directory.Move(tempPath, targetPath);
         }
 
-        private async Task DownloadFileAsync(HttpClient httpClient, GitHubItem item, string localDirectory)
+        async Task DownloadFileAsync(HttpClient httpClient, GitHubItem item, string localDirectory)
         {
             var uri = item.DownloadUrl;
 
@@ -67,7 +67,7 @@ namespace Wirehome.Core.Packages.GitHub
             await File.WriteAllBytesAsync(filename, fileContent).ConfigureAwait(false);
         }
 
-        private async Task DownloadDirectoryAsync(HttpClient httpClient, GitHubItem item, string localDirectory)
+        async Task DownloadDirectoryAsync(HttpClient httpClient, GitHubItem item, string localDirectory)
         {
             if (!string.IsNullOrEmpty(item.Name))
             {

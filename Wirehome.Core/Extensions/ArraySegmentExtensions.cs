@@ -16,6 +16,8 @@ namespace Wirehome.Core.Extensions
 
         public static ArraySegment<TItem> AsArraySegment<TItem>(this TItem[] source)
         {
+            if (source is null) throw new ArgumentNullException(nameof(source));
+
             return new ArraySegment<TItem>(source, 0, source.Length);
         }
     }

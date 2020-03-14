@@ -10,7 +10,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class BackupController : Controller
     {
-        private readonly BackupService _backupService;
+        readonly BackupService _backupService;
 
         public BackupController(BackupService backupService)
         {
@@ -46,7 +46,8 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public IActionResult DownloadBackup(string uid)
         {
-            return File(global::System.IO.File.OpenRead(_backupService.GetBackupFilename(uid)), MediaTypeNames.Application.Zip);
+            var filename = _backupService.GetBackupFilename(uid);
+            return File(filename, MediaTypeNames.Application.Zip);
         }
     }
 }

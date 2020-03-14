@@ -128,7 +128,7 @@ namespace Wirehome.Core.Python.Proxies
             }
 
             var buffer = list.Select(Convert.ToByte).ToArray();
-            return BitConverter.ToString(buffer).Replace("-", string.Empty);
+            return BitConverter.ToString(buffer).Replace("-", string.Empty, StringComparison.Ordinal);
         }
 
         public static List hex_string_to_list(string hexString)

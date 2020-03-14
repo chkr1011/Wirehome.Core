@@ -10,12 +10,12 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Backup
 {
-    // TODO: Add support for excluded directories via "no_backup" file.
     public class BackupService : IService
     {
-        private const string BackupsDirectory = "Backups";
+        const string BackupsDirectory = "Backups";
+        const string NoBackupIndicatorFile = "no_backup";
 
-        private readonly StorageService _storageService;
+        readonly StorageService _storageService;
 
         public BackupService(StorageService storageService)
         {
@@ -24,6 +24,24 @@ namespace Wirehome.Core.Backup
 
         public void Start()
         {
+            var backupPath = Path.Combine(_storageService.DataPath, BackupsDirectory);
+
+            ExcludePathFromBackup(backupPath);
+        }
+
+        public void ExcludePathFromBackup(string path)
+        {
+            if (path is null) throw new ArgumentNullException(nameof(path));
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            path = Path.Combine(path, NoBackupIndicatorFile);
+            using (File.Create(path))
+            {
+            }
         }
 
         public async Task CreateBackupAsync()
@@ -32,26 +50,21 @@ namespace Wirehome.Core.Backup
 
             var tempFilename = Path.GetTempFileName();
 
-            using (var zip = Package.Open(tempFilename, FileMode.OpenOrCreate))
+            using (var package = Package.Open(tempFilename, FileMode.OpenOrCreate))
             {
-                zip.PackageProperties.Title = "Wirehome.Backup";
-                zip.PackageProperties.Creator = "Wirehome.Core";
-                zip.PackageProperties.Description = "Backup package for Wirehome.Core data.";
-                zip.PackageProperties.Created = now;
+                package.PackageProperties.Title = "Wirehome.Backup";
+                package.PackageProperties.Creator = "Wirehome.Core";
+                package.PackageProperties.Description = "Backup package for Wirehome.Core data.";
+                package.PackageProperties.Created = now;
 
-                foreach (var file in Directory.GetFiles(_storageService.DataPath, "*.*", SearchOption.AllDirectories))
+                foreach (var directory in Directory.GetDirectories(_storageService.DataPath, "*", SearchOption.TopDirectoryOnly))
                 {
-                    var relativePath = file.Replace(_storageService.DataPath, ".");
-
-                    var partUri = PackUriHelper.CreatePartUri(new Uri(relativePath, UriKind.Relative));
-
-                    var part = zip.CreatePart(partUri, MediaTypeNames.Application.Octet, CompressionOption.Normal);
-                    using (var fileStream = File.OpenRead(file))
-                    using (var partStream = part.GetStream())
-                    {
-                        await fileStream.CopyToAsync(partStream).ConfigureAwait(false);
-                    }
+                    await AddDirectoryToPackage(directory, package).ConfigureAwait(false);
                 }
+
+                package.Flush();
+
+                package.DeletePart(new Uri("[Content_Types].xml", UriKind.Relative));
             }
 
             var backupFilename = $"{now.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}{now.ToString("HHmmss", CultureInfo.InvariantCulture)}.zip";
@@ -75,7 +88,7 @@ namespace Wirehome.Core.Backup
 
             foreach (var file in Directory.GetFiles(backupsPath, "*.zip", SearchOption.TopDirectoryOnly))
             {
-                uids.Add(Path.GetFileName(file.Replace(".zip", string.Empty)));
+                uids.Add(Path.GetFileName(file.Replace(".zip", string.Empty, StringComparison.Ordinal)));
             }
 
             return uids;
@@ -94,6 +107,33 @@ namespace Wirehome.Core.Backup
             if (File.Exists(path))
             {
                 File.Delete(path);
+            }
+        }
+
+        async Task AddDirectoryToPackage(string path, Package package)
+        {
+            if (File.Exists(Path.Combine(path, NoBackupIndicatorFile)))
+            {
+                return;
+            }
+
+            foreach (var file in Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly))
+            {
+                var relativePath = file.Replace(_storageService.DataPath, string.Empty, StringComparison.Ordinal);
+
+                var partUri = PackUriHelper.CreatePartUri(new Uri(relativePath, UriKind.Relative));
+
+                var part = package.CreatePart(partUri, MediaTypeNames.Application.Octet, CompressionOption.NotCompressed);
+                using (var fileStream = File.OpenRead(file))
+                using (var partStream = part.GetStream())
+                {
+                    await fileStream.CopyToAsync(partStream).ConfigureAwait(false);
+                }
+            }
+
+            foreach (var directory in Directory.GetDirectories(path, "*", SearchOption.TopDirectoryOnly))
+            {
+                await AddDirectoryToPackage(directory, package).ConfigureAwait(false);
             }
         }
     }

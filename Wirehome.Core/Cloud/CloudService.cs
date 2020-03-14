@@ -18,7 +18,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Cloud
 {
-    public class CloudService : IService
+    public sealed class CloudService : IService, IDisposable
     {
         readonly CloudMessageSerializer _cloudMessageSerializer = new CloudMessageSerializer();
         readonly Dictionary<string, RawCloudMessageHandler> _rawMessageHandlers = new Dictionary<string, RawCloudMessageHandler>();
@@ -90,7 +90,14 @@ namespace Wirehome.Core.Cloud
             }
         }
 
-        private async Task ConnectAsync(CancellationToken cancellationToken)
+        public void Dispose()
+        {
+            _httpClient.Dispose();
+            _cancellationTokenSource?.Dispose();
+            _channel?.Dispose();
+        }
+
+        async Task ConnectAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -175,7 +182,7 @@ namespace Wirehome.Core.Cloud
             }
         }
 
-        private async Task TryProcessCloudMessageAsync(CloudMessage requestMessage, CancellationToken cancellationToken)
+        async Task TryProcessCloudMessageAsync(CloudMessage requestMessage, CancellationToken cancellationToken)
         {
             try
             {
@@ -208,7 +215,7 @@ namespace Wirehome.Core.Cloud
             }
         }
 
-        private CloudMessage InvokeRawRequest(CloudMessage requestMessage)
+        CloudMessage InvokeRawRequest(CloudMessage requestMessage)
         {
             try
             {
@@ -245,7 +252,7 @@ namespace Wirehome.Core.Cloud
             }
         }
 
-        private async Task<CloudMessage> InvokeHttpRequestAsync(CloudMessage requestMessage, CancellationToken cancellationToken)
+        async Task<CloudMessage> InvokeHttpRequestAsync(CloudMessage requestMessage, CancellationToken cancellationToken)
         {
             try
             {

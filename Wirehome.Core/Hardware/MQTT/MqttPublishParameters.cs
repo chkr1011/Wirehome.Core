@@ -1,4 +1,5 @@
 ﻿using MQTTnet.Protocol;
+using System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
@@ -6,7 +7,7 @@ namespace Wirehome.Core.Hardware.MQTT
     {
         public string Topic { get; set; }
 
-        public byte[] Payload { get; set; } = new byte[0];
+        public byte[] Payload { get; set; } = Array.Empty<byte>();
 
         public MqttQualityOfServiceLevel QualityOfServiceLevel { get; set; } = MqttQualityOfServiceLevel.AtMostOnce;
 

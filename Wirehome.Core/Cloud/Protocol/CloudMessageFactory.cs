@@ -11,7 +11,7 @@ namespace Wirehome.Core.Cloud.Protocol
 {
     public class CloudMessageFactory
     {
-        private readonly CloudMessageSerializer _cloudMessageSerializer;
+        readonly CloudMessageSerializer _cloudMessageSerializer;
 
         public CloudMessageFactory(CloudMessageSerializer cloudMessageSerializer)
         {
@@ -76,6 +76,8 @@ namespace Wirehome.Core.Cloud.Protocol
 
         public async Task<CloudMessage> Create(HttpResponseMessage httpResponse, string correlationId)
         {
+            if (httpResponse is null) throw new ArgumentNullException(nameof(httpResponse));
+
             var responseContent = new HttpResponseCloudMessageContent
             {
                 StatusCode = (int)httpResponse.StatusCode

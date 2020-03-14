@@ -14,7 +14,7 @@ using Wirehome.Core.Python.Models;
 
 namespace Wirehome.Core.HTTP.PythonProxies
 {
-    public class HttpClientPythonProxy : IInjectedPythonProxy
+    public sealed class HttpClientPythonProxy : IInjectedPythonProxy, IDisposable
     {
         readonly HttpClient _httpClient = new HttpClient();
 
@@ -78,6 +78,11 @@ namespace Wirehome.Core.HTTP.PythonProxies
             {
                 return PythonConvert.ToPythonDictionary(new ExceptionPythonModel(exception).ToDictionary());
             }
+        }
+
+        public void Dispose()
+        {
+            _httpClient.Dispose();
         }
 
         static HttpRequestMessage CreateRequest(PythonDictionary parameters)

@@ -37,6 +37,7 @@ namespace Wirehome.Core.Scheduler
         {
             var taskScheduler = new Thread(ScheduleTasks)
             {
+                Name = nameof(SchedulerService),
                 IsBackground = true
             };
 
@@ -168,7 +169,7 @@ namespace Wirehome.Core.Scheduler
             {
                 StopThread(uid);
 
-                var activeThread = new ActiveThread(uid, action, state, _systemCancellationToken.Token, _logger);
+                var activeThread = new ActiveThread(uid, action, state, _logger, _systemCancellationToken.Token);
                 activeThread.StoppedCallback = () =>
                 {
                     lock (_activeThreads)

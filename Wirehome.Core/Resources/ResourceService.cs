@@ -104,7 +104,7 @@ namespace Wirehome.Core.Resources
             foreach (var key in parameters.Keys)
             {
                 var value = ConvertValue(parameters[key]);
-                message = message.Replace("{" + key + "}", value);
+                message = message.Replace("{" + key + "}", value, StringComparison.Ordinal);
             }
 
             return message;

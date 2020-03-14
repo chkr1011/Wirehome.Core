@@ -19,7 +19,7 @@ namespace Wirehome.Core.HTTP.PythonProxies
         {
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(_logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (uriTemplate == null) throw new ArgumentNullException(nameof(uriTemplate));
             _routeTemplate = TemplateParser.Parse(uriTemplate);

@@ -23,11 +23,11 @@ namespace Wirehome.Core.Hardware.I2C
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                //var i2CAdapter = new LinuxI2CBusAdapter(1, _logger);
-                //i2CAdapter.Enable();
-                //RegisterAdapter(string.Empty, i2CAdapter);
+                var i2CAdapter = new LinuxI2CBusAdapter(1, _logger);
+                i2CAdapter.Enable();
+                RegisterAdapter(string.Empty, i2CAdapter);
 
-                RegisterAdapter(string.Empty, new LiveI2CBusAdapter(_logger));
+                ////RegisterAdapter(string.Empty, new LiveI2CBusAdapter(_logger));
             }
             else
             {

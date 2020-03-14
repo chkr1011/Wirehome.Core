@@ -6,23 +6,26 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
-using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
+using Wirehome.Core.System;
 
 namespace Wirehome.Core.Discovery
 {
-    public class DiscoveryService : IService
+    public sealed class DiscoveryService : IService, IDisposable
     {
         readonly List<SsdpDevice> _discoveredSsdpDevices = new List<SsdpDevice>();
+        readonly SystemCancellationToken _systemCancellationToken;
         readonly ILogger _logger;
         readonly DiscoveryServiceOptions _options;
         readonly HttpClient _httpClient = new HttpClient();
         readonly SsdpDevicePublisher _publisher = new SsdpDevicePublisher();
 
-        public DiscoveryService(StorageService storageService, ILogger<DiscoveryService> logger)
+        public DiscoveryService(StorageService storageService, SystemCancellationToken systemCancellationToken, ILogger<DiscoveryService> logger)
         {
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
+            if (storageService is null) throw new ArgumentNullException(nameof(storageService));
             storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, DiscoveryServiceOptions.Filename);
         }
 
@@ -42,7 +45,7 @@ namespace Wirehome.Core.Discovery
 
             _publisher.AddDevice(deviceDefinition);
 
-            ParallelTask.Start(SearchAsync, CancellationToken.None, _logger);
+            Task.Run(() => SearchAsync(_systemCancellationToken.Token), _systemCancellationToken.Token);
         }
 
         public List<SsdpDevice> GetDiscoveredDevices()
@@ -53,13 +56,22 @@ namespace Wirehome.Core.Discovery
             }
         }
 
-        private async Task SearchAsync()
+        public void Dispose()
         {
-            while (true)
+            _httpClient.Dispose();
+            _publisher.Dispose();
+        }
+
+        async Task SearchAsync(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await TryDiscoverSsdpDevicesAsync().ConfigureAwait(false);
+                    await TryDiscoverSsdpDevicesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
                 }
                 catch (Exception exception)
                 {
@@ -82,14 +94,19 @@ namespace Wirehome.Core.Discovery
 
         //}
 
-        private async Task TryDiscoverSsdpDevicesAsync()
+        async Task TryDiscoverSsdpDevicesAsync(CancellationToken cancellationToken)
         {
             using (var deviceLocator = new SsdpDeviceLocator())
             {
                 var devices = new List<SsdpDevice>();
                 foreach (var discoveredSsdpDevice in await deviceLocator.SearchAsync(_options.SearchDuration).ConfigureAwait(false))
                 {
-                    if (Convert.ToString(discoveredSsdpDevice.DescriptionLocation).Contains("0.0.0.0"))
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    if (Convert.ToString(discoveredSsdpDevice.DescriptionLocation).Contains("0.0.0.0", StringComparison.Ordinal))
                     {
                         continue;
                     }

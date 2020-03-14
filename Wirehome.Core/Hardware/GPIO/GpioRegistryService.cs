@@ -12,10 +12,10 @@ namespace Wirehome.Core.Hardware.GPIO
 {
     public sealed class GpioRegistryService : IService
     {
-        private readonly Dictionary<string, IGpioAdapter> _adapters = new Dictionary<string, IGpioAdapter>();
-        private readonly SystemStatusService _systemStatusService;
-        private readonly MessageBusService _messageBusService;
-        private readonly ILogger _logger;
+        readonly Dictionary<string, IGpioAdapter> _adapters = new Dictionary<string, IGpioAdapter>();
+        readonly SystemStatusService _systemStatusService;
+        readonly MessageBusService _messageBusService;
+        readonly ILogger _logger;
 
         public GpioRegistryService(SystemStatusService systemStatusService, MessageBusService messageBusService, ILogger<GpioRegistryService> logger)
         {
@@ -28,10 +28,8 @@ namespace Wirehome.Core.Hardware.GPIO
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                //var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _logger);
-                //gpioAdapter.Enable();
-
-                var gpioAdapter = new LiveLinuxGpioAdapter(_logger);
+                var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _logger);
+                gpioAdapter.Enable();
                 RegisterAdapter(string.Empty, gpioAdapter);
             }
             else

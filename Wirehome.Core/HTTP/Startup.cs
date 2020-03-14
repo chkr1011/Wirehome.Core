@@ -13,6 +13,7 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.IO;
 using System.Linq;
+using Wirehome.Core.Backup;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
 using Wirehome.Core.Components.History;
@@ -60,7 +61,7 @@ namespace Wirehome.Core.HTTP
 
             var mvcBuilder = services.AddMvc(o =>
             {
-                o.Filters.Add(new DefaultExceptionFilter());
+                o.Filters.Add(new DefaultExceptionFilterAttribute());
             });
 
             mvcBuilder.AddNewtonsoftJson(o =>
@@ -155,6 +156,7 @@ namespace Wirehome.Core.HTTP
             systemService.Start();
 
             serviceProvider.GetRequiredService<StorageService>().Start();
+            serviceProvider.GetRequiredService<BackupService>().Start();
 
             // Start hardware related services.
             serviceProvider.GetRequiredService<GpioRegistryService>().Start();
@@ -234,6 +236,16 @@ namespace Wirehome.Core.HTTP
             {
                 Directory.CreateDirectory(packagesRootPath);
             }
+
+            app.Map("/upnp.xml", options =>
+            {
+                options.Run(async h =>
+                {
+                    var upnpFilePath = Path.Combine(storagePaths.BinPath, "Discovery", "upnp.xml");
+                    var upnpDefinition = await File.ReadAllBytesAsync(upnpFilePath).ConfigureAwait(false);
+                    await h.Response.BodyWriter.WriteAsync(upnpDefinition).ConfigureAwait(false);
+                });
+            });
 
             // Open the configurator by default if no path is specified.
             var option = new RewriteOptions();

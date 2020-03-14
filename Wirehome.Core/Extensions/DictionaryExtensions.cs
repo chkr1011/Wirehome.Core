@@ -9,6 +9,8 @@ namespace Wirehome.Core.Extensions
     {
         public static TValue GetValueOr<TValue>(this IDictionary dictionary, object key, TValue defaultValue)
         {
+            if (dictionary is null) throw new ArgumentNullException(nameof(dictionary));
+
             if (!dictionary.Contains(key))
             {
                 return defaultValue;
@@ -21,6 +23,8 @@ namespace Wirehome.Core.Extensions
 
         public static object GetValueOrDefault(this IDictionary<object, object> dictionary, object key, object defaultValue = null)
         {
+            if (dictionary is null) throw new ArgumentNullException(nameof(dictionary));
+
             if (dictionary.TryGetValue(key, out var result))
             {
                 return result;

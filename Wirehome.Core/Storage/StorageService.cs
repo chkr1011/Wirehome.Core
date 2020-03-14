@@ -10,7 +10,7 @@ namespace Wirehome.Core.Storage
 {
     public class StorageService : IService
     {
-        private readonly JsonSerializerService _jsonSerializerService;
+        readonly JsonSerializerService _jsonSerializerService;
 
         public StorageService(JsonSerializerService jsonSerializerService, ILogger<StorageService> logger)
         {
@@ -47,7 +47,7 @@ namespace Wirehome.Core.Storage
             var directories = Directory.EnumerateDirectories(directory, pattern, SearchOption.TopDirectoryOnly).ToList();
             for (var i = 0; i < directories.Count; i++)
             {
-                directories[i] = directories[i].Replace(directory, string.Empty).TrimStart(Path.DirectorySeparatorChar);
+                directories[i] = directories[i].Replace(directory, string.Empty, StringComparison.Ordinal).TrimStart(Path.DirectorySeparatorChar);
             }
 
             return directories;
@@ -68,7 +68,7 @@ namespace Wirehome.Core.Storage
             var files = Directory.GetFiles(directory, pattern, SearchOption.AllDirectories).ToList();
             for (var i = 0; i < files.Count; i++)
             {
-                files[i] = files[i].Replace(directory, string.Empty).TrimStart(Path.DirectorySeparatorChar);
+                files[i] = files[i].Replace(directory, string.Empty, StringComparison.Ordinal).TrimStart(Path.DirectorySeparatorChar);
             }
 
             return files;

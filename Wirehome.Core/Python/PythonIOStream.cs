@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Wirehome.Core.Python
 {
-    public class PythonIOToLogStream : Stream
+    public sealed class PythonIOToLogStream : Stream
     {
         private readonly ILogger _logger;
 
@@ -43,7 +43,7 @@ namespace Wirehome.Core.Python
             if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
             var text = Encoding.UTF8.GetString(buffer, offset, count);
-            if (text.Equals(Environment.NewLine))
+            if (text.Equals(Environment.NewLine, StringComparison.Ordinal))
             {
                 return;
             }
@@ -52,8 +52,11 @@ namespace Wirehome.Core.Python
         }
 
         public override bool CanRead { get; } = false;
+
         public override bool CanSeek { get; } = false;
+
         public override bool CanWrite { get; } = true;
+
         public override long Length { get; } = 0;
 
         public override long Position

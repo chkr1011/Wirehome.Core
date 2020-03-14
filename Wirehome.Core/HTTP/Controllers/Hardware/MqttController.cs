@@ -31,7 +31,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
             var buffer = new byte[Request.ContentLength ?? 0];
             if (buffer.Length > 0)
             {
-                await Request.Body.ReadAsync(buffer, 0, buffer.Length);
+                await Request.Body.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
             }
 
             _mqttService.Publish(new MqttPublishParameters
@@ -123,7 +123,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
             _mqttService.Publish(new MqttPublishParameters
             {
                 Topic = topic,
-                Payload = new byte[0],
+                Payload = Array.Empty<byte>(),
                 QualityOfServiceLevel = MqttQualityOfServiceLevel.AtMostOnce,
                 Retain = true
             });

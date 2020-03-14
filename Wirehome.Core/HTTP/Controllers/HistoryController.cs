@@ -13,9 +13,9 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class HistoryController : Controller
     {
-        private readonly ComponentHistoryService _componentHistoryService;
-        private readonly HistoryService _historyService;
-        private readonly ComponentRegistryService _componentRegistryService;
+        readonly ComponentHistoryService _componentHistoryService;
+        readonly HistoryService _historyService;
+        readonly ComponentRegistryService _componentRegistryService;
 
         public HistoryController(ComponentHistoryService componentHistoryService, HistoryService historyService, ComponentRegistryService componentRegistryService)
         {
@@ -28,7 +28,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [Route("api/v1/components/{componentUid}/status/{statusUid}/history")]
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<ActionResult<HistoryExtract>> GetComponentStatusHistory(
-            string componentUid, 
+            string componentUid,
             string statusUid,
             DateTimeOffset? rangeStart,
             DateTimeOffset? rangeEnd,
@@ -75,7 +75,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 interval,
                 dataType.Value,
                 maxRowCount,
-                HttpContext.RequestAborted);
+                HttpContext.RequestAborted).ConfigureAwait(false);
 
             return new ObjectResult(historyExtract);
         }
@@ -93,7 +93,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 MaxEntityCount = null
             };
 
-            var result = await _historyService.Read(readOperation, HttpContext.RequestAborted);
+            var result = await _historyService.Read(readOperation, HttpContext.RequestAborted).ConfigureAwait(false);
 
             return new ObjectResult(result);
         }

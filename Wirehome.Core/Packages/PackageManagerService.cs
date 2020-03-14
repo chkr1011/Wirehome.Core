@@ -161,6 +161,8 @@ namespace Wirehome.Core.Packages
 
         public string GetPackageRootPath(PackageUid uid)
         {
+            if (uid is null) throw new ArgumentNullException(nameof(uid));
+
             var path = GetPackagesRootPath();
 
             if (string.IsNullOrEmpty(uid.Version))

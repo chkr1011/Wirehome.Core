@@ -24,6 +24,8 @@ namespace Wirehome.Core.HTTP
 
         public IDictionary<object, object> WrapContext(HttpContext context)
         {
+            if (context is null) throw new ArgumentNullException(nameof(context));
+
             var parameters = new Dictionary<object, object>();
             foreach (var parameter in context.Request.Query)
             {
@@ -65,6 +67,8 @@ namespace Wirehome.Core.HTTP
 
         public void UnwrapContext(IDictionary<object, object> dictionary, HttpContext context)
         {
+            if (context is null) throw new ArgumentNullException(nameof(context));
+
             var statusCode = Convert.ToInt32(dictionary.GetValueOrDefault("status_code", (int)HttpStatusCode.NotFound), CultureInfo.InvariantCulture);
             context.Response.StatusCode = statusCode;
 

@@ -6,7 +6,7 @@ namespace Wirehome.Core.Components
 {
     public class ComponentRegistryMessageBusWrapper
     {
-        private readonly MessageBusService _messageBusService;
+        readonly MessageBusService _messageBusService;
 
         public ComponentRegistryMessageBusWrapper(MessageBusService messageBusService)
         {
@@ -65,6 +65,8 @@ namespace Wirehome.Core.Components
 
         public void PublishStatusChangedEvent(ComponentStatusChangedEventArgs eventArgs)
         {
+            if (eventArgs is null) throw new ArgumentNullException(nameof(eventArgs));
+
             var message = new Dictionary<object, object>
             {
                 ["type"] = "component_registry.event.status_changed",

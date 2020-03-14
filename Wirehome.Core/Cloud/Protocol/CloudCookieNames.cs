@@ -2,6 +2,6 @@
 {
     public static class CloudCookieNames
     {
-        public static string ChannelUid = "WirehomeCloud.ChannelUid";
+        public const string ChannelUid = "WirehomeCloud.ChannelUid";
     }
 }

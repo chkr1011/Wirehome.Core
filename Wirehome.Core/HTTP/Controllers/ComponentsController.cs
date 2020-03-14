@@ -13,7 +13,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class ComponentsController : Controller
     {
-        private readonly ComponentRegistryService _componentRegistryService;
+        readonly ComponentRegistryService _componentRegistryService;
 
         public ComponentsController(ComponentRegistryService componentRegistryService)
         {
@@ -23,6 +23,8 @@ namespace Wirehome.Core.HTTP.Controllers
         // TODO: Move to dedicated factory!
         public static object CreateComponentModel(Component component)
         {
+            if (component is null) throw new ArgumentNullException(nameof(component));
+
             return new
             {
                 component.Uid,

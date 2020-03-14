@@ -7,13 +7,15 @@ namespace Wirehome.Core.Scheduler
 {
     public sealed class ActiveThread : IDisposable
     {
-        private readonly CancellationTokenSource _ownCancellationTokenSource = new CancellationTokenSource();
-        private readonly CancellationToken _externalCancellationToken;
-        private readonly ILogger _logger;
-        private readonly Action<StartThreadCallbackParameters> _action;
-        private readonly object _state;
+        readonly CancellationTokenSource _ownCancellationTokenSource = new CancellationTokenSource();
+        readonly CancellationToken _externalCancellationToken;
+        readonly ILogger _logger;
+        readonly Action<StartThreadCallbackParameters> _action;
+        readonly object _state;
 
-        public ActiveThread(string uid, Action<StartThreadCallbackParameters> action, object state, CancellationToken cancellationToken, ILogger logger)
+        CancellationTokenSource _cancellationTokenSource;
+
+        public ActiveThread(string uid, Action<StartThreadCallbackParameters> action, object state, ILogger logger, CancellationToken cancellationToken)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             _action = action ?? throw new ArgumentNullException(nameof(action));
@@ -41,38 +43,41 @@ namespace Wirehome.Core.Scheduler
         public void Dispose()
         {
             _ownCancellationTokenSource?.Dispose();
+            _cancellationTokenSource?.Dispose();
         }
 
         public void Start()
         {
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                _ownCancellationTokenSource.Token,
-                _externalCancellationToken);
+            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_ownCancellationTokenSource.Token, _externalCancellationToken);
 
-            Task.Factory.StartNew(() =>
-            {
-                try
+            Task.Factory.StartNew(
+                () =>
                 {
-                    ManagedThreadId = Thread.CurrentThread.ManagedThreadId;
+                    try
+                    {
+                        ManagedThreadId = Thread.CurrentThread.ManagedThreadId;
 
-                    _logger.LogInformation($"Thread '{Uid}' started.");
+                        _logger.LogInformation($"Thread '{Uid}' started.");
 
-                    _action(new StartThreadCallbackParameters(Uid, _state));
+                        _action(new StartThreadCallbackParameters(Uid, _state));
 
-                    _logger.LogInformation($"Thread '{Uid}' exited normally.");
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                catch (Exception exception)
-                {
-                    _logger.LogError(exception, $"Error while executing thread '{Uid}'.");
-                }
-                finally
-                {
-                    _ownCancellationTokenSource.Dispose();
-                }
-            }, linkedCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                        _logger.LogInformation($"Thread '{Uid}' exited normally.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.LogError(exception, $"Error while executing thread '{Uid}'.");
+                    }
+                    finally
+                    {
+                        _ownCancellationTokenSource.Dispose();
+                    }
+                },
+                _cancellationTokenSource.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
         }
     }
 }

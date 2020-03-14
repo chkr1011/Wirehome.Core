@@ -29,7 +29,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<Dictionary<string, DeviceProperty>> GetReportedDeviceProperties(string uid)
         {
-            return (await _deviceRegistryService.GetDevice(uid)).GetReportedProperties();
+            return (await _deviceRegistryService.GetDevice(uid).ConfigureAwait(false)).GetReportedProperties();
         }
 
         [HttpGet]
@@ -37,7 +37,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<Dictionary<string, DeviceProperty>> GetRequestedDeviceProperties(string uid)
         {
-            return (await _deviceRegistryService.GetDevice(uid)).GetRequestedProperties();
+            return (await _deviceRegistryService.GetDevice(uid).ConfigureAwait(false)).GetRequestedProperties();
         }
 
         [HttpGet]
@@ -45,7 +45,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<object> GetDeviceProperties(string uid)
         {
-            var device = await _deviceRegistryService.GetDevice(uid);
+            var device = await _deviceRegistryService.GetDevice(uid).ConfigureAwait(false);
 
             return new
             {

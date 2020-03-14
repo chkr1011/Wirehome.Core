@@ -79,14 +79,14 @@ namespace Wirehome.Core.HTTP.Controllers
             string appPackageUid = "wirehome.app@1.0.0",
             string configuratorPackageUid = "wirehome.configurator@1.0.0")
         {
-            if (!string.IsNullOrWhiteSpace(appPackageUid.Trim()))
+            if (!string.IsNullOrWhiteSpace(appPackageUid?.Trim()))
             {
-                await _packageManagerService.DownloadPackageAsync(PackageUid.Parse(appPackageUid));
+                await _packageManagerService.DownloadPackageAsync(PackageUid.Parse(appPackageUid)).ConfigureAwait(false);
             }
 
-            if (!string.IsNullOrWhiteSpace(configuratorPackageUid.Trim()))
+            if (!string.IsNullOrWhiteSpace(configuratorPackageUid?.Trim()))
             {
-                await _packageManagerService.DownloadPackageAsync(PackageUid.Parse(configuratorPackageUid));
+                await _packageManagerService.DownloadPackageAsync(PackageUid.Parse(configuratorPackageUid)).ConfigureAwait(false);
             }
         }
 

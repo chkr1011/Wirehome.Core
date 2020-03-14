@@ -9,7 +9,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class StorageController : Controller
     {
-        private readonly StorageService _storageService;
+        readonly StorageService _storageService;
 
         public StorageController(StorageService storageService)
         {
@@ -21,6 +21,8 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void PostSetting([FromBody] JObject value, string uid)
         {
+            if (uid is null) throw new ArgumentNullException(nameof(uid));
+
             _storageService.Write(value, uid.Split("/"));
         }
 
@@ -29,6 +31,8 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public object GetSettings(string uid)
         {
+            if (uid is null) throw new ArgumentNullException(nameof(uid));
+
             if (!_storageService.TryRead(out JObject value, uid.Split("/")))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
@@ -42,6 +46,8 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteSettings(string uid)
         {
+            if (uid is null) throw new ArgumentNullException(nameof(uid));
+
             _storageService.DeletePath(uid.Split("/"));
         }
     }

@@ -55,23 +55,11 @@ namespace Wirehome.Core.MessageBus
         {
             var dispatcherThread = new Thread(DispatchMessageBusMessages)
             {
+                Name = nameof(MessageBusService),
                 IsBackground = true
             };
 
             dispatcherThread.Start();
-
-            //if (_options.MessageProcessorsCount > 0)
-            //{
-            //    for (var i = 0; i < _options.MessageProcessorsCount; i++)
-            //    {
-            //        var workerThread = new Thread()
-            //        {
-            //            IsBackground = true
-            //        };
-
-            //        workerThread.Start();
-            //    }
-            //}
         }
 
         public void Publish(IDictionary<object, object> message)

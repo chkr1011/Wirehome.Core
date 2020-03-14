@@ -60,7 +60,7 @@ namespace Wirehome.Core.Storage
 
         string BuildPath(RelativeValueStoragePath relativePath)
         {
-            if (relativePath.Paths.Any(p => p.Contains("/")) || relativePath.Paths.Any(p => p.Contains("\\")))
+            if (relativePath.Paths.Any(p => p.Contains("/", StringComparison.Ordinal)) || relativePath.Paths.Any(p => p.Contains("\\", StringComparison.Ordinal)))
             {
                 throw new InvalidOperationException("The path is invalid.");
             }

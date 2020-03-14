@@ -31,10 +31,10 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public async Task<Dictionary<string, HashSet<string>>> GetRemotePackageIndex()
         {
-            var packageUids = await _packageManagerService.FetchRemotePackageUidsAsync();
+            var packageUids = await _packageManagerService.FetchRemotePackageUidsAsync().ConfigureAwait(false);
             return GeneratePackageIndex(packageUids);
         }
-        
+
         [HttpGet]
         [Route("/api/v1/packages/uids")]
         [ApiExplorerSettings(GroupName = "v1")]
@@ -108,7 +108,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return;
             }
 
-            await _packageManagerService.DownloadPackageAsync(packageUid);
+            await _packageManagerService.DownloadPackageAsync(packageUid).ConfigureAwait(false);
         }
 
         [HttpPost]
@@ -133,7 +133,7 @@ namespace Wirehome.Core.HTTP.Controllers
                 return;
             }
 
-            await _packageManagerService.ForkPackageAsync(packageUid, packageForkUid);
+            await _packageManagerService.ForkPackageAsync(packageUid, packageForkUid).ConfigureAwait(false);
         }
 
         [HttpDelete]

@@ -16,7 +16,7 @@ using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttService : IService
+    public sealed class MqttService : IService, IDisposable
     {
         readonly BlockingCollection<MqttApplicationMessageReceivedEventArgs> _incomingMessages = new BlockingCollection<MqttApplicationMessageReceivedEventArgs>();
         readonly Dictionary<string, MqttSubscriber> _subscribers = new Dictionary<string, MqttSubscriber>();
@@ -51,6 +51,7 @@ namespace Wirehome.Core.Hardware.MQTT
             _inboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("mqtt.inbound_rate");
             _outboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("mqtt.outbound_rate");
 
+            if (systemStatusService is null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("mqtt.subscribers_count", () => _subscribers.Count);
             systemStatusService.Set("mqtt.incoming_messages_count", () => _incomingMessages.Count);
             systemStatusService.Set("mqtt.inbound_rate", () => _inboundCounter.Count);
@@ -96,7 +97,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             _workerThread = new Thread(ProcessIncomingMqttMessages)
             {
-                Priority = ThreadPriority.Normal,
+                Name = nameof(MqttService),
                 IsBackground = true
             };
 
@@ -138,6 +139,8 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public void Publish(MqttPublishParameters parameters)
         {
+            if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(parameters.Topic)
                 .WithPayload(parameters.Payload)
@@ -194,6 +197,12 @@ namespace Wirehome.Core.Hardware.MQTT
         public Task<IList<IMqttSessionStatus>> GetSessionsAsync()
         {
             return _mqttServer.GetSessionStatusAsync();
+        }
+
+        public void Dispose()
+        {
+            _incomingMessages.Dispose();
+            _topicImportManager.Dispose();
         }
 
         void ProcessIncomingMqttMessages()

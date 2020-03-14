@@ -21,6 +21,8 @@ namespace Wirehome.Core.HTTP.Controllers
         // TODO: Move to dedicated factory!
         public static object CreateComponentGroupModel(ComponentGroup componentGroup)
         {
+            if (componentGroup is null) throw new ArgumentNullException(nameof(componentGroup));
+
             return new
             {
                 componentGroup.Uid,
@@ -72,7 +74,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             _componentGroupRegistryService.DeleteComponentGroup(uid);
         }
-               
+
         [HttpPost]
         [Route("api/v1/component_groups/{componentGroupUid}/components/{componentUid}")]
         [ApiExplorerSettings(GroupName = "v1")]

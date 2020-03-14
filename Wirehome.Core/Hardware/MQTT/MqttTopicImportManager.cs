@@ -7,7 +7,7 @@ using Wirehome.Core.Foundation;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttTopicImportManager
+    public sealed class MqttTopicImportManager : IDisposable
     {
         readonly Dictionary<string, MqttTopicImporter> _importers = new Dictionary<string, MqttTopicImporter>();
         readonly AsyncLock _importersLock = new AsyncLock();
@@ -21,11 +21,21 @@ namespace Wirehome.Core.Hardware.MQTT
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        public void Dispose()
+        {
+            _importersLock.Dispose();
+        }
+
         public List<string> GetTopicImportUids()
         {
-            lock (_importers)
+            _importersLock.Enter();
+            try
             {
                 return _importers.Select(i => i.Key).ToList();
+            }
+            finally
+            {
+                _importersLock.Exit();
             }
         }
 

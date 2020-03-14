@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using MQTTnet;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Devices.Exceptions;
 using Wirehome.Core.Foundation;
@@ -11,11 +11,11 @@ using Wirehome.Core.Hardware.MQTT;
 
 namespace Wirehome.Core.Devices
 {
-    public class DeviceRegistryService : IService
+    public sealed class DeviceRegistryService : IService, IDisposable
     {
         readonly Dictionary<string, Device> _devices = new Dictionary<string, Device>();
         readonly AsyncLock _devicesLock = new AsyncLock();
- 
+
         readonly MqttService _mqttService;
         private readonly ILogger<DeviceRegistryService> _logger;
 
@@ -56,7 +56,7 @@ namespace Wirehome.Core.Devices
                 _devicesLock.Exit();
             }
         }
-        
+
         public async Task ReportProperty(string deviceUid, string propertyUid, object value)
         {
             if (deviceUid is null) throw new ArgumentNullException(nameof(deviceUid));
@@ -114,6 +114,11 @@ namespace Wirehome.Core.Devices
             }
         }
 
+        public void Dispose()
+        {
+            _devicesLock.Dispose();
+        }
+
         void OnPropertyReportedViaMqtt(MqttApplicationMessageReceivedEventArgs eventArgs)
         {
             // $wirehome/devices/+/report/+
@@ -126,7 +131,7 @@ namespace Wirehome.Core.Devices
 
             ReportProperty(deviceUid, propertyUid, value).GetAwaiter().GetResult();
         }
-               
+
         Device GetDeviceInternal(string uid)
         {
             if (!_devices.TryGetValue(uid, out var device))

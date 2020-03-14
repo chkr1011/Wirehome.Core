@@ -47,7 +47,7 @@ namespace Wirehome.Core.Python.Proxies
             }
         }
 
-        public void trace(object @object)
+        public void trace(object value)
         {
             if (!_isEnabled)
             {
@@ -56,7 +56,7 @@ namespace Wirehome.Core.Python.Proxies
 
             lock (_trace)
             {
-                _trace.Add(@object);
+                _trace.Add(value);
             }
         }
 
