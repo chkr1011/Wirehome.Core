@@ -13,14 +13,18 @@ Write-Host "MSBuild path     = $msbuild"
 Write-Host
 
 Write-Host "Cleaning output directory..."
-Remove-Item Wirehome.Core.Hosts.Console\bin\Release\netcoreapp3.0\publish -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item .\..\Wirehome.Core.Hosts.Console\bin\Release\netcoreapp3.1\publish -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Building project..."
-&dotnet publish .\Wirehome.Core.Hosts.Console\Wirehome.Core.Hosts.Console.csproj -r linux-arm --self-contained --configuration Release /p:FileVersion=$assemblyVersion /p:Version=$packageVersion
+&dotnet publish .\..\Wirehome.Core.Hosts.Console\Wirehome.Core.Hosts.Console.csproj -r linux-arm --self-contained --framework netcoreapp3.1 --configuration Release /p:FileVersion=$assemblyVersion /p:Version=$packageVersion
 
 Write-Host "Creating package..."
-$source = ".\Wirehome.Core.Hosts.Console\bin\Release\netcoreapp3.0\publish"
-$destination = ".\Wirehome.Core.Hosts.Console\bin\Wirehome.Core-Portable-v$packageVersion.zip"
-If(Test-path $destination) {Remove-item $destination}
- Add-Type -assembly "system.io.compression.filesystem"
+$source = (Convert-Path .) + "\..\Wirehome.Core.Hosts.Console\bin\Release\netcoreapp3.1\linux-arm\publish"
+$destination = (Convert-Path .) + "\Wirehome.Core-Linux_ARM-v$packageVersion.zip"
+If(Test-path $destination) 
+{
+    Remove-item $destination
+}
+
+Add-Type -assembly "system.io.compression.filesystem"
 [io.compression.zipfile]::CreateFromDirectory($source, $destination) 

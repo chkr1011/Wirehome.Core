@@ -243,7 +243,7 @@ namespace Wirehome.Core.HTTP
                 {
                     var upnpFilePath = Path.Combine(storagePaths.BinPath, "Discovery", "upnp.xml");
                     var upnpDefinition = await File.ReadAllBytesAsync(upnpFilePath).ConfigureAwait(false);
-                    await h.Response.BodyWriter.WriteAsync(upnpDefinition).ConfigureAwait(false);
+                    await h.Response.Body.WriteAsync(upnpDefinition).ConfigureAwait(false);
                 });
             });
 
