@@ -64,7 +64,7 @@ namespace Wirehome.Core.Backup
 
                 package.Flush();
 
-                package.DeletePart(new Uri("[Content_Types].xml", UriKind.Relative));
+                //package.DeletePart(new Uri("/[Content_Types].xml", UriKind.Relative));
             }
 
             var backupFilename = $"{now.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}{now.ToString("HHmmss", CultureInfo.InvariantCulture)}.zip";
