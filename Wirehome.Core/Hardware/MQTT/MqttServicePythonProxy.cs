@@ -165,7 +165,7 @@ namespace Wirehome.Core.Hardware.MQTT
             _mqttService.StopTopicImport(uid).GetAwaiter().GetResult();
         }
 
-        private static byte[] ConvertPayload(object payload)
+        static byte[] ConvertPayload(object payload)
         {
             if (payload == null)
             {

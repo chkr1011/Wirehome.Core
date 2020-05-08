@@ -90,7 +90,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.Web" Version="2.13.1" />
+    <PackageReference Include="Microsoft.ApplicationInsights.Web" Version="2.14.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.2" />
   </ItemGroup>
 
