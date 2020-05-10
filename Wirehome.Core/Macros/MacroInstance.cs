@@ -38,7 +38,7 @@ namespace Wirehome.Core.Macros
             {
                 return new Dictionary<object, object>
                 {
-                    ["type"] = ControlType.Success
+                    ["type"] = WirehomeMessageType.Success
                 };
             }
 
@@ -49,7 +49,7 @@ namespace Wirehome.Core.Macros
 
             return new Dictionary<object, object>
             {
-                ["type"] = ControlType.Success
+                ["type"] = WirehomeMessageType.Success
             };
         }
 
@@ -59,7 +59,7 @@ namespace Wirehome.Core.Macros
             {
                 return new Dictionary<object, object>
                 {
-                    ["type"] = ControlType.Success
+                    ["type"] = WirehomeMessageType.Success
                 };
             }
 
@@ -90,7 +90,7 @@ namespace Wirehome.Core.Macros
 
             return new Dictionary<object, object>
             {
-                ["type"] = ControlType.Success
+                ["type"] = WirehomeMessageType.Success
             };
         }
 

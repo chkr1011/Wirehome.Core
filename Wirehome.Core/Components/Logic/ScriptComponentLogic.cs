@@ -74,7 +74,7 @@ namespace Wirehome.Core.Components.Logic
             {
                 return new PythonDictionary
                 {
-                    ["type"] = ControlType.NotSupportedException
+                    ["type"] = WirehomeMessageType.NotSupportedException
                 };
             }
 
@@ -82,7 +82,7 @@ namespace Wirehome.Core.Components.Logic
             {
                 return new PythonDictionary
                 {
-                    ["type"] = ControlType.ReturnValueTypeMismatchException
+                    ["type"] = WirehomeMessageType.ReturnValueTypeMismatchException
                 };
             }
 

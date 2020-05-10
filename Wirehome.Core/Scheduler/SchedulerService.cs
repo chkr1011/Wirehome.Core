@@ -67,7 +67,7 @@ namespace Wirehome.Core.Scheduler
                 _activeTimers[uid] = activeTimer;
             }
 
-            activeTimer.Start();
+            activeTimer.Start(_systemCancellationToken.Token);
 
             return uid;
         }

@@ -7,20 +7,23 @@ using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
+using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
     public class MqttServerStorage : IMqttServerStorage
     {
-        private readonly List<MqttApplicationMessage> _messages = new List<MqttApplicationMessage>();
-        private readonly StorageService _storageService;
-        private readonly ILogger _logger;
+        readonly List<MqttApplicationMessage> _messages = new List<MqttApplicationMessage>();
+        readonly StorageService _storageService;
+        readonly SystemCancellationToken _systemCancellationToken;
+        readonly ILogger _logger;
 
-        private bool _messagesHaveChanged;
+        bool _messagesHaveChanged;
 
-        public MqttServerStorage(StorageService storageService, ILogger logger)
+        public MqttServerStorage(StorageService storageService, SystemCancellationToken systemCancellationToken, ILogger logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -55,7 +58,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
         async Task SaveRetainedMessagesInternalAsync()
         {
-            while (true)
+            while (!_systemCancellationToken.Token.IsCancellationRequested)
             {
                 try
                 {
@@ -81,7 +84,7 @@ namespace Wirehome.Core.Hardware.MQTT
                 }
                 finally
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(60)).ConfigureAwait(false);
+                    await Task.Delay(TimeSpan.FromSeconds(60), _systemCancellationToken.Token).ConfigureAwait(false);
                 }
             }
         }

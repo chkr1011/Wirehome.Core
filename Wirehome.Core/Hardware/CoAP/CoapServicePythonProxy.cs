@@ -9,8 +9,9 @@ using CoAPnet.Extensions.DTLS;
 using IronPython.Runtime;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using Wirehome.Core.Constants;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Hardware.CoAP
@@ -18,7 +19,6 @@ namespace Wirehome.Core.Hardware.CoAP
     public class CoapServicePythonProxy : IInjectedPythonProxy
     {
         readonly Dictionary<string, ICoapClient> _clients = new Dictionary<string, ICoapClient>();
-
         readonly CoapService _coapService;
 
         public string ModuleName => "coap";
@@ -32,15 +32,82 @@ namespace Wirehome.Core.Hardware.CoAP
         {
             if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 
-            var clientUid = Convert.ToString(parameters.get("client_uid", string.Empty));
-            var protocol = Convert.ToString(parameters.get("protocol", "dtls"));
+            try
+            {
+                var clientUid = Convert.ToString(parameters.get("client_uid", string.Empty));
+                var timeout = Convert.ToInt32(parameters.get("timeout", 5000));
+
+                var request = CreateRequest(parameters);
+                CoapResponse response;
+                
+                if (!string.IsNullOrEmpty(clientUid))
+                {
+                    ICoapClient coapClient;
+                    lock (_clients)
+                    {
+                        if (!_clients.TryGetValue(clientUid, out coapClient))
+                        {
+                            coapClient = CreateClient(parameters).GetAwaiter().GetResult();
+                            _clients[clientUid] = coapClient;
+                        }
+                    }
+
+                    try
+                    {
+                        using (var cancellationTokenSource = new CancellationTokenSource(timeout))
+                        {
+                            response = coapClient.RequestAsync(request, cancellationTokenSource.Token).GetAwaiter().GetResult();
+                        }
+                    }
+                    catch
+                    {
+                        coapClient.Dispose();
+
+                        lock (_clients)
+                        {
+                            _clients.Remove(clientUid);
+                        }
+
+                        throw;
+                    }
+                }
+                else
+                {
+                    using (var coapClient = CreateClient(parameters).GetAwaiter().GetResult())
+                    {
+                        using (var cancellationTokenSource = new CancellationTokenSource(timeout))
+                        {
+                            response = coapClient.RequestAsync(request, cancellationTokenSource.Token).GetAwaiter().GetResult();
+                        }
+                    }
+                }
+
+                return new PythonDictionary
+                {
+                    ["type"] = WirehomeMessageType.Success,
+                    ["status"] = response.StatusCode.ToString(),
+                    ["status_code"] = (int)response.StatusCode,
+                    ["payload"] = new Bytes(response.Payload ?? Array.Empty<byte>())
+                };
+            }
+            catch (Exception exception)
+            {
+                return new PythonDictionary
+                {
+                    ["type"] = WirehomeMessageType.Exception,
+                    ["message"] = exception.Message
+                };
+            }
+        }
+
+        async Task<ICoapClient> CreateClient(PythonDictionary parameters)
+        {
             var host = Convert.ToString(parameters.get("host", string.Empty));
             var port = Convert.ToInt32(parameters.get("port", 5684));
-            var method = Convert.ToString(parameters.get("method", "get"));
-            var path = Convert.ToString(parameters.get("path", string.Empty));
-            var payload = Convert.ToString(parameters.get("payload", string.Empty));
+            var protocol = Convert.ToString(parameters.get("protocol", "dtls"));
             var identity = Convert.ToString(parameters.get("identity", string.Empty));
             var key = Convert.ToString(parameters.get("key", string.Empty));
+            var timeout = Convert.ToInt32(parameters.get("timeout", 5000));
 
             var connectOptionsBuilder = new CoapClientConnectOptionsBuilder()
                 .WithHost(host)
@@ -48,72 +115,32 @@ namespace Wirehome.Core.Hardware.CoAP
 
             if (protocol == "dtls")
             {
-                connectOptionsBuilder.WithDtlsTransportLayer(new DtlsCoapTransportLayerOptionsBuilder().WithPreSharedKey(identity, key).Build());
+                connectOptionsBuilder.WithDtlsTransportLayer(o => o.WithPreSharedKey(identity, key));
             }
 
             var connectOptions = connectOptionsBuilder.Build();
 
-            var request = new CoapRequestBuilder()
+            var coapClient = new CoapFactory().CreateClient();
+
+            using (var cancellationTokenSource = new CancellationTokenSource(timeout))
+            {
+                await coapClient.ConnectAsync(connectOptions, cancellationTokenSource.Token).ConfigureAwait(false);
+            }
+            
+            return coapClient;
+        }
+
+        CoapRequest CreateRequest(PythonDictionary parameters)
+        {
+            var method = Convert.ToString(parameters.get("method", "get"));
+            var path = Convert.ToString(parameters.get("path", string.Empty));
+            var payload = parameters.get("payload", Array.Empty<byte>());
+
+            return new CoapRequestBuilder()
                 .WithMethod((CoapRequestMethod)Enum.Parse(typeof(CoapRequestMethod), method, true))
                 .WithPath(path)
-                .WithPayload(payload)
+                .WithPayload(PythonConvert.ToPayload(payload))
                 .Build();
-
-            CoapResponse response;
-            if (!string.IsNullOrEmpty(clientUid))
-            {
-                ICoapClient coapClient;
-                lock (_clients)
-                {
-                    if (!_clients.TryGetValue(clientUid, out coapClient))
-                    {
-                        coapClient = new CoapFactory().CreateClient();
-                        coapClient.ConnectAsync(connectOptions, CancellationToken.None).GetAwaiter().GetResult();
-                        _clients[clientUid] = coapClient;
-                    }
-                }
-
-                try
-                {
-                    response = coapClient.RequestAsync(request, CancellationToken.None).GetAwaiter().GetResult();
-                }
-                catch
-                {
-                    coapClient.Dispose();
-
-                    lock (_clients)
-                    {
-                        _clients.Remove(clientUid);
-                    }
-
-                    return new PythonDictionary
-                    {
-                        ["type"] = "exception"
-                    };
-                }
-            }
-            else
-            {
-                using (var coapClient = new CoapFactory().CreateClient())
-                {
-                    coapClient.ConnectAsync(connectOptions, CancellationToken.None).GetAwaiter().GetResult();
-                    response = coapClient.RequestAsync(request, CancellationToken.None).GetAwaiter().GetResult();
-                }
-            }
-
-            var responsePayload = string.Empty;
-            if (response.Payload.Array != null)
-            {
-                responsePayload = Encoding.UTF8.GetString(response.Payload);
-            }
-
-            return new PythonDictionary
-            {
-                ["type"] = "success",
-                ["status"] = response.StatusCode.ToString(),
-                ["status_code"] = (int)response.StatusCode,
-                ["payload"] = responsePayload
-            };
         }
     }
 }

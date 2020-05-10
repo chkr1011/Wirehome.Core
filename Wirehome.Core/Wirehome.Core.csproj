@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CoAPnet" Version="1.0.4" />
-    <PackageReference Include="CoAPnet.Extensions.DTLS" Version="1.0.4" />
+    <PackageReference Include="CoAPnet" Version="1.0.5" />
+    <PackageReference Include="CoAPnet.Extensions.DTLS" Version="1.0.5" />
     <PackageReference Include="IronPython" Version="2.7.10" />
     <PackageReference Include="IronPython.StdLib" Version="2.7.10" />
     <PackageReference Include="MessagePack" Version="2.1.115" />

@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.Constants
 {
-    public static class ControlType
+    public static class WirehomeMessageType
     {
         public const string ParameterMissingException = "exception.parameter_missing";
 

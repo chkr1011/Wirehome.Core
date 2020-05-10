@@ -33,7 +33,7 @@ namespace Wirehome.Core.HTTP.PythonProxies
 
                     var result = new PythonDictionary
                     {
-                        ["type"] = ControlType.Success,
+                        ["type"] = WirehomeMessageType.Success,
                         ["status_code"] = (int)response.StatusCode
                     };
 

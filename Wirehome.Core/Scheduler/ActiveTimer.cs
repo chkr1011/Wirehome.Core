@@ -24,9 +24,10 @@ namespace Wirehome.Core.Scheduler
             Interval = interval;
         }
 
-        public void Start()
+        public void Start(CancellationToken cancellationToken)
         {
-            Task.Run(() => RunAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
+            var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cancellationTokenSource.Token);
+            Task.Run(() => RunAsync(linkedToken.Token), linkedToken.Token);
         }
 
         public string Uid { get; }

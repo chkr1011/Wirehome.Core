@@ -88,7 +88,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             if (_options.PersistRetainedMessages)
             {
-                var storage = new MqttServerStorage(_storageService, _logger);
+                var storage = new MqttServerStorage(_storageService, _systemCancellationToken, _logger);
                 storage.Start();
                 serverOptions.WithStorage(storage);
             }

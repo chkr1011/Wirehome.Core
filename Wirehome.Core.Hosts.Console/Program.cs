@@ -28,6 +28,7 @@ namespace Wirehome.Core.Hosts.Console
                 global::System.Console.WriteLine("Press <Enter> to exit.");
                 global::System.Console.ReadLine();
 
+                global::System.Console.WriteLine("Exiting...");
                 WirehomeCoreHost.Stop();
             }
             catch (OperationCanceledException)

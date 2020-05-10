@@ -76,9 +76,14 @@ namespace Wirehome.Core.Python.Proxies
                 return s;
             }
 
-            if (value is byte[] b)
+            if (value is Bytes b1)
             {
-                return Encoding.UTF8.GetString(b);
+                return Encoding.UTF8.GetString(b1.GetUnsafeByteArray());
+            }
+
+            if (value is byte[] b2)
+            {
+                return Encoding.UTF8.GetString(b2);
             }
 
             if (value is IEnumerable<object> o)

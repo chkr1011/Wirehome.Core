@@ -102,7 +102,7 @@ namespace Wirehome.Core.Components
 
             var result = ProcessComponentMessage(uid, new Dictionary<object, object>
             {
-                ["type"] = ControlType.Enable
+                ["type"] = WirehomeMessageType.Enable
             });
 
             _messageBusWrapper.PublishEnabledEvent(uid);
@@ -116,7 +116,7 @@ namespace Wirehome.Core.Components
 
             var result = ProcessComponentMessage(uid, new Dictionary<object, object>
             {
-                ["type"] = ControlType.Disable
+                ["type"] = WirehomeMessageType.Disable
             });
 
             _messageBusWrapper.PublishDisabledEvent(uid);
@@ -170,7 +170,7 @@ namespace Wirehome.Core.Components
                     {
                         existingComponent.ProcessMessage(new Dictionary<object, object>
                         {
-                            ["type"] = ControlType.Destroy
+                            ["type"] = WirehomeMessageType.Destroy
                         });
                     }
 
@@ -180,7 +180,7 @@ namespace Wirehome.Core.Components
                 _componentInitializerService.Create(this).InitializeComponent(component, configuration);
                 component.ProcessMessage(new Dictionary<object, object>
                 {
-                    ["type"] = ControlType.Initialize
+                    ["type"] = WirehomeMessageType.Initialize
                 });
 
                 _logger.LogInformation($"Component initialized: [Component={component.Uid}].");

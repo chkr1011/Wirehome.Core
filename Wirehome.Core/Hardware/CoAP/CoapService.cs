@@ -1,12 +1,15 @@
 ﻿using CoAPnet;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Hardware.CoAP
 {
     public class CoapService : IService
     {
+        readonly Dictionary<string, CoapClientInstance> _clients = new Dictionary<string, CoapClientInstance>();
+
         readonly CoapFactory _coapFactory = new CoapFactory();
         readonly ILogger<CoapService> _logger;
 

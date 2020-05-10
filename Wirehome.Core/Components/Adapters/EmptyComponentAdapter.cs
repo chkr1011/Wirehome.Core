@@ -12,7 +12,7 @@ namespace Wirehome.Core.Components.Adapters
         {
             return new PythonDictionary
             {
-                ["type"] = ControlType.NotSupportedException
+                ["type"] = WirehomeMessageType.NotSupportedException
             };
         }
     }

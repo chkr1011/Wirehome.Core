@@ -27,7 +27,7 @@ namespace Wirehome.Core.Python.Proxies
 
             var type = Convert.ToString(value, CultureInfo.InvariantCulture);
 
-            return string.Equals(type, ControlType.Success, StringComparison.Ordinal);
+            return string.Equals(type, WirehomeMessageType.Success, StringComparison.Ordinal);
         }
     }
 }

@@ -222,7 +222,7 @@ namespace Wirehome.Core.Macros
                 {
                     return new Dictionary<object, object>
                     {
-                        ["type"] = ControlType.ParameterInvalidException
+                        ["type"] = WirehomeMessageType.ParameterInvalidException
                     };
                 }
             }

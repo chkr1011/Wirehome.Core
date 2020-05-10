@@ -4,7 +4,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Numerics;
+using System.Text;
 
 namespace Wirehome.Core.Python
 {
@@ -71,6 +73,11 @@ namespace Wirehome.Core.Python
             if (value is List)
             {
                 return value;
+            }
+
+            if (value is byte[] buffer)
+            {
+                return new Bytes(buffer);
             }
 
             if (value is null || value is string || value is bool)
@@ -202,6 +209,46 @@ namespace Wirehome.Core.Python
             }
 
             return result;
+        }
+
+        public static byte[] ToPayload(object payload)
+        {
+            if (payload == null)
+            {
+                return Array.Empty<byte>();
+            }
+
+            if (payload is ByteArray byteArray)
+            {
+                return byteArray.ToArray();
+            }
+
+            if (payload is byte[] byteArray2)
+            {
+                return byteArray2;
+            }
+
+            if (payload is Bytes bytes)
+            {
+                return bytes.GetUnsafeByteArray();
+            }
+
+            if (payload is string s)
+            {
+                return Encoding.UTF8.GetBytes(s);
+            }
+
+            if (payload is List<byte> b)
+            {
+                return b.ToArray();
+            }
+
+            if (payload is IEnumerable<int> i)
+            {
+                return i.Select(Convert.ToByte).ToArray();
+            }
+
+            throw new NotSupportedException($"Payload format '{payload.GetType().Name}' is not supported.");
         }
     }
 }

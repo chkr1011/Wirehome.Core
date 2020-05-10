@@ -10,9 +10,6 @@ using MQTTnet.Client;
 using MQTTnet.Client.Options;
 using MQTTnet.Protocol;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 
@@ -43,7 +40,7 @@ namespace Wirehome.Core.Hardware.MQTT
             _mqttService.Publish(new MqttPublishParameters
             {
                 Topic = topic,
-                Payload = ConvertPayload(payload),
+                Payload = PythonConvert.ToPayload(payload),
                 QualityOfServiceLevel = (MqttQualityOfServiceLevel)qos,
                 Retain = retain
             });
@@ -83,7 +80,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
                 var message = new MqttApplicationMessageBuilder()
                     .WithTopic(topic)
-                    .WithPayload(ConvertPayload(payload))
+                    .WithPayload(PythonConvert.ToPayload(payload))
                     .WithQualityOfServiceLevel((MqttQualityOfServiceLevel)qos)
                     .WithRetainFlag(retain)
                     .Build();
@@ -125,7 +122,7 @@ namespace Wirehome.Core.Hardware.MQTT
                     ["subscription_uid"] = uid,
                     ["client_id"] = message.ClientId,
                     ["topic"] = message.ApplicationMessage.Topic,
-                    ["payload"] = message.ApplicationMessage.Payload,
+                    ["payload"] = new Bytes(message.ApplicationMessage.Payload ?? Array.Empty<byte>()),
                     ["qos"] = (int)message.ApplicationMessage.QualityOfServiceLevel,
                     ["retain"] = message.ApplicationMessage.Retain
                 };
@@ -163,41 +160,6 @@ namespace Wirehome.Core.Hardware.MQTT
         public void stop_topic_import(string uid)
         {
             _mqttService.StopTopicImport(uid).GetAwaiter().GetResult();
-        }
-
-        static byte[] ConvertPayload(object payload)
-        {
-            if (payload == null)
-            {
-                return Array.Empty<byte>();
-            }
-
-            if (payload is ByteArray byteArray)
-            {
-                return byteArray.ToArray();
-            }
-
-            if (payload is byte[] bytes)
-            {
-                return bytes;
-            }
-
-            if (payload is string s)
-            {
-                return Encoding.UTF8.GetBytes(s);
-            }
-
-            if (payload is List<byte> b)
-            {
-                return b.ToArray();
-            }
-
-            if (payload is IEnumerable<int> i)
-            {
-                return i.Select(Convert.ToByte).ToArray();
-            }
-
-            throw new NotSupportedException($"MQTT Payload format '{payload.GetType().Name}' is not supported.");
         }
     }
 }

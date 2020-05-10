@@ -75,7 +75,7 @@ namespace Wirehome.Core.FunctionPool
             {
                 return new Dictionary<object, object>
                 {
-                    ["type"] = ControlType.Exception,
+                    ["type"] = WirehomeMessageType.Exception,
                     ["exception.type"] = exception.GetType().Name,
                     ["exception.message"] = exception.Message,
                     ["exception.stack_trace"] = exception.StackTrace,
