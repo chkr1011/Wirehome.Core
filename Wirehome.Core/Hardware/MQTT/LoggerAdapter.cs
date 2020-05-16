@@ -1,14 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using MQTTnet.Diagnostics;
 using System;
-using System.Collections.Generic;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
     public class LoggerAdapter : IMqttNetLogger
     {
-        private readonly Dictionary<string, IMqttNetLogger> _childLoggers = new Dictionary<string, IMqttNetLogger>();
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
         public LoggerAdapter(ILogger logger)
         {
@@ -17,27 +15,12 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public event EventHandler<MqttNetLogMessagePublishedEventArgs> LogMessagePublished;
 
-        public IMqttNetLogger CreateChildLogger(string source = null)
+        public IMqttNetScopedLogger CreateScopedLogger(string source = null)
         {
-            if (source == null)
-            {
-                // Required to avoid argument null exception in dictionary.
-                source = string.Empty;
-            }
-
-            lock (_childLoggers)
-            {
-                if (!_childLoggers.TryGetValue(source, out var childLogger))
-                {
-                    childLogger = new MqttNetLogger(source);
-                    _childLoggers[source] = childLogger;
-                }
-
-                return childLogger;
-            }
+            return new MqttNetScopedLogger(this, source);
         }
 
-        public void Publish(MqttNetLogLevel logLevel, string message, object[] parameters, Exception exception)
+        public void Publish(MqttNetLogLevel logLevel, string source, string message, object[] parameters, Exception exception)
         {
             var newLogLevel = LogLevel.Debug;
 
@@ -58,7 +41,7 @@ namespace Wirehome.Core.Hardware.MQTT
                 newLogLevel = LogLevel.Trace;
             }
 
-            _logger.Log(newLogLevel, exception, message, parameters);
+            _logger.Log(newLogLevel, source, exception, message, parameters);
         }
 
         public void NotifyLogMessagePublished(MqttNetLogMessage logMessage)
