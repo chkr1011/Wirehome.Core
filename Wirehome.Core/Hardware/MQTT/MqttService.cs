@@ -7,8 +7,14 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using MQTTnet.Adapter;
+using MQTTnet.AspNetCore;
+using MQTTnet.Diagnostics;
+using MQTTnet.Implementations;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Storage;
@@ -25,7 +31,6 @@ namespace Wirehome.Core.Hardware.MQTT
 
         readonly SystemCancellationToken _systemCancellationToken;
         readonly StorageService _storageService;
-
         readonly MqttTopicImportManager _topicImportManager;
 
         readonly ILogger _logger;
@@ -34,6 +39,7 @@ namespace Wirehome.Core.Hardware.MQTT
         MqttServiceOptions _options;
         Thread _workerThread;
 
+        MqttWebSocketServerAdapter _webSocketServerAdapter;
         IMqttServer _mqttServer;
 
         public MqttService(
@@ -67,18 +73,29 @@ namespace Wirehome.Core.Hardware.MQTT
         {
             _storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, MqttServiceOptions.Filename);
 
+            IsLowLevelMqttLoggingEnabled = _options.EnableLogging;
+
             var mqttFactory = new MqttFactory();
 
-            IsLowLevelMqttLoggingEnabled = _options.EnableLogging;
+            IMqttNetLogger mqttNetLogger;
             if (IsLowLevelMqttLoggingEnabled)
             {
-                _mqttServer = mqttFactory.CreateMqttServer(new LoggerAdapter(_logger));
+                mqttNetLogger = new LoggerAdapter(_logger);
             }
             else
             {
-                _mqttServer = mqttFactory.CreateMqttServer();
+                mqttNetLogger = new MqttNetLogger();
             }
 
+            _webSocketServerAdapter = new MqttWebSocketServerAdapter(mqttNetLogger);
+
+            var serverAdapters = new List<IMqttServerAdapter>
+            {
+                new MqttTcpServerAdapter(mqttNetLogger),
+                _webSocketServerAdapter
+            };
+
+            _mqttServer = mqttFactory.CreateMqttServer(serverAdapters, mqttNetLogger);
             _mqttServer.UseApplicationMessageReceivedHandler(new MqttApplicationMessageReceivedHandlerDelegate(e => OnApplicationMessageReceived(e)));
 
             var serverOptions = new MqttServerOptionsBuilder()
@@ -197,6 +214,11 @@ namespace Wirehome.Core.Hardware.MQTT
         public Task<IList<IMqttSessionStatus>> GetSessionsAsync()
         {
             return _mqttServer.GetSessionStatusAsync();
+        }
+
+        public Task RunWebSocketConnectionAsync(WebSocket webSocket, HttpContext context)
+        {
+            return _webSocketServerAdapter.RunWebSocketConnectionAsync(webSocket, context);
         }
 
         public void Dispose()

@@ -2,7 +2,6 @@
 using System;
 using System.Runtime.InteropServices;
 using Wirehome.Core.Extensions;
-using Wirehome.Core.Interop;
 
 namespace Wirehome.Core.Hardware.I2C.Adapters
 {

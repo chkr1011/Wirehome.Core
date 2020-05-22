@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Wirehome.Core.Interop
+namespace Wirehome.Core.Hardware.I2C.Adapters
 {
     internal static class SafeNativeMethods
     {

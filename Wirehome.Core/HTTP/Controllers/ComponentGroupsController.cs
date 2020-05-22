@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Wirehome.Core.Components;
+using Wirehome.Core.Components.Groups;
 
 namespace Wirehome.Core.HTTP.Controllers
 {

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -13,9 +12,12 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
+using MQTTnet.AspNetCore;
 using Wirehome.Core.Backup;
 using Wirehome.Core.Cloud;
 using Wirehome.Core.Components;
+using Wirehome.Core.Components.Groups;
 using Wirehome.Core.Components.History;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
@@ -128,12 +130,14 @@ namespace Wirehome.Core.HTTP
             ILoggerFactory loggerFactory,
             IServiceProvider serviceProvider,
             GlobalVariablesService globalVariablesService,
-            PackageManagerService packageManagerService)
+            PackageManagerService packageManagerService,
+            MqttService mqttService)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             if (httpServerService == null) throw new ArgumentNullException(nameof(httpServerService));
             if (logService == null) throw new ArgumentNullException(nameof(logService));
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
+            if (mqttService == null) throw new ArgumentNullException(nameof(mqttService));
 
             loggerFactory.AddProvider(new LogServiceLoggerProvider(logService));
 
@@ -141,7 +145,7 @@ namespace Wirehome.Core.HTTP
             app.UseCors(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 
             ConfigureSwagger(app);
-            ConfigureWebApps(app, globalVariablesService, packageManagerService);
+            ConfigureWebApps(app, globalVariablesService, packageManagerService, mqttService);
             ConfigureMvc(app);
 
             app.Run(httpServerService.HandleRequestAsync);
@@ -211,7 +215,11 @@ namespace Wirehome.Core.HTTP
             });
         }
 
-        static void ConfigureWebApps(IApplicationBuilder app, GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
+        static void ConfigureWebApps(
+            IApplicationBuilder app,
+            GlobalVariablesService globalVariablesService,
+            PackageManagerService packageManagerService,
+            MqttService mqttService)
         {
             var storagePaths = new StoragePaths();
             var customContentRootPath = Path.Combine(storagePaths.DataPath, "CustomContent");
@@ -256,6 +264,42 @@ namespace Wirehome.Core.HTTP
             ExposeDirectory(app, "/configurator", new PackageFileProvider(GlobalVariableUids.AppPackageUid, globalVariablesService, packageManagerService));
             ExposeDirectory(app, "/customContent", new PhysicalFileProvider(customContentRootPath));
             ExposeDirectory(app, "/packages", new PhysicalFileProvider(packagesRootPath));
+
+            var webSocketOptions = new WebSocketOptions();
+            app.UseWebSockets(webSocketOptions);
+
+            ConfigureMqttWebSocketEndpoint(app, mqttService);
+        }
+
+        static void ConfigureMqttWebSocketEndpoint(IApplicationBuilder app, MqttService mqttService)
+        {
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path == "/mqtt")
+                {
+                    if (context.WebSockets.IsWebSocketRequest)
+                    {
+                        string subProtocol = null;
+                        if (context.Request.Headers.TryGetValue("Sec-WebSocket-Protocol", out var requestedSubProtocolValues))
+                        {
+                            subProtocol = MqttSubProtocolSelector.SelectSubProtocol(requestedSubProtocolValues);
+                        }
+
+                        using (var webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol).ConfigureAwait(false))
+                        {
+                            await mqttService.RunWebSocketConnectionAsync(webSocket, context).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    }
+                }
+                else
+                {
+                    await next().ConfigureAwait(false);
+                }
+            });
         }
 
         static void ExposeDirectory(IApplicationBuilder app, string requestPath, IFileProvider fileProvider)

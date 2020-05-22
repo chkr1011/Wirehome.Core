@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Wirehome.Core.History
+namespace Wirehome.Core.History.Repository
 {
     public class HistoryRepositoryUpdateOperation
     {

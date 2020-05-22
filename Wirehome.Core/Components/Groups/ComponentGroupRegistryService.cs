@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.App;
 using Wirehome.Core.Components.Exceptions;
 using Wirehome.Core.Contracts;
@@ -10,7 +10,7 @@ using Wirehome.Core.HTTP.Controllers;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Storage;
 
-namespace Wirehome.Core.Components
+namespace Wirehome.Core.Components.Groups
 {
     /// <summary>
     /// TODO: Create bus messages when something has changed (settings etc.)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Wirehome.Core.Foundation;
 
-namespace Wirehome.Core.Components
+namespace Wirehome.Core.Components.Groups
 {
     public class ComponentGroup
     {

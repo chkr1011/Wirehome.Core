@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CoAPnet" Version="1.0.6" />
-    <PackageReference Include="CoAPnet.Extensions.DTLS" Version="1.0.6" />
+    <PackageReference Include="CoAPnet" Version="1.0.7" />
+    <PackageReference Include="CoAPnet.Extensions.DTLS" Version="1.0.7" />
     <PackageReference Include="IronPython" Version="2.7.10" />
     <PackageReference Include="IronPython.StdLib" Version="2.7.10" />
     <PackageReference Include="MessagePack" Version="2.1.115" />
@@ -46,8 +46,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="MQTTnet" Version="3.0.10" />
-    <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="3.0.10" />
+    <PackageReference Include="MQTTnet" Version="3.0.11" />
+    <PackageReference Include="MQTTnet.AspNetCore" Version="3.0.11" />
+    <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="3.0.11" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Rssdp" Version="4.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="5.4.1" />
