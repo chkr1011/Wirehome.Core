@@ -13,8 +13,8 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class ToolsController : Controller
     {
-        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly PackageManagerService _packageManagerService;
+        readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
+        readonly PackageManagerService _packageManagerService;
 
         public ToolsController(PythonScriptHostFactoryService pythonScriptHostFactoryService, PackageManagerService packageManagerService)
         {

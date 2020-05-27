@@ -5,7 +5,7 @@ namespace Wirehome.Core.Diagnostics
 {
     public class OperationsPerSecondCounter
     {
-        private int _current;
+        int _current;
 
         public OperationsPerSecondCounter(string uid)
         {

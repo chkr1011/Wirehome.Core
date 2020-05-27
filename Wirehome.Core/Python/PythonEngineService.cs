@@ -5,28 +5,48 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Wirehome.Core.Contracts;
+using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Python.Proxies;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Python
 {
-    public sealed class PythonEngineService : IService, IDisposable
+    public sealed class PythonEngineService : WirehomeCoreService
     {
         readonly ILogger _logger;
         readonly PythonIOToLogStream _pythonIOToLogStream;
-
         readonly LogPythonProxy _logPythonProxy;
+
         ScriptEngine _scriptEngine;
 
-        public PythonEngineService(ILogger<PythonEngineService> logger)
+        int _createdScriptHostsCount;
+
+        public PythonEngineService(SystemStatusService systemStatusService, ILogger<PythonEngineService> logger)
         {
+            if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
+            systemStatusService.Set("python_engine.created_script_hosts_count", () => _createdScriptHostsCount);
+
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _logPythonProxy = new LogPythonProxy(_logger);
             _pythonIOToLogStream = new PythonIOToLogStream(_logger);
         }
 
-        public void Start()
+        public PythonScriptHost CreateScriptHost(ICollection<IPythonProxy> pythonProxies)
+        {
+            if (pythonProxies == null) throw new ArgumentNullException(nameof(pythonProxies));
+
+            var allPythonProxies = new List<IPythonProxy>(pythonProxies)
+            {
+                _logPythonProxy,
+                new DebuggerPythonProxy()
+            };
+
+            _createdScriptHostsCount++;
+            return new PythonScriptHost(_scriptEngine, allPythonProxies);
+        }
+
+        protected override void OnStart()
         {
             _logger.LogInformation("Starting Python engine...");
 
@@ -54,7 +74,7 @@ namespace Wirehome.Core.Python
             _logger.LogInformation("Python engine started.");
         }
 
-        private void RunTestScript()
+        void RunTestScript()
         {
             var testScript = new StringBuilder();
             testScript.AppendLine("def test():");
@@ -70,25 +90,7 @@ namespace Wirehome.Core.Python
                 throw new InvalidOperationException("Python test script failed.");
             }
         }
-
-        public PythonScriptHost CreateScriptHost(ICollection<IPythonProxy> pythonProxies)
-        {
-            if (pythonProxies == null) throw new ArgumentNullException(nameof(pythonProxies));
-
-            var allPythonProxies = new List<IPythonProxy>(pythonProxies)
-            {
-                _logPythonProxy,
-                new DebuggerPythonProxy()
-            };
-
-            return new PythonScriptHost(_scriptEngine, allPythonProxies);
-        }
-
-        public void Dispose()
-        {
-            _pythonIOToLogStream.Dispose();
-        }
-
+        
         void AddSearchPaths(ScriptEngine scriptEngine)
         {
             var storagePaths = new StoragePaths();

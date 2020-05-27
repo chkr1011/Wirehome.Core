@@ -13,21 +13,17 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Packages
 {
-    public class PackageManagerService : IService
+    public sealed class PackageManagerService : WirehomeCoreService
     {
-        private const string PackagesDirectory = "Packages";
+        const string PackagesDirectory = "Packages";
 
-        private readonly StorageService _storageService;
-        private readonly ILogger _logger;
+        readonly StorageService _storageService;
+        readonly ILogger _logger;
 
         public PackageManagerService(StorageService storageService, ILogger<PackageManagerService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Start()
-        {
         }
 
         public Package LoadPackage(PackageUid uid)
@@ -57,7 +53,7 @@ namespace Wirehome.Core.Packages
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.TryReadOrCreate(out PackageManagerServiceOptions options, DefaultDirectoryNames.Configuration, PackageManagerServiceOptions.Filename);
+            _storageService.SafeReadSerializedValue(out PackageManagerServiceOptions options, DefaultDirectoryNames.Configuration, PackageManagerServiceOptions.Filename);
 
             var downloader = new GitHubRepositoryPackageDownloader(options, _logger);
             return downloader.DownloadAsync(uid, GetPackageRootPath(uid));
@@ -177,9 +173,9 @@ namespace Wirehome.Core.Packages
             return path;
         }
 
-        private string GetPackagesRootPath()
+        string GetPackagesRootPath()
         {
-            _storageService.TryReadOrCreate(out PackageManagerServiceOptions options, PackageManagerServiceOptions.Filename);
+            _storageService.SafeReadSerializedValue(out PackageManagerServiceOptions options, PackageManagerServiceOptions.Filename);
 
             var rootPath = options.RootPath;
             if (string.IsNullOrEmpty(rootPath))
@@ -190,7 +186,7 @@ namespace Wirehome.Core.Packages
             return rootPath;
         }
 
-        private static string GetLatestVersionPath(string rootPath, string id)
+        static string GetLatestVersionPath(string rootPath, string id)
         {
             rootPath = Path.Combine(rootPath, id);
 
@@ -205,7 +201,7 @@ namespace Wirehome.Core.Packages
             return versions.First();
         }
 
-        private static Package LoadPackage(PackageUid uid, string path)
+        static Package LoadPackage(PackageUid uid, string path)
         {
             if (!Directory.Exists(path))
             {
@@ -243,7 +239,7 @@ namespace Wirehome.Core.Packages
             return source;
         }
 
-        private static string ReadFileContent(string path, string filename)
+        static string ReadFileContent(string path, string filename)
         {
             var descriptionFile = Path.Combine(path, filename);
             if (!File.Exists(descriptionFile))

@@ -15,28 +15,31 @@ using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
+using Wirehome.Core.System;
 
 namespace Wirehome.Core.Cloud
 {
-    public sealed class CloudService : IService, IDisposable
+    public sealed class CloudService : WirehomeCoreService
     {
         readonly CloudMessageSerializer _cloudMessageSerializer = new CloudMessageSerializer();
         readonly Dictionary<string, RawCloudMessageHandler> _rawMessageHandlers = new Dictionary<string, RawCloudMessageHandler>();
         readonly HttpClient _httpClient = new HttpClient();
+
         readonly StorageService _storageService;
+        readonly SystemCancellationToken _systemCancellationToken;
         readonly CloudMessageFactory _cloudMessageFactory;
 
         readonly ILogger _logger;
 
-        CancellationTokenSource _cancellationTokenSource;
         CloudServiceOptions _options;
         ConnectorChannel _channel;
         bool _isConnected;
         Exception _connectionError;
 
-        public CloudService(StorageService storageService, SystemStatusService systemStatusService, ILogger<CloudService> logger)
+        public CloudService(StorageService storageService, SystemCancellationToken systemCancellationToken, SystemStatusService systemStatusService, ILogger<CloudService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (systemStatusService is null) throw new ArgumentNullException(nameof(systemStatusService));
@@ -60,25 +63,6 @@ namespace Wirehome.Core.Cloud
             _cloudMessageFactory = new CloudMessageFactory(_cloudMessageSerializer);
         }
 
-        public void Start()
-        {
-            if (_cancellationTokenSource != null)
-            {
-                _cancellationTokenSource.Cancel();
-                _cancellationTokenSource.Dispose();
-            }
-
-            var cancellationTokenSource = new CancellationTokenSource();
-            _cancellationTokenSource = cancellationTokenSource;
-            Task.Run(() => ConnectAsync(cancellationTokenSource.Token), cancellationTokenSource.Token).Forget(_logger);
-        }
-
-        public void Reconnect()
-        {
-            _cancellationTokenSource?.Cancel();
-            Start();
-        }
-
         public void RegisterMessageHandler(string type, Func<IDictionary<object, object>, IDictionary<object, object>> handler)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
@@ -90,11 +74,9 @@ namespace Wirehome.Core.Cloud
             }
         }
 
-        public void Dispose()
+        protected override void OnStart()
         {
-            _httpClient.Dispose();
-            _cancellationTokenSource?.Dispose();
-            _channel?.Dispose();
+            Task.Run(() => ConnectAsync(_systemCancellationToken.Token), _systemCancellationToken.Token).Forget(_logger);
         }
 
         async Task ConnectAsync(CancellationToken cancellationToken)
@@ -105,7 +87,8 @@ namespace Wirehome.Core.Cloud
                 {
                     _isConnected = false;
 
-                    if (!_storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, CloudServiceOptions.Filename) || _options == null)
+                    if (!_storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration,
+                        CloudServiceOptions.Filename) || _options == null)
                     {
                         continue;
                     }
@@ -126,10 +109,14 @@ namespace Wirehome.Core.Cloud
                         {
                             var url = $"wss://{_options.Host}/Connector";
 
-                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.ChannelAccessToken, _options.ChannelAccessToken);
-                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.Version, WirehomeCoreVersion.Version);
+                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.ChannelAccessToken,
+                                _options.ChannelAccessToken);
 
-                            await webSocketClient.ConnectAsync(new Uri(url, UriKind.Absolute), timeout.Token).ConfigureAwait(false);
+                            webSocketClient.Options.SetRequestHeader(CloudHeaderNames.Version,
+                                WirehomeCoreVersion.Version);
+
+                            await webSocketClient.ConnectAsync(new Uri(url, UriKind.Absolute), timeout.Token)
+                                .ConfigureAwait(false);
                         }
 
                         var channelOptions = new ConnectorChannelOptions
@@ -137,7 +124,8 @@ namespace Wirehome.Core.Cloud
                             UseCompression = _options.UseCompression
                         };
 
-                        _channel = new ConnectorChannel(channelOptions, webSocketClient, _cloudMessageSerializer, _logger);
+                        _channel = new ConnectorChannel(channelOptions, webSocketClient, _cloudMessageSerializer,
+                            _logger);
                         _isConnected = true;
                         _connectionError = null;
                         _logger.LogInformation($"Connected with Wirehome.Cloud at host '{_options.Host}'.");
@@ -156,9 +144,14 @@ namespace Wirehome.Core.Cloud
                                 continue;
                             }
 
-                            ParallelTask.Start(() => TryProcessCloudMessageAsync(receiveResult.Message, cancellationToken), cancellationToken, _logger);
+                            ParallelTask.Start(
+                                () => TryProcessCloudMessageAsync(receiveResult.Message, cancellationToken),
+                                cancellationToken, _logger);
                         }
                     }
+                }
+                catch (OperationCanceledException)
+                {
                 }
                 catch (Exception exception)
                 {

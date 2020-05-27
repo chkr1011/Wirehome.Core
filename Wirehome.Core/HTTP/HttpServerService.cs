@@ -10,7 +10,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.HTTP
 {
-    public class HttpServerService : IService
+    public sealed class HttpServerService : WirehomeCoreService
     {
         readonly Dictionary<string, HttpRequestInterceptor> _interceptors = new Dictionary<string, HttpRequestInterceptor>();
 
@@ -21,10 +21,6 @@ namespace Wirehome.Core.HTTP
         {
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Start()
-        {
         }
 
         public string RegisterRoute(string uid, string uriTemplate, Func<IDictionary<object, object>, IDictionary<object, object>> handler)

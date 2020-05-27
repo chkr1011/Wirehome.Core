@@ -13,7 +13,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.History
 {
-    public sealed class HistoryService : IService, IDisposable
+    public sealed class HistoryService : WirehomeCoreService
     {
         readonly HistoryValueFormatter _valueFormatter = new HistoryValueFormatter();
 
@@ -60,18 +60,7 @@ namespace Wirehome.Core.History
                 return _totalUpdateDuration / (decimal)_updatesCount;
             });
         }
-
-        public void Start()
-        {
-            _storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, HistoryServiceOptions.Filename);
-
-            if (!_options.IsEnabled)
-            {
-                _logger.LogInformation("History is disabled.");
-                return;
-            }
-        }
-
+        
         public Task<List<HistoryValueElement>> Read(HistoryReadOperation readOperation, CancellationToken cancellationToken)
         {
             return _historyRepository.Read(readOperation, cancellationToken);
@@ -165,9 +154,15 @@ namespace Wirehome.Core.History
             return _historyRepository.GetHistorySize(path, cancellationToken);
         }
 
-        public void Dispose()
+        protected override void OnStart()
         {
-            _historyRepository.Dispose();
+            _storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, HistoryServiceOptions.Filename);
+
+            if (!_options.IsEnabled)
+            {
+                _logger.LogInformation("History is disabled.");
+                return;
+            }
         }
     }
 }

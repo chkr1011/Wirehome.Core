@@ -104,12 +104,8 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
             {
                 try
                 {
-                    var hasInterruptMonitors = false;
-
                     lock (_interruptMonitors)
                     {
-                        hasInterruptMonitors = _interruptMonitors.Count > 0;
-
                         eventArgsList.Clear();
 
                         foreach (var interruptMonitor in _interruptMonitors)

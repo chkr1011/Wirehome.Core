@@ -8,8 +8,10 @@ using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Storage
 {
-    public class StorageService : IService
+    public sealed class StorageService : WirehomeCoreService
     {
+        const string JsonExtension = ".json";
+
         readonly JsonSerializerService _jsonSerializerService;
 
         public StorageService(JsonSerializerService jsonSerializerService, ILogger<StorageService> logger)
@@ -28,11 +30,7 @@ namespace Wirehome.Core.Storage
         public string BinPath { get; }
 
         public string DataPath { get; }
-
-        public void Start()
-        {
-        }
-
+        
         public List<string> EnumerateDirectories(string pattern, params string[] path)
         {
             if (pattern == null) throw new ArgumentNullException(nameof(pattern));
@@ -44,9 +42,10 @@ namespace Wirehome.Core.Storage
                 return new List<string>();
             }
 
-            var directories = Directory.EnumerateDirectories(directory, pattern, SearchOption.TopDirectoryOnly).ToList();
+            var directories = Directory.GetDirectories(directory, pattern, SearchOption.TopDirectoryOnly).ToList();
             for (var i = 0; i < directories.Count; i++)
             {
+                // Remove the root path so that other services will only see the relative path of the directory.
                 directories[i] = directories[i].Replace(directory, string.Empty, StringComparison.Ordinal).TrimStart(Path.DirectorySeparatorChar);
             }
 
@@ -68,114 +67,47 @@ namespace Wirehome.Core.Storage
             var files = Directory.GetFiles(directory, pattern, SearchOption.AllDirectories).ToList();
             for (var i = 0; i < files.Count; i++)
             {
+                // Remove the root path so that other services will only see the relative path of the file.
                 files[i] = files[i].Replace(directory, string.Empty, StringComparison.Ordinal).TrimStart(Path.DirectorySeparatorChar);
             }
 
             return files;
         }
 
-        public bool TryRead<TValue>(out TValue value, params string[] path)
+        public void WriteRawBytes(byte[] content, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var filename = Path.Combine(DataPath, Path.Combine(path));
-            if (!filename.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-            {
-                filename += ".json";
-            }
+            var directory = Path.GetDirectoryName(filename);
 
-            if (!File.Exists(filename))
-            {
-                value = default;
-                return false;
-            }
-
-            var json = File.ReadAllText(filename, Encoding.UTF8);
-            if (string.IsNullOrEmpty(json))
-            {
-                value = default;
-                return true;
-            }
-
-            value = _jsonSerializerService.Deserialize<TValue>(json);
-            return true;
+            Directory.CreateDirectory(directory);
+            File.WriteAllBytes(filename, content ?? Array.Empty<byte>());
         }
 
-        public bool TryReadText(out string value, params string[] path)
+        public void WriteRawText(string value, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var filename = Path.Combine(DataPath, Path.Combine(path));
-            if (!File.Exists(filename))
-            {
-                value = null;
-                return false;
-            }
+            var directory = Path.GetDirectoryName(filename);
 
-            value = File.ReadAllText(filename, Encoding.UTF8);
-            return true;
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(filename, value ?? string.Empty, Encoding.UTF8);
         }
 
-        public bool TryReadBinText(out string value, params string[] path)
-        {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-
-            var filename = Path.Combine(BinPath, Path.Combine(path));
-            if (!File.Exists(filename))
-            {
-                value = null;
-                return false;
-            }
-
-            value = File.ReadAllText(filename, Encoding.UTF8);
-            return true;
-        }
-
-        public bool TryReadRaw(out byte[] content, params string[] path)
+        public void WriteSerializedValue(object value, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var filename = Path.Combine(DataPath, Path.Combine(path));
-            if (!File.Exists(filename))
+            if (!filename.EndsWith(JsonExtension, StringComparison.Ordinal))
             {
-                content = null;
-                return false;
-            }
-
-            content = File.ReadAllBytes(filename);
-            return true;
-        }
-
-        public bool TryReadOrCreate<TValue>(out TValue value, params string[] path) where TValue : class, new()
-        {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-
-            if (!TryRead(out value, path))
-            {
-                value = new TValue();
-                Write(value, path);
-                return false;
-            }
-
-            return true;
-        }
-
-        public void Write(object value, params string[] path)
-        {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-
-            var filename = Path.Combine(DataPath, Path.Combine(path));
-            if (!filename.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-            {
-                filename += ".json";
+                filename += JsonExtension;
             }
 
             var directory = Path.GetDirectoryName(filename);
-
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
+            Directory.CreateDirectory(directory);
 
             if (value == null)
             {
@@ -187,34 +119,84 @@ namespace Wirehome.Core.Storage
             File.WriteAllText(filename, json, Encoding.UTF8);
         }
 
-        public void WriteRaw(byte[] content, params string[] path)
+        public bool TryReadRawBytes(out byte[] content, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var filename = Path.Combine(DataPath, Path.Combine(path));
-            var directory = Path.GetDirectoryName(filename);
 
-            if (!Directory.Exists(directory))
+            try
             {
-                Directory.CreateDirectory(directory);
+                content = File.ReadAllBytes(filename);
+                return true;
             }
-
-            File.WriteAllBytes(filename, content ?? Array.Empty<byte>());
+            catch (DirectoryNotFoundException)
+            {
+                content = null;
+                return false;
+            }
+            catch (FileNotFoundException)
+            {
+                content = null;
+                return false;
+            }
         }
 
-        public void WriteText(string value, params string[] path)
+        public bool TryReadRawText(out string content, params string[] path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var filename = Path.Combine(DataPath, Path.Combine(path));
-            var directory = Path.GetDirectoryName(filename);
 
-            if (!Directory.Exists(directory))
+            try
             {
-                Directory.CreateDirectory(directory);
+                content = File.ReadAllText(filename, Encoding.UTF8);
+                return true;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                content = null;
+                return false;
+            }
+            catch (FileNotFoundException)
+            {
+                content = null;
+                return false;
+            }
+        }
+
+        public bool TryReadSerializedValue<TValue>(out TValue value, params string[] path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            var filename = Path.Combine(path);
+            if (!filename.EndsWith(JsonExtension, StringComparison.Ordinal))
+            {
+                filename += JsonExtension;
             }
 
-            File.WriteAllText(filename, value ?? string.Empty, Encoding.UTF8);
+            if (!TryReadRawText(out var textValue, filename))
+            {
+                value = default;
+                return false;
+            }
+            
+            value = _jsonSerializerService.Deserialize<TValue>(textValue);
+            return true;
+        }
+
+        public bool SafeReadSerializedValue<TValue>(out TValue value, params string[] path) where TValue : class, new()
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            if (!TryReadSerializedValue(out value, path))
+            {
+                value = new TValue();
+                WriteSerializedValue(value, path);
+                return false;
+            }
+
+            return true;
         }
 
         public void DeletePath(params string[] path)
@@ -223,26 +205,23 @@ namespace Wirehome.Core.Storage
 
             var fullPath = Path.Combine(DataPath, Path.Combine(path));
 
-            if (Directory.Exists(fullPath))
-            {
-                Directory.Delete(fullPath, true);
-                return;
-            }
-
-            if (File.Exists(fullPath))
+            try
             {
                 File.Delete(fullPath);
             }
-        }
+            catch (DirectoryNotFoundException)
+            {
+            }
+            catch (FileNotFoundException)
+            {
+            }
 
-        public void DeleteDirectory(params string[] path)
-        {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-
-            var fullPath = Path.Combine(DataPath, Path.Combine(path));
-            if (Directory.Exists(fullPath))
+            try
             {
                 Directory.Delete(fullPath, true);
+            }
+            catch (DirectoryNotFoundException)
+            {
             }
         }
     }

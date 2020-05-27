@@ -8,32 +8,15 @@ using Wirehome.Core.Hardware.I2C.Adapters;
 
 namespace Wirehome.Core.Hardware.I2C
 {
-    public class I2CBusService : IService
+    public sealed class I2CBusService : WirehomeCoreService
     {
-        private readonly Dictionary<string, II2CBusAdapter> _adapters = new Dictionary<string, II2CBusAdapter>();
+        readonly Dictionary<string, II2CBusAdapter> _adapters = new Dictionary<string, II2CBusAdapter>();
 
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
         public I2CBusService(ILogger<I2CBusService> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Start()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var i2CAdapter = new LinuxI2CBusAdapter(1, _logger);
-                i2CAdapter.Enable();
-                RegisterAdapter(string.Empty, i2CAdapter);
-
-                ////RegisterAdapter(string.Empty, new LiveI2CBusAdapter(_logger));
-            }
-            else
-            {
-                var i2CAdapter = new TestI2CBusAdapter(_logger);
-                RegisterAdapter(string.Empty, i2CAdapter);
-            }
         }
 
         public void RegisterAdapter(string busId, II2CBusAdapter adapter)
@@ -65,7 +48,22 @@ namespace Wirehome.Core.Hardware.I2C
             GetAdapter(busId).WriteRead(deviceAddress, writeBuffer, readBuffer);
         }
 
-        private II2CBusAdapter GetAdapter(string busId)
+        protected override void OnStart()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var i2CAdapter = new LinuxI2CBusAdapter(1, _logger);
+                i2CAdapter.Enable();
+                RegisterAdapter(string.Empty, i2CAdapter);
+            }
+            else
+            {
+                var i2CAdapter = new TestI2CBusAdapter(_logger);
+                RegisterAdapter(string.Empty, i2CAdapter);
+            }
+        }
+
+        II2CBusAdapter GetAdapter(string busId)
         {
             if (!_adapters.TryGetValue(busId, out var adapter))
             {

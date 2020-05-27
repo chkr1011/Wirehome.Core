@@ -9,25 +9,38 @@ namespace Wirehome.Core.Storage
         {
         }
 
-        public RelativeValueStoragePath(string path)
+        public RelativeValueStoragePath(string segment)
         {
-            if (path is null) throw new ArgumentNullException(nameof(path));
+            if (segment is null) throw new ArgumentNullException(nameof(segment));
 
-            Paths.Add(path);
+            if (segment.Contains('/', StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The segment contains invalid chars (/).");
+            }
+
+            Segments.Add(segment);
         }
 
-        public RelativeValueStoragePath(params string[] paths)
+        public RelativeValueStoragePath(params string[] segments)
         {
-            if (paths is null) throw new ArgumentNullException(nameof(paths));
+            if (segments is null) throw new ArgumentNullException(nameof(segments));
 
-            Paths.AddRange(paths);
+            foreach (var segment in segments)
+            {
+                if (segment.Contains('/', StringComparison.Ordinal))
+                {
+                    throw new ArgumentException("The segment contains invalid chars (/).");
+                }
+
+                Segments.Add(segment);
+            }
         }
 
-        public List<string> Paths { get; } = new List<string>();
+        public List<string> Segments { get; } = new List<string>();
 
         public override string ToString()
         {
-            return string.Join("/", Paths);
+            return string.Join("/", Segments);
         }
 
         public static RelativeValueStoragePath Parse(string path)
@@ -37,8 +50,8 @@ namespace Wirehome.Core.Storage
                 return null;
             }
 
-            var paths = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            return new RelativeValueStoragePath(paths);
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            return new RelativeValueStoragePath(segments);
         }
     }
 

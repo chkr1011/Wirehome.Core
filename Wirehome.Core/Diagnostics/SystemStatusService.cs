@@ -5,7 +5,7 @@ using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Diagnostics
 {
-    public class SystemStatusService : IService
+    public sealed class SystemStatusService : WirehomeCoreService
     {
         readonly Dictionary<string, Func<object>> _values = new Dictionary<string, Func<object>>();
         readonly List<Action<Dictionary<string, object>>> _valueProviders = new List<Action<Dictionary<string, object>>>();
@@ -15,10 +15,6 @@ namespace Wirehome.Core.Diagnostics
         public SystemStatusService(ILogger<SystemStatusService> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Start()
-        {
         }
 
         public void RegisterProvider(Action<Dictionary<string, object>> provider)

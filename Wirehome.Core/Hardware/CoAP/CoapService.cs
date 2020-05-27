@@ -6,7 +6,7 @@ using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Hardware.CoAP
 {
-    public class CoapService : IService
+    public sealed class CoapService : WirehomeCoreService
     {
         readonly Dictionary<string, CoapClientInstance> _clients = new Dictionary<string, CoapClientInstance>();
 
@@ -17,12 +17,7 @@ namespace Wirehome.Core.Hardware.CoAP
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-
-        public void Start()
-        {
-
-        }
-
+        
         //public Task<CoapResponse> Request(CoapRequest request)
         //{
         //    if (request is null)

@@ -11,14 +11,15 @@ using Wirehome.Core.System;
 
 namespace Wirehome.Core.Discovery
 {
-    public sealed class DiscoveryService : IService, IDisposable
+    public sealed class DiscoveryService : WirehomeCoreService
     {
         readonly List<SsdpDevice> _discoveredSsdpDevices = new List<SsdpDevice>();
         readonly SystemCancellationToken _systemCancellationToken;
         readonly ILogger _logger;
         readonly DiscoveryServiceOptions _options;
         readonly HttpClient _httpClient = new HttpClient();
-        readonly SsdpDevicePublisher _publisher = new SsdpDevicePublisher();
+        
+        SsdpDevicePublisher _publisher;
 
         public DiscoveryService(StorageService storageService, SystemCancellationToken systemCancellationToken, ILogger<DiscoveryService> logger)
         {
@@ -26,26 +27,7 @@ namespace Wirehome.Core.Discovery
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (storageService is null) throw new ArgumentNullException(nameof(storageService));
-            storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, DiscoveryServiceOptions.Filename);
-        }
-
-        public void Start()
-        {
-            var deviceDefinition = new SsdpRootDevice()
-            {
-                CacheLifetime = TimeSpan.FromHours(1),
-                Location = new Uri("http://wirehome.local/upnp.xml"), // TODO: Must point to the URL that serves your devices UPnP description document. 
-                DeviceTypeNamespace = "my-namespace",
-                DeviceType = "Wirehome.Core",
-                FriendlyName = "Wirehome Core",
-                Manufacturer = "Christian Kratky",
-                ModelName = "Wirehome.Core",
-                Uuid = "uuid:c6faa85a-d7e9-48b7-8c54-7459c4d9c329"
-            };
-
-            _publisher.AddDevice(deviceDefinition);
-
-            Task.Run(() => SearchAsync(_systemCancellationToken.Token), _systemCancellationToken.Token);
+            storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, DiscoveryServiceOptions.Filename);
         }
 
         public List<SsdpDevice> GetDiscoveredDevices()
@@ -56,10 +38,25 @@ namespace Wirehome.Core.Discovery
             }
         }
 
-        public void Dispose()
+        protected override void OnStart()
         {
-            _httpClient.Dispose();
-            _publisher.Dispose();
+            //_publisher = new SsdpDevicePublisher();
+
+            //var deviceDefinition = new SsdpRootDevice()
+            //{
+            //    CacheLifetime = TimeSpan.FromHours(1),
+            //    Location = new Uri("http://wirehome.local/upnp.xml"), // TODO: Must point to the URL that serves your devices UPnP description document. 
+            //    DeviceTypeNamespace = "my-namespace",
+            //    DeviceType = "Wirehome.Core",
+            //    FriendlyName = "Wirehome Core",
+            //    Manufacturer = "Christian Kratky",
+            //    ModelName = "Wirehome.Core",
+            //    Uuid = "uuid:c6faa85a-d7e9-48b7-8c54-7459c4d9c329"
+            //};
+
+            //_publisher.AddDevice(deviceDefinition);
+
+            //Task.Run(() => SearchAsync(_systemCancellationToken.Token), _systemCancellationToken.Token);
         }
 
         async Task SearchAsync(CancellationToken cancellationToken)
@@ -79,7 +76,7 @@ namespace Wirehome.Core.Discovery
                 }
                 finally
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+                    await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
                 }
             }
         }

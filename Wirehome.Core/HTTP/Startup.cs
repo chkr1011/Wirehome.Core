@@ -103,13 +103,22 @@ namespace Wirehome.Core.HTTP
                 });
             });
 
-            foreach (var singletonService in Reflection.GetClassesImplementingInterface<IService>())
+            var serviceImplementations = Reflection.GetClassesAssignableFrom<WirehomeCoreService>();
+            foreach (var singletonService in serviceImplementations)
             {
+                if (singletonService == typeof(WirehomeCoreService))
+                {
+                    continue;
+                }
+
+                Console.WriteLine($"Registering service {singletonService}");
                 services.AddSingleton(singletonService);
             }
 
-            foreach (var pythonProxy in Reflection.GetClassesImplementingInterface<IInjectedPythonProxy>())
+            var pythonProxyImplementations = Reflection.GetClassesAssignableFrom<IInjectedPythonProxy>();
+            foreach (var pythonProxy in pythonProxyImplementations)
             {
+                Console.WriteLine($"Registering Python proxy {pythonProxy}");
                 services.AddSingleton(typeof(IPythonProxy), pythonProxy);
             }
 
@@ -227,7 +236,7 @@ namespace Wirehome.Core.HTTP
             var packagesRootPath = Path.Combine(storagePaths.DataPath, "Packages");
             var storageService = new StorageService(new JsonSerializerService(), new LoggerFactory().CreateLogger<StorageService>());
             storageService.Start();
-            if (storageService.TryRead(out PackageManagerServiceOptions repositoryServiceOptions, PackageManagerServiceOptions.Filename))
+            if (storageService.TryReadSerializedValue(out PackageManagerServiceOptions repositoryServiceOptions, PackageManagerServiceOptions.Filename))
             {
                 if (!string.IsNullOrEmpty(repositoryServiceOptions.RootPath))
                 {

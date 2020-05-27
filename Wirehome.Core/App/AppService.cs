@@ -5,7 +5,7 @@ using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.App
 {
-    public class AppService : IService
+    public sealed class AppService : WirehomeCoreService
     {
         readonly Dictionary<string, AppPanelDefinition> _panelDefinitions = new Dictionary<string, AppPanelDefinition>();
         readonly Dictionary<string, Func<object>> _statusProviders = new Dictionary<string, Func<object>>();
@@ -16,10 +16,6 @@ namespace Wirehome.Core.App
         //{
         //    _resourceService = resourceService ?? throw new ArgumentNullException(nameof(resourceService));
         //}
-
-        public void Start()
-        {
-        }
 
         public List<AppPanelDefinition> GetRegisteredPanels()
         {

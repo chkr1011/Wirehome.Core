@@ -7,20 +7,21 @@ using System.Threading.Tasks;
 using Wirehome.Core.Backup;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.History;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Components.History
 {
-    public sealed class ComponentHistoryService : IService, IDisposable
+    public sealed class ComponentHistoryService : WirehomeCoreService
     {
         readonly BlockingCollection<ComponentStatusHistoryWorkItem> _pendingStatusWorkItems = new BlockingCollection<ComponentStatusHistoryWorkItem>();
         readonly ComponentRegistryService _componentRegistryService;
         readonly HistoryService _historyService;
         readonly StorageService _storageService;
         readonly SystemCancellationToken _systemCancellationToken;
-        private readonly BackupService _backupService;
+        readonly BackupService _backupService;
         readonly ILogger<ComponentHistoryService> _logger;
 
         ComponentHistoryServiceOptions _options;
@@ -47,21 +48,6 @@ namespace Wirehome.Core.Components.History
             _componentRegistryService.ComponentStatusChanged += OnComponentStatusChanged;
         }
 
-        public void Start()
-        {
-            _backupService.ExcludePathFromBackup(Path.Combine(_storageService.DataPath, "History"));
-
-            _storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, ComponentHistoryServiceOptions.Filename);
-            if (!_options.IsEnabled)
-            {
-                _logger.LogInformation("Component history is disabled.");
-                return;
-            }
-
-            Task.Run(() => TryProcessWorkItems(_systemCancellationToken.Token), _systemCancellationToken.Token);
-            Task.Run(() => TryUpdateComponentStatusValues(_systemCancellationToken.Token), _systemCancellationToken.Token);
-        }
-
         public string BuildComponentHistoryPath(string componentUid)
         {
             return Path.Combine(_storageService.DataPath, "History", "Components", componentUid);
@@ -70,11 +56,6 @@ namespace Wirehome.Core.Components.History
         public string BuildComponentStatusHistoryPath(string componentUid, string statusUid)
         {
             return Path.Combine(BuildComponentHistoryPath(componentUid), "Status", statusUid);
-        }
-
-        public void Dispose()
-        {
-            _pendingStatusWorkItems.Dispose();
         }
 
         void OnComponentStatusChanged(object sender, ComponentStatusChangedEventArgs e)
@@ -96,6 +77,21 @@ namespace Wirehome.Core.Components.History
                 StatusUid = e.StatusUid,
                 Value = e.NewValue
             });
+        }
+
+        protected override void OnStart()
+        {
+            _backupService.ExcludePathFromBackup(Path.Combine(_storageService.DataPath, "History"));
+
+            _storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, ComponentHistoryServiceOptions.Filename);
+            if (!_options.IsEnabled)
+            {
+                _logger.LogInformation("Component history is disabled.");
+                return;
+            }
+
+            ParallelTask.Start(() => TryProcessWorkItems(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
+            ParallelTask.Start(() => TryUpdateComponentStatusValues(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
         }
 
         async Task TryProcessWorkItems(CancellationToken cancellationToken)

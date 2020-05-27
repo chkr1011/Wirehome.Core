@@ -1,4 +1,8 @@
-﻿using IronPython.Runtime;
+﻿#pragma warning disable IDE1006 // Naming Styles
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
+
+using IronPython.Runtime;
 using System;
 using System.Collections.Generic;
 using Wirehome.Core.Python;
@@ -7,7 +11,7 @@ namespace Wirehome.Core.Storage
 {
     public class ValueStoragePythonProxy : IInjectedPythonProxy
     {
-        private readonly ValueStorageService _valueStorageService;
+        readonly ValueStorageService _valueStorageService;
 
         public ValueStoragePythonProxy(ValueStorageService valueStorageService)
         {
@@ -21,7 +25,7 @@ namespace Wirehome.Core.Storage
             _valueStorageService.Write(RelativeValueStoragePath.Parse(path), value);
         }
 
-        public object read(string path, object defaultValue)
+        public object read(string path, object defaultValue = null)
         {
             if (_valueStorageService.TryRead<object>(RelativeValueStoragePath.Parse(path), out var value))
             {
@@ -31,7 +35,7 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public PythonDictionary read_object(string path, PythonDictionary defaultValue)
+        public PythonDictionary read_object(string path, PythonDictionary defaultValue = null)
         {
             if (_valueStorageService.TryRead<IDictionary<object, object>>(RelativeValueStoragePath.Parse(path), out var value))
             {
@@ -41,7 +45,7 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public string read_string(string path, string defaultValue)
+        public string read_string(string path, string defaultValue = null)
         {
             if (_valueStorageService.TryRead<string>(RelativeValueStoragePath.Parse(path), out var value))
             {
@@ -51,7 +55,7 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public int read_int(string path, int defaultValue)
+        public int read_int(string path, int defaultValue = 0)
         {
             if (_valueStorageService.TryRead<int>(RelativeValueStoragePath.Parse(path), out var value))
             {
@@ -61,7 +65,7 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public float read_float(string path, float defaultValue)
+        public float read_float(string path, float defaultValue = 0.0F)
         {
             if (_valueStorageService.TryRead<float>(RelativeValueStoragePath.Parse(path), out var value))
             {
@@ -71,7 +75,7 @@ namespace Wirehome.Core.Storage
             return defaultValue;
         }
 
-        public bool read_bool(string path, bool defaultValue)
+        public bool read_bool(string path, bool defaultValue = false)
         {
             if (_valueStorageService.TryRead<bool>(RelativeValueStoragePath.Parse(path), out var value))
             {

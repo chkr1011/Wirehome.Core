@@ -96,7 +96,7 @@ namespace Wirehome.Core.HTTP.Controllers
         [ApiExplorerSettings(GroupName = "v1")]
         public object GetStatus(string id)
         {
-            return _serviceHostService.InvokeFunction(id, "get_status");
+            return _serviceHostService.InvokeFunction(id, "get_service_status");
         }
     }
 }

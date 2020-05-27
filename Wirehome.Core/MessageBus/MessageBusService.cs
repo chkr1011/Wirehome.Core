@@ -3,14 +3,16 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.MessageBus
 {
-    public sealed class MessageBusService : IService, IDisposable
+    public sealed class MessageBusService : WirehomeCoreService
     {
         readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
         readonly MessageBusMessageHistory _messageHistory = new MessageBusMessageHistory();
@@ -36,7 +38,7 @@ namespace Wirehome.Core.MessageBus
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (storageService == null) throw new ArgumentNullException(nameof(storageService));
-            storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, MessageBusServiceOptions.Filename);
+            storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, MessageBusServiceOptions.Filename);
 
             if (diagnosticsService == null) throw new ArgumentNullException(nameof(diagnosticsService));
             _inboundCounter = diagnosticsService.CreateOperationsPerSecondCounter("message_bus.inbound_rate");
@@ -49,17 +51,6 @@ namespace Wirehome.Core.MessageBus
             systemStatusService.Set("message_bus.processing_rate", () => _processingRateCounter.Count);
 
             _options.ToString(); // TODO: Remove or add new settings.
-        }
-
-        public void Start()
-        {
-            var dispatcherThread = new Thread(DispatchMessageBusMessages)
-            {
-                Name = nameof(MessageBusService),
-                IsBackground = true
-            };
-
-            dispatcherThread.Start();
         }
 
         public void Publish(IDictionary<object, object> message)
@@ -106,7 +97,10 @@ namespace Wirehome.Core.MessageBus
 
         public List<MessageBusSubscriber> GetSubscribers()
         {
-            return new List<MessageBusSubscriber>(_subscribers.Values);
+            lock (_subscribers)
+            {
+                return new List<MessageBusSubscriber>(_subscribers.Values);
+            }
         }
 
         public string Subscribe(string uid, IDictionary<object, object> filter, Action<IDictionary<object, object>> callback)
@@ -137,9 +131,9 @@ namespace Wirehome.Core.MessageBus
             }
         }
 
-        public void Dispose()
+        protected override void OnStart()
         {
-            _messageQueue.Dispose();
+            ParallelTask.StartLongRunning(DispatchMessageBusMessages, _systemCancellationToken.Token, _logger);
         }
 
         void DispatchMessageBusMessages()
@@ -171,7 +165,8 @@ namespace Wirehome.Core.MessageBus
                     {
                         if (MessageBusFilterComparer.IsMatch(message.Message, subscriber.Filter))
                         {
-                            ThreadPool.QueueUserWorkItem(_ => subscriber.ProcessMessage(message.Message));
+                            Task.Run(() => subscriber.ProcessMessage(message.Message)).Forget(_logger);
+                            _processingRateCounter.Increment();
                         }
                     }
                 }

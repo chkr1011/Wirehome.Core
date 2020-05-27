@@ -4,13 +4,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Scheduler
 {
-    public class SchedulerService : IService
+    public sealed class SchedulerService : WirehomeCoreService
     {
         readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
         readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
@@ -31,17 +33,6 @@ namespace Wirehome.Core.Scheduler
             systemStatusService.Set("scheduler.active_threads", () => _activeThreads.Count);
             systemStatusService.Set("scheduler.active_timers", () => _activeTimers.Count);
             systemStatusService.Set("scheduler.active_countdowns", () => _activeCountdowns.Count);
-        }
-
-        public void Start()
-        {
-            var taskScheduler = new Thread(ScheduleTasks)
-            {
-                Name = nameof(SchedulerService),
-                IsBackground = true
-            };
-
-            taskScheduler.Start();
         }
 
         public string StartTimer(string uid, TimeSpan interval, Action<TimerTickCallbackParameters> callback, object state = null)
@@ -175,8 +166,9 @@ namespace Wirehome.Core.Scheduler
                     lock (_activeThreads)
                     {
                         _activeThreads.Remove(uid);
-                        activeThread.Dispose();
                     }
+
+                    activeThread.Dispose();
                 };
 
                 _activeThreads[uid] = activeThread;
@@ -231,6 +223,11 @@ namespace Wirehome.Core.Scheduler
             }
         }
 
+        protected override void OnStart()
+        {
+            ParallelTask.StartLongRunning(ScheduleTasks, _systemCancellationToken.Token, _logger);
+        }
+
         void ScheduleTasks()
         {
             try
@@ -270,7 +267,8 @@ namespace Wirehome.Core.Scheduler
                     _activeCountdowns.Remove(activeCountdown.Key);
                     _logger.LogTrace($"Countdown '{activeCountdown.Key}' elapsed. Invoking callback.");
 
-                    ThreadPool.QueueUserWorkItem(_ => activeCountdown.Value.TryInvokeCallback());
+                    //ThreadPool.QueueUserWorkItem(_ => activeCountdown.Value.TryInvokeCallback());
+                    Task.Run(() => activeCountdown.Value.TryInvokeCallback()).Forget(_logger);
                 }
             }
         }

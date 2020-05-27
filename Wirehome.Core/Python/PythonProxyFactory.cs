@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Wirehome.Core.Python
 {
-    public class PythonProxyFactory
+    public sealed class PythonProxyFactory
     {
         readonly IServiceProvider _serviceProvider;
 

@@ -16,7 +16,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Components
 {
-    public class ComponentRegistryService : IService
+    public sealed class ComponentRegistryService : WirehomeCoreService
     {
         const string ComponentsDirectory = "Components";
 
@@ -55,33 +55,19 @@ namespace Wirehome.Core.Components
 
         public event EventHandler<ComponentStatusChangedEventArgs> ComponentStatusChanged;
 
-        public void Start()
-        {
-            var componentConfigurations = ReadComponentConfigurations();
-            var initializationPhases = componentConfigurations.GroupBy(i => i.Value.InitializationPhase).OrderBy(p => p.Key);
-
-            foreach (var initializationPhase in initializationPhases)
-            {
-                foreach (var componentUid in initializationPhase)
-                {
-                    TryInitializeComponent(componentUid.Key);
-                }
-            }
-        }
-
         public void WriteComponentConfiguration(string uid, ComponentConfiguration configuration)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration);
+            _storageService.WriteSerializedValue(configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration);
         }
 
         public ComponentConfiguration ReadComponentConfiguration(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration))
+            if (!_storageService.TryReadSerializedValue(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration))
             {
                 throw new ComponentNotFoundException(uid);
             }
@@ -93,7 +79,7 @@ namespace Wirehome.Core.Components
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.DeleteDirectory(ComponentsDirectory, uid);
+            _storageService.DeletePath(ComponentsDirectory, uid);
         }
 
         public IDictionary<object, object> EnableComponent(string uid)
@@ -130,7 +116,7 @@ namespace Wirehome.Core.Components
 
             try
             {
-                if (!_storageService.TryRead(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration))
+                if (!_storageService.TryReadSerializedValue(out ComponentConfiguration configuration, ComponentsDirectory, uid, DefaultFileNames.Configuration))
                 {
                     throw new ComponentNotFoundException(uid);
                 }
@@ -143,12 +129,12 @@ namespace Wirehome.Core.Components
 
                 var component = new Component(uid);
 
-                if (_storageService.TryReadText(out var script, ComponentsDirectory, uid, DefaultFileNames.Script))
+                if (_storageService.TryReadRawText(out var script, ComponentsDirectory, uid, DefaultFileNames.Script))
                 {
                     configuration.Script = script;
                 }
 
-                if (_storageService.TryRead(out IDictionary<string, object> settings, ComponentsDirectory, uid, DefaultFileNames.Settings))
+                if (_storageService.TryReadSerializedValue(out IDictionary<string, object> settings, ComponentsDirectory, uid, DefaultFileNames.Settings))
                 {
                     foreach (var setting in settings)
                     {
@@ -156,7 +142,7 @@ namespace Wirehome.Core.Components
                     }
                 }
 
-                if (_storageService.TryRead(out HashSet<string> tags, ComponentsDirectory, uid, DefaultFileNames.Tags))
+                if (_storageService.TryReadSerializedValue(out HashSet<string> tags, ComponentsDirectory, uid, DefaultFileNames.Tags))
                 {
                     foreach (var tag in tags)
                     {
@@ -352,7 +338,7 @@ namespace Wirehome.Core.Components
 
             _logger.LogDebug("Component tag set: [Component={0}] [Tag UID={1}].", component.Uid, uid);
 
-            _storageService.Write(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFileNames.Tags);
+            _storageService.WriteSerializedValue(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFileNames.Tags);
             _messageBusWrapper.PublishTagAddedEvent(component.Uid, uid);
 
             return true;
@@ -371,7 +357,7 @@ namespace Wirehome.Core.Components
 
             _logger.LogDebug("Component tag removed: [Component={0}] [Tag UID={1}].", component.Uid, uid);
 
-            _storageService.Write(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFileNames.Tags);
+            _storageService.WriteSerializedValue(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFileNames.Tags);
             _messageBusWrapper.PublishTagRemovedEvent(component.Uid, uid);
 
             return true;
@@ -451,7 +437,7 @@ namespace Wirehome.Core.Components
                 oldValueString,
                 newValueString);
 
-            _storageService.Write(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFileNames.Settings);
+            _storageService.WriteSerializedValue(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFileNames.Settings);
             _messageBusWrapper.PublishSettingChangedEvent(component.Uid, uid, oldValue, value);
         }
 
@@ -471,7 +457,7 @@ namespace Wirehome.Core.Components
                 component.Uid,
                 uid);
 
-            _storageService.Write(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFileNames.Settings);
+            _storageService.WriteSerializedValue(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFileNames.Settings);
             _messageBusWrapper.PublishSettingRemovedEvent(component.Uid, uid, value);
 
             return value;
@@ -499,12 +485,26 @@ namespace Wirehome.Core.Components
             return _storageService.EnumerateDirectories("*", ComponentsDirectory);
         }
 
+        protected override void OnStart()
+        {
+            var componentConfigurations = ReadComponentConfigurations();
+            var initializationPhases = componentConfigurations.GroupBy(i => i.Value.InitializationPhase).OrderBy(p => p.Key);
+
+            foreach (var initializationPhase in initializationPhases)
+            {
+                foreach (var componentUid in initializationPhase)
+                {
+                    TryInitializeComponent(componentUid.Key);
+                }
+            }
+        }
+
         Dictionary<string, ComponentConfiguration> ReadComponentConfigurations()
         {
             var componentConfigurations = new Dictionary<string, ComponentConfiguration>();
             foreach (var componentUid in GetComponentUids())
             {
-                if (_storageService.TryRead(out ComponentConfiguration componentConfiguration, ComponentsDirectory, componentUid, DefaultFileNames.Configuration))
+                if (_storageService.TryReadSerializedValue(out ComponentConfiguration componentConfiguration, ComponentsDirectory, componentUid, DefaultFileNames.Configuration))
                 {
                     componentConfigurations.Add(componentUid, componentConfiguration);
                 }

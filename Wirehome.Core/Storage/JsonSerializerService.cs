@@ -1,14 +1,13 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
-using System.IO;
-using System.Text;
 using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Storage
 {
-    public class JsonSerializerService : IService
+    public class JsonSerializerService : WirehomeCoreService
     {
+        readonly object _syncRoot = new object();
         readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
         {
             ContractResolver = new DefaultContractResolver
@@ -16,39 +15,25 @@ namespace Wirehome.Core.Storage
                 NamingStrategy = new CamelCaseNamingStrategy()
             },
             Formatting = Formatting.Indented,
-            DateParseHandling = DateParseHandling.None
+            DateParseHandling = DateParseHandling.None,
+            DateTimeZoneHandling = DateTimeZoneHandling.Utc
         };
-
-        public void Start()
-        {
-        }
 
         public string Serialize(object value)
         {
-            return JsonConvert.SerializeObject(value, _serializerSettings);
+            lock (_syncRoot)
+            {
+                return JsonConvert.SerializeObject(value, _serializerSettings);
+            }
         }
 
         public TValue Deserialize<TValue>(string json)
         {
             if (json == null) throw new ArgumentNullException(nameof(json));
 
-            return JsonConvert.DeserializeObject<TValue>(json, _serializerSettings);
-        }
-
-        public bool TryDeserializeFile<TContent>(string filename, out TContent content)
-        {
-            if (filename == null) throw new ArgumentNullException(nameof(filename));
-
-            try
+            lock (_syncRoot)
             {
-                var buffer = File.ReadAllText(filename, Encoding.UTF8);
-                content = Deserialize<TContent>(buffer);
-                return true;
-            }
-            catch (Exception)
-            {
-                content = default;
-                return false;
+                return JsonConvert.DeserializeObject<TValue>(json, _serializerSettings);
             }
         }
     }

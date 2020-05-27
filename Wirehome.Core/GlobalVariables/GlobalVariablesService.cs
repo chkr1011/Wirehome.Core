@@ -9,15 +9,15 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.GlobalVariables
 {
-    public class GlobalVariablesService : IService
+    public sealed class GlobalVariablesService : WirehomeCoreService
     {
-        private const string GlobalVariablesFilename = "GlobalVariables.json";
+        const string GlobalVariablesFilename = "GlobalVariables.json";
 
-        private readonly Dictionary<string, object> _variables = new Dictionary<string, object>();
-        private readonly AppService _appService;
-        private readonly StorageService _storageService;
-        private readonly MessageBusService _messageBusService;
-        private readonly ILogger _logger;
+        readonly Dictionary<string, object> _variables = new Dictionary<string, object>();
+        readonly AppService _appService;
+        readonly StorageService _storageService;
+        readonly MessageBusService _messageBusService;
+        readonly ILogger _logger;
 
         public GlobalVariablesService(
             AppService appService,
@@ -29,20 +29,6 @@ namespace Wirehome.Core.GlobalVariables
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Start()
-        {
-            _appService.RegisterStatusProvider("globalVariables", () => GetValues());
-
-            lock (_variables)
-            {
-                Load();
-
-                RegisterValue(GlobalVariableUids.AppPackageUid, "wirehome.app@1.0.0");
-                RegisterValue(GlobalVariableUids.ConfiguratorPackageUid, "wirehome.configurator@1.0.0");
-                RegisterValue(GlobalVariableUids.LanguageCode, "en");
-            }
         }
 
         public Dictionary<string, object> GetValues()
@@ -138,7 +124,21 @@ namespace Wirehome.Core.GlobalVariables
             _messageBusService.Publish(busMessage);
         }
 
-        private void RegisterValue(string uid, object value)
+        protected override void OnStart()
+        {
+            _appService.RegisterStatusProvider("globalVariables", GetValues);
+
+            lock (_variables)
+            {
+                Load();
+
+                RegisterValue(GlobalVariableUids.AppPackageUid, "wirehome.app@1.0.0");
+                RegisterValue(GlobalVariableUids.ConfiguratorPackageUid, "wirehome.configurator@1.0.0");
+                RegisterValue(GlobalVariableUids.LanguageCode, "en");
+            }
+        }
+
+        void RegisterValue(string uid, object value)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
@@ -149,9 +149,9 @@ namespace Wirehome.Core.GlobalVariables
             }
         }
 
-        private void Load()
+        void Load()
         {
-            if (_storageService.TryRead(out Dictionary<string, object> globalVariables, GlobalVariablesFilename))
+            if (_storageService.TryReadSerializedValue(out Dictionary<string, object> globalVariables, GlobalVariablesFilename))
             {
                 if (globalVariables == null)
                 {
@@ -165,9 +165,9 @@ namespace Wirehome.Core.GlobalVariables
             }
         }
 
-        private void Save()
+        void Save()
         {
-            _storageService.Write(_variables, GlobalVariablesFilename);
+            _storageService.WriteSerializedValue(_variables, GlobalVariablesFilename);
         }
     }
 }

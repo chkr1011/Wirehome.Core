@@ -7,18 +7,12 @@ namespace Wirehome.Core.Extensions
 {
     public static class Reflection
     {
-        public static List<Type> GetClassesImplementingInterface<TInterface>()
+        public static List<Type> GetClassesAssignableFrom<TType>()
         {
-            var interfaceType = typeof(TInterface);
-            if (!interfaceType.IsInterface)
-            {
-                throw new InvalidOperationException();
-            }
-
             var assembly = Assembly.GetExecutingAssembly();
 
             return assembly.GetTypes()
-                .Where(t => t.IsClass && typeof(TInterface).IsAssignableFrom(t)).ToList();            
+                .Where(t => t.IsClass && typeof(TType).IsAssignableFrom(t)).ToList();            
         }
     }
 }

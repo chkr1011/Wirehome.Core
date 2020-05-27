@@ -6,9 +6,9 @@ using System.Text;
 
 namespace Wirehome.Core.Python
 {
-    public class PythonProxyReferenceGenerator
+    public sealed class PythonProxyReferenceGenerator
     {
-        private readonly PythonProxyFactory _pythonProxyFactory;
+        readonly PythonProxyFactory _pythonProxyFactory;
 
         public PythonProxyReferenceGenerator(PythonProxyFactory pythonProxyFactory)
         {
@@ -33,7 +33,7 @@ namespace Wirehome.Core.Python
             return output.ToString();
         }
 
-        private static void GenerateModuleReferenceDocument(IPythonProxy pythonProxy, StringBuilder output)
+        static void GenerateModuleReferenceDocument(IPythonProxy pythonProxy, StringBuilder output)
         {
             output.AppendLine($"### _{pythonProxy.ModuleName}_ module");
 
@@ -90,7 +90,7 @@ namespace Wirehome.Core.Python
             output.AppendLine();
         }
 
-        private static string GetPythonTypeName(Type type)
+        static string GetPythonTypeName(Type type)
         {
             if (type == typeof(string))
             {
@@ -145,7 +145,7 @@ namespace Wirehome.Core.Python
             return type.Name.ToLowerInvariant();
         }
 
-        private static string GenerateCallbackSignature(Type type)
+        static string GenerateCallbackSignature(Type type)
         {
             var output = new StringBuilder();
             output.Append("callback(");

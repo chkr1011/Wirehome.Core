@@ -3,16 +3,19 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Wirehome.Core.Extensions;
 
 namespace Wirehome.Core.Scheduler
 {
     public sealed class ActiveTimer : IDisposable
     {
-        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-
+        readonly CancellationTokenSource _ownCancellationTokenSource = new CancellationTokenSource();
+        
         readonly Action<TimerTickCallbackParameters> _callback;
         readonly object _state;
         readonly ILogger _logger;
+
+        CancellationTokenSource _cancellationTokenSource;
 
         public ActiveTimer(string uid, TimeSpan interval, Action<TimerTickCallbackParameters> callback, object state, ILogger logger)
         {
@@ -26,8 +29,8 @@ namespace Wirehome.Core.Scheduler
 
         public void Start(CancellationToken cancellationToken)
         {
-            var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cancellationTokenSource.Token);
-            Task.Run(() => RunAsync(linkedToken.Token), linkedToken.Token);
+            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _ownCancellationTokenSource.Token);
+            Task.Run(() => RunAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token).Forget(_logger);
         }
 
         public string Uid { get; }
@@ -40,13 +43,14 @@ namespace Wirehome.Core.Scheduler
 
         public void Stop()
         {
-            _cancellationTokenSource.Cancel(false);
+            _ownCancellationTokenSource.Cancel(false);
 
             _logger.LogTrace($"Stopped timer '{Uid}'.");
         }
 
         public void Dispose()
         {
+            _ownCancellationTokenSource?.Dispose();
             _cancellationTokenSource?.Dispose();
         }
 

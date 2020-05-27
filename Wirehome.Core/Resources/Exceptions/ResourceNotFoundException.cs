@@ -1,6 +1,6 @@
 ﻿using Wirehome.Core.Exceptions;
 
-namespace Wirehome.Core.Resources.Exception
+namespace Wirehome.Core.Resources.Exceptions
 {
     public class ResourceNotFoundException : WirehomeException
     {

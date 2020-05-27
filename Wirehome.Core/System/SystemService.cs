@@ -13,16 +13,16 @@ using Wirehome.Core.Notifications;
 
 namespace Wirehome.Core.System
 {
-    public class SystemService : IService
+    public sealed class SystemService : WirehomeCoreService
     {
-        private readonly SystemStatusService _systemStatusService;
-        private readonly SystemLaunchArguments _systemLaunchArguments;
-        private readonly SystemCancellationToken _systemCancellationToken;
-        private readonly NotificationsService _notificationsService;
-        private readonly MessageBusService _messageBusService;
+        readonly SystemStatusService _systemStatusService;
+        readonly SystemLaunchArguments _systemLaunchArguments;
+        readonly SystemCancellationToken _systemCancellationToken;
+        readonly NotificationsService _notificationsService;
+        readonly MessageBusService _messageBusService;
 
-        private readonly ILogger _logger;
-        private readonly DateTime _creationTimestamp;
+        readonly ILogger _logger;
+        readonly DateTime _creationTimestamp;
 
         public SystemService(
             SystemStatusService systemStatusService,
@@ -45,56 +45,6 @@ namespace Wirehome.Core.System
         public event EventHandler ServicesInitialized;
         public event EventHandler ConfigurationLoaded;
         public event EventHandler StartupCompleted;
-
-        public void Start()
-        {
-            _systemStatusService.Set("startup.timestamp", _creationTimestamp);
-            _systemStatusService.Set("startup.duration", null);
-
-            _systemStatusService.Set("framework.description", RuntimeInformation.FrameworkDescription);
-
-            _systemStatusService.Set("process.architecture", RuntimeInformation.ProcessArchitecture);
-            _systemStatusService.Set("process.id", Process.GetCurrentProcess().Id);
-
-            _systemStatusService.Set("system.date_time", () => DateTime.Now);
-            _systemStatusService.Set("system.processor_count", Environment.ProcessorCount);
-
-            _systemStatusService.Set("up_time", () => DateTime.Now - _creationTimestamp);
-
-            _systemStatusService.Set("arguments", string.Join(" ", _systemLaunchArguments.Values));
-
-            _systemStatusService.Set("wirehome.core.version", WirehomeCoreVersion.Version);
-
-            _systemStatusService.RegisterProvider(target =>
-            {
-                using (var currentProcess = Process.GetCurrentProcess())
-                {
-                    target.Add("process.pid", currentProcess.Id);
-                    target.Add("process.threads_count", currentProcess.Threads.Count);
-
-                    ////foreach (ProcessThread thread in currentProcess.Threads)
-                    ////{
-                    ////    using (thread)
-                    ////    {
-                    ////        target.Add($"process.threads.{thread.Id}.priority_level", thread.PriorityLevel);
-                    ////        target.Add($"process.threads.{thread.Id}.total_processor_time", thread.TotalProcessorTime);
-                    ////    }
-                    ////}
-
-                    target.Add("process.working_set", currentProcess.WorkingSet64);
-                    target.Add("process.max_working_set", currentProcess.MaxWorkingSet.ToInt64());
-                    target.Add("process.peak_working_set", currentProcess.PeakWorkingSet64);
-
-                    target.Add("process.private_memory", currentProcess.PrivateMemorySize64);
-
-                    target.Add("process.virtual_memory", currentProcess.VirtualMemorySize64);
-                    target.Add("process.peak_virtual_memory", currentProcess.PeakVirtualMemorySize64);
-                }
-            });
-
-            AddOSInformation();
-            AddThreadPoolInformation();
-        }
 
         public void RunGarbageCollector()
         {
@@ -154,7 +104,7 @@ namespace Wirehome.Core.System
             _logger.LogInformation("Startup completed.");
         }
 
-        private void PublishBootedNotification()
+        void PublishBootedNotification()
         {
             _messageBusService.Publish(new Dictionary<object, object>
             {
@@ -168,7 +118,57 @@ namespace Wirehome.Core.System
             });
         }
 
-        private void AddOSInformation()
+        protected override void OnStart()
+        {
+            _systemStatusService.Set("startup.timestamp", _creationTimestamp);
+            _systemStatusService.Set("startup.duration", null);
+
+            _systemStatusService.Set("framework.description", RuntimeInformation.FrameworkDescription);
+
+            _systemStatusService.Set("process.architecture", RuntimeInformation.ProcessArchitecture);
+            _systemStatusService.Set("process.id", Process.GetCurrentProcess().Id);
+
+            _systemStatusService.Set("system.date_time", () => DateTime.Now);
+            _systemStatusService.Set("system.processor_count", Environment.ProcessorCount);
+
+            _systemStatusService.Set("up_time", () => DateTime.Now - _creationTimestamp);
+
+            _systemStatusService.Set("arguments", string.Join(" ", _systemLaunchArguments.Values));
+
+            _systemStatusService.Set("wirehome.core.version", WirehomeCoreVersion.Version);
+
+            _systemStatusService.RegisterProvider(target =>
+            {
+                using (var currentProcess = Process.GetCurrentProcess())
+                {
+                    target.Add("process.pid", currentProcess.Id);
+                    target.Add("process.threads_count", currentProcess.Threads.Count);
+
+                    ////foreach (ProcessThread thread in currentProcess.Threads)
+                    ////{
+                    ////    using (thread)
+                    ////    {
+                    ////        target.Add($"process.threads.{thread.Id}.priority_level", thread.PriorityLevel);
+                    ////        target.Add($"process.threads.{thread.Id}.total_processor_time", thread.TotalProcessorTime);
+                    ////    }
+                    ////}
+
+                    target.Add("process.working_set", currentProcess.WorkingSet64);
+                    target.Add("process.max_working_set", currentProcess.MaxWorkingSet.ToInt64());
+                    target.Add("process.peak_working_set", currentProcess.PeakWorkingSet64);
+
+                    target.Add("process.private_memory", currentProcess.PrivateMemorySize64);
+
+                    target.Add("process.virtual_memory", currentProcess.VirtualMemorySize64);
+                    target.Add("process.peak_virtual_memory", currentProcess.PeakVirtualMemorySize64);
+                }
+            });
+
+            AddOSInformation();
+            AddThreadPoolInformation();
+        }
+
+        void AddOSInformation()
         {
             _systemStatusService.Set("os.description", RuntimeInformation.OSDescription);
             _systemStatusService.Set("os.architecture", RuntimeInformation.OSArchitecture);
@@ -187,7 +187,7 @@ namespace Wirehome.Core.System
             }
         }
 
-        private void AddThreadPoolInformation()
+        void AddThreadPoolInformation()
         {
             _systemStatusService.Set("thread_pool.max_worker_threads", () =>
             {

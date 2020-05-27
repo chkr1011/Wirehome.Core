@@ -44,7 +44,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
             if (_mqttService.IsLowLevelMqttLoggingEnabled)
             {
-                _mqttClient = new MqttFactory().CreateManagedMqttClient(new LoggerAdapter(_logger));
+                _mqttClient = new MqttFactory().CreateManagedMqttClient(); //new LoggerAdapter(_logger));
             }
             else
             {

@@ -5,16 +5,16 @@ using Wirehome.Core.Extensions;
 
 namespace Wirehome.Core.Hardware.I2C.Adapters
 {
-    public class LinuxI2CBusAdapter : II2CBusAdapter
+    public sealed class LinuxI2CBusAdapter : II2CBusAdapter
     {
-        private const int I2CSlave = 0x0703;
-        private const int OpenReadWrite = 0x2;
+        const int I2CSlave = 0x0703;
+        const int OpenReadWrite = 0x2;
 
-        private readonly object _accessLock = new object();
-        private readonly ILogger _logger;
-        private readonly string _filename;
+        readonly object _accessLock = new object();
+        readonly ILogger _logger;
+        readonly string _filename;
 
-        private int _handle;
+        int _handle;
 
         public LinuxI2CBusAdapter(int busId, ILogger logger)
         {

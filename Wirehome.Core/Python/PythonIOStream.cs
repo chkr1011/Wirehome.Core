@@ -7,7 +7,7 @@ namespace Wirehome.Core.Python
 {
     public sealed class PythonIOToLogStream : Stream
     {
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
         public PythonIOToLogStream(ILogger logger)
         {

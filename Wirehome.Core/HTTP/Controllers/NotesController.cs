@@ -34,7 +34,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             var filename = $"{uid}.md";
 
-            if (!_storageService.TryReadText(out var note, NotesDirectory, filename))
+            if (!_storageService.TryReadRawText(out var note, NotesDirectory, filename))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return null;
@@ -49,7 +49,7 @@ namespace Wirehome.Core.HTTP.Controllers
         public void PostNote(string uid, [FromBody] string text)
         {
             var filename = $"{uid}.md";
-            _storageService.WriteText(text, NotesDirectory, filename);
+            _storageService.WriteRawText(text, NotesDirectory, filename);
         }
 
         [HttpDelete]

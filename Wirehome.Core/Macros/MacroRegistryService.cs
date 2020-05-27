@@ -13,17 +13,17 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Macros
 {
-    public class MacroRegistryService : IService
+    public sealed class MacroRegistryService : WirehomeCoreService
     {
-        private const string MacrosDirectory = "Macros";
+        const string MacrosDirectory = "Macros";
 
-        private readonly Dictionary<string, MacroInstance> _macros = new Dictionary<string, MacroInstance>();
+        readonly Dictionary<string, MacroInstance> _macros = new Dictionary<string, MacroInstance>();
 
-        private readonly MacroRegistryMessageBusWrapper _messageBusWrapper;
-        private readonly StorageService _storageService;
-        private readonly MessageBusService _messageBusService;
-        private readonly ComponentRegistryService _componentRegistryService;
-        private readonly ILogger _logger;
+        readonly MacroRegistryMessageBusWrapper _messageBusWrapper;
+        readonly StorageService _storageService;
+        readonly MessageBusService _messageBusService;
+        readonly ComponentRegistryService _componentRegistryService;
+        readonly ILogger _logger;
 
         public MacroRegistryService(
             StorageService storageService,
@@ -41,16 +41,6 @@ namespace Wirehome.Core.Macros
             systemStatusService.Set("macro_registry.count", () => _macros.Count);
 
             _messageBusWrapper = new MacroRegistryMessageBusWrapper(_messageBusService);
-        }
-
-        public void Start()
-        {
-            foreach (var macroUid in GetMacroUids())
-            {
-                TryInitializeMacro(macroUid);
-            }
-
-            AttachToMessageBus();
         }
 
         public List<string> GetMacroUids()
@@ -78,14 +68,14 @@ namespace Wirehome.Core.Macros
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, MacrosDirectory, uid, DefaultFileNames.Configuration);
+            _storageService.WriteSerializedValue(configuration, MacrosDirectory, uid, DefaultFileNames.Configuration);
         }
 
         public MacroConfiguration ReadMacroConfiguration(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
+            if (!_storageService.TryReadSerializedValue(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
             {
                 throw new MacroNotFoundException(uid);
             }
@@ -97,7 +87,7 @@ namespace Wirehome.Core.Macros
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.DeleteDirectory(MacrosDirectory, uid);
+            _storageService.DeletePath(MacrosDirectory, uid);
         }
 
         public object GetMacroSetting(string macroUid, string settingUid, object defaultValue = null)
@@ -130,7 +120,7 @@ namespace Wirehome.Core.Macros
 
             macro.Settings[settingUid] = value;
 
-            _storageService.Write(macro.Settings, MacrosDirectory, macro.Uid, DefaultFileNames.Settings);
+            _storageService.WriteSerializedValue(macro.Settings, MacrosDirectory, macro.Uid, DefaultFileNames.Settings);
             _messageBusWrapper.PublishSettingChangedBusMessage(macroUid, settingUid, oldValue, value);
         }
 
@@ -142,7 +132,7 @@ namespace Wirehome.Core.Macros
             var macro = GetMacro(macroUid);
             macro.Settings.Remove(settingUid, out var value);
 
-            _storageService.Write(macro.Settings, MacrosDirectory, macroUid, DefaultFileNames.Settings);
+            _storageService.WriteSerializedValue(macro.Settings, MacrosDirectory, macroUid, DefaultFileNames.Settings);
             _messageBusWrapper.PublishSettingRemovedBusMessage(macroUid, settingUid, value);
 
             return value;
@@ -168,7 +158,7 @@ namespace Wirehome.Core.Macros
 
             try
             {
-                if (!_storageService.TryRead(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
+                if (!_storageService.TryReadSerializedValue(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
                 {
                     throw new MacroNotFoundException(uid);
                 }
@@ -232,7 +222,17 @@ namespace Wirehome.Core.Macros
             return result;
         }
 
-        private void AttachToMessageBus()
+        protected override void OnStart()
+        {
+            foreach (var macroUid in GetMacroUids())
+            {
+                TryInitializeMacro(macroUid);
+            }
+
+            AttachToMessageBus();
+        }
+        
+        void AttachToMessageBus()
         {
             var filter = new Dictionary<object, object>
             {
@@ -242,7 +242,7 @@ namespace Wirehome.Core.Macros
             _messageBusService.Subscribe("macro_registry.execute", filter, OnExecuteMacroBusMessage);
         }
 
-        private MacroActionConfiguration ParseActionConfiguration(JObject actionConfiguration)
+        MacroActionConfiguration ParseActionConfiguration(JObject actionConfiguration)
         {
             if (actionConfiguration["type"].Value<string>() == "send_component_message")
             {
@@ -256,7 +256,7 @@ namespace Wirehome.Core.Macros
             throw new NotSupportedException("Macro action type not supported.");
         }
 
-        private void OnExecuteMacroBusMessage(IDictionary<object, object> busMessage)
+        void OnExecuteMacroBusMessage(IDictionary<object, object> busMessage)
         {
         }
     }

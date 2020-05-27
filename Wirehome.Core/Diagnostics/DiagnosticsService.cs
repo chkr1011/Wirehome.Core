@@ -4,26 +4,22 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Diagnostics
 {
-    public class DiagnosticsService : IService
+    public sealed class DiagnosticsService : WirehomeCoreService
     {
-        private readonly List<OperationsPerSecondCounter> _operationsPerSecondCounters = new List<OperationsPerSecondCounter>();
-        private readonly SystemCancellationToken _systemCancellationToken;
+        readonly List<OperationsPerSecondCounter> _operationsPerSecondCounters = new List<OperationsPerSecondCounter>();
+        readonly SystemCancellationToken _systemCancellationToken;
         
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
         public DiagnosticsService(SystemCancellationToken systemCancellationToken, ILogger<DiagnosticsService> logger)
         {
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Start()
-        {
-            Task.Run(() => ResetOperationsPerSecondCountersAsync(_systemCancellationToken.Token), _systemCancellationToken.Token).ConfigureAwait(false);
         }
 
         public OperationsPerSecondCounter CreateOperationsPerSecondCounter(string uid)
@@ -40,7 +36,12 @@ namespace Wirehome.Core.Diagnostics
             return operationsPerSecondCounter;
         }
 
-        private async Task ResetOperationsPerSecondCountersAsync(CancellationToken cancellationToken)
+        protected override void OnStart()
+        {
+            ParallelTask.Start(() => ResetOperationsPerSecondCountersAsync(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
+        }
+
+        async Task ResetOperationsPerSecondCountersAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {

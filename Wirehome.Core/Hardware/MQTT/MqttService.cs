@@ -17,12 +17,13 @@ using MQTTnet.Diagnostics;
 using MQTTnet.Implementations;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public sealed class MqttService : IService, IDisposable
+    public sealed class MqttService : WirehomeCoreService
     {
         readonly BlockingCollection<MqttApplicationMessageReceivedEventArgs> _incomingMessages = new BlockingCollection<MqttApplicationMessageReceivedEventArgs>();
         readonly Dictionary<string, MqttSubscriber> _subscribers = new Dictionary<string, MqttSubscriber>();
@@ -68,58 +69,6 @@ namespace Wirehome.Core.Hardware.MQTT
         }
 
         public bool IsLowLevelMqttLoggingEnabled { get; set; }
-
-        public void Start()
-        {
-            _storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, MqttServiceOptions.Filename);
-
-            IsLowLevelMqttLoggingEnabled = _options.EnableLogging;
-
-            var mqttFactory = new MqttFactory();
-
-            IMqttNetLogger mqttNetLogger;
-            if (IsLowLevelMqttLoggingEnabled)
-            {
-                mqttNetLogger = new LoggerAdapter(_logger);
-            }
-            else
-            {
-                mqttNetLogger = new MqttNetLogger();
-            }
-
-            _webSocketServerAdapter = new MqttWebSocketServerAdapter(mqttNetLogger);
-
-            var serverAdapters = new List<IMqttServerAdapter>
-            {
-                new MqttTcpServerAdapter(mqttNetLogger),
-                _webSocketServerAdapter
-            };
-
-            _mqttServer = mqttFactory.CreateMqttServer(serverAdapters, mqttNetLogger);
-            _mqttServer.UseApplicationMessageReceivedHandler(new MqttApplicationMessageReceivedHandlerDelegate(e => OnApplicationMessageReceived(e)));
-
-            var serverOptions = new MqttServerOptionsBuilder()
-                .WithDefaultEndpointPort(_options.ServerPort)
-                .WithConnectionValidator(ValidateClientConnection)
-                .WithPersistentSessions();
-
-            if (_options.PersistRetainedMessages)
-            {
-                var storage = new MqttServerStorage(_storageService, _systemCancellationToken, _logger);
-                storage.Start();
-                serverOptions.WithStorage(storage);
-            }
-
-            _mqttServer.StartAsync(serverOptions.Build()).GetAwaiter().GetResult();
-
-            _workerThread = new Thread(ProcessIncomingMqttMessages)
-            {
-                Name = nameof(MqttService),
-                IsBackground = true
-            };
-
-            _workerThread.Start();
-        }
 
         public List<string> GetTopicImportUids()
         {
@@ -221,10 +170,55 @@ namespace Wirehome.Core.Hardware.MQTT
             return _webSocketServerAdapter.RunWebSocketConnectionAsync(webSocket, context);
         }
 
-        public void Dispose()
+        protected override void OnStart()
         {
-            _incomingMessages.Dispose();
-            _topicImportManager.Dispose();
+            _storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, MqttServiceOptions.Filename);
+
+            IsLowLevelMqttLoggingEnabled = _options.EnableLogging;
+
+            var mqttFactory = new MqttFactory();
+
+            IMqttNetLogger mqttNetLogger;
+            if (IsLowLevelMqttLoggingEnabled)
+            {
+                mqttNetLogger = new LoggerAdapter(_logger);
+            }
+            else
+            {
+                mqttNetLogger = new MqttNetLogger();
+            }
+
+            _webSocketServerAdapter = new MqttWebSocketServerAdapter(mqttNetLogger);
+
+            var serverAdapters = new List<IMqttServerAdapter>
+            {
+                new MqttTcpServerAdapter(mqttNetLogger),
+                _webSocketServerAdapter
+            };
+
+            _mqttServer = mqttFactory.CreateMqttServer(serverAdapters, mqttNetLogger);
+            _mqttServer.UseApplicationMessageReceivedHandler(new MqttApplicationMessageReceivedHandlerDelegate(e => OnApplicationMessageReceived(e)));
+
+            var serverOptions = new MqttServerOptionsBuilder()
+                .WithDefaultEndpointPort(_options.ServerPort)
+                .WithConnectionValidator(ValidateClientConnection)
+                .WithPersistentSessions();
+
+            if (_options.PersistRetainedMessages)
+            {
+                var storage = new MqttServerStorage(_storageService, _systemCancellationToken, _logger);
+                storage.Start();
+                serverOptions.WithStorage(storage);
+            }
+
+            _mqttServer.StartAsync(serverOptions.Build()).GetAwaiter().GetResult();
+
+            _systemCancellationToken.Token.Register(() =>
+            {
+                _mqttServer.StopAsync().GetAwaiter().GetResult();
+            });
+            
+            ParallelTask.StartLongRunning(ProcessIncomingMqttMessages, _systemCancellationToken.Token, _logger);
         }
 
         void ProcessIncomingMqttMessages()

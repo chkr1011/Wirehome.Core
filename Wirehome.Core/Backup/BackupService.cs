@@ -10,7 +10,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Backup
 {
-    public class BackupService : IService
+    public sealed class BackupService : WirehomeCoreService
     {
         const string BackupsDirectory = "Backups";
         const string NoBackupIndicatorFile = "no_backup";
@@ -20,13 +20,6 @@ namespace Wirehome.Core.Backup
         public BackupService(StorageService storageService)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-        }
-
-        public void Start()
-        {
-            var backupPath = Path.Combine(_storageService.DataPath, BackupsDirectory);
-
-            ExcludePathFromBackup(backupPath);
         }
 
         public void ExcludePathFromBackup(string path)
@@ -108,6 +101,13 @@ namespace Wirehome.Core.Backup
             {
                 File.Delete(path);
             }
+        }
+
+        protected override void OnStart()
+        {
+            var backupPath = Path.Combine(_storageService.DataPath, BackupsDirectory);
+
+            ExcludePathFromBackup(backupPath);
         }
 
         async Task AddDirectoryToPackage(string path, Package package)

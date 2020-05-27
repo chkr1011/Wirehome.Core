@@ -9,123 +9,18 @@ using Wirehome.Core.Python.Exceptions;
 
 namespace Wirehome.Core.Python
 {
-    //public class PythonScriptHostStorage : IDictionary<string, object>
-    //{
-    //    readonly Dictionary<string, object> _storage = new Dictionary<string, object>();
-
-    //    public object this[string key]
-    //    {
-    //        get
-    //        {
-    //            Debug.WriteLine("Python.this get " + key);
-
-    //            lock (_storage)
-    //            {
-    //                return _storage[key];
-    //            }
-    //        }
-
-    //        set
-    //        {
-    //            Debug.WriteLine("Python.this set " + key);
-
-    //            lock (_storage)
-    //            {
-    //                _storage[key] = value;
-    //            }
-    //        }
-    //    }
-
-    //    public ICollection<string> Keys
-    //    {
-    //        get
-    //        {
-    //            lock (_storage)
-    //            {
-    //                return _storage.Keys;
-    //            }
-    //        }
-    //    }
-
-    //    public ICollection<object> Values => throw new NotImplementedException();
-
-    //    public int Count => throw new NotImplementedException();
-
-    //    public bool IsReadOnly => throw new NotImplementedException();
-
-    //    public void Add(string key, object value)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public void Add(KeyValuePair<string, object> item)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public void Clear()
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public bool Contains(KeyValuePair<string, object> item)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public bool ContainsKey(string key)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public bool Remove(string key)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public bool Remove(KeyValuePair<string, object> item)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value)
-    //    {
-    //        Debug.WriteLine("Python.TryGetValue " + key);
-
-    //        lock (_storage)
-    //        {
-    //            return _storage.TryGetValue(key, out value);
-    //        }
-    //    }
-
-    //    IEnumerator IEnumerable.GetEnumerator()
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-    //}
-
     public class PythonScriptHost
     {
         readonly object[] _emptyParameters = Array.Empty<object>();
         readonly object _syncRoot = new object();
-        //readonly PythonScriptHostStorage _storage = new PythonScriptHostStorage();
         readonly IDictionary<string, object> _wirehomeWrapper = new ExpandoObject();
         readonly Dictionary<string, PythonFunction> _functionsCache = new Dictionary<string, PythonFunction>();
 
         readonly ScriptEngine _scriptEngine;
         readonly List<IPythonProxy> _pythonProxies;
 
-        ScriptScope _scriptScope;
+        readonly ScriptScope _scriptScope;
+
         ObjectOperations _operations;
 
         public PythonScriptHost(ScriptEngine scriptEngine, List<IPythonProxy> pythonProxies)

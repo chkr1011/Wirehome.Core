@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Wirehome.Core.App;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
+using Wirehome.Core.Extensions;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Resources;
 using Wirehome.Core.Storage;
@@ -19,18 +20,18 @@ namespace Wirehome.Core.Notifications
     ///
     /// TODO: Add a dictionary of parameters to each notifications. They can be shown in the UI.
     /// </summary>
-    public class NotificationsService : IService
+    public sealed class NotificationsService : WirehomeCoreService
     {
-        private const string StorageFilename = "Notifications.json";
+        const string StorageFilename = "Notifications.json";
 
-        private readonly List<Notification> _notifications = new List<Notification>();
+        readonly List<Notification> _notifications = new List<Notification>();
 
-        private readonly StorageService _storageService;
-        private readonly ResourceService _resourcesService;
-        private readonly MessageBusService _messageBusService;
-        private readonly SystemCancellationToken _systemCancellationToken;
-        private readonly AppService _appService;
-        private readonly ILogger _logger;
+        readonly StorageService _storageService;
+        readonly ResourceService _resourcesService;
+        readonly MessageBusService _messageBusService;
+        readonly SystemCancellationToken _systemCancellationToken;
+        readonly AppService _appService;
+        readonly ILogger _logger;
 
         public NotificationsService(
             StorageService storageService,
@@ -57,20 +58,7 @@ namespace Wirehome.Core.Notifications
                 }
             });
 
-            _appService.RegisterStatusProvider("notifications", () =>
-            {
-                return GetNotifications();
-            });
-        }
-
-        public void Start()
-        {
-            lock (_notifications)
-            {
-                Load();
-            }
-
-            Task.Run(() => RemoveNotificationsAsync(_systemCancellationToken.Token), _systemCancellationToken.Token);
+            _appService.RegisterStatusProvider("notifications", GetNotifications);
         }
 
         public List<Notification> GetNotifications()
@@ -95,7 +83,7 @@ namespace Wirehome.Core.Notifications
         {
             if (!timeToLive.HasValue)
             {
-                if (!_storageService.TryReadOrCreate(out NotificationsServiceOptions options, DefaultDirectoryNames.Configuration, NotificationsServiceOptions.Filename))
+                if (!_storageService.SafeReadSerializedValue(out NotificationsServiceOptions options, DefaultDirectoryNames.Configuration, NotificationsServiceOptions.Filename))
                 {
                     options = new NotificationsServiceOptions();
                 }
@@ -148,7 +136,17 @@ namespace Wirehome.Core.Notifications
             }
         }
 
-        private void Publish(Notification notification)
+        protected override void OnStart()
+        {
+            lock (_notifications)
+            {
+                Load();
+            }
+
+            ParallelTask.Start(() => RemoveNotificationsAsync(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
+        }
+
+        void Publish(Notification notification)
         {
             lock (_notifications)
             {
@@ -165,7 +163,7 @@ namespace Wirehome.Core.Notifications
             });
         }
 
-        private async Task RemoveNotificationsAsync(CancellationToken cancellationToken)
+        async Task RemoveNotificationsAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -207,9 +205,9 @@ namespace Wirehome.Core.Notifications
             }
         }
 
-        private void Load()
+        void Load()
         {
-            if (!_storageService.TryRead<List<Notification>>(out var notifications, "Notifications.json"))
+            if (!_storageService.TryReadSerializedValue<List<Notification>>(out var notifications, "Notifications.json"))
             {
                 return;
             }
@@ -223,9 +221,9 @@ namespace Wirehome.Core.Notifications
             }
         }
 
-        private void Save()
+        void Save()
         {
-            _storageService.Write(_notifications, StorageFilename);
+            _storageService.WriteSerializedValue(_notifications, StorageFilename);
         }
     }
 }

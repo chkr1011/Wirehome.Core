@@ -6,13 +6,13 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Diagnostics.Log
 {
-    public class LogService : IService
+    public sealed class LogService : WirehomeCoreService
     {
         readonly LinkedList<LogEntry> _logEntries = new LinkedList<LogEntry>();
         readonly SystemStatusService _systemStatusService;
         readonly LogServiceOptions _options;
 
-        int _informationsCount;
+        int _informationCount;
         int _warningsCount;
         int _errorsCount;
 
@@ -21,14 +21,10 @@ namespace Wirehome.Core.Diagnostics.Log
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
 
             if (storageService is null) throw new ArgumentNullException(nameof(storageService));
-            if (!storageService.TryReadOrCreate(out _options, DefaultDirectoryNames.Configuration, LogServiceOptions.Filename))
+            if (!storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, LogServiceOptions.Filename))
             {
                 _options = new LogServiceOptions();
             }
-        }
-
-        public void Start()
-        {
         }
 
         public void Publish(DateTime timestamp, LogLevel logLevel, string source, string message, Exception exception)
@@ -47,7 +43,7 @@ namespace Wirehome.Core.Diagnostics.Log
                 }
                 else if (newLogEntry.Level == LogLevel.Information)
                 {
-                    _informationsCount++;
+                    _informationCount++;
                 }
 
                 _logEntries.AddFirst(newLogEntry);
@@ -66,7 +62,7 @@ namespace Wirehome.Core.Diagnostics.Log
                     }
                     else if (removedLogEntry.Level == LogLevel.Information)
                     {
-                        _informationsCount--;
+                        _informationCount--;
                     }
 
                     _logEntries.RemoveLast();
@@ -82,7 +78,7 @@ namespace Wirehome.Core.Diagnostics.Log
             {
                 _logEntries.Clear();
 
-                _informationsCount = 0;
+                _informationCount = 0;
                 _warningsCount = 0;
                 _errorsCount = 0;
 
@@ -127,9 +123,9 @@ namespace Wirehome.Core.Diagnostics.Log
             return logEntries;
         }
 
-        private void UpdateSystemStatus()
+        void UpdateSystemStatus()
         {
-            _systemStatusService.Set("log.informations_count", _informationsCount);
+            _systemStatusService.Set("log.information_count", _informationCount);
             _systemStatusService.Set("log.warnings_count", _warningsCount);
             _systemStatusService.Set("log.errors_count", _errorsCount);
         }

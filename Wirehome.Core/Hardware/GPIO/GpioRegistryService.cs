@@ -10,7 +10,7 @@ using Wirehome.Core.MessageBus;
 
 namespace Wirehome.Core.Hardware.GPIO
 {
-    public sealed class GpioRegistryService : IService
+    public sealed class GpioRegistryService : WirehomeCoreService
     {
         readonly Dictionary<string, IGpioAdapter> _adapters = new Dictionary<string, IGpioAdapter>();
         readonly SystemStatusService _systemStatusService;
@@ -22,21 +22,6 @@ namespace Wirehome.Core.Hardware.GPIO
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Start()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _logger);
-                gpioAdapter.Enable();
-                RegisterAdapter(string.Empty, gpioAdapter);
-            }
-            else
-            {
-                var gpioAdapter = new TestGpioAdapter(_logger);
-                RegisterAdapter(string.Empty, gpioAdapter);
-            }
         }
 
         public void RegisterAdapter(string hostId, IGpioAdapter adapter)
@@ -75,6 +60,21 @@ namespace Wirehome.Core.Hardware.GPIO
             if (hostId == null) throw new ArgumentNullException(nameof(hostId));
 
             GetAdapter(hostId).EnableInterrupt(gpioId, edge);
+        }
+
+        protected override void OnStart()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _logger);
+                gpioAdapter.Enable();
+                RegisterAdapter(string.Empty, gpioAdapter);
+            }
+            else
+            {
+                var gpioAdapter = new TestGpioAdapter(_logger);
+                RegisterAdapter(string.Empty, gpioAdapter);
+            }
         }
 
         IGpioAdapter GetAdapter(string hostId)

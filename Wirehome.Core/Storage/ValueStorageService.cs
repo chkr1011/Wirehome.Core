@@ -1,14 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Linq;
 using Wirehome.Core.Contracts;
 
 namespace Wirehome.Core.Storage
 {
-    public class ValueStorageService : IService
+    public sealed class ValueStorageService : WirehomeCoreService
     {
         const string ValueStorageDirectoryName = "ValueStorage";
 
+        readonly object _syncRoot = new object();
         readonly StorageService _storageService;
         readonly ILogger<ValueStorageService> _logger;
 
@@ -18,17 +18,16 @@ namespace Wirehome.Core.Storage
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void Start()
-        {
-        }
-
         public void Write(RelativeValueStoragePath relativePath, object value)
         {
             if (relativePath is null) throw new ArgumentNullException(nameof(relativePath));
 
             var path = BuildPath(relativePath);
+            lock (_syncRoot)
+            {
+                _storageService.WriteSerializedValue(value, path);
+            }
 
-            _storageService.Write(value, path);
             _logger.LogTrace($"Value '{relativePath}' written ({value}).");
         }
 
@@ -37,13 +36,15 @@ namespace Wirehome.Core.Storage
             if (relativePath is null) throw new ArgumentNullException(nameof(relativePath));
 
             var path = BuildPath(relativePath);
-
-            if (_storageService.TryRead(out value, path))
+            lock (_syncRoot)
             {
-                _logger.LogTrace($"Value '{relativePath}' read ({value}).");
-                return true;
+                if (_storageService.TryReadSerializedValue(out value, path))
+                {
+                    _logger.LogTrace($"Value '{relativePath}' read ({value}).");
+                    return true;
+                }
             }
-
+            
             _logger.LogTrace($"Value '{relativePath}' not found.");
             return false;
         }
@@ -53,22 +54,18 @@ namespace Wirehome.Core.Storage
             if (relativePath is null) throw new ArgumentNullException(nameof(relativePath));
 
             var path = BuildPath(relativePath);
-
-            _storageService.DeletePath(path);
+            lock (_syncRoot)
+            {
+                _storageService.DeletePath(path);
+            }
+            
             _logger.LogTrace($"Value '{relativePath}' deleted.");
         }
 
-        string BuildPath(RelativeValueStoragePath relativePath)
+        static string BuildPath(RelativeValueStoragePath relativePath)
         {
-            if (relativePath.Paths.Any(p => p.Contains("/", StringComparison.Ordinal)) || relativePath.Paths.Any(p => p.Contains("\\", StringComparison.Ordinal)))
-            {
-                throw new InvalidOperationException("The path is invalid.");
-            }
-
-            var path = global::System.IO.Path.Combine(relativePath.Paths.ToArray());
-            path = global::System.IO.Path.Combine(ValueStorageDirectoryName, path);
-
-            return path;
+            var path = global::System.IO.Path.Combine(relativePath.Segments.ToArray());
+            return global::System.IO.Path.Combine(ValueStorageDirectoryName, path);
         }
     }
 

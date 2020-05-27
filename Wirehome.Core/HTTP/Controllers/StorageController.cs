@@ -23,7 +23,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             if (uid is null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.Write(value, uid.Split("/"));
+            _storageService.WriteSerializedValue(value, uid.Split("/"));
         }
 
         [HttpGet]
@@ -33,7 +33,7 @@ namespace Wirehome.Core.HTTP.Controllers
         {
             if (uid is null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out JObject value, uid.Split("/")))
+            if (!_storageService.TryReadSerializedValue(out JObject value, uid.Split("/")))
             {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
             }

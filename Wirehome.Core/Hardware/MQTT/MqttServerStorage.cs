@@ -47,7 +47,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public Task<IList<MqttApplicationMessage>> LoadRetainedMessagesAsync()
         {
-            _storageService.TryRead(out List<MqttApplicationMessage> messages, "RetainedMqttMessages.json");
+            _storageService.TryReadSerializedValue(out List<MqttApplicationMessage> messages, "RetainedMqttMessages.json");
             if (messages == null)
             {
                 messages = new List<MqttApplicationMessage>();
@@ -74,7 +74,7 @@ namespace Wirehome.Core.Hardware.MQTT
                         _messagesHaveChanged = false;
                     }
 
-                    _storageService.Write(messages, "RetainedMqttMessages.json");
+                    _storageService.WriteSerializedValue(messages, "RetainedMqttMessages.json");
 
                     _logger.LogInformation($"{messages.Count} retained MQTT messages written to storage.");
                 }

@@ -7,22 +7,22 @@ using System.IO;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.GlobalVariables;
-using Wirehome.Core.Resources.Exception;
+using Wirehome.Core.Resources.Exceptions;
 using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.Resources
 {
-    public class ResourceService : IService
+    public sealed class ResourceService : WirehomeCoreService
     {
-        private const string ResourcesDirectory = "Resources";
-        private const string StringsFilename = "Strings.json";
+        const string ResourcesDirectory = "Resources";
+        const string StringsFilename = "Strings.json";
 
-        private readonly Dictionary<string, Dictionary<string, string>> _resources = new Dictionary<string, Dictionary<string, string>>();
+        readonly Dictionary<string, Dictionary<string, string>> _resources = new Dictionary<string, Dictionary<string, string>>();
 
-        private readonly StorageService _storageService;
-        private readonly JsonSerializerService _jsonSerializerService;
-        private readonly GlobalVariablesService _globalVariablesService;
-        private readonly ILogger _logger;
+        readonly StorageService _storageService;
+        readonly JsonSerializerService _jsonSerializerService;
+        readonly GlobalVariablesService _globalVariablesService;
+        readonly ILogger _logger;
 
         public ResourceService(
             StorageService storageService,
@@ -34,17 +34,6 @@ namespace Wirehome.Core.Resources
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
             _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Start()
-        {
-            foreach (var resourceUid in GetResourceUids())
-            {
-                TryLoadResource(resourceUid);
-            }
-
-            var filename = Path.Combine(_storageService.BinPath, "Resources.json");
-            TryRegisterDefaultResources(filename);
         }
 
         public Dictionary<string, string> GetResources(string languageCode)
@@ -89,7 +78,7 @@ namespace Wirehome.Core.Resources
             {
                 if (_resources.Remove(uid))
                 {
-                    _storageService.DeleteDirectory(ResourcesDirectory, uid);
+                    _storageService.DeletePath(ResourcesDirectory, uid);
                 }
             }
         }
@@ -191,22 +180,35 @@ namespace Wirehome.Core.Resources
             return GetLanguageResourceValue(uid, systemLanguageCode, defaultValue);
         }
 
-        private string ConvertValue(object value)
+        protected override void OnStart()
+        {
+            foreach (var resourceUid in GetResourceUids())
+            {
+                TryLoadResource(resourceUid);
+            }
+
+            var filename = Path.Combine(_storageService.BinPath, "Resources.json");
+            TryRegisterDefaultResources(filename);
+        }
+
+        string ConvertValue(object value)
         {
             var systemLanguageCode = _globalVariablesService.GetValue(GlobalVariableUids.LanguageCode) as string ?? "en";
-            var cultureInfo = CultureInfo.GetCultureInfo(systemLanguageCode);
 
-            if (cultureInfo == null)
+            try
+            {
+                var cultureInfo = CultureInfo.GetCultureInfo(systemLanguageCode);
+                return Convert.ToString(value, cultureInfo);
+            }
+            catch (CultureNotFoundException)
             {
                 return Convert.ToString(value);
             }
-
-            return Convert.ToString(value, cultureInfo);
         }
 
-        private void TryLoadResource(string uid)
+        void TryLoadResource(string uid)
         {
-            if (!_storageService.TryRead(out Dictionary<string, string> strings, ResourcesDirectory, uid, StringsFilename))
+            if (!_storageService.TryReadSerializedValue(out Dictionary<string, string> strings, ResourcesDirectory, uid, StringsFilename))
             {
                 strings = new Dictionary<string, string>();
             }
@@ -217,38 +219,49 @@ namespace Wirehome.Core.Resources
             }
         }
 
-        private void TryRegisterDefaultResources(string filename)
+        void TryRegisterDefaultResources(string filename)
         {
-            // TODO: Refactor to use the resource service.
-            if (!_jsonSerializerService.TryDeserializeFile(filename, out Dictionary<string, Dictionary<string, string>> defaultResources))
+            try
             {
-                return;
-            }
+                var json = File.ReadAllText(filename);
 
-            foreach (var defaultResource in defaultResources)
-            {
-                if (defaultResource.Value == null)
+                // TODO: Refactor to use the resource service.
+                var resources =
+                    _jsonSerializerService.Deserialize<Dictionary<string, Dictionary<string, string>>>(json);
+                if (resources == null)
                 {
-                    continue;
+                    return;
                 }
 
-                foreach (var defaultResourceValue in defaultResource.Value)
+                foreach (var defaultResource in resources)
                 {
-                    if (defaultResourceValue.Value == null)
+                    if (defaultResource.Value == null)
                     {
                         continue;
                     }
 
-                    RegisterResource(defaultResource.Key, defaultResourceValue.Key, defaultResourceValue.Value);
+                    foreach (var defaultResourceValue in defaultResource.Value)
+                    {
+                        if (defaultResourceValue.Value == null)
+                        {
+                            continue;
+                        }
+
+                        RegisterResource(defaultResource.Key, defaultResourceValue.Key, defaultResourceValue.Value);
+                    }
                 }
+            }
+            catch (Exception exception)
+            {
+
             }
         }
 
-        private void Save()
+        void Save()
         {
             foreach (var resource in _resources)
             {
-                _storageService.Write(resource.Value, ResourcesDirectory, resource.Key, StringsFilename);
+                _storageService.WriteSerializedValue(resource.Value, ResourcesDirectory, resource.Key, StringsFilename);
             }
 
             _logger.LogInformation("Resources written to disk.");

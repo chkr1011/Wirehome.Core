@@ -7,7 +7,7 @@ using Wirehome.Core.Storage;
 
 namespace Wirehome.Core.System.StartupScripts
 {
-    public class StartupScriptsService : IService
+    public sealed class StartupScriptsService : WirehomeCoreService
     {
         const string StartupScriptsDirectory = "StartupScripts";
 
@@ -34,14 +34,6 @@ namespace Wirehome.Core.System.StartupScripts
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void Start()
-        {
-            foreach (var startupScriptUid in GetStartupScriptUids())
-            {
-                TryInitializeStartupScript(startupScriptUid);
-            }
-        }
-
         public List<string> GetStartupScriptUids()
         {
             return _storageService.EnumerateDirectories("*", StartupScriptsDirectory);
@@ -59,7 +51,7 @@ namespace Wirehome.Core.System.StartupScripts
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (!_storageService.TryRead(out StartupScriptConfiguration configuration, StartupScriptsDirectory, uid, DefaultFileNames.Configuration))
+            if (!_storageService.TryReadSerializedValue(out StartupScriptConfiguration configuration, StartupScriptsDirectory, uid, DefaultFileNames.Configuration))
             {
                 throw new StartupScriptNotFoundException(uid);
             }
@@ -72,14 +64,14 @@ namespace Wirehome.Core.System.StartupScripts
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, StartupScriptsDirectory, uid, DefaultFileNames.Configuration);
+            _storageService.WriteSerializedValue(configuration, StartupScriptsDirectory, uid, DefaultFileNames.Configuration);
         }
 
         public void DeleteStartupScript(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            _storageService.DeleteDirectory(StartupScriptsDirectory, uid);
+            _storageService.DeletePath(StartupScriptsDirectory, uid);
         }
 
         public void WriteStartupScriptCode(string uid, string scriptCode)
@@ -87,19 +79,27 @@ namespace Wirehome.Core.System.StartupScripts
             if (uid == null) throw new ArgumentNullException(nameof(uid));
             if (scriptCode == null) throw new ArgumentNullException(nameof(scriptCode));
 
-            _storageService.WriteText(scriptCode, StartupScriptsDirectory, uid, DefaultFileNames.Script);
+            _storageService.WriteRawText(scriptCode, StartupScriptsDirectory, uid, DefaultFileNames.Script);
         }
 
         public string ReadStartupScriptCode(string uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
-            if (_storageService.TryReadText(out var scriptCode, StartupScriptsDirectory, uid, DefaultFileNames.Script))
+            if (_storageService.TryReadRawText(out var scriptCode, StartupScriptsDirectory, uid, DefaultFileNames.Script))
             {
                 return scriptCode;
             }
 
             throw new StartupScriptNotFoundException(uid);
+        }
+
+        protected override void OnStart()
+        {
+            foreach (var startupScriptUid in GetStartupScriptUids())
+            {
+                TryInitializeStartupScript(startupScriptUid);
+            }
         }
 
         void OnServicesInitialized()
@@ -155,7 +155,7 @@ namespace Wirehome.Core.System.StartupScripts
         {
             try
             {
-                if (!_storageService.TryRead(out StartupScriptConfiguration configuration, StartupScriptsDirectory, uid, DefaultFileNames.Configuration))
+                if (!_storageService.TryReadSerializedValue(out StartupScriptConfiguration configuration, StartupScriptsDirectory, uid, DefaultFileNames.Configuration))
                 {
                     throw new StartupScriptNotFoundException(uid);
                 }
@@ -188,7 +188,7 @@ namespace Wirehome.Core.System.StartupScripts
 
         StartupScriptInstance CreateStartupScriptInstance(string uid, StartupScriptConfiguration configuration)
         {
-            if (!_storageService.TryReadText(out var scriptCode, StartupScriptsDirectory, uid, DefaultFileNames.Script))
+            if (!_storageService.TryReadRawText(out var scriptCode, StartupScriptsDirectory, uid, DefaultFileNames.Script))
             {
                 throw new InvalidOperationException("Script file not found.");
             }

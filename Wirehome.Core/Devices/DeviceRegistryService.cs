@@ -11,13 +11,13 @@ using Wirehome.Core.Hardware.MQTT;
 
 namespace Wirehome.Core.Devices
 {
-    public sealed class DeviceRegistryService : IService, IDisposable
+    public sealed class DeviceRegistryService : WirehomeCoreService
     {
         readonly Dictionary<string, Device> _devices = new Dictionary<string, Device>();
         readonly AsyncLock _devicesLock = new AsyncLock();
 
         readonly MqttService _mqttService;
-        private readonly ILogger<DeviceRegistryService> _logger;
+        readonly ILogger<DeviceRegistryService> _logger;
 
         public DeviceRegistryService(MqttService mqttService, ILogger<DeviceRegistryService> logger)
         {
@@ -25,10 +25,6 @@ namespace Wirehome.Core.Devices
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _mqttService.Subscribe(null, "$wirehome/devices/+/report/+", OnPropertyReportedViaMqtt);
-        }
-
-        public void Start()
-        {
         }
 
         public async Task<List<string>> GetDeviceUids()
@@ -112,11 +108,6 @@ namespace Wirehome.Core.Devices
             {
                 _devicesLock.Exit();
             }
-        }
-
-        public void Dispose()
-        {
-            _devicesLock.Dispose();
         }
 
         void OnPropertyReportedViaMqtt(MqttApplicationMessageReceivedEventArgs eventArgs)

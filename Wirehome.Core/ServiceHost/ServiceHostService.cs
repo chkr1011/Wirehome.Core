@@ -14,16 +14,16 @@ using Wirehome.Core.System;
 
 namespace Wirehome.Core.ServiceHost
 {
-    public class ServiceHostService : IService
+    public sealed class ServiceHostService : WirehomeCoreService
     {
-        private const string ServicesDirectory = "Services";
+        const string ServicesDirectory = "Services";
 
-        private readonly Dictionary<string, ServiceInstance> _services = new Dictionary<string, ServiceInstance>();
+        readonly Dictionary<string, ServiceInstance> _services = new Dictionary<string, ServiceInstance>();
 
-        private readonly PackageManagerService _repositoryService;
-        private readonly StorageService _storageService;
-        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly ILogger _logger;
+        readonly PackageManagerService _repositoryService;
+        readonly StorageService _storageService;
+        readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
+        readonly ILogger _logger;
 
         public ServiceHostService(
             StorageService storageService,
@@ -47,15 +47,7 @@ namespace Wirehome.Core.ServiceHost
                 StartDelayedServices();
             };
         }
-
-        public void Start()
-        {
-            foreach (var serviceUid in ReadServiceConfigurations().Where(i => !i.Value.DelayedStart).Select(i => i.Key))
-            {
-                TryInitializeService(serviceUid);
-            }
-        }
-
+        
         public List<string> GetServiceUids()
         {
             return _storageService.EnumerateDirectories("*", ServicesDirectory);
@@ -66,14 +58,14 @@ namespace Wirehome.Core.ServiceHost
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            _storageService.Write(configuration, ServicesDirectory, id, DefaultFileNames.Configuration);
+            _storageService.WriteSerializedValue(configuration, ServicesDirectory, id, DefaultFileNames.Configuration);
         }
 
         public ServiceConfiguration ReadServiceConfiguration(string id)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
 
-            if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFileNames.Configuration))
+            if (!_storageService.TryReadSerializedValue(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFileNames.Configuration))
             {
                 throw new ServiceNotFoundException(id, null);
             }
@@ -85,7 +77,7 @@ namespace Wirehome.Core.ServiceHost
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
 
-            _storageService.DeleteDirectory(ServicesDirectory, id);
+            _storageService.DeletePath(ServicesDirectory, id);
         }
 
         public List<ServiceInstance> GetServices()
@@ -102,7 +94,7 @@ namespace Wirehome.Core.ServiceHost
 
             try
             {
-                if (!_storageService.TryRead(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFileNames.Configuration))
+                if (!_storageService.TryReadSerializedValue(out ServiceConfiguration configuration, ServicesDirectory, id, DefaultFileNames.Configuration))
                 {
                     throw new ServiceNotFoundException(id, null);
                 }
@@ -176,7 +168,15 @@ namespace Wirehome.Core.ServiceHost
             return serviceInstance.ExecuteFunction(functionName, parameters);
         }
 
-        private void StartDelayedServices()
+        protected override void OnStart()
+        {
+            foreach (var serviceUid in ReadServiceConfigurations().Where(i => !i.Value.DelayedStart).Select(i => i.Key))
+            {
+                TryInitializeService(serviceUid);
+            }
+        }
+
+        void StartDelayedServices()
         {
             _logger.LogInformation("Starting delayed services.");
 
@@ -186,12 +186,12 @@ namespace Wirehome.Core.ServiceHost
             }
         }
 
-        private Dictionary<string, ServiceConfiguration> ReadServiceConfigurations()
+        Dictionary<string, ServiceConfiguration> ReadServiceConfigurations()
         {
             var serviceConfigurations = new Dictionary<string, ServiceConfiguration>();
             foreach (var serviceUid in GetServiceUids())
             {
-                if (_storageService.TryRead(out ServiceConfiguration serviceConfiguration, ServicesDirectory, serviceUid, DefaultFileNames.Configuration))
+                if (_storageService.TryReadSerializedValue(out ServiceConfiguration serviceConfiguration, ServicesDirectory, serviceUid, DefaultFileNames.Configuration))
                 {
                     serviceConfigurations.Add(serviceUid, serviceConfiguration);
                 }
@@ -200,7 +200,7 @@ namespace Wirehome.Core.ServiceHost
             return serviceConfigurations;
         }
 
-        private ServiceInstance CreateServiceInstance(string id, ServiceConfiguration configuration)
+        ServiceInstance CreateServiceInstance(string id, ServiceConfiguration configuration)
         {
             var packageUid = new PackageUid(id, configuration.Version);
             var package = _repositoryService.LoadPackage(packageUid);

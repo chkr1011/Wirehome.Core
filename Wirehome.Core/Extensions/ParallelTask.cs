@@ -22,5 +22,21 @@ namespace Wirehome.Core.Extensions
                     logger.LogWarning(t.Exception, "Error while executing a parallel task.");
                 }, TaskContinuationOptions.OnlyOnFaulted);
         }
+
+        public static void StartLongRunning(Action action, CancellationToken cancellationToken, ILogger logger)
+        {
+            if (action == null) throw new ArgumentNullException(nameof(action));
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+
+            Task.Factory.StartNew(
+                action,
+                cancellationToken,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default).ContinueWith(
+                t =>
+                {
+                    logger.LogWarning(t.Exception, "Error while executing a parallel task.");
+                }, TaskContinuationOptions.OnlyOnFaulted);
+        }
     }
 }

@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace Wirehome.Core.Hosts.Console
 {
     public static class Program
     {
-        public static void Main(string[] arguments)
+        public static async Task Main(string[] arguments)
         {
             var logo = $@"
       __        ___          _                            ____
@@ -24,13 +24,14 @@ namespace Wirehome.Core.Hosts.Console
             {
                 global::System.Console.WriteLine(logo);
 
-                WirehomeCoreHost.Start(arguments);
+                await WirehomeCoreHost.Start(arguments).ConfigureAwait(false);
 
                 global::System.Console.WriteLine("Press <Enter> to exit.");
                 global::System.Console.ReadLine();
 
-                global::System.Console.WriteLine("Exiting...");
-                WirehomeCoreHost.Stop();
+                await WirehomeCoreHost.Stop().ConfigureAwait(false);
+
+                //Environment.FailFast(null, null);
             }
             catch (OperationCanceledException)
             {
