@@ -12,7 +12,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class ServicesController : Controller
     {
-        private readonly ServiceHostService _serviceHostService;
+        readonly ServiceHostService _serviceHostService;
 
         public ServicesController(ServiceHostService serviceHostService)
         {

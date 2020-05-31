@@ -20,6 +20,8 @@ namespace Wirehome.Core.Packages
         readonly StorageService _storageService;
         readonly ILogger _logger;
 
+        string _rootPath;
+
         public PackageManagerService(StorageService storageService, ILogger<PackageManagerService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
@@ -103,15 +105,14 @@ namespace Wirehome.Core.Packages
         {
             var packageUids = new List<PackageUid>();
 
-            var packagesRootPath = GetPackagesRootPath();
-            foreach (var packageId in _storageService.EnumerateDirectories("*", packagesRootPath))
+            foreach (var packageId in _storageService.EnumerateDirectories("*", _rootPath))
             {
                 if (packageId.StartsWith(".", StringComparison.Ordinal))
                 {
                     continue;
                 }
 
-                foreach (var packageVersion in _storageService.EnumerateDirectories("*", packagesRootPath, packageId))
+                foreach (var packageVersion in _storageService.EnumerateDirectories("*", _rootPath, packageId))
                 {
                     packageUids.Add(new PackageUid(packageId, packageVersion));
                 }
@@ -159,11 +160,11 @@ namespace Wirehome.Core.Packages
         {
             if (uid is null) throw new ArgumentNullException(nameof(uid));
 
-            var path = GetPackagesRootPath();
+            var path = _rootPath;
 
             if (string.IsNullOrEmpty(uid.Version))
             {
-                path = GetLatestVersionPath(path, uid.Id);
+                path = GetLatestVersionPath(uid.Id);
             }
             else
             {
@@ -173,29 +174,27 @@ namespace Wirehome.Core.Packages
             return path;
         }
 
-        string GetPackagesRootPath()
+        protected override void OnStart()
         {
-            _storageService.SafeReadSerializedValue(out PackageManagerServiceOptions options, PackageManagerServiceOptions.Filename);
+            _storageService.SafeReadSerializedValue(out PackageManagerServiceOptions options, DefaultDirectoryNames.Configuration, PackageManagerServiceOptions.Filename);
 
-            var rootPath = options.RootPath;
-            if (string.IsNullOrEmpty(rootPath))
+            _rootPath = options.RootPath;
+            if (string.IsNullOrEmpty(_rootPath) || !Directory.Exists(_rootPath))
             {
-                rootPath = Path.Combine(_storageService.DataPath, PackagesDirectory);
+                _rootPath = Path.Combine(_storageService.DataPath, PackagesDirectory);
             }
-
-            return rootPath;
         }
-
-        static string GetLatestVersionPath(string rootPath, string id)
+        
+        string GetLatestVersionPath(string id)
         {
-            rootPath = Path.Combine(rootPath, id);
+            var packageRootPath = Path.Combine(_rootPath, id);
 
-            if (!Directory.Exists(rootPath))
+            if (!Directory.Exists(packageRootPath))
             {
                 throw new WirehomePackageNotFoundException(PackageUid.Parse(id));
             }
 
-            var versions = Directory.GetDirectories(rootPath)
+            var versions = Directory.GetDirectories(packageRootPath)
                 .OrderByDescending(d => d.ToLowerInvariant());
 
             return versions.First();

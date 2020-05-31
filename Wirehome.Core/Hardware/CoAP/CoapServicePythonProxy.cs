@@ -79,12 +79,14 @@ namespace Wirehome.Core.Hardware.CoAP
                     {
                         lock (coapClient)
                         {
+                            Console.WriteLine("SENDING COAP REQUEST");
                             return coapClient.RequestAsync(coapRequest, cancellationTokenSource.Token).GetAwaiter().GetResult();
                         }
                     }
                 }
                 catch
                 {
+                    Console.WriteLine("CLOSING EXISTING COAP CLIENT");
                     coapClient.Dispose();
 
                     lock (_clients)
@@ -96,13 +98,19 @@ namespace Wirehome.Core.Hardware.CoAP
                 }
             }
 
+            CoapResponse coapResponse;
             using (var coapClient = CreateClient(parameters).GetAwaiter().GetResult())
             {
                 using (var cancellationTokenSource = new CancellationTokenSource(timeout))
                 {
-                    return coapClient.RequestAsync(coapRequest, cancellationTokenSource.Token).GetAwaiter().GetResult();
+                    Console.WriteLine("SENDING COAP REQUEST");
+                    coapResponse = coapClient.RequestAsync(coapRequest, cancellationTokenSource.Token).GetAwaiter().GetResult();
                 }
+
+                Console.WriteLine("CLOSING COAP CLIENT");
             }
+
+            return coapResponse;
         }
 
         async Task<ICoapClient> CreateClient(PythonDictionary parameters)
@@ -130,6 +138,7 @@ namespace Wirehome.Core.Hardware.CoAP
             {
                 using (var cancellationTokenSource = new CancellationTokenSource(timeout))
                 {
+                    Console.WriteLine("CONNECTING COAP CLIENT");
                     await coapClient.ConnectAsync(connectOptions, cancellationTokenSource.Token).ConfigureAwait(false);
                 }
             }

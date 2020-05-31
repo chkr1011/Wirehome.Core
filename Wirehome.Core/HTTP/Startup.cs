@@ -170,6 +170,7 @@ namespace Wirehome.Core.HTTP
 
             serviceProvider.GetRequiredService<StorageService>().Start();
             serviceProvider.GetRequiredService<BackupService>().Start();
+            serviceProvider.GetRequiredService<PackageManagerService>().Start();
 
             // Start hardware related services.
             serviceProvider.GetRequiredService<GpioRegistryService>().Start();
