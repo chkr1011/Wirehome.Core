@@ -101,6 +101,7 @@ namespace Wirehome.Core.HTTP
                         Url = new Uri("https://github.com/chkr1011/Wirehome.Core")
                     },
                 });
+                c.OperationFilter<BinaryContentFilter>();
             });
 
             var serviceImplementations = Reflection.GetClassesAssignableFrom<WirehomeCoreService>();
