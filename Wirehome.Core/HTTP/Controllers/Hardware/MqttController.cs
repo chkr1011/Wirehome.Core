@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Wirehome.Core.Hardware.MQTT;
 using Wirehome.Core.HTTP.Controllers.Models;
+using Wirehome.Core.HTTP.Filters;
 
 namespace Wirehome.Core.HTTP.Controllers.Hardware
 {
@@ -24,6 +25,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         [HttpPost]
         [Route("/api/v1/mqtt/publish")]
         [ApiExplorerSettings(GroupName = "v1")]
+        [BinaryContent]
         public async Task PostPublish(string topic, int qos = 0, bool retain = false)
         {
             if (topic == null) throw new ArgumentNullException(nameof(topic));
