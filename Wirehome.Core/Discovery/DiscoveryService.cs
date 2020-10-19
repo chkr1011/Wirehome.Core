@@ -19,7 +19,7 @@ namespace Wirehome.Core.Discovery
         readonly DiscoveryServiceOptions _options;
         readonly HttpClient _httpClient = new HttpClient();
         
-        SsdpDevicePublisher _publisher;
+        //SsdpDevicePublisher _publisher;
 
         public DiscoveryService(StorageService storageService, SystemCancellationToken systemCancellationToken, ILogger<DiscoveryService> logger)
         {
@@ -65,7 +65,7 @@ namespace Wirehome.Core.Discovery
             {
                 try
                 {
-                    await TryDiscoverSsdpDevicesAsync(cancellationToken).ConfigureAwait(false);
+                    await TryDiscoverDevicesAsync(cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -81,41 +81,31 @@ namespace Wirehome.Core.Discovery
             }
         }
 
-        //public string AddDeviceDefinition(string uid)
-        //{
-        //    var device = new SsdpRootDevice();
-        //    device.CacheLifetime = TimeSpan.MaxValue;
-        //    device.Location = new Uri("");
-        //    device.DeviceTypeNamespace = "";
-        //    //device.DeviceType
-
-        //}
-
-        async Task TryDiscoverSsdpDevicesAsync(CancellationToken cancellationToken)
+        async Task TryDiscoverDevicesAsync(CancellationToken cancellationToken)
         {
             using (var deviceLocator = new SsdpDeviceLocator())
             {
                 var devices = new List<SsdpDevice>();
-                foreach (var discoveredSsdpDevice in await deviceLocator.SearchAsync(_options.SearchDuration).ConfigureAwait(false))
+                foreach (var discoveredDevice in await deviceLocator.SearchAsync(_options.SearchDuration).ConfigureAwait(false))
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
                         return;
                     }
 
-                    if (Convert.ToString(discoveredSsdpDevice.DescriptionLocation).Contains("0.0.0.0", StringComparison.Ordinal))
+                    if (Convert.ToString(discoveredDevice.DescriptionLocation)?.Contains("0.0.0.0", StringComparison.Ordinal) == true)
                     {
                         continue;
                     }
 
                     try
                     {
-                        var ssdpDevice = await discoveredSsdpDevice.GetDeviceInfo(_httpClient).ConfigureAwait(false);
-                        devices.Add(CreateSsdpDeviceModel(discoveredSsdpDevice, ssdpDevice));
+                        var ssdpDevice = await discoveredDevice.GetDeviceInfo(_httpClient).ConfigureAwait(false);
+                        devices.Add(CreateDeviceModel(discoveredDevice, ssdpDevice));
                     }
                     catch (Exception exception)
                     {
-                        _logger.LogDebug(exception, $"Error while loading device info from '{discoveredSsdpDevice.DescriptionLocation}.'");
+                        _logger.LogDebug(exception, $"Error while loading device info from '{discoveredDevice.DescriptionLocation}.'");
                     }
                 }
 
@@ -129,7 +119,7 @@ namespace Wirehome.Core.Discovery
             }
         }
 
-        static SsdpDevice CreateSsdpDeviceModel(DiscoveredSsdpDevice discoveredSsdpDevice, Rssdp.SsdpDevice ssdpDevice)
+        static SsdpDevice CreateDeviceModel(DiscoveredSsdpDevice discoveredSsdpDevice, Rssdp.SsdpDevice ssdpDevice)
         {
             return new SsdpDevice
             {

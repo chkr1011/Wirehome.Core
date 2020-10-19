@@ -35,11 +35,9 @@ namespace Wirehome.Core.Hardware.MQTT
         readonly MqttTopicImportManager _topicImportManager;
 
         readonly ILogger _logger;
-
-
+        
         MqttServiceOptions _options;
-        Thread _workerThread;
-
+        
         MqttWebSocketServerAdapter _webSocketServerAdapter;
         IMqttServer _mqttServer;
 

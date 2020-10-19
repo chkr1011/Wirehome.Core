@@ -9,6 +9,7 @@ using CoAPnet.Extensions.DTLS;
 using IronPython.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Wirehome.Core.Constants;
@@ -43,7 +44,8 @@ namespace Wirehome.Core.Hardware.CoAP
                     ["type"] = WirehomeMessageType.Success,
                     ["status"] = coapResponse.StatusCode.ToString(),
                     ["status_code"] = (int)coapResponse.StatusCode,
-                    ["payload"] = new Bytes(coapResponse.Payload ?? Array.Empty<byte>())
+                    ["payload"] = new Bytes(coapResponse.Payload ?? Array.Empty<byte>()),
+                    ["payload_string"] = Encoding.UTF8.GetString(coapResponse.Payload ?? Array.Empty<byte>())
                 };
             }
             catch (Exception exception)
@@ -79,14 +81,12 @@ namespace Wirehome.Core.Hardware.CoAP
                     {
                         lock (coapClient)
                         {
-                            Console.WriteLine("SENDING COAP REQUEST");
                             return coapClient.RequestAsync(coapRequest, cancellationTokenSource.Token).GetAwaiter().GetResult();
                         }
                     }
                 }
                 catch
                 {
-                    Console.WriteLine("CLOSING EXISTING COAP CLIENT");
                     coapClient.Dispose();
 
                     lock (_clients)
@@ -103,11 +103,8 @@ namespace Wirehome.Core.Hardware.CoAP
             {
                 using (var cancellationTokenSource = new CancellationTokenSource(timeout))
                 {
-                    Console.WriteLine("SENDING COAP REQUEST");
                     coapResponse = coapClient.RequestAsync(coapRequest, cancellationTokenSource.Token).GetAwaiter().GetResult();
                 }
-
-                Console.WriteLine("CLOSING COAP CLIENT");
             }
 
             return coapResponse;
@@ -138,7 +135,6 @@ namespace Wirehome.Core.Hardware.CoAP
             {
                 using (var cancellationTokenSource = new CancellationTokenSource(timeout))
                 {
-                    Console.WriteLine("CONNECTING COAP CLIENT");
                     await coapClient.ConnectAsync(connectOptions, cancellationTokenSource.Token).ConfigureAwait(false);
                 }
             }

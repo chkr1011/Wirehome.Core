@@ -253,7 +253,7 @@ namespace Wirehome.Core.Resources
             }
             catch (Exception exception)
             {
-
+                _logger.LogError(exception, "Error while registering default resources.");
             }
         }
 

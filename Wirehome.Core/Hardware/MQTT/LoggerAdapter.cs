@@ -4,7 +4,7 @@ using System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class LoggerAdapter : IMqttNetLogger
+    public sealed class LoggerAdapter : IMqttNetLogger
     {
         readonly ILogger _logger;
 
@@ -42,6 +42,8 @@ namespace Wirehome.Core.Hardware.MQTT
             }
 
             _logger.Log(newLogLevel, source, exception, message, parameters);
+
+            LogMessagePublished ?.Invoke(this, new MqttNetLogMessagePublishedEventArgs(null));
         }
     }
 }
