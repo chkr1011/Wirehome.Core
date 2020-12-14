@@ -98,7 +98,7 @@ namespace Wirehome.Cloud
             ConfigureHttpReverseProxy(app, deviceConnectorService);
         }
 
-        private static void ConfigureSwagger(IApplicationBuilder app)
+        static void ConfigureSwagger(IApplicationBuilder app)
         {
             app.UseSwagger(o => o.RouteTemplate = "/cloud/api/{documentName}/swagger.json");
 
@@ -110,7 +110,7 @@ namespace Wirehome.Cloud
             });
         }
 
-        private static void ConfigureMvc(IApplicationBuilder app)
+        static void ConfigureMvc(IApplicationBuilder app)
         {
             app.UseRouting();
 
@@ -123,7 +123,7 @@ namespace Wirehome.Cloud
             });
         }
 
-        private static void ConfigureSwaggerServices(IServiceCollection services)
+        static void ConfigureSwaggerServices(IServiceCollection services)
         {
             services.AddSwaggerGen(c =>
             {
@@ -147,19 +147,18 @@ namespace Wirehome.Cloud
             });
         }
 
-        private static void ConfigureHttpReverseProxy(IApplicationBuilder app, DeviceConnectorService deviceConnectorService)
+        static void ConfigureHttpReverseProxy(IApplicationBuilder app, DeviceConnectorService deviceConnectorService)
         {
             app.Run(deviceConnectorService.TryDispatchHttpRequestAsync);
         }
 
-        private static void ConfigureConnector(IApplicationBuilder app, DeviceConnectorService deviceConnectorService, AuthorizationService authorizationService)
+        static void ConfigureConnector(IApplicationBuilder app, DeviceConnectorService deviceConnectorService, AuthorizationService authorizationService)
         {
             app.Map("/Connector", config =>
             {
                 config.UseWebSockets(new WebSocketOptions
                 {
-                    KeepAliveInterval = TimeSpan.FromMinutes(2),
-                    ReceiveBufferSize = 1024 * 1024 // 1 MB
+                    KeepAliveInterval = TimeSpan.FromMinutes(2)
                 });
 
                 config.Use(async (context, next) =>

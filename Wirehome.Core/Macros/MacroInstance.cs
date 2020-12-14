@@ -12,11 +12,11 @@ namespace Wirehome.Core.Macros
 {
     public class MacroInstance
     {
-        private readonly ComponentRegistryService _componentRegistryService;
-        private readonly ILogger _logger;
+        readonly ComponentRegistryService _componentRegistryService;
+        readonly ILogger _logger;
 
-        private readonly PythonScriptHost _scriptHost;
-        private readonly List<MacroActionConfiguration> _actions;
+        readonly PythonScriptHost _scriptHost;
+        readonly List<MacroActionConfiguration> _actions;
 
         public MacroInstance(string uid, List<MacroActionConfiguration> actions, PythonScriptHost scriptHost, ComponentRegistryService componentRegistryService, ILogger logger)
         {
@@ -94,7 +94,7 @@ namespace Wirehome.Core.Macros
             };
         }
 
-        private void TryExecuteAction(MacroActionConfiguration action)
+        void TryExecuteAction(MacroActionConfiguration action)
         {
             try
             {

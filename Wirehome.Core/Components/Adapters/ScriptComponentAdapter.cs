@@ -7,11 +7,11 @@ namespace Wirehome.Core.Components.Adapters
 {
     public class ScriptComponentAdapter : IComponentAdapter
     {
-        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly ComponentRegistryService _componentRegistryService;
-        private readonly ILogger _logger;
+        readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
+        readonly ComponentRegistryService _componentRegistryService;
+        readonly ILogger _logger;
 
-        private PythonScriptHost _scriptHost;
+        PythonScriptHost _scriptHost;
 
         public ScriptComponentAdapter(PythonScriptHostFactoryService pythonScriptHostFactoryService, ComponentRegistryService componentRegistryService, ILogger<ScriptComponentAdapter> logger)
         {
@@ -53,7 +53,7 @@ namespace Wirehome.Core.Components.Adapters
             return _scriptHost.InvokeFunction("process_adapter_message", message) as PythonDictionary ?? new PythonDictionary();
         }
 
-        private PythonDictionary OnMessageReceived(PythonDictionary message)
+        PythonDictionary OnMessageReceived(PythonDictionary message)
         {
             return MessagePublishedCallback?.Invoke(message) as PythonDictionary ?? new PythonDictionary();
         }

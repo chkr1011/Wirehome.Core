@@ -8,7 +8,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class FunctionPoolController : Controller
     {
-        private readonly FunctionPoolService _functionPoolService;
+        readonly FunctionPoolService _functionPoolService;
 
         public FunctionPoolController(FunctionPoolService functionPoolService)
         {

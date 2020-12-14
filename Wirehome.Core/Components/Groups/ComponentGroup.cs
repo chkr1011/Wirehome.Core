@@ -7,11 +7,11 @@ namespace Wirehome.Core.Components.Groups
 {
     public class ComponentGroup
     {
-        private readonly Dictionary<string, object> _status = new Dictionary<string, object>();
-        private readonly Dictionary<string, object> _settings = new Dictionary<string, object>();
-        private readonly HashSet<string> _tags = new HashSet<string>();
+        readonly Dictionary<string, object> _status = new Dictionary<string, object>();
+        readonly Dictionary<string, object> _settings = new Dictionary<string, object>();
+        readonly HashSet<string> _tags = new HashSet<string>();
 
-        private long _hash;
+        long _hash;
 
         public ComponentGroup(string uid)
         {
@@ -164,7 +164,7 @@ namespace Wirehome.Core.Components.Groups
 
         public ThreadSafeDictionary<string, ComponentGroupAssociation> Macros { get; } = new ThreadSafeDictionary<string, ComponentGroupAssociation>();
 
-        private void IncrementHash()
+        void IncrementHash()
         {
             Interlocked.Increment(ref _hash);
         }

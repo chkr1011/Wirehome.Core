@@ -5,7 +5,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
     public class TestGpioAdapter : IGpioAdapter
     {
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
         public TestGpioAdapter(ILogger logger)
         {

@@ -7,7 +7,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
     [ApiController]
     public class GpioController : Controller
     {
-        private readonly GpioRegistryService _gpioService;
+        readonly GpioRegistryService _gpioService;
 
         public GpioController(GpioRegistryService gpioService)
         {

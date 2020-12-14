@@ -10,7 +10,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class PackageManagerController : Controller
     {
-        private readonly PackageManagerService _packageManagerService;
+        readonly PackageManagerService _packageManagerService;
 
         public PackageManagerController(PackageManagerService packageManagerService)
         {
@@ -144,7 +144,7 @@ namespace Wirehome.Core.HTTP.Controllers
             _packageManagerService.DeletePackage(PackageUid.Parse(uid));
         }
 
-        private static Dictionary<string, HashSet<string>> GeneratePackageIndex(List<PackageUid> packageUids)
+        static Dictionary<string, HashSet<string>> GeneratePackageIndex(List<PackageUid> packageUids)
         {
             var index = new Dictionary<string, HashSet<string>>();
 

@@ -5,8 +5,8 @@ namespace Wirehome.Core.Diagnostics.Log
 {
     public class LogServiceLogger : ILogger
     {
-        private readonly LogService _logService;
-        private readonly string _categoryName;
+        readonly LogService _logService;
+        readonly string _categoryName;
 
         public LogServiceLogger(LogService logService, string categoryName)
         {

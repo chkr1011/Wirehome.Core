@@ -10,8 +10,8 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class AppController : Controller
     {
-        private readonly AppService _appService;
-        private readonly GlobalVariablesService _globalVariablesService;
+        readonly AppService _appService;
+        readonly GlobalVariablesService _globalVariablesService;
 
         public AppController(AppService appService, GlobalVariablesService globalVariablesService)
         {

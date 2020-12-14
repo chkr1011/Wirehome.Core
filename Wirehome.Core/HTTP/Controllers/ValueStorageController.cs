@@ -7,7 +7,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class ValueStorageController : Controller
     {
-        private readonly ValueStorageService _valueStorageService;
+        readonly ValueStorageService _valueStorageService;
 
         public ValueStorageController(ValueStorageService valueStorageService)
         {

@@ -8,11 +8,11 @@ namespace Wirehome.Core.History.Repository
 {
     public sealed class HistoryValuesStream : IDisposable
     {
-        private const int TokenBufferSize = 24;
+        const int TokenBufferSize = 24;
 
-        private readonly Stream _stream;
+        readonly Stream _stream;
 
-        private HistoryValueStreamSerializer _serializer = new HistoryValueStreamSerializer();
+        HistoryValueStreamSerializer _serializer = new HistoryValueStreamSerializer();
 
         public HistoryValuesStream(Stream stream)
         {
@@ -179,7 +179,7 @@ namespace Wirehome.Core.History.Repository
             _stream.Dispose();
         }
 
-        private Token ParseToken(ReadOnlySpan<byte> source)
+        Token ParseToken(ReadOnlySpan<byte> source)
         {
             var tokenKey = source.Slice(0, 1);
             var tokenValue = source.Slice(1, source.Length - 1);

@@ -14,8 +14,8 @@ namespace Wirehome.Cloud.Controllers
     [ApiController]
     public class CloudController : Controller
     {
-        private readonly DeviceConnectorService _deviceConnectorService;
-        private readonly AuthorizationService _authorizationService;
+        readonly DeviceConnectorService _deviceConnectorService;
+        readonly AuthorizationService _authorizationService;
 
         public CloudController(DeviceConnectorService deviceConnectorService, AuthorizationService authorizationService)
         {

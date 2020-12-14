@@ -5,9 +5,9 @@ namespace Wirehome.Core.Scheduler
 {
     public class ActiveCountdown
     {
-        private readonly ILogger _logger;
-        private readonly Action<CountdownElapsedParameters> _callback;
-        private readonly object _state;
+        readonly ILogger _logger;
+        readonly Action<CountdownElapsedParameters> _callback;
+        readonly object _state;
 
         public ActiveCountdown(string uid, Action<CountdownElapsedParameters> callback, object state, ILogger logger)
         {

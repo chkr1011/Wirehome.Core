@@ -12,7 +12,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class StartupScriptsController : Controller
     {
-        private readonly StartupScriptsService _startupScriptsService;
+        readonly StartupScriptsService _startupScriptsService;
 
         public StartupScriptsController(StartupScriptsService startupScriptsService)
         {

@@ -7,7 +7,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
     [ApiController]
     public class I2CController : Controller
     {
-        private readonly I2CBusService _i2CBusService;
+        readonly I2CBusService _i2CBusService;
 
         public I2CController(I2CBusService i2cBusService)
         {

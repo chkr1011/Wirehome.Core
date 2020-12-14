@@ -15,7 +15,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
     [ApiController]
     public class MqttController : Controller
     {
-        private readonly MqttService _mqttService;
+        readonly MqttService _mqttService;
 
         public MqttController(MqttService mqttService)
         {

@@ -8,7 +8,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class NotificationsController : Controller
     {
-        private readonly NotificationsService _notificationsService;
+        readonly NotificationsService _notificationsService;
 
         public NotificationsController(NotificationsService notificationsService)
         {

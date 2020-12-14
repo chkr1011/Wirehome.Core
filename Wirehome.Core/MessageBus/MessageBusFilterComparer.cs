@@ -55,7 +55,7 @@ namespace Wirehome.Core.MessageBus
             return true;
         }
 
-        private static ReadOnlySpan<char> ConvertValueToString(object value)
+        static ReadOnlySpan<char> ConvertValueToString(object value)
         {
             // This is required because some type checks are not supported
             // like `(int)5 == (long)5` which will result in `False`.

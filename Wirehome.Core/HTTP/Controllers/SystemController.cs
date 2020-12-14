@@ -12,10 +12,10 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class SystemController : Controller
     {
-        private readonly SystemStatusService _systemStatusService;
-        private readonly SystemService _systemService;
-        private readonly PackageManagerService _packageManagerService;
-        private readonly StorageService _storageService;
+        readonly SystemStatusService _systemStatusService;
+        readonly SystemService _systemService;
+        readonly PackageManagerService _packageManagerService;
+        readonly StorageService _storageService;
 
         public SystemController(SystemStatusService systemStatusService, SystemService systemService, PackageManagerService packageManagerService, StorageService storageService)
         {

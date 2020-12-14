@@ -9,7 +9,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class GlobalVariablesController : Controller
     {
-        private readonly GlobalVariablesService _globalVariablesService;
+        readonly GlobalVariablesService _globalVariablesService;
 
         public GlobalVariablesController(GlobalVariablesService globalVariablesService)
         {

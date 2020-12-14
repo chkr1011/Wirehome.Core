@@ -12,11 +12,11 @@ namespace Wirehome.Core.Components
 {
     public class ComponentInitializer
     {
-        private readonly ComponentRegistryService _componentRegistryService;
-        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly PackageManagerService _packageManagerService;
-        private readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
-        private readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
+        readonly ComponentRegistryService _componentRegistryService;
+        readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
+        readonly PackageManagerService _packageManagerService;
+        readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
+        readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
 
         public ComponentInitializer(
             ComponentRegistryService componentRegistryService,
@@ -52,7 +52,7 @@ namespace Wirehome.Core.Components
             SetupComponentBasedOnPackages(component, configuration, context);
         }
 
-        private void SetupComponentBasedOnScript(Component component, ComponentConfiguration configuration, IDictionary<object, object> context)
+        void SetupComponentBasedOnScript(Component component, ComponentConfiguration configuration, IDictionary<object, object> context)
         {
             var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentLogicLogger);
             logic.Compile(component.Uid, configuration.Script);
@@ -61,7 +61,7 @@ namespace Wirehome.Core.Components
             component.SetLogic(logic);
         }
 
-        private void SetupComponentBasedOnPackages(Component component, ComponentConfiguration configuration, IDictionary<object, object> context)
+        void SetupComponentBasedOnPackages(Component component, ComponentConfiguration configuration, IDictionary<object, object> context)
         {
             Package adapterPackage = null;
             IComponentAdapter adapter;

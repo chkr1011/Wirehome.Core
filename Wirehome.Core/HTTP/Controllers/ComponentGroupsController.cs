@@ -12,7 +12,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class ComponentGroupsController : Controller
     {
-        private readonly ComponentGroupRegistryService _componentGroupRegistryService;
+        readonly ComponentGroupRegistryService _componentGroupRegistryService;
 
         public ComponentGroupsController(ComponentGroupRegistryService componentGroupRegistryService)
         {

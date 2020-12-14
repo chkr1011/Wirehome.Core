@@ -8,7 +8,7 @@ namespace Wirehome.Core.HTTP.Controllers.Diagnostics
     [ApiController]
     public class LogController : Controller
     {
-        private readonly LogService _logService;
+        readonly LogService _logService;
 
         public LogController(LogService logService)
         {

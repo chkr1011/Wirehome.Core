@@ -36,7 +36,7 @@ namespace Wirehome.Core.Python.Models
             };
         }
 
-        private static string GetTypeFromException(Exception exception)
+        static string GetTypeFromException(Exception exception)
         {
             if (exception is InvalidOperationException)
             {

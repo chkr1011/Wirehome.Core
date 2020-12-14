@@ -10,7 +10,7 @@ namespace Wirehome.Core.History.Extract
 {
     public class HistoryExtractBuilder
     {
-        private readonly HistoryRepository _repository;
+        readonly HistoryRepository _repository;
 
         public HistoryExtractBuilder(HistoryRepository historyRepository)
         {
@@ -58,7 +58,7 @@ namespace Wirehome.Core.History.Extract
             return historyExtract;
         }
 
-        private static List<HistoryExtractDataPoint> GenerateTextBasedDataPoints(List<HistoryValueElement> entities, DateTime rangeStart, DateTime rangeEnd)
+        static List<HistoryExtractDataPoint> GenerateTextBasedDataPoints(List<HistoryValueElement> entities, DateTime rangeStart, DateTime rangeEnd)
         {
             var dataPoints = new List<HistoryExtractDataPoint>();
 
@@ -100,7 +100,7 @@ namespace Wirehome.Core.History.Extract
             return dataPoints;
         }
 
-        private static IEnumerable<HistoryExtractDataPoint> GenerateNumberBasedDataPoints(
+        static IEnumerable<HistoryExtractDataPoint> GenerateNumberBasedDataPoints(
             List<HistoryValueElement> entities,
             DateTime rangeStart,
             DateTime rangeEnd,
@@ -165,7 +165,7 @@ namespace Wirehome.Core.History.Extract
             return intervalDataPoints;
         }
 
-        private static double? GetAverageValue(List<HistoryValueElement> entities, DateTime rangeStart, DateTime rangeEnd)
+        static double? GetAverageValue(List<HistoryValueElement> entities, DateTime rangeStart, DateTime rangeEnd)
         {
             var value = 0D;
             var counter = 0;
@@ -194,7 +194,7 @@ namespace Wirehome.Core.History.Extract
             return value / counter;
         }
 
-        private static double? GetValue(List<HistoryValueElement> entities, DateTime timestamp)
+        static double? GetValue(List<HistoryValueElement> entities, DateTime timestamp)
         {
             var entity = entities.FirstOrDefault(e => e.Begin <= timestamp && e.End >= timestamp);
             if (entity == null)

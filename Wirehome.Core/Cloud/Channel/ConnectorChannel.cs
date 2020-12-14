@@ -11,27 +11,27 @@ namespace Wirehome.Core.Cloud.Channel
 {
     public sealed class ConnectorChannel : IDisposable
     {
-        private const int MessageContentCompressionThreshold = 4096;
-        private const int ReceiveBufferSize = 1024 * 1024; // 1 MB
+        const int MessageContentCompressionThreshold = 4096;
+        const int ReceiveBufferSize = 1024 * 1024; // 1 MB
 
-        private readonly ArraySegment<byte> _receiveBuffer = new byte[ReceiveBufferSize];
-        private readonly AsyncLock _lock = new AsyncLock();
-        private readonly ConnectorChannelOptions _options;
-        private readonly WebSocket _webSocket;
-        private readonly CloudMessageSerializer _cloudMessageSerializer;
-        private readonly ILogger _logger;
-        private readonly DateTime _connected = DateTime.UtcNow;
+        readonly ArraySegment<byte> _receiveBuffer = new byte[ReceiveBufferSize];
+        readonly AsyncLock _lock = new AsyncLock();
+        readonly ConnectorChannelOptions _options;
+        readonly WebSocket _webSocket;
+        readonly CloudMessageSerializer _cloudMessageSerializer;
+        readonly ILogger _logger;
+        readonly DateTime _connected = DateTime.UtcNow;
 
-        private long _bytesSent;
-        private long _bytesReceived;
-        private long _malformedMessagesReceived;
-        private long _messagesSent;
-        private long _messagesReceived;
-        private long _receiveErrors;
-        private long _sendErrors;
-        private DateTime _statisticsReset = DateTime.UtcNow;
-        private DateTime? _lastMessageSent;
-        private DateTime? _lastMessageReceived;
+        long _bytesSent;
+        long _bytesReceived;
+        long _malformedMessagesReceived;
+        long _messagesSent;
+        long _messagesReceived;
+        long _receiveErrors;
+        long _sendErrors;
+        DateTime _statisticsReset = DateTime.UtcNow;
+        DateTime? _lastMessageSent;
+        DateTime? _lastMessageReceived;
 
         public ConnectorChannel(ConnectorChannelOptions options, WebSocket webSocket, CloudMessageSerializer cloudMessageSerializer, ILogger logger)
         {

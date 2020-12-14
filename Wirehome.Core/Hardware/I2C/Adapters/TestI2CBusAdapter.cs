@@ -5,7 +5,7 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
 {
     public class TestI2CBusAdapter : II2CBusAdapter
     {
-        private readonly ILogger _logger;
+        readonly ILogger _logger;
 
         public TestI2CBusAdapter(ILogger logger)
         {

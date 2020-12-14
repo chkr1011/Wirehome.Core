@@ -10,8 +10,8 @@ namespace Wirehome.Core.Packages.GitHub
 {
     public class GitHubRepositoryPackageDownloader
     {
-        private readonly PackageManagerServiceOptions _options;
-        private readonly ILogger _logger;
+        readonly PackageManagerServiceOptions _options;
+        readonly ILogger _logger;
 
         public GitHubRepositoryPackageDownloader(PackageManagerServiceOptions options, ILogger logger)
         {

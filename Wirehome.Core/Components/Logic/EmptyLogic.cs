@@ -7,7 +7,7 @@ namespace Wirehome.Core.Components.Logic
 {
     public class EmptyComponentLogic : IComponentLogic
     {
-        private readonly IComponentAdapter _adapter;
+        readonly IComponentAdapter _adapter;
 
         public EmptyComponentLogic(IComponentAdapter adapter)
         {

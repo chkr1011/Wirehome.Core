@@ -79,13 +79,13 @@ namespace Wirehome.Core.History.Repository
             throw new NotSupportedException($"Token ID '{(char)tokenId[0]}' is not supported.");
         }
 
-        private string ParseValue(ReadOnlySpan<byte> source)
+        string ParseValue(ReadOnlySpan<byte> source)
         {
             var buffer = Encoding.UTF8.GetString(source);
             return HttpUtility.UrlDecode(buffer);
         }
 
-        private TimeSpan ParseTimeSpan(ReadOnlySpan<byte> source)
+        TimeSpan ParseTimeSpan(ReadOnlySpan<byte> source)
         {
             var buffer = Encoding.ASCII.GetString(source).AsSpan();
 

@@ -11,7 +11,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class SchedulerController : Controller
     {
-        private readonly SchedulerService _schedulerService;
+        readonly SchedulerService _schedulerService;
 
         public SchedulerController(SchedulerService schedulerService)
         {

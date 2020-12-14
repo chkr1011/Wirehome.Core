@@ -8,14 +8,14 @@ namespace Wirehome.Core.Components
 {
     public partial class Component
     {
-        private readonly Dictionary<string, object> _status = new Dictionary<string, object>();
-        private readonly Dictionary<string, object> _settings = new Dictionary<string, object>();
-        private readonly Dictionary<string, object> _configuration = new Dictionary<string, object>();
-        private readonly HashSet<string> _tags = new HashSet<string>();
+        readonly Dictionary<string, object> _status = new Dictionary<string, object>();
+        readonly Dictionary<string, object> _settings = new Dictionary<string, object>();
+        readonly Dictionary<string, object> _configuration = new Dictionary<string, object>();
+        readonly HashSet<string> _tags = new HashSet<string>();
 
-        private IComponentLogic _logic;
+        IComponentLogic _logic;
 
-        private long _hash;
+        long _hash;
 
         public Component(string uid)
         {
@@ -235,12 +235,12 @@ namespace Wirehome.Core.Components
             _logic = logic ?? throw new ArgumentNullException(nameof(logic));
         }
 
-        private void ThrowIfLogicNotSet()
+        void ThrowIfLogicNotSet()
         {
             if (_logic == null) throw new InvalidOperationException("A component requires a logic to process messages.");
         }
 
-        private void IncrementHash()
+        void IncrementHash()
         {
             Interlocked.Increment(ref _hash);
         }

@@ -13,7 +13,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class MessageBusController : Controller
     {
-        private readonly MessageBusService _messageBusService;
+        readonly MessageBusService _messageBusService;
 
         public MessageBusController(MessageBusService messageBusService)
         {

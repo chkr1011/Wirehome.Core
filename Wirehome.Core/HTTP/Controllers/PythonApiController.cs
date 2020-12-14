@@ -7,7 +7,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class PythonApiController : Controller
     {
-        private readonly PythonProxyFactory _pythonProxyFactory;
+        readonly PythonProxyFactory _pythonProxyFactory;
 
         public PythonApiController(PythonProxyFactory pythonProxyFactory)
         {

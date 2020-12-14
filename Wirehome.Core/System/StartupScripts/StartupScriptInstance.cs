@@ -5,8 +5,8 @@ namespace Wirehome.Core.System.StartupScripts
 {
     public class StartupScriptInstance
     {
-        private readonly object _syncRoot = new object();
-        private readonly PythonScriptHost _scriptHost;
+        readonly object _syncRoot = new object();
+        readonly PythonScriptHost _scriptHost;
         
         public StartupScriptInstance(string uid, StartupScriptConfiguration configuration, PythonScriptHost scriptHost)
         {

@@ -10,9 +10,9 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class NotesController : Controller
     {
-        private const string NotesDirectory = "Notes";
+        const string NotesDirectory = "Notes";
 
-        private readonly StorageService _storageService;
+        readonly StorageService _storageService;
 
         public NotesController(StorageService storageService)
         {

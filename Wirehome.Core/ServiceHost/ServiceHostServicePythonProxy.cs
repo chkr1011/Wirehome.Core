@@ -10,7 +10,7 @@ namespace Wirehome.Core.ServiceHost
 {
     public class ServiceHostServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly ServiceHostService _serviceHostService;
+        readonly ServiceHostService _serviceHostService;
 
         public ServiceHostServicePythonProxy(ServiceHostService serviceHostService)
         {

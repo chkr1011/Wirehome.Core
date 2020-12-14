@@ -6,7 +6,7 @@ namespace Wirehome.Core.Macros
 {
     public class MacroRegistryMessageBusWrapper
     {
-        private readonly MessageBusService _messageBusService;
+        readonly MessageBusService _messageBusService;
 
         public MacroRegistryMessageBusWrapper(MessageBusService messageBusService)
         {

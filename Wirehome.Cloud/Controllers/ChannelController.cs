@@ -11,7 +11,7 @@ namespace Wirehome.Cloud.Controllers
     [Authorize]
     public class ChannelController : Controller
     {
-        private readonly RepositoryService _repositoryService;
+        readonly RepositoryService _repositoryService;
 
         public ChannelController(RepositoryService repositoryService)
         {

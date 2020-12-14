@@ -11,7 +11,7 @@ namespace Wirehome.Core.History.Extract
 
         public object Value { get; set; }
 
-        private string DebuggerDisplay
+        string DebuggerDisplay
         {
             get
             {

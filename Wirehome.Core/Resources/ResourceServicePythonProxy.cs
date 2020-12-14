@@ -11,7 +11,7 @@ namespace Wirehome.Core.Resources
 {
     public class ResourceServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly ResourceService _resourceService;
+        readonly ResourceService _resourceService;
 
         public ResourceServicePythonProxy(ResourceService resourceService)
         {

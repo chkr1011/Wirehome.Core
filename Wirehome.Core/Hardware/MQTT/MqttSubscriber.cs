@@ -6,7 +6,7 @@ namespace Wirehome.Core.Hardware.MQTT
 {
     public class MqttSubscriber
     {
-        private readonly Action<MqttApplicationMessageReceivedEventArgs> _callback;
+        readonly Action<MqttApplicationMessageReceivedEventArgs> _callback;
 
         public MqttSubscriber(string uid, string topicFilter, Action<MqttApplicationMessageReceivedEventArgs> callback)
         {

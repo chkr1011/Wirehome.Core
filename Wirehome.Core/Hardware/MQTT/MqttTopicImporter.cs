@@ -9,11 +9,11 @@ namespace Wirehome.Core.Hardware.MQTT
 {
     public class MqttTopicImporter
     {
-        private readonly MqttImportTopicParameters _parameters;
-        private readonly MqttService _mqttService;
-        private readonly ILogger _logger;
+        readonly MqttImportTopicParameters _parameters;
+        readonly MqttService _mqttService;
+        readonly ILogger _logger;
 
-        private IManagedMqttClient _mqttClient;
+        IManagedMqttClient _mqttClient;
 
         public MqttTopicImporter(MqttImportTopicParameters parameters, MqttService mqttService, ILogger logger)
         {
@@ -71,7 +71,7 @@ namespace Wirehome.Core.Hardware.MQTT
             }
         }
 
-        private void OnApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
+        void OnApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
             _mqttService.Publish(new MqttPublishParameters
             {

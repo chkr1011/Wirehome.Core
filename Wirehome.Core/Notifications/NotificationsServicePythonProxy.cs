@@ -12,7 +12,7 @@ namespace Wirehome.Core.Notifications
 {
     public class NotificationsServicePythonProxy : IInjectedPythonProxy
     {
-        private readonly NotificationsService _notificationsService;
+        readonly NotificationsService _notificationsService;
 
         public NotificationsServicePythonProxy(NotificationsService notificationsService)
         {

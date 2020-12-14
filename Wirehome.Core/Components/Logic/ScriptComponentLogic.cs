@@ -8,15 +8,15 @@ namespace Wirehome.Core.Components.Logic
 {
     public class ScriptComponentLogic : IComponentLogic
     {
-        private const string ProcessLogicMessageFunctionName = "process_logic_message";
-        private const string ProcessAdapterMessageFunctionName = "process_adapter_message";
-        private const string GetDebugInformationFunctionName = "get_debug_information";
+        const string ProcessLogicMessageFunctionName = "process_logic_message";
+        const string ProcessAdapterMessageFunctionName = "process_adapter_message";
+        const string GetDebugInformationFunctionName = "get_debug_information";
 
-        private readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        private readonly ComponentRegistryService _componentRegistryService;
-        private readonly ILogger _logger;
+        readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
+        readonly ComponentRegistryService _componentRegistryService;
+        readonly ILogger _logger;
 
-        private PythonScriptHost _scriptHost;
+        PythonScriptHost _scriptHost;
 
         public ScriptComponentLogic(
             PythonScriptHostFactoryService pythonScriptHostFactoryService,

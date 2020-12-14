@@ -9,7 +9,7 @@ namespace Wirehome.Core.HTTP.Controllers
     [ApiController]
     public class ResourcesController : Controller
     {
-        private readonly ResourceService _resourceService;
+        readonly ResourceService _resourceService;
 
         public ResourcesController(ResourceService resourceService)
         {
