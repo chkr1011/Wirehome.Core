@@ -2,7 +2,7 @@
 
 namespace Wirehome.Cloud.Services.DeviceConnector
 {
-    public class ChannelIdentifier
+    public sealed class ChannelIdentifier
     {
         readonly int _hashCode;
 

@@ -182,10 +182,6 @@ namespace Wirehome.Cloud
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                     }
-                    finally
-                    {
-                        context.Abort();
-                    }
                 });
             });
         }

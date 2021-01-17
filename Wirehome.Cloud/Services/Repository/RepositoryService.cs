@@ -46,19 +46,9 @@ namespace Wirehome.Cloud.Services.Repository
                     var identityUid = Path.GetFileName(identityPath);
 
                     var identityEntity = await TryReadIdentityEntityAsync(identityUid).ConfigureAwait(false);
-                    if (identityEntity == null)
-                    {
-                        continue;
-                    }
-
-                    if (identityEntity.Channels == null)
-                    {
-                        continue;
-                    }
-
-                    var channelEntitiy = identityEntity.Channels.Values.FirstOrDefault(c => string.Equals(c.AccessToken?.Value, channelAccessToken, StringComparison.Ordinal));
+                    var channelEntity = identityEntity?.Channels?.Values.FirstOrDefault(c => string.Equals(c.AccessToken?.Value, channelAccessToken, StringComparison.Ordinal));
                     
-                    if (channelEntitiy != null && channelEntitiy.AccessToken.ValidUntil > DateTime.UtcNow)
+                    if (channelEntity != null && channelEntity.AccessToken.ValidUntil > DateTime.UtcNow)
                     {
                         return new KeyValuePair<string, IdentityEntity>(identityUid, identityEntity);
                     }
