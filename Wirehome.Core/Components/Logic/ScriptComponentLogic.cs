@@ -1,17 +1,19 @@
 ﻿using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
 using System;
+using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components.Logic
 {
-    public class ScriptComponentLogic : IComponentLogic
+    public sealed class ScriptComponentLogic : IComponentLogic
     {
         const string ProcessLogicMessageFunctionName = "process_logic_message";
         const string ProcessAdapterMessageFunctionName = "process_adapter_message";
         const string GetDebugInformationFunctionName = "get_debug_information";
 
+        readonly ComponentLogicConfiguration _logicConfiguration;
         readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         readonly ComponentRegistryService _componentRegistryService;
         readonly ILogger _logger;
@@ -19,14 +21,18 @@ namespace Wirehome.Core.Components.Logic
         PythonScriptHost _scriptHost;
 
         public ScriptComponentLogic(
+            ComponentLogicConfiguration logicConfiguration,
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             ComponentRegistryService componentRegistryService,
             ILogger<ScriptComponentLogic> logger)
         {
+            _logicConfiguration = logicConfiguration ?? throw new ArgumentNullException(nameof(logicConfiguration));
             _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
             _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+
+        public string Id => _logicConfiguration.Uid.Id;
 
         public PythonDelegates.CallbackWithResultDelegate AdapterMessagePublishedCallback { get; set; }
 

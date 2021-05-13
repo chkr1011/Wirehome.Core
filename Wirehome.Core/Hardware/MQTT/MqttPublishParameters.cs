@@ -3,7 +3,7 @@ using System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttPublishParameters
+    public sealed class MqttPublishParameters
     {
         public string Topic { get; set; }
 

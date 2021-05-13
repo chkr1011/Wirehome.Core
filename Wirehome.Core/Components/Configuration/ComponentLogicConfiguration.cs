@@ -3,12 +3,12 @@ using Wirehome.Core.Packages;
 
 namespace Wirehome.Core.Components.Configuration
 {
-    public class ComponentLogicConfiguration
+    public sealed class ComponentLogicConfiguration
     {
         public PackageUid Uid { get; set; }
 
         public Dictionary<string, object> Variables { get; set; } = new Dictionary<string, object>();
 
-        public ComponentAdapterConfiguration Adapter { get; set; }        
+        public ComponentAdapterConfiguration Adapter { get; set; }
     }
 }

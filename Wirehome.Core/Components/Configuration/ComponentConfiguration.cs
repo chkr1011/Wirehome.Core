@@ -1,12 +1,10 @@
 ﻿
 namespace Wirehome.Core.Components.Configuration
 {
-    public class ComponentConfiguration
+    public sealed class ComponentConfiguration
     {
         public bool IsEnabled { get; set; } = true;
 
-        public string Description { get; set; }
-        
         public int InitializationPhase { get; set; }
 
         public ComponentLogicConfiguration Logic { get; set; }

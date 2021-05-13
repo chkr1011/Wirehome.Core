@@ -38,13 +38,7 @@ namespace Wirehome.Core.Foundation
             }
         }
 
-        public ICollection<TValue> Values
-        {
-            get
-            {
-                return new List<TValue>(_dictionary.Values);
-            }
-        }
+        public ICollection<TValue> Values => new List<TValue>(_dictionary.Values);
 
         public int Count
         {
@@ -57,13 +51,7 @@ namespace Wirehome.Core.Foundation
             }
         }
 
-        public bool IsReadOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public bool IsReadOnly => false;
 
         public void Add(TKey key, TValue value)
         {

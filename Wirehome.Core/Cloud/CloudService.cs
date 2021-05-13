@@ -31,7 +31,7 @@ namespace Wirehome.Core.Cloud
 
         readonly ILogger _logger;
 
-        CloudServiceOptions _options;
+        CloudServiceConfiguration _options;
         ConnectorChannel _channel;
         bool _isConnected;
         Exception _connectionError;
@@ -88,7 +88,7 @@ namespace Wirehome.Core.Cloud
                     _isConnected = false;
 
                     if (!_storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration,
-                        CloudServiceOptions.Filename) || _options == null)
+                        CloudServiceConfiguration.Filename) || _options == null)
                     {
                         continue;
                     }

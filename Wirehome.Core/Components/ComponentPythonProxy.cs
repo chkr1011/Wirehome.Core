@@ -8,7 +8,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
-    public class ComponentPythonProxy : IPythonProxy
+    public sealed class ComponentPythonProxy : IPythonProxy
     {
         readonly ComponentRegistryService _componentRegistryService;
         readonly string _componentUid;

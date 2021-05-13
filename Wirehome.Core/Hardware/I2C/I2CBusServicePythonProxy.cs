@@ -10,7 +10,7 @@ using Wirehome.Core.Python.Proxies;
 
 namespace Wirehome.Core.Hardware.I2C
 {
-    public class I2CBusServicePythonProxy : IInjectedPythonProxy
+    public sealed class I2CBusServicePythonProxy : IInjectedPythonProxy
     {
         readonly I2CBusService _i2CBusService;
 

@@ -35,9 +35,9 @@ namespace Wirehome.Core.Hardware.MQTT
         readonly MqttTopicImportManager _topicImportManager;
 
         readonly ILogger _logger;
-        
+
         MqttServiceOptions _options;
-        
+
         MqttWebSocketServerAdapter _webSocketServerAdapter;
         IMqttServer _mqttServer;
 
@@ -215,7 +215,7 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 _mqttServer.StopAsync().GetAwaiter().GetResult();
             });
-            
+
             ParallelTask.StartLongRunning(ProcessIncomingMqttMessages, _systemCancellationToken.Token, _logger);
         }
 

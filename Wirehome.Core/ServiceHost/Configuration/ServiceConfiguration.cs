@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.ServiceHost.Configuration
 {
-    public class ServiceConfiguration
+    public sealed class ServiceConfiguration
     {
         public bool IsEnabled { get; set; } = true;
 

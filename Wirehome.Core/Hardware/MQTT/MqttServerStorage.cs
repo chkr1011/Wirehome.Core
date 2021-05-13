@@ -11,7 +11,7 @@ using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttServerStorage : IMqttServerStorage
+    public sealed class MqttServerStorage : IMqttServerStorage
     {
         readonly List<MqttApplicationMessage> _messages = new List<MqttApplicationMessage>();
         readonly StorageService _storageService;

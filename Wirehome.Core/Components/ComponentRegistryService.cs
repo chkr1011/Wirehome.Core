@@ -22,9 +22,8 @@ namespace Wirehome.Core.Components
 
         readonly Dictionary<string, Component> _components = new Dictionary<string, Component>();
 
-        readonly ComponentRegistryMessageBusWrapper _messageBusWrapper;
+        readonly ComponentRegistryMessageBusAdapter _messageBusAdapter;
         readonly StorageService _storageService;
-        readonly MessageBusService _messageBusService;
         readonly ComponentInitializerService _componentInitializerService;
         readonly ILogger _logger;
 
@@ -37,20 +36,17 @@ namespace Wirehome.Core.Components
             ILogger<ComponentRegistryService> logger)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
             _componentInitializerService = componentInitializerService ?? throw new ArgumentNullException(nameof(componentInitializerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            _messageBusWrapper = new ComponentRegistryMessageBusWrapper(messageBusService);
 
             if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
             systemStatusService.Set("component_registry.count", () => _components.Count);
 
+            if (messageBusService == null) throw new ArgumentNullException(nameof(messageBusService));
+            _messageBusAdapter = new ComponentRegistryMessageBusAdapter(messageBusService);
+
             if (appService is null) throw new ArgumentNullException(nameof(appService));
-            appService.RegisterStatusProvider("components", () =>
-            {
-                return GetComponents().Select(c => ComponentsController.CreateComponentModel(c));
-            });
+            appService.RegisterStatusProvider("components", () => GetComponents().Select(ComponentsController.CreateComponentModel));
         }
 
         public event EventHandler<ComponentStatusChangedEventArgs> ComponentStatusChanged;
@@ -91,7 +87,7 @@ namespace Wirehome.Core.Components
                 ["type"] = WirehomeMessageType.Enable
             });
 
-            _messageBusWrapper.PublishEnabledEvent(uid);
+            _messageBusAdapter.PublishEnabledEvent(uid);
 
             return result;
         }
@@ -105,7 +101,7 @@ namespace Wirehome.Core.Components
                 ["type"] = WirehomeMessageType.Disable
             });
 
-            _messageBusWrapper.PublishDisabledEvent(uid);
+            _messageBusAdapter.PublishDisabledEvent(uid);
 
             return result;
         }
@@ -267,7 +263,7 @@ namespace Wirehome.Core.Components
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             var component = GetComponent(componentUid);
-            return component.TryGetStatusValue(uid, out var _);
+            return component.TryGetStatusValue(uid, out _);
         }
 
         public object GetComponentStatusValue(string componentUid, string uid, object defaultValue = null)
@@ -299,6 +295,18 @@ namespace Wirehome.Core.Components
             var newValueString = Convert.ToString(value, CultureInfo.InvariantCulture);
             var hasChanged = isAdd || !string.Equals(oldValueString, newValueString, StringComparison.Ordinal);
 
+            var statusChangingEventArgs = new ComponentStatusChangingEventArgs
+            {
+                Timestamp = DateTime.Now,
+                Component = component,
+                StatusUid = uid,
+                OldValue = oldValue,
+                NewValue = value,
+                ValueHasChanged = hasChanged
+            };
+
+            _messageBusAdapter.PublishStatusChangingEvent(statusChangingEventArgs);
+
             if (!hasChanged)
             {
                 return;
@@ -313,7 +321,7 @@ namespace Wirehome.Core.Components
 
             var componentStatusChangedEventArgs = new ComponentStatusChangedEventArgs
             {
-                Timestamp = DateTime.UtcNow,
+                Timestamp = DateTime.Now,
                 Component = component,
                 StatusUid = uid,
                 OldValue = oldValue,
@@ -322,7 +330,7 @@ namespace Wirehome.Core.Components
 
             ComponentStatusChanged?.Invoke(this, componentStatusChangedEventArgs);
 
-            _messageBusWrapper.PublishStatusChangedEvent(componentStatusChangedEventArgs);
+            _messageBusAdapter.PublishStatusChangedEvent(componentStatusChangedEventArgs);
         }
 
         public bool SetComponentTag(string componentUid, string uid)
@@ -339,7 +347,7 @@ namespace Wirehome.Core.Components
             _logger.LogDebug("Component tag set: [Component={0}] [Tag UID={1}].", component.Uid, uid);
 
             _storageService.WriteSerializedValue(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFileNames.Tags);
-            _messageBusWrapper.PublishTagAddedEvent(component.Uid, uid);
+            _messageBusAdapter.PublishTagAddedEvent(component.Uid, uid);
 
             return true;
         }
@@ -358,7 +366,7 @@ namespace Wirehome.Core.Components
             _logger.LogDebug("Component tag removed: [Component={0}] [Tag UID={1}].", component.Uid, uid);
 
             _storageService.WriteSerializedValue(component.GetTags(), ComponentsDirectory, component.Uid, DefaultFileNames.Tags);
-            _messageBusWrapper.PublishTagRemovedEvent(component.Uid, uid);
+            _messageBusAdapter.PublishTagRemovedEvent(component.Uid, uid);
 
             return true;
         }
@@ -377,7 +385,7 @@ namespace Wirehome.Core.Components
             if (uid == null) throw new ArgumentNullException(nameof(uid));
 
             var component = GetComponent(componentUid);
-            return component.TryGetSetting(uid, out var _);
+            return component.TryGetSetting(uid, out _);
         }
 
         public object GetComponentSetting(string componentUid, string uid, object defaultValue = null)
@@ -438,7 +446,7 @@ namespace Wirehome.Core.Components
                 newValueString);
 
             _storageService.WriteSerializedValue(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFileNames.Settings);
-            _messageBusWrapper.PublishSettingChangedEvent(component.Uid, uid, oldValue, value);
+            _messageBusAdapter.PublishSettingChangedEvent(component.Uid, uid, oldValue, value);
         }
 
         public object RemoveComponentSetting(string componentUid, string uid)
@@ -458,7 +466,7 @@ namespace Wirehome.Core.Components
                 uid);
 
             _storageService.WriteSerializedValue(component.GetSettings(), ComponentsDirectory, component.Uid, DefaultFileNames.Settings);
-            _messageBusWrapper.PublishSettingRemovedEvent(component.Uid, uid, value);
+            _messageBusAdapter.PublishSettingRemovedEvent(component.Uid, uid, value);
 
             return value;
         }

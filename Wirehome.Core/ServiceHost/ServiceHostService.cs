@@ -47,7 +47,7 @@ namespace Wirehome.Core.ServiceHost
                 StartDelayedServices();
             };
         }
-        
+
         public List<string> GetServiceUids()
         {
             return _storageService.EnumerateDirectories("*", ServicesDirectory);

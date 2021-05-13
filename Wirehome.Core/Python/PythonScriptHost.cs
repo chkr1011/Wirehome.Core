@@ -9,7 +9,7 @@ using Wirehome.Core.Python.Exceptions;
 
 namespace Wirehome.Core.Python
 {
-    public class PythonScriptHost
+    public sealed class PythonScriptHost
     {
         readonly object[] _emptyParameters = Array.Empty<object>();
         readonly object _syncRoot = new object();

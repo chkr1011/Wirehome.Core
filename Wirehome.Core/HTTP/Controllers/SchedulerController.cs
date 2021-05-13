@@ -9,7 +9,7 @@ using Wirehome.Core.Scheduler;
 namespace Wirehome.Core.HTTP.Controllers
 {
     [ApiController]
-    public class SchedulerController : Controller
+    public sealed class SchedulerController : Controller
     {
         readonly SchedulerService _schedulerService;
 
@@ -48,7 +48,8 @@ namespace Wirehome.Core.HTTP.Controllers
             {
                 Interval = (int)t.Interval.TotalMilliseconds,
                 LastException = t.LastException != null ? new ExceptionPythonModel(t.LastException) : null,
-                LastDuration = (long)t.LastDuration.TotalMilliseconds
+                LastDuration = (long)t.LastDuration.TotalMilliseconds,
+                InvocationCount = t.InvocationCount
             });
         }
 

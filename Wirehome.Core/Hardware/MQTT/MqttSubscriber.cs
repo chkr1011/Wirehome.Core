@@ -4,7 +4,7 @@ using System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttSubscriber
+    public sealed class MqttSubscriber
     {
         readonly Action<MqttApplicationMessageReceivedEventArgs> _callback;
 

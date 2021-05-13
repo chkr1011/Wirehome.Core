@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttServiceOptions
+    public sealed class MqttServiceOptions
     {
         public const string Filename = "MqttServiceConfiguration.json";
 

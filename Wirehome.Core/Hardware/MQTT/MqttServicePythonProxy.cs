@@ -15,7 +15,7 @@ using Wirehome.Core.Python.Models;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttServicePythonProxy : IInjectedPythonProxy
+    public sealed class MqttServicePythonProxy : IInjectedPythonProxy
     {
         readonly MqttService _mqttService;
 

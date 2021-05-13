@@ -13,10 +13,12 @@ namespace Wirehome.Core.Storage
         const string JsonExtension = ".json";
 
         readonly JsonSerializerService _jsonSerializerService;
+        readonly ILogger<StorageService> _logger;
 
         public StorageService(JsonSerializerService jsonSerializerService, ILogger<StorageService> logger)
         {
             _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
+            _logger = logger;
 
             var paths = new StoragePaths();
             BinPath = paths.BinPath;
@@ -30,7 +32,7 @@ namespace Wirehome.Core.Storage
         public string BinPath { get; }
 
         public string DataPath { get; }
-        
+
         public List<string> EnumerateDirectories(string pattern, params string[] path)
         {
             if (pattern == null) throw new ArgumentNullException(nameof(pattern));
@@ -170,19 +172,29 @@ namespace Wirehome.Core.Storage
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             var filename = Path.Combine(path);
-            if (!filename.EndsWith(JsonExtension, StringComparison.Ordinal))
+            try
             {
-                filename += JsonExtension;
-            }
+                if (!filename.EndsWith(JsonExtension, StringComparison.Ordinal))
+                {
+                    filename += JsonExtension;
+                }
 
-            if (!TryReadRawText(out var textValue, filename))
+                if (!TryReadRawText(out var textValue, filename))
+                {
+                    value = default;
+                    return false;
+                }
+
+                value = _jsonSerializerService.Deserialize<TValue>(textValue);
+                return true;
+            }
+            catch (Exception exception)
             {
+                _logger.LogWarning(exception, $"Error while reading serialized value '{filename}'.");
+
                 value = default;
                 return false;
             }
-            
-            value = _jsonSerializerService.Deserialize<TValue>(textValue);
-            return true;
         }
 
         public bool SafeReadSerializedValue<TValue>(out TValue value, params string[] path) where TValue : class, new()

@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
-    public class InterruptMonitor
+    public sealed class InterruptMonitor
     {
         public GpioState? LatestState { get; set; }
 

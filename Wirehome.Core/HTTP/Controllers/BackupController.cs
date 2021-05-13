@@ -25,20 +25,20 @@ namespace Wirehome.Core.HTTP.Controllers
             return _backupService.GetBackupUids();
         }
 
+        [HttpPost]
+        [Route("api/v1/backups/create")]
+        [ApiExplorerSettings(GroupName = "v1")]
+        public Task CreateBackup()
+        {
+            return _backupService.CreateBackupAsync();
+        }
+
         [HttpDelete]
         [Route("api/v1/backups/{uid}")]
         [ApiExplorerSettings(GroupName = "v1")]
         public void DeleteBackup(string uid)
         {
             _backupService.DeleteBackup(uid);
-        }
-
-        [HttpPost]
-        [Route("api/v1/backups/create")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public Task PostBackup()
-        {
-            return _backupService.CreateBackupAsync();
         }
 
         [HttpGet]

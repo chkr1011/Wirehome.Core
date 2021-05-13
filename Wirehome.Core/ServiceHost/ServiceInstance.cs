@@ -4,7 +4,7 @@ using Wirehome.Core.ServiceHost.Configuration;
 
 namespace Wirehome.Core.ServiceHost
 {
-    public class ServiceInstance
+    public sealed class ServiceInstance
     {
         readonly PythonScriptHost _scriptHost;
 

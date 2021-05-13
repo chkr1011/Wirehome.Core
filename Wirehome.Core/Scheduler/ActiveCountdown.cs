@@ -3,7 +3,7 @@ using System;
 
 namespace Wirehome.Core.Scheduler
 {
-    public class ActiveCountdown
+    public sealed class ActiveCountdown
     {
         readonly ILogger _logger;
         readonly Action<CountdownElapsedParameters> _callback;
@@ -21,7 +21,7 @@ namespace Wirehome.Core.Scheduler
         public string Uid { get; }
 
         public TimeSpan TimeLeft { get; set; }
-        
+
         public void TryInvokeCallback()
         {
             try

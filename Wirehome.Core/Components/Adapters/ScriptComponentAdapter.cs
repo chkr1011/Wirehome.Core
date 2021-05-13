@@ -5,7 +5,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components.Adapters
 {
-    public class ScriptComponentAdapter : IComponentAdapter
+    public sealed class ScriptComponentAdapter : IComponentAdapter
     {
         readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
         readonly ComponentRegistryService _componentRegistryService;

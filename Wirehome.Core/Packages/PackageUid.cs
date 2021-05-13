@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Packages
 {
-    public class PackageUid
+    public sealed class PackageUid
     {
         public string Id { get; set; }
 

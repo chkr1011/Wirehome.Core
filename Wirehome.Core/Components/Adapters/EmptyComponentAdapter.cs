@@ -4,7 +4,7 @@ using Wirehome.Core.Constants;
 
 namespace Wirehome.Core.Components.Adapters
 {
-    public class EmptyComponentAdapter : IComponentAdapter
+    public sealed class EmptyComponentAdapter : IComponentAdapter
     {
         public Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
 

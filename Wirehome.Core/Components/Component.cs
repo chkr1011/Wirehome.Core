@@ -6,7 +6,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
-    public partial class Component
+    public sealed class Component
     {
         readonly Dictionary<string, object> _status = new Dictionary<string, object>();
         readonly Dictionary<string, object> _settings = new Dictionary<string, object>();
@@ -24,13 +24,7 @@ namespace Wirehome.Core.Components
 
         public string Uid { get; }
 
-        public long Hash
-        {
-            get
-            {
-                return Interlocked.Read(ref _hash);
-            }
-        }
+        public long Hash => Interlocked.Read(ref _hash);
 
         public bool TryGetStatusValue(string uid, out object value)
         {
@@ -233,6 +227,11 @@ namespace Wirehome.Core.Components
             if (_logic != null) throw new InvalidOperationException("A component logic cannot be changed.");
 
             _logic = logic ?? throw new ArgumentNullException(nameof(logic));
+        }
+
+        public string GetLogicId()
+        {
+            return _logic?.Id;
         }
 
         void ThrowIfLogicNotSet()

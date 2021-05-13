@@ -10,7 +10,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
-    public class ComponentRegistryServicePythonProxy : IInjectedPythonProxy
+    public sealed class ComponentRegistryServicePythonProxy : IInjectedPythonProxy
     {
         readonly ComponentRegistryService _componentRegistryService;
 
@@ -30,6 +30,11 @@ namespace Wirehome.Core.Components
             }
 
             return result;
+        }
+
+        public bool is_initialized(string component_uid)
+        {
+            return _componentRegistryService.TryGetComponent(component_uid, out _);
         }
 
         public bool set_tag(string component_uid, string tag)
@@ -62,6 +67,11 @@ namespace Wirehome.Core.Components
             return PythonConvert.ToPython(_componentRegistryService.GetComponentStatusValue(component_uid, status_uid, default_value));
         }
 
+        public object get_configuration(string component_uid, string configuration_uid, [DefaultParameterValue(null)] object default_value)
+        {
+            return PythonConvert.ToPython(_componentRegistryService.GetComponentConfigurationValue(component_uid, configuration_uid, default_value));
+        }
+
         public void set_status(string component_uid, string status_uid, object value)
         {
             _componentRegistryService.SetComponentStatusValue(component_uid, status_uid, PythonConvert.FromPython(value));
@@ -85,6 +95,12 @@ namespace Wirehome.Core.Components
         public void set_setting(string component_uid, string setting_uid, object value)
         {
             _componentRegistryService.SetComponentSetting(component_uid, setting_uid, PythonConvert.FromPython(value));
+        }
+
+        public string get_logic_id(string component_uid)
+        {
+            var component = _componentRegistryService.GetComponent(component_uid);
+            return component.GetLogicId();
         }
 
         [Obsolete]

@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.Scheduler
 {
-    public class StartThreadCallbackParameters
+    public sealed class StartThreadCallbackParameters
     {
         public StartThreadCallbackParameters(string threadUid, object state)
         {

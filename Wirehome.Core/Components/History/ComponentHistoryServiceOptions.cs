@@ -4,7 +4,7 @@ using Wirehome.Core.History.Repository;
 
 namespace Wirehome.Core.Components.History
 {
-    public class ComponentHistoryServiceOptions
+    public sealed class ComponentHistoryServiceOptions
     {
         public const string Filename = "ComponentHistoryServiceConfiguration.json";
 
@@ -17,7 +17,7 @@ namespace Wirehome.Core.Components.History
         public HashSet<string> StatusBlacklist { get; set; } = new HashSet<string>();
 
         public HashSet<string> ComponentStatusBlacklist { get; set; } = new HashSet<string>();
-        
+
         public Dictionary<string, Dictionary<string, object>> StatusDefaultSettings { get; set; } = new Dictionary<string, Dictionary<string, object>>
         {
             ["temperature.value"] = new Dictionary<string, object>

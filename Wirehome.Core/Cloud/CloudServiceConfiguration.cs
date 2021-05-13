@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Cloud
 {
-    public class CloudServiceOptions
+    public sealed class CloudServiceConfiguration
     {
         public const string Filename = "CloudServiceConfiguration.json";
 

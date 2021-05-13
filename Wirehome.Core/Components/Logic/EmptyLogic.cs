@@ -5,7 +5,7 @@ using Wirehome.Core.Constants;
 
 namespace Wirehome.Core.Components.Logic
 {
-    public class EmptyComponentLogic : IComponentLogic
+    public sealed class EmptyComponentLogic : IComponentLogic
     {
         readonly IComponentAdapter _adapter;
 
@@ -13,6 +13,8 @@ namespace Wirehome.Core.Components.Logic
         {
             _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         }
+
+        public string Id { get; } = "EMPTY";
 
         public PythonDictionary ProcessMessage(PythonDictionary parameters)
         {

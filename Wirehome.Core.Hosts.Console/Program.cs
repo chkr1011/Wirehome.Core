@@ -16,7 +16,7 @@ namespace Wirehome.Core.Hosts.Console
 
       {WirehomeCoreVersion.Version}
 
-      (c) Christian Kratky 2011 - 2020
+      (c) Christian Kratky 2011 - 2021
       https://github.com/chkr1011/Wirehome.Core
 
 ";
@@ -24,14 +24,7 @@ namespace Wirehome.Core.Hosts.Console
             {
                 global::System.Console.WriteLine(logo);
 
-                await WirehomeCoreHost.Start(arguments).ConfigureAwait(false);
-
-                global::System.Console.WriteLine("Press <Enter> to exit.");
-                global::System.Console.ReadLine();
-
-                await WirehomeCoreHost.Stop().ConfigureAwait(false);
-
-                //Environment.FailFast(null, null);
+                await WirehomeCoreHost.Run(arguments).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

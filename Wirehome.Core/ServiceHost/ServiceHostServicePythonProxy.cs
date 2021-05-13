@@ -8,7 +8,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.ServiceHost
 {
-    public class ServiceHostServicePythonProxy : IInjectedPythonProxy
+    public sealed class ServiceHostServicePythonProxy : IInjectedPythonProxy
     {
         readonly ServiceHostService _serviceHostService;
 

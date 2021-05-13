@@ -8,7 +8,7 @@ using Wirehome.Core.Diagnostics;
 
 namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
-    public class LinuxGpioAdapter : IGpioAdapter
+    public sealed class LinuxGpioAdapter : IGpioAdapter
     {
         readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new Dictionary<int, InterruptMonitor>();
 

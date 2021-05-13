@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,11 +11,9 @@ namespace Wirehome.Core
     {
         static readonly SystemCancellationToken SystemCancellationToken = new SystemCancellationToken();
 
-        static IHost _host;
-
-        public static Task Start(string[] arguments)
+        public static async Task Run(string[] arguments)
         {
-            _host = Host.CreateDefaultBuilder(arguments)
+            using (var host = Host.CreateDefaultBuilder(arguments)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
@@ -26,17 +23,12 @@ namespace Wirehome.Core
                         s.AddSingleton(new SystemLaunchArguments(arguments));
                         s.AddSingleton(SystemCancellationToken);
                     });
-                }).Build();
+                }).Build())
+            {
+                await host.RunAsync(SystemCancellationToken.Token).ConfigureAwait(false);
 
-            return _host.StartAsync();
-        }
-
-        public static async Task Stop()
-        {
-            SystemCancellationToken?.Cancel();
-
-            await _host.StopAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
-            _host.Dispose();
+                SystemCancellationToken?.Cancel();
+            }
         }
     }
 }

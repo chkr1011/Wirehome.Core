@@ -14,7 +14,7 @@ namespace Wirehome.Core.Components
         readonly PackageManagerService _packageManagerService;
         readonly ILogger<ScriptComponentLogic> _scriptComponentLogicLogger;
         readonly ILogger<ScriptComponentAdapter> _scriptComponentAdapterLogger;
-        
+
         public ComponentInitializerService(
             PythonScriptHostFactoryService pythonScriptHostFactoryService,
             PackageManagerService packageManagerService,
@@ -32,8 +32,8 @@ namespace Wirehome.Core.Components
             if (componentRegistryService == null) throw new ArgumentNullException(nameof(componentRegistryService));
 
             return new ComponentInitializer(
-                componentRegistryService, 
-                _pythonScriptHostFactoryService, 
+                componentRegistryService,
+                _pythonScriptHostFactoryService,
                 _packageManagerService,
                 _scriptComponentLogicLogger,
                 _scriptComponentAdapterLogger);

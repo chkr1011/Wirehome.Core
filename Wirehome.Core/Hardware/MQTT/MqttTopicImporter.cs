@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttTopicImporter
+    public sealed class MqttTopicImporter
     {
         readonly MqttImportTopicParameters _parameters;
         readonly MqttService _mqttService;

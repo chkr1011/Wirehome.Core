@@ -9,7 +9,7 @@ using Wirehome.Core.Python.Exceptions;
 
 namespace Wirehome.Core.Hardware.GPIO
 {
-    public class DeviceRegistryServicePythonProxy : IInjectedPythonProxy
+    public sealed class DeviceRegistryServicePythonProxy : IInjectedPythonProxy
     {
         readonly ILogger _logger;
         readonly GpioRegistryService _gpioRegistryService;

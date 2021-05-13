@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public class MqttImportTopicParameters
+    public sealed class MqttImportTopicParameters
     {
         public string Server { get; set; }
 

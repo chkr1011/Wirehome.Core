@@ -5,7 +5,7 @@ using Wirehome.Core.Foundation;
 
 namespace Wirehome.Core.Components.Groups
 {
-    public class ComponentGroup
+    public sealed class ComponentGroup
     {
         readonly Dictionary<string, object> _status = new Dictionary<string, object>();
         readonly Dictionary<string, object> _settings = new Dictionary<string, object>();
@@ -20,13 +20,7 @@ namespace Wirehome.Core.Components.Groups
 
         public string Uid { get; }
 
-        public long Hash
-        {
-            get
-            {
-                return Interlocked.Read(ref _hash);
-            }
-        }
+        public long Hash => Interlocked.Read(ref _hash);
 
         public bool TryGetStatusValue(string uid, out object value)
         {

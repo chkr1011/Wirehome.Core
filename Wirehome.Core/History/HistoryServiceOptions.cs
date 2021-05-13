@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.History
 {
-    public class HistoryServiceOptions
+    public sealed class HistoryServiceOptions
     {
         public const string Filename = "HistoryServiceConfiguration.json";
 

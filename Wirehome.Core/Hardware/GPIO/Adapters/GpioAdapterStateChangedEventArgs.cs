@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
-    public class GpioAdapterStateChangedEventArgs : EventArgs
+    public sealed class GpioAdapterStateChangedEventArgs : EventArgs
     {
         public int GpioId { get; set; }
 

@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.Packages
 {
-    public class Package
+    public sealed class Package
     {
         public PackageUid Uid { get; set; }
 

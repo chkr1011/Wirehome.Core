@@ -4,19 +4,26 @@ using System.Runtime.InteropServices;
 
 namespace Wirehome.Core.Storage
 {
-    public class StoragePaths
+    public sealed class StoragePaths
     {
         public StoragePaths()
         {
             BinPath = AppDomain.CurrentDomain.BaseDirectory;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            var customDataPath = Path.Combine(BinPath, "etc", "wirehome");
+            if (Directory.Exists(customDataPath))
             {
-                DataPath = Path.Combine(Environment.ExpandEnvironmentVariables("%appData%"), "Wirehome");
+                DataPath = customDataPath;
+                return;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 DataPath = Path.Combine("/etc/wirehome/");
+            }
+            else if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                DataPath = Path.Combine(Environment.ExpandEnvironmentVariables("%appData%"), "Wirehome");
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 

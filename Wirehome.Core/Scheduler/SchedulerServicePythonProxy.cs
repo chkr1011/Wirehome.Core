@@ -9,7 +9,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Scheduler
 {
-    public class SchedulerServicePythonProxy : IInjectedPythonProxy
+    public sealed class SchedulerServicePythonProxy : IInjectedPythonProxy
     {
         readonly SchedulerService _schedulerService;
 
@@ -74,26 +74,6 @@ namespace Wirehome.Core.Scheduler
         {
             return _schedulerService.TimerExists(uid);
         }
-
-        //public string attach_to_default_timer(string uid, TimerCallback callback, [DefaultParameterValue(null)] object state)
-        //{
-        //    return _schedulerService.AttachToHighPrecisionTimer(uid, p =>
-        //    {
-        //        var pythonDictionary = new PythonDictionary
-        //        {
-        //            ["timer_uid"] = uid,
-        //            ["elapsed_millis"] = p.ElapsedMillis,
-        //            ["state"] = p.State
-        //        };
-
-        //        callback(pythonDictionary);
-        //    }, state);
-        //}
-
-        //public void detach_from_default_timer(string uid)
-        //{
-        //    _schedulerService.DetachFromHighPrecisionTimer(uid);
-        //}
 
         public string start_countdown(string uid, long duration, CountdownCallback callback, [DefaultParameterValue(null)] object state)
         {

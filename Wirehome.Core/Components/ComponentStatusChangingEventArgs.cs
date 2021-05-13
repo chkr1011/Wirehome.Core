@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.Components
 {
-    public sealed class ComponentStatusChangedEventArgs : EventArgs
+    public sealed class ComponentStatusChangingEventArgs : EventArgs
     {
         public DateTime Timestamp { get; set; }
 
@@ -13,5 +13,7 @@ namespace Wirehome.Core.Components
         public object OldValue { get; set; }
 
         public object NewValue { get; set; }
+
+        public bool ValueHasChanged { get; set; }
     }
 }

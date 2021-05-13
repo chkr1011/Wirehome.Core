@@ -3,7 +3,7 @@ using Wirehome.Core.Packages;
 
 namespace Wirehome.Core.Components.Configuration
 {
-    public class ComponentAdapterConfiguration
+    public sealed class ComponentAdapterConfiguration
     {
         public PackageUid Uid { get; set; }
 

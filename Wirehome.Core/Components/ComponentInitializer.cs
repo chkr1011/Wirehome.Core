@@ -10,7 +10,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Components
 {
-    public class ComponentInitializer
+    public sealed class ComponentInitializer
     {
         readonly ComponentRegistryService _componentRegistryService;
         readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
@@ -54,7 +54,12 @@ namespace Wirehome.Core.Components
 
         void SetupComponentBasedOnScript(Component component, ComponentConfiguration configuration, IDictionary<object, object> context)
         {
-            var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentLogicLogger);
+            var logic = new ScriptComponentLogic(
+                configuration.Logic,
+                _pythonScriptHostFactoryService,
+                _componentRegistryService,
+                _scriptComponentLogicLogger);
+
             logic.Compile(component.Uid, configuration.Script);
             logic.AddToWirehomeWrapper("context", context);
 
@@ -101,7 +106,12 @@ namespace Wirehome.Core.Components
             {
                 var logicPackage = _packageManagerService.LoadPackage(configuration.Logic.Uid);
 
-                var logic = new ScriptComponentLogic(_pythonScriptHostFactoryService, _componentRegistryService, _scriptComponentLogicLogger);
+                var logic = new ScriptComponentLogic(
+                    configuration.Logic,
+                    _pythonScriptHostFactoryService,
+                    _componentRegistryService,
+                    _scriptComponentLogicLogger);
+
                 adapter.MessagePublishedCallback = message => logic.ProcessAdapterMessage(message);
                 logic.AdapterMessagePublishedCallback = message => adapter.ProcessMessage(message);
 

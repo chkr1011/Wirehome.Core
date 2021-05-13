@@ -4,11 +4,11 @@ using Wirehome.Core.MessageBus;
 
 namespace Wirehome.Core.Components
 {
-    public class ComponentRegistryMessageBusWrapper
+    public sealed class ComponentRegistryMessageBusAdapter
     {
         readonly MessageBusService _messageBusService;
 
-        public ComponentRegistryMessageBusWrapper(MessageBusService messageBusService)
+        public ComponentRegistryMessageBusAdapter(MessageBusService messageBusService)
         {
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
         }
@@ -75,6 +75,24 @@ namespace Wirehome.Core.Components
                 ["status_uid"] = eventArgs.StatusUid,
                 ["old_value"] = eventArgs.OldValue,
                 ["new_value"] = eventArgs.NewValue
+            };
+
+            _messageBusService.Publish(message);
+        }
+
+        public void PublishStatusChangingEvent(ComponentStatusChangingEventArgs eventArgs)
+        {
+            if (eventArgs is null) throw new ArgumentNullException(nameof(eventArgs));
+
+            var message = new Dictionary<object, object>
+            {
+                ["type"] = "component_registry.event.status_changing",
+                ["timestamp"] = eventArgs.Timestamp.ToString("O"),
+                ["component_uid"] = eventArgs.Component.Uid,
+                ["status_uid"] = eventArgs.StatusUid,
+                ["old_value"] = eventArgs.OldValue,
+                ["new_value"] = eventArgs.NewValue,
+                ["value_has_changed"] = eventArgs.ValueHasChanged
             };
 
             _messageBusService.Publish(message);

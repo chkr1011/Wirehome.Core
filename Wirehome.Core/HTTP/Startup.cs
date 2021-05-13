@@ -23,7 +23,6 @@ using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Diagnostics.Log;
-using Wirehome.Core.Discovery;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.FunctionPool;
 using Wirehome.Core.GlobalVariables;
@@ -178,7 +177,6 @@ namespace Wirehome.Core.HTTP
             serviceProvider.GetRequiredService<I2CBusService>().Start();
             serviceProvider.GetRequiredService<MqttService>().Start();
             serviceProvider.GetRequiredService<HttpServerService>().Start();
-            serviceProvider.GetRequiredService<DiscoveryService>().Start();
 
             serviceProvider.GetRequiredService<DiagnosticsService>().Start();
             serviceProvider.GetRequiredService<MessageBusService>().Start();

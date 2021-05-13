@@ -10,7 +10,7 @@ namespace Wirehome.Core.Scheduler
     public sealed class ActiveTimer : IDisposable
     {
         readonly CancellationTokenSource _ownCancellationTokenSource = new CancellationTokenSource();
-        
+
         readonly Action<TimerTickCallbackParameters> _callback;
         readonly object _state;
         readonly ILogger _logger;
@@ -40,6 +40,8 @@ namespace Wirehome.Core.Scheduler
         public Exception LastException { get; private set; }
 
         public TimeSpan LastDuration { get; private set; }
+
+        public long InvocationCount { get; private set; }
 
         public void Stop()
         {
@@ -95,6 +97,8 @@ namespace Wirehome.Core.Scheduler
             var stopwatch = Stopwatch.StartNew();
             try
             {
+                InvocationCount++;
+
                 _callback(new TimerTickCallbackParameters(Uid, (int)elapsed.TotalMilliseconds, _state));
             }
             catch (OperationCanceledException)

@@ -31,7 +31,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         public void WriteState(int gpio, GpioState state)
         {
-            //_logger.Log(LogLevel.Information, $"FAKE SetState: GPIO = {gpio}; State = {state}");            
+            //_logger.Log(LogLevel.Information, $"FAKE SetState: GPIO = {gpio}; State = {state}");
         }
 
         public GpioState ReadState(int gpio)

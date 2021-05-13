@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.Scheduler
 {
-    public class TimerTickCallbackParameters
+    public sealed class TimerTickCallbackParameters
     {
         public TimerTickCallbackParameters(string timerUid, int elapsedMillis, object state)
         {

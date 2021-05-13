@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.Components
 {
-    public class SetValueResult
+    public sealed class SetValueResult
     {
         public object OldValue { get; set; }
 
