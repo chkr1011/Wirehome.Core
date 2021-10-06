@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
@@ -110,7 +109,7 @@ namespace Wirehome.Core.Scheduler
 
             lock (_activeCountdowns)
             {
-                _activeCountdowns[uid] = new ActiveCountdown(uid, callback, state, _logger)
+                _activeCountdowns[uid] = new ActiveCountdown(uid, callback, state)
                 {
                     TimeLeft = timeLeft
                 };
@@ -241,7 +240,7 @@ namespace Wirehome.Core.Scheduler
 
                     UpdateActiveCountdowns(elapsed);
 
-                    Thread.Sleep(10);
+                    Thread.Sleep(100);
                 }
             }
             catch (ThreadAbortException)
@@ -267,8 +266,17 @@ namespace Wirehome.Core.Scheduler
                     _activeCountdowns.Remove(activeCountdown.Key);
                     _logger.LogTrace($"Countdown '{activeCountdown.Key}' elapsed. Invoking callback.");
 
-                    //ThreadPool.QueueUserWorkItem(_ => activeCountdown.Value.TryInvokeCallback());
-                    Task.Run(() => activeCountdown.Value.TryInvokeCallback()).Forget(_logger);
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        try
+                        {
+                            activeCountdown.Value.Callback.Invoke(new CountdownElapsedParameters(activeCountdown.Key, activeCountdown.Value.State));
+                        }
+                        catch (Exception exception)
+                        {
+                            _logger.LogError(exception, $"Error while executing callback of countdown '{activeCountdown.Key}'.");
+                        }
+                    });
                 }
             }
         }

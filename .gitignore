@@ -236,3 +236,5 @@ _Pvt_Extensions
 /publish/
 
 *.zip
+
+**/.idea/**

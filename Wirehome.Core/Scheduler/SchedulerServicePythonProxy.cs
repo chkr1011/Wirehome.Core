@@ -4,7 +4,6 @@
 
 using IronPython.Runtime;
 using System;
-using System.Runtime.InteropServices;
 using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Scheduler
@@ -26,7 +25,7 @@ namespace Wirehome.Core.Scheduler
 
         public delegate void ThreadCallback(PythonDictionary eventArgs);
 
-        public string start_thread(string uid, ThreadCallback callback, [DefaultParameterValue(null)] object state)
+        public string start_thread(string uid, ThreadCallback callback, object state = null)
         {
             return _schedulerService.StartThread(uid, p =>
             {
@@ -50,7 +49,7 @@ namespace Wirehome.Core.Scheduler
             return _schedulerService.ThreadExists(uid);
         }
 
-        public string start_timer(string uid, int interval, TimerCallback callback, [DefaultParameterValue(null)] object state)
+        public string start_timer(string uid, int interval, TimerCallback callback, object state = null)
         {
             return _schedulerService.StartTimer(uid, TimeSpan.FromMilliseconds(interval), p =>
             {
@@ -75,7 +74,7 @@ namespace Wirehome.Core.Scheduler
             return _schedulerService.TimerExists(uid);
         }
 
-        public string start_countdown(string uid, long duration, CountdownCallback callback, [DefaultParameterValue(null)] object state)
+        public string start_countdown(string uid, long duration, CountdownCallback callback, object state = null)
         {
             return _schedulerService.StartCountdown(uid, TimeSpan.FromMilliseconds(duration), p =>
             {
