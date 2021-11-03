@@ -1,6 +1,7 @@
 ﻿using MQTTnet;
 using MQTTnet.Server;
 using System;
+using MQTTnet.Server.Internal;
 
 namespace Wirehome.Core.Hardware.MQTT
 {

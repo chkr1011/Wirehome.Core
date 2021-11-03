@@ -13,8 +13,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using MQTTnet.Adapter;
 using MQTTnet.AspNetCore;
-using MQTTnet.Diagnostics;
+using MQTTnet.Diagnostics.Logger;
 using MQTTnet.Implementations;
+using MQTTnet.Packets;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Extensions;
@@ -139,7 +140,11 @@ namespace Wirehome.Core.Hardware.MQTT
             var retainedMessages = _mqttServer.GetRetainedApplicationMessagesAsync().GetAwaiter().GetResult();
             foreach (var retainedMessage in retainedMessages)
             {
-                _incomingMessages.Add(new MqttApplicationMessageReceivedEventArgs(null, retainedMessage));
+                _incomingMessages.Add(new MqttApplicationMessageReceivedEventArgs(
+                    null,
+                    retainedMessage,
+                    new MqttPublishPacket(),
+                    (args, token) => Task.CompletedTask));
             }
 
             return uid;
@@ -183,7 +188,7 @@ namespace Wirehome.Core.Hardware.MQTT
             }
             else
             {
-                mqttNetLogger = new MqttNetLogger();
+                mqttNetLogger = new MqttNetNullLogger();
             }
 
             _webSocketServerAdapter = new MqttWebSocketServerAdapter(mqttNetLogger);
@@ -287,19 +292,21 @@ namespace Wirehome.Core.Hardware.MQTT
             _incomingMessages.Add(eventArgs);
         }
 
-        void ValidateClientConnection(MqttConnectionValidatorContext context)
+        Task ValidateClientConnection(MqttConnectionValidatorContext context)
         {
             context.ReasonCode = MQTTnet.Protocol.MqttConnectReasonCode.Success;
 
             if (_options.BlockedClients == null)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             if (_options.BlockedClients.Contains(context.ClientId ?? string.Empty))
             {
                 context.ReasonCode = MQTTnet.Protocol.MqttConnectReasonCode.Banned;
             }
+
+            return Task.CompletedTask;
         }
     }
 }

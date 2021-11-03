@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using MQTTnet.Diagnostics;
 using System;
+using MQTTnet.Diagnostics.Logger;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
@@ -12,14 +12,7 @@ namespace Wirehome.Core.Hardware.MQTT
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-
-        public event EventHandler<MqttNetLogMessagePublishedEventArgs> LogMessagePublished;
-
-        public IMqttNetScopedLogger CreateScopedLogger(string source = null)
-        {
-            return new MqttNetScopedLogger(this, source);
-        }
-
+        
         public void Publish(MqttNetLogLevel logLevel, string source, string message, object[] parameters, Exception exception)
         {
             var newLogLevel = LogLevel.Debug;
@@ -42,8 +35,6 @@ namespace Wirehome.Core.Hardware.MQTT
             }
 
             _logger.Log(newLogLevel, source, exception, message, parameters);
-
-            LogMessagePublished ?.Invoke(this, new MqttNetLogMessagePublishedEventArgs(null));
         }
     }
 }

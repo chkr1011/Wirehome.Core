@@ -1,20 +1,25 @@
 ﻿using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Client.Options;
-using MQTTnet.Extensions.ManagedClient;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
+using MQTTnet.Client;
+using Wirehome.Core.Extensions;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
     public sealed class MqttTopicImporter
     {
+        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        
         readonly MqttImportTopicParameters _parameters;
         readonly MqttService _mqttService;
         readonly ILogger _logger;
 
-        IManagedMqttClient _mqttClient;
-
+        IMqttClient _mqttClient;
+        IMqttClientOptions _options;
+        
         public MqttTopicImporter(MqttImportTopicParameters parameters, MqttService mqttService, ILogger logger)
         {
             _parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
@@ -24,50 +29,74 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public async Task Start()
         {
-            var optionsBuilder = new ManagedMqttClientOptionsBuilder();
-            optionsBuilder = optionsBuilder.WithClientOptions(
-                o => o
-                    .WithTcpServer(_parameters.Server, _parameters.Port)
-                    .WithCredentials(_parameters.Username, _parameters.Password)
-                    .WithClientId(_parameters.ClientId)
-                    .WithTls(new MqttClientOptionsBuilderTlsParameters
-                    {
-                        UseTls = _parameters.UseTls
-                    }));
-
+            var optionsBuilder = new MqttClientOptionsBuilder()
+                .WithTcpServer(_parameters.Server, _parameters.Port)
+                .WithCredentials(_parameters.Username, _parameters.Password)
+                .WithClientId(_parameters.ClientId)
+                .WithTls(new MqttClientOptionsBuilderTlsParameters
+                {
+                    UseTls = _parameters.UseTls
+                });
+            
             if (!string.IsNullOrEmpty(_parameters.ClientId))
             {
-                optionsBuilder = optionsBuilder.WithClientOptions(o => o.WithClientId(_parameters.ClientId));
+                optionsBuilder = optionsBuilder.WithClientId(_parameters.ClientId);
             }
 
-            var options = optionsBuilder.Build();
+            _options = optionsBuilder.Build();
 
             if (_mqttService.IsLowLevelMqttLoggingEnabled)
             {
-                _mqttClient = new MqttFactory().CreateManagedMqttClient(); //new LoggerAdapter(_logger));
+                _mqttClient = new MqttFactory(new LoggerAdapter(_logger)).CreateMqttClient();
             }
             else
             {
-                _mqttClient = new MqttFactory().CreateManagedMqttClient();
+                _mqttClient = new MqttFactory().CreateMqttClient();
             }
 
             await _mqttClient.SubscribeAsync(_parameters.Topic, _parameters.QualityOfServiceLevel).ConfigureAwait(false);
             _mqttClient.UseApplicationMessageReceivedHandler(e => OnApplicationMessageReceived(e));
-            await _mqttClient.StartAsync(options).ConfigureAwait(false);
+
+           _ = Task.Run(() => MaintainConnectionLoop(_cancellationTokenSource.Token), _cancellationTokenSource.Token).Forget(_logger);
         }
 
         public async Task Stop()
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                
                 if (_mqttClient != null)
                 {
-                    await _mqttClient.StopAsync().ConfigureAwait(false);
+                    await _mqttClient.DisconnectAsync().ConfigureAwait(false);
                 }
             }
             finally
             {
                 _mqttClient?.Dispose();
+                _cancellationTokenSource?.Dispose();
+            }
+        }
+
+        async Task MaintainConnectionLoop(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    if (!_mqttClient.IsConnected)
+                    {
+                        await _mqttClient.ConnectAsync(_options, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Error while maintaining MQTT client connection.");
+                }
+                finally
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+                }
             }
         }
 
