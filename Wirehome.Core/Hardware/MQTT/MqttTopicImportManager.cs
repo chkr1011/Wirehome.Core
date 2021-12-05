@@ -80,7 +80,7 @@ namespace Wirehome.Core.Hardware.MQTT
                 if (_importers.TryGetValue(uid, out var importer))
                 {
                     await importer.Stop().ConfigureAwait(false);
-                    _logger.Log(LogLevel.Information, "Stopped importer '{0}'.");
+                    _logger.Log(LogLevel.Information, "Stopped importer '{0}'.", uid);
                 }
 
                 _importers.Remove(uid);

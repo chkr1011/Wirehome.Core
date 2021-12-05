@@ -453,8 +453,7 @@ namespace Wirehome.Core.Components.Groups
                 LogLevel.Debug,
                 "Component group '{0}' setting '{1}' removed.",
                 componentGroupUid,
-                settingUid,
-                oldValue ?? "<null>");
+                settingUid);
 
             _messageBusService.Publish(new Dictionary<object, object>
             {

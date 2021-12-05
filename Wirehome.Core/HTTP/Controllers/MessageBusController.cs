@@ -100,7 +100,7 @@ namespace Wirehome.Core.HTTP.Controllers
             {
                 history.RemoveAll(i =>
                 {
-                    if (!i.Message.TryGetValue("type", out var typeValue))
+                    if (!i.InnerMessage.TryGetValue("type", out var typeValue))
                     {
                         return false;
                     }

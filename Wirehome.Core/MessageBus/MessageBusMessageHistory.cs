@@ -2,7 +2,7 @@
 
 namespace Wirehome.Core.MessageBus
 {
-    public class MessageBusMessageHistory
+    public sealed class MessageBusMessageHistory
     {
         readonly LinkedList<MessageBusMessage> _messages = new LinkedList<MessageBusMessage>();
 
@@ -36,7 +36,7 @@ namespace Wirehome.Core.MessageBus
                     _messages.RemoveLast();
                 }
 
-                // TODO: Create copy!
+                // The latest message should be the first in the list!
                 _messages.AddFirst(message);
             }
         }

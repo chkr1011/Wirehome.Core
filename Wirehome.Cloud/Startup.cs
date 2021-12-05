@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
@@ -20,6 +21,9 @@ namespace Wirehome.Cloud
     // ReSharper disable once ClassNeverInstantiated.Global
     public class Startup
     {
+        private AuthorizationService _authorizationService;
+        private DeviceConnectorService _deviceConnectorService;
+
         // ReSharper disable once UnusedMember.Global
         public void ConfigureServices(IServiceCollection services)
         {
@@ -83,6 +87,9 @@ namespace Wirehome.Cloud
             if (authorizationService == null) throw new ArgumentNullException(nameof(authorizationService));
             if (deviceConnectorService == null) throw new ArgumentNullException(nameof(deviceConnectorService));
 
+            _authorizationService = authorizationService;
+            _deviceConnectorService = deviceConnectorService;
+
             if (env.EnvironmentName == "Development")
             {
                 app.UseDeveloperExceptionPage();
@@ -94,8 +101,8 @@ namespace Wirehome.Cloud
 
             ConfigureMvc(app);
             ConfigureSwagger(app);
-            ConfigureConnector(app, deviceConnectorService, authorizationService);
-            ConfigureHttpReverseProxy(app, deviceConnectorService);
+            ConfigureConnector(app);
+            ConfigureHttpReverseProxy(app);
         }
 
         static void ConfigureSwagger(IApplicationBuilder app)
@@ -147,12 +154,12 @@ namespace Wirehome.Cloud
             });
         }
 
-        static void ConfigureHttpReverseProxy(IApplicationBuilder app, DeviceConnectorService deviceConnectorService)
+        void ConfigureHttpReverseProxy(IApplicationBuilder app)
         {
-            app.Run(deviceConnectorService.TryDispatchHttpRequestAsync);
+            app.Run(_deviceConnectorService.TryDispatchHttpRequestAsync);
         }
 
-        static void ConfigureConnector(IApplicationBuilder app, DeviceConnectorService deviceConnectorService, AuthorizationService authorizationService)
+        void ConfigureConnector(IApplicationBuilder app)
         {
             app.Map("/Connector", config =>
             {
@@ -161,29 +168,31 @@ namespace Wirehome.Cloud
                     KeepAliveInterval = TimeSpan.FromMinutes(2)
                 });
 
-                config.Use(async (context, next) =>
-                {
-                    if (!context.WebSockets.IsWebSocketRequest)
-                    {
-                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                        return;
-                    }
-
-                    try
-                    {
-                        var channelIdentifier = await authorizationService.AuthorizeDevice(context).ConfigureAwait(false);
-
-                        using (var webSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false))
-                        {
-                            await deviceConnectorService.RunAsync(channelIdentifier, webSocket, context.RequestAborted).ConfigureAwait(false);
-                        }
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    }
-                });
+                config.Use(WebSocketMiddleware);
             });
+        }
+
+        async Task WebSocketMiddleware(HttpContext context, Func<Task> next)
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
+            try
+            {
+                var channelIdentifier = await _authorizationService.AuthorizeDevice(context).ConfigureAwait(false);
+
+                using (var webSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false))
+                {
+                    await _deviceConnectorService.RunAsync(channelIdentifier, webSocket, context.RequestAborted).ConfigureAwait(false);
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            }
         }
     }
 }

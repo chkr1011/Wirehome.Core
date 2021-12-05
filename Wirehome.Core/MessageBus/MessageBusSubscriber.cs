@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace Wirehome.Core.MessageBus
 {
-    public class MessageBusSubscriber
+    public sealed class MessageBusSubscriber
     {
         readonly Action<IDictionary<object, object>> _callback;
         readonly ILogger _logger;
@@ -58,49 +58,5 @@ namespace Wirehome.Core.MessageBus
                 Interlocked.Decrement(ref _pendingMessagesCount);
             }
         }
-
-        //public bool TryProcessNextMessage()
-        //{
-        //    var isFirstProcessor = Interlocked.Increment(ref _processorGate) == 1;
-        //    try
-        //    {
-        //        if (!isFirstProcessor)
-        //        {
-        //            Ensures that only one out of n threads will process messages for this
-
-        //            instance at a time.The thread will return here and continues with
-        //           the next subscriber.
-        //            return false;
-        //        }
-
-        //        MessageBusMessage message;
-        //        lock (_messageQueue)
-        //        {
-        //            if (!_messageQueue.TryDequeue(out message))
-        //            {
-        //                return false;
-        //            }
-        //        }
-
-        //        _callback.Invoke(message);
-
-        //        ProcessedMessagesCount++;
-        //        return true;
-        //    }
-        //    catch (Exception exception)
-        //    {
-        //        if (!(exception is OperationCanceledException))
-        //        {
-        //            _logger.LogError(exception, $"Error while processing bus message for subscriber '{Uid}'.");
-        //        }
-
-        //        FaultedMessagesCount++;
-        //        return false;
-        //    }
-        //    finally
-        //    {
-        //        Interlocked.Decrement(ref _processorGate);
-        //    }
-        //}
     }
 }

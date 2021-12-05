@@ -213,15 +213,10 @@ namespace Wirehome.Cloud.Services.Authorization
             return _repositoryService.FindIdentityEntityByChannelAccessToken(channelAccessToken);
         }
 
-        string GenerateAccessToken()
+        static string GenerateAccessToken()
         {
-            using (var random = new RNGCryptoServiceProvider())
-            {
-                var buffer = new byte[64];
-                random.GetNonZeroBytes(buffer);
-
-                return Convert.ToBase64String(buffer);
-            }
+            var buffer = RandomNumberGenerator.GetBytes(64);
+            return Convert.ToBase64String(buffer);
         }
     }
 }
