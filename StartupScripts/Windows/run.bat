@@ -1,1 +1,0 @@
-start ./Wirehome.Core.Hosts.Console.exe

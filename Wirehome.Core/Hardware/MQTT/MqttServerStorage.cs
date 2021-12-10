@@ -48,6 +48,7 @@ namespace Wirehome.Core.Hardware.MQTT
         public Task<IList<MqttApplicationMessage>> LoadRetainedMessagesAsync()
         {
             _storageService.TryReadSerializedValue(out List<MqttApplicationMessage> messages, "RetainedMqttMessages.json");
+
             if (messages == null)
             {
                 messages = new List<MqttApplicationMessage>();
