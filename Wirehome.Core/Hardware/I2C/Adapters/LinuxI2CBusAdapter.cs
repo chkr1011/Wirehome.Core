@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.Extensions;
 
 namespace Wirehome.Core.Hardware.I2C.Adapters
@@ -11,8 +11,8 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
         const int OpenReadWrite = 0x2;
 
         readonly object _accessLock = new object();
-        readonly ILogger _logger;
         readonly string _filename;
+        readonly ILogger _logger;
 
         int _handle;
 
@@ -40,27 +40,6 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
             }
         }
 
-        public void Write(int deviceAddress, ReadOnlySpan<byte> buffer)
-        {
-            lock (_accessLock)
-            {
-                var writeBuffer = buffer.ToArray();
-
-                var ioCtlResult = SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
-                var writeResult = SafeNativeMethods.Write(_handle, writeBuffer, writeBuffer.Length, 0);
-
-                _logger.Log(
-                    LogLevel.Debug,
-                    "Written on '{0}' (Device address = {1}; Buffer = {2}; IOCTL result = {3}; Write result = {4}; Error = {5}).",
-                    _filename,
-                    deviceAddress,
-                    buffer.ToHexString(),
-                    ioCtlResult,
-                    writeResult,
-                    Marshal.GetLastWin32Error());
-            }
-        }
-
         public void Read(int deviceAddress, Span<byte> buffer)
         {
             lock (_accessLock)
@@ -71,6 +50,20 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
                 SafeNativeMethods.Read(_handle, readBuffer, readBuffer.Length, 0);
 
                 readBuffer.CopyTo(buffer);
+            }
+        }
+
+        public void Write(int deviceAddress, ReadOnlySpan<byte> buffer)
+        {
+            lock (_accessLock)
+            {
+                var writeBuffer = buffer.ToArray();
+
+                var ioCtlResult = SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
+                var writeResult = SafeNativeMethods.Write(_handle, writeBuffer, writeBuffer.Length, 0);
+
+                _logger.Log(LogLevel.Debug, "Written on '{0}' (Device address = {1}; Buffer = {2}; IOCTL result = {3}; Write result = {4}; Error = {5}).", _filename, deviceAddress,
+                    buffer.ToHexString(), ioCtlResult, writeResult, Marshal.GetLastWin32Error());
             }
         }
 

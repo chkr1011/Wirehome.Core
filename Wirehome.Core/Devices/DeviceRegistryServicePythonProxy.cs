@@ -7,7 +7,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Devices
 {
-    public class DeviceRegistryServicePythonProxy : IInjectedPythonProxy
+    public sealed class DeviceRegistryServicePythonProxy : IInjectedPythonProxy
     {
         readonly DeviceRegistryService _deviceRegistryService;
 

@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.Foundation;
 
 namespace Wirehome.Core.Hardware.MQTT
@@ -11,9 +11,9 @@ namespace Wirehome.Core.Hardware.MQTT
     {
         readonly Dictionary<string, MqttTopicImporter> _importers = new Dictionary<string, MqttTopicImporter>();
         readonly AsyncLock _importersLock = new AsyncLock();
+        readonly ILogger _logger;
 
         readonly MqttService _mqttService;
-        readonly ILogger _logger;
 
         public MqttTopicImportManager(MqttService mqttService, ILogger logger)
         {
@@ -41,7 +41,10 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public async Task<string> StartTopicImport(string uid, MqttImportTopicParameters parameters)
         {
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (parameters == null)
+            {
+                throw new ArgumentNullException(nameof(parameters));
+            }
 
             if (string.IsNullOrEmpty(uid))
             {
@@ -72,7 +75,10 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public async Task StopTopicImport(string uid)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (uid == null)
+            {
+                throw new ArgumentNullException(nameof(uid));
+            }
 
             await _importersLock.EnterAsync().ConfigureAwait(false);
             try

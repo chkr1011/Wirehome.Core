@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using MQTTnet;
-using MQTTnet.Client.Options;
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using MQTTnet;
 using MQTTnet.Client;
+using MQTTnet.Client.Options;
 using Wirehome.Core.Extensions;
 
 namespace Wirehome.Core.Hardware.MQTT
@@ -12,14 +12,14 @@ namespace Wirehome.Core.Hardware.MQTT
     public sealed class MqttTopicImporter
     {
         readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        
-        readonly MqttImportTopicParameters _parameters;
-        readonly MqttService _mqttService;
         readonly ILogger _logger;
+        readonly MqttService _mqttService;
+
+        readonly MqttImportTopicParameters _parameters;
 
         IMqttClient _mqttClient;
         IMqttClientOptions _options;
-        
+
         public MqttTopicImporter(MqttImportTopicParameters parameters, MqttService mqttService, ILogger logger)
         {
             _parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
@@ -29,15 +29,12 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public async Task Start()
         {
-            var optionsBuilder = new MqttClientOptionsBuilder()
-                .WithTcpServer(_parameters.Server, _parameters.Port)
-                .WithCredentials(_parameters.Username, _parameters.Password)
-                .WithClientId(_parameters.ClientId)
-                .WithTls(new MqttClientOptionsBuilderTlsParameters
+            var optionsBuilder = new MqttClientOptionsBuilder().WithTcpServer(_parameters.Server, _parameters.Port).WithCredentials(_parameters.Username, _parameters.Password)
+                .WithClientId(_parameters.ClientId).WithTls(new MqttClientOptionsBuilderTlsParameters
                 {
                     UseTls = _parameters.UseTls
                 });
-            
+
             if (!string.IsNullOrEmpty(_parameters.ClientId))
             {
                 optionsBuilder = optionsBuilder.WithClientId(_parameters.ClientId);
@@ -57,7 +54,7 @@ namespace Wirehome.Core.Hardware.MQTT
             await _mqttClient.SubscribeAsync(_parameters.Topic, _parameters.QualityOfServiceLevel).ConfigureAwait(false);
             _mqttClient.UseApplicationMessageReceivedHandler(e => OnApplicationMessageReceived(e));
 
-           _ = Task.Run(() => MaintainConnectionLoop(_cancellationTokenSource.Token), _cancellationTokenSource.Token).Forget(_logger);
+            _ = Task.Run(() => MaintainConnectionLoop(_cancellationTokenSource.Token), _cancellationTokenSource.Token).Forget(_logger);
         }
 
         public async Task Stop()
@@ -65,7 +62,7 @@ namespace Wirehome.Core.Hardware.MQTT
             try
             {
                 _cancellationTokenSource?.Cancel();
-                
+
                 if (_mqttClient != null)
                 {
                     await _mqttClient.DisconnectAsync().ConfigureAwait(false);

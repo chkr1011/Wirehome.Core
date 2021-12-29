@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
+using Microsoft.Extensions.Logging;
 
 namespace Wirehome.Core.Hardware.I2C.Adapters
 {
@@ -12,14 +12,14 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void Write(int deviceAddress, ReadOnlySpan<byte> buffer)
-        {
-            //_logger.Log(LogLevel.Information, $"Fake Write: Device = {deviceAddress}; Buffer = {buffer.ToHexString()}");
-        }
-
         public void Read(int deviceAddress, Span<byte> buffer)
         {
             //_logger.Log(LogLevel.Information, $"Fake Read: Device = {deviceAddress}");
+        }
+
+        public void Write(int deviceAddress, ReadOnlySpan<byte> buffer)
+        {
+            //_logger.Log(LogLevel.Information, $"Fake Write: Device = {deviceAddress}; Buffer = {buffer.ToHexString()}");
         }
 
         public void WriteRead(int deviceAddress, ReadOnlySpan<byte> writeBuffer, Span<byte> readBuffer)

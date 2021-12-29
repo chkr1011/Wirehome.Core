@@ -3,13 +3,13 @@
 // ReSharper disable UnusedMember.Global
 // ReSharper disable MemberCanBePrivate.Global
 
+using System;
 using IronPython.Runtime;
 using MQTTnet;
 using MQTTnet.Adapter;
 using MQTTnet.Client;
 using MQTTnet.Client.Options;
 using MQTTnet.Protocol;
-using System;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 
@@ -26,11 +26,12 @@ namespace Wirehome.Core.Hardware.MQTT
 
         public string ModuleName { get; } = "mqtt";
 
-        public delegate void MqttMessageCallback(PythonDictionary eventArgs);
-
         public void publish(PythonDictionary parameters)
         {
-            if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+            if (parameters is null)
+            {
+                throw new ArgumentNullException(nameof(parameters));
+            }
 
             var topic = Convert.ToString(parameters.get("topic"));
             var payload = parameters.get("payload", Array.Empty<byte>());
@@ -41,14 +42,17 @@ namespace Wirehome.Core.Hardware.MQTT
             {
                 Topic = topic,
                 Payload = PythonConvert.ToPayload(payload),
-                QualityOfServiceLevel = (MqttQualityOfServiceLevel)qos,
+                QualityOfServiceLevel = (MqttQualityOfServiceLevel) qos,
                 Retain = retain
             });
         }
 
         public static PythonDictionary publish_external(PythonDictionary parameters)
         {
-            if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+            if (parameters is null)
+            {
+                throw new ArgumentNullException(nameof(parameters));
+            }
 
             var server = Convert.ToString(parameters.get("server"));
             var port = Convert.ToInt32(parameters.get("port", 1883));
@@ -65,25 +69,16 @@ namespace Wirehome.Core.Hardware.MQTT
             var mqttClient = new MqttFactory().CreateMqttClient();
             try
             {
-                var options = new MqttClientOptionsBuilder()
-                    .WithTcpServer(server, port)
-                    .WithCredentials(username, password)
-                    .WithClientId(clientId)
-                    .WithCommunicationTimeout(TimeSpan.FromMilliseconds(timeout))
-                    .WithTls(new MqttClientOptionsBuilderTlsParameters
+                var options = new MqttClientOptionsBuilder().WithTcpServer(server, port).WithCredentials(username, password).WithClientId(clientId)
+                    .WithCommunicationTimeout(TimeSpan.FromMilliseconds(timeout)).WithTls(new MqttClientOptionsBuilderTlsParameters
                     {
                         UseTls = tls
-                    })
-                    .Build();
+                    }).Build();
 
                 mqttClient.ConnectAsync(options).GetAwaiter().GetResult();
 
-                var message = new MqttApplicationMessageBuilder()
-                    .WithTopic(topic)
-                    .WithPayload(PythonConvert.ToPayload(payload))
-                    .WithQualityOfServiceLevel((MqttQualityOfServiceLevel)qos)
-                    .WithRetainFlag(retain)
-                    .Build();
+                var message = new MqttApplicationMessageBuilder().WithTopic(topic).WithPayload(PythonConvert.ToPayload(payload))
+                    .WithQualityOfServiceLevel((MqttQualityOfServiceLevel) qos).WithRetainFlag(retain).Build();
 
                 mqttClient.PublishAsync(message).GetAwaiter().GetResult();
 
@@ -110,37 +105,12 @@ namespace Wirehome.Core.Hardware.MQTT
             }
         }
 
-        public string subscribe(string uid, string topic_filter, MqttMessageCallback callback)
-        {
-            if (topic_filter == null) throw new ArgumentNullException(nameof(topic_filter));
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
-
-            return _mqttService.Subscribe(uid, topic_filter, message =>
-            {
-                var pythonMessage = new PythonDictionary
-                {
-                    ["subscription_uid"] = uid,
-                    ["client_id"] = message.ClientId,
-                    ["topic"] = message.ApplicationMessage.Topic,
-                    ["payload"] = new Bytes(message.ApplicationMessage.Payload ?? Array.Empty<byte>()),
-                    ["qos"] = (int)message.ApplicationMessage.QualityOfServiceLevel,
-                    ["retain"] = message.ApplicationMessage.Retain
-                };
-
-                callback(pythonMessage);
-            });
-        }
-
-        public void unsubscribe(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            _mqttService.Unsubscribe(uid);
-        }
-
         public string start_topic_import(string uid, PythonDictionary parameters)
         {
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (parameters == null)
+            {
+                throw new ArgumentNullException(nameof(parameters));
+            }
 
             var topicImportParameters = new MqttImportTopicParameters
             {
@@ -151,7 +121,7 @@ namespace Wirehome.Core.Hardware.MQTT
                 Password = Convert.ToString(parameters.get("password")),
                 ClientId = Convert.ToString(parameters.get("client_id", Guid.NewGuid().ToString("N"))),
                 Topic = Convert.ToString(parameters.get("topic")),
-                QualityOfServiceLevel = (MqttQualityOfServiceLevel)Convert.ToInt32(parameters.get("qos"))
+                QualityOfServiceLevel = (MqttQualityOfServiceLevel) Convert.ToInt32(parameters.get("qos"))
             };
 
             return _mqttService.StartTopicImport(uid, topicImportParameters).GetAwaiter().GetResult();
@@ -160,6 +130,44 @@ namespace Wirehome.Core.Hardware.MQTT
         public void stop_topic_import(string uid)
         {
             _mqttService.StopTopicImport(uid).GetAwaiter().GetResult();
+        }
+
+        public string subscribe(string uid, string topic_filter, Action<PythonDictionary> callback)
+        {
+            if (topic_filter == null)
+            {
+                throw new ArgumentNullException(nameof(topic_filter));
+            }
+
+            if (callback == null)
+            {
+                throw new ArgumentNullException(nameof(callback));
+            }
+
+            return _mqttService.Subscribe(uid, topic_filter, message =>
+            {
+                var pythonMessage = new PythonDictionary
+                {
+                    ["subscription_uid"] = uid,
+                    ["client_id"] = message.ClientId,
+                    ["topic"] = message.ApplicationMessage.Topic,
+                    ["payload"] = new Bytes(message.ApplicationMessage.Payload ?? Array.Empty<byte>()),
+                    ["qos"] = (int) message.ApplicationMessage.QualityOfServiceLevel,
+                    ["retain"] = message.ApplicationMessage.Retain
+                };
+
+                callback(pythonMessage);
+            });
+        }
+
+        public void unsubscribe(string uid)
+        {
+            if (uid == null)
+            {
+                throw new ArgumentNullException(nameof(uid));
+            }
+
+            _mqttService.Unsubscribe(uid);
         }
     }
 }

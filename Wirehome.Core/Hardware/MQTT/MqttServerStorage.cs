@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using MQTTnet;
-using MQTTnet.Server;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using MQTTnet;
+using MQTTnet.Server;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
@@ -13,10 +13,10 @@ namespace Wirehome.Core.Hardware.MQTT
 {
     public sealed class MqttServerStorage : IMqttServerStorage
     {
+        readonly ILogger _logger;
         readonly List<MqttApplicationMessage> _messages = new List<MqttApplicationMessage>();
         readonly StorageService _storageService;
         readonly SystemCancellationToken _systemCancellationToken;
-        readonly ILogger _logger;
 
         bool _messagesHaveChanged;
 
@@ -27,9 +27,16 @@ namespace Wirehome.Core.Hardware.MQTT
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void Start()
+        public Task<IList<MqttApplicationMessage>> LoadRetainedMessagesAsync()
         {
-            ParallelTask.Start(SaveRetainedMessagesInternalAsync, CancellationToken.None, _logger);
+            _storageService.TryReadSerializedValue(out List<MqttApplicationMessage> messages, "RetainedMqttMessages.json");
+
+            if (messages == null)
+            {
+                messages = new List<MqttApplicationMessage>();
+            }
+
+            return Task.FromResult<IList<MqttApplicationMessage>>(messages);
         }
 
         public Task SaveRetainedMessagesAsync(IList<MqttApplicationMessage> messages)
@@ -45,16 +52,9 @@ namespace Wirehome.Core.Hardware.MQTT
             return Task.CompletedTask;
         }
 
-        public Task<IList<MqttApplicationMessage>> LoadRetainedMessagesAsync()
+        public void Start()
         {
-            _storageService.TryReadSerializedValue(out List<MqttApplicationMessage> messages, "RetainedMqttMessages.json");
-
-            if (messages == null)
-            {
-                messages = new List<MqttApplicationMessage>();
-            }
-
-            return Task.FromResult<IList<MqttApplicationMessage>>(messages);
+            ParallelTask.Start(SaveRetainedMessagesInternalAsync, CancellationToken.None, _logger);
         }
 
         async Task SaveRetainedMessagesInternalAsync()

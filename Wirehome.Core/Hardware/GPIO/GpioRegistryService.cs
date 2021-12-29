@@ -1,72 +1,95 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.Exceptions;
 using Wirehome.Core.Hardware.GPIO.Adapters;
 using Wirehome.Core.MessageBus;
+using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.GPIO
 {
     public sealed class GpioRegistryService : WirehomeCoreService
     {
         readonly Dictionary<string, IGpioAdapter> _adapters = new Dictionary<string, IGpioAdapter>();
-        readonly SystemStatusService _systemStatusService;
-        readonly MessageBusService _messageBusService;
         readonly ILogger _logger;
+        readonly MessageBusService _messageBusService;
+        readonly SystemCancellationToken _systemCancellationToken;
+        readonly SystemStatusService _systemStatusService;
 
-        public GpioRegistryService(SystemStatusService systemStatusService, MessageBusService messageBusService, ILogger<GpioRegistryService> logger)
+        public GpioRegistryService(SystemStatusService systemStatusService,
+            MessageBusService messageBusService,
+            SystemCancellationToken systemCancellationToken,
+            ILogger<GpioRegistryService> logger)
         {
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
+            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public event EventHandler<GpioAdapterStateChangedEventArgs> GpioStateChanged;
+
+        public void EnableInterrupt(string hostId, int gpioId, GpioInterruptEdge edge)
+        {
+            if (hostId == null)
+            {
+                throw new ArgumentNullException(nameof(hostId));
+            }
+
+            GetAdapter(hostId).EnableInterrupt(gpioId, edge);
+        }
+
+        public GpioState ReadState(string hostId, int gpioId)
+        {
+            if (hostId == null)
+            {
+                throw new ArgumentNullException(nameof(hostId));
+            }
+
+            return GetAdapter(hostId).ReadState(gpioId);
         }
 
         public void RegisterAdapter(string hostId, IGpioAdapter adapter)
         {
-            if (hostId == null) throw new ArgumentNullException(nameof(hostId));
+            if (hostId == null)
+            {
+                throw new ArgumentNullException(nameof(hostId));
+            }
 
             _adapters[hostId] = adapter ?? throw new ArgumentNullException(nameof(adapter));
             adapter.GpioStateChanged += (s, e) => OnGpioStateChanged(hostId, e);
 
-            _logger.Log(LogLevel.Information, $"Registered GPIO host '{hostId}'.");
+            _logger.Log(LogLevel.Information, "Registered GPIO host '{0}'.", hostId);
         }
 
         public void SetDirection(string hostId, int gpioId, GpioDirection direction)
         {
-            if (hostId == null) throw new ArgumentNullException(nameof(hostId));
+            if (hostId == null)
+            {
+                throw new ArgumentNullException(nameof(hostId));
+            }
 
             GetAdapter(hostId).SetDirection(gpioId, direction);
         }
 
         public void WriteState(string hostId, int gpioId, GpioState state)
         {
-            if (hostId == null) throw new ArgumentNullException(nameof(hostId));
+            if (hostId == null)
+            {
+                throw new ArgumentNullException(nameof(hostId));
+            }
 
             GetAdapter(hostId).WriteState(gpioId, state);
-        }
-
-        public GpioState ReadState(string hostId, int gpioId)
-        {
-            if (hostId == null) throw new ArgumentNullException(nameof(hostId));
-
-            return GetAdapter(hostId).ReadState(gpioId);
-        }
-
-        public void EnableInterrupt(string hostId, int gpioId, GpioInterruptEdge edge)
-        {
-            if (hostId == null) throw new ArgumentNullException(nameof(hostId));
-
-            GetAdapter(hostId).EnableInterrupt(gpioId, edge);
         }
 
         protected override void OnStart()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _logger);
+                var gpioAdapter = new LinuxGpioAdapter(_systemStatusService, _systemCancellationToken, _logger);
                 gpioAdapter.Enable();
                 RegisterAdapter(string.Empty, gpioAdapter);
             }
@@ -99,6 +122,8 @@ namespace Wirehome.Core.Hardware.GPIO
             };
 
             _messageBusService.Publish(properties);
+
+            GpioStateChanged?.Invoke(this, e);
         }
     }
 }

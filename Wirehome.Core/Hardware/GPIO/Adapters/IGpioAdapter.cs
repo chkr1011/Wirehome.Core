@@ -6,12 +6,12 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
     {
         event EventHandler<GpioAdapterStateChangedEventArgs> GpioStateChanged;
 
-        void SetDirection(int gpioId, GpioDirection direction);
-
-        void WriteState(int gpioId, GpioState state);
+        void EnableInterrupt(int gpioId, GpioInterruptEdge edge);
 
         GpioState ReadState(int gpioId);
 
-        void EnableInterrupt(int gpioId, GpioInterruptEdge edge);
+        void SetDirection(int gpioId, GpioDirection direction);
+
+        void WriteState(int gpioId, GpioState state);
     }
 }

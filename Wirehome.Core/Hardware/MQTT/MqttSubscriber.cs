@@ -1,6 +1,5 @@
-﻿using MQTTnet;
-using MQTTnet.Server;
-using System;
+﻿using System;
+using MQTTnet;
 using MQTTnet.Server.Internal;
 
 namespace Wirehome.Core.Hardware.MQTT
@@ -16,20 +15,26 @@ namespace Wirehome.Core.Hardware.MQTT
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
         }
 
-        public string Uid { get; }
-
         public string TopicFilter { get; }
+
+        public string Uid { get; }
 
         public bool IsFilterMatch(string topic)
         {
-            if (topic == null) throw new ArgumentNullException(nameof(topic));
+            if (topic == null)
+            {
+                throw new ArgumentNullException(nameof(topic));
+            }
 
             return MqttTopicFilterComparer.IsMatch(topic, TopicFilter);
         }
 
         public void Notify(MqttApplicationMessageReceivedEventArgs eventArgs)
         {
-            if (eventArgs == null) throw new ArgumentNullException(nameof(eventArgs));
+            if (eventArgs == null)
+            {
+                throw new ArgumentNullException(nameof(eventArgs));
+            }
 
             _callback(eventArgs);
         }

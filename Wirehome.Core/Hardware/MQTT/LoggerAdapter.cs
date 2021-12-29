@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
+using Microsoft.Extensions.Logging;
 using MQTTnet.Diagnostics.Logger;
 
 namespace Wirehome.Core.Hardware.MQTT
@@ -12,7 +12,7 @@ namespace Wirehome.Core.Hardware.MQTT
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         public void Publish(MqttNetLogLevel logLevel, string source, string message, object[] parameters, Exception exception)
         {
             var newLogLevel = LogLevel.Debug;

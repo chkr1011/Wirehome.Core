@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Exceptions;
 using Wirehome.Core.Hardware.I2C.Adapters;
@@ -19,9 +19,22 @@ namespace Wirehome.Core.Hardware.I2C
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        public void Read(string busId, int deviceAddress, ArraySegment<byte> buffer)
+        {
+            if (busId == null)
+            {
+                throw new ArgumentNullException(nameof(busId));
+            }
+
+            GetAdapter(busId).Read(deviceAddress, buffer);
+        }
+
         public void RegisterAdapter(string busId, II2CBusAdapter adapter)
         {
-            if (busId == null) throw new ArgumentNullException(nameof(busId));
+            if (busId == null)
+            {
+                throw new ArgumentNullException(nameof(busId));
+            }
 
             _adapters[busId] = adapter ?? throw new ArgumentNullException(nameof(adapter));
             _logger.Log(LogLevel.Information, $"Registered I2C bus ID '{busId}'.");
@@ -29,21 +42,20 @@ namespace Wirehome.Core.Hardware.I2C
 
         public void Write(string busId, int deviceAddress, ReadOnlySpan<byte> buffer)
         {
-            if (busId == null) throw new ArgumentNullException(nameof(busId));
+            if (busId == null)
+            {
+                throw new ArgumentNullException(nameof(busId));
+            }
 
             GetAdapter(busId).Write(deviceAddress, buffer);
         }
 
-        public void Read(string busId, int deviceAddress, ArraySegment<byte> buffer)
-        {
-            if (busId == null) throw new ArgumentNullException(nameof(busId));
-
-            GetAdapter(busId).Read(deviceAddress, buffer);
-        }
-
         public void WriteRead(string busId, int deviceAddress, ReadOnlySpan<byte> writeBuffer, ArraySegment<byte> readBuffer)
         {
-            if (busId == null) throw new ArgumentNullException(nameof(busId));
+            if (busId == null)
+            {
+                throw new ArgumentNullException(nameof(busId));
+            }
 
             GetAdapter(busId).WriteRead(deviceAddress, writeBuffer, readBuffer);
         }
