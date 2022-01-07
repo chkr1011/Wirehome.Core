@@ -3,8 +3,10 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
+using System.Collections.Concurrent;
 using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
+using Wirehome.Core.Hardware.GPIO.Adapters;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Exceptions;
 
@@ -13,54 +15,70 @@ namespace Wirehome.Core.Hardware.GPIO
     public sealed class GpioRegistryServicePythonProxy : IInjectedPythonProxy
     {
         readonly GpioRegistryService _gpioRegistryService;
+        readonly ConcurrentDictionary<string, Interrupt> _interrupts = new ConcurrentDictionary<string, Interrupt>();
         readonly ILogger _logger;
 
         public GpioRegistryServicePythonProxy(GpioRegistryService gpioRegistryService, ILogger<GpioRegistryServicePythonProxy> logger)
         {
             _gpioRegistryService = gpioRegistryService ?? throw new ArgumentNullException(nameof(gpioRegistryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            _gpioRegistryService.GpioStateChanged += OnGpioStateChanged;
         }
 
         public string ModuleName { get; } = "gpio";
 
-        public void attach(string uid, string host_id, int gpio_id, string @event, Action<PythonDictionary> callback)
+        public string attach_interrupt(string uid, string gpio_host_id, int gpio_id, string @event, Action<PythonDictionary> callback)
         {
+            if (gpio_host_id == null)
+            {
+                throw new ArgumentNullException(nameof(gpio_host_id));
+            }
+
+            if (@event == null)
+            {
+                throw new ArgumentNullException(nameof(@event));
+            }
+
             if (callback is null)
             {
                 throw new ArgumentNullException(nameof(callback));
             }
 
-            _gpioRegistryService.GpioStateChanged += (sender, args) =>
+            if (string.IsNullOrEmpty(uid))
             {
-                if (args.GpioId != gpio_id)
-                {
-                    return;
-                }
+                uid = Guid.NewGuid().ToString("D");
+            }
 
-                if (args.NewState == GpioState.High)
-                {
-                    if (@event != "rising")
-                    {
-                        return;
-                    }
-                }
+            var interruptEvent = InterruptEvent.Rising;
+            if (@event == "falling")
+            {
+                interruptEvent = InterruptEvent.Falling;
+            }
 
-                if (args.NewState == GpioState.Low)
-                {
-                    if (@event != "falling")
-                    {
-                        return;
-                    }
-                }
+            var interrupt = new Interrupt { GpioHostId = gpio_host_id, GpioId = gpio_id, Event = interruptEvent, Callback = callback };
 
-                callback.Invoke(new PythonDictionary
-                {
-                    ["uid"] = uid,
-                    ["host_id"] = host_id,
-                    ["gpio_id"] = gpio_id,
-                    ["event"] = @event
-                });
-            };
+            lock (_interrupts)
+            {
+                _interrupts[uid] = interrupt;
+            }
+
+            _gpioRegistryService.EnableInterrupt(gpio_host_id, gpio_id, GpioInterruptEdge.Both);
+
+            return uid;
+        }
+
+        public void detach_interrupt(string uid)
+        {
+            if (uid == null)
+            {
+                throw new ArgumentNullException(nameof(uid));
+            }
+
+            lock (_interrupts)
+            {
+                _interrupts.TryRemove(uid, out _);
+            }
         }
 
         public void enable_interrupt(string gpioHostId, int gpioId)
@@ -134,6 +152,46 @@ namespace Wirehome.Core.Hardware.GPIO
             }
 
             _gpioRegistryService.WriteState(host_id, gpio_id, stateValue);
+        }
+
+        void OnGpioStateChanged(object sender, GpioStateChangedEventArgs args)
+        {
+            foreach (var interrupt in _interrupts)
+            {
+                if (interrupt.Value.GpioId != args.GpioId)
+                {
+                    continue;
+                }
+
+                if (args.NewState == GpioState.High)
+                {
+                    if (interrupt.Value.Event != InterruptEvent.Rising)
+                    {
+                        continue;
+                    }
+                }
+
+                if (args.NewState == GpioState.Low)
+                {
+                    if (interrupt.Value.Event != InterruptEvent.Falling)
+                    {
+                        continue;
+                    }
+                }
+
+                if (interrupt.Value.GpioHostId != args.HostId)
+                {
+                    continue;
+                }
+
+                var message = new PythonDictionary { ["uid"] = interrupt.Key, ["gpio_host_id"] = interrupt.Value.GpioHostId, ["gpio_id"] = interrupt.Value.GpioId, ["event"] = "falling" };
+                if (interrupt.Value.Event == InterruptEvent.Rising)
+                {
+                    message["event"] = "rising";
+                }
+
+                interrupt.Value.Callback.Invoke(message);
+            }
         }
     }
 }

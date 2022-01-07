@@ -5,7 +5,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using Microsoft.Extensions.Logging;
-using Wirehome.Core.Diagnostics;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.GPIO.Adapters
@@ -19,14 +18,12 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         readonly object _syncRoot = new object();
         readonly SystemCancellationToken _systemCancellationToken;
-        readonly SystemStatusService _systemStatusService;
 
         Thread _eventThread;
         Thread _workerThread;
 
-        public LinuxGpioAdapter(SystemStatusService systemStatusService, SystemCancellationToken systemCancellationToken, ILogger logger)
+        public LinuxGpioAdapter(SystemCancellationToken systemCancellationToken, ILogger logger)
         {
-            _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -39,7 +36,6 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
             // cancellation, async/await, thread pool) is not needed.
             _workerThread = new Thread(PollGpios)
             {
-                Name = nameof(LinuxGpioAdapter),
                 IsBackground = true
             };
 
@@ -47,7 +43,6 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
             _eventThread = new Thread(FireEvents)
             {
-                Name = nameof(LinuxGpioAdapter),
                 IsBackground = true
             };
 
@@ -141,7 +136,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 
         void OnGpioChanged(GpioAdapterStateChangedEventArgs eventArgs)
         {
-            _logger.Log(LogLevel.Information, $"GPIO {eventArgs.GpioId} changed from {eventArgs.OldState} to {eventArgs.NewState}.");
+            _logger.Log(LogLevel.Information, $"Interrupt GPIO {eventArgs.GpioId} changed from {eventArgs.OldState} to {eventArgs.NewState}.");
 
             GpioStateChanged?.Invoke(this, eventArgs);
         }
@@ -188,7 +183,7 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
                 }
                 finally
                 {
-                    Thread.Sleep(50);
+                    Thread.Sleep(10);
                 }
             }
         }
