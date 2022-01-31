@@ -7,8 +7,8 @@ namespace Wirehome.Core.Storage
 {
     public class JsonSerializerService : WirehomeCoreService
     {
-        readonly object _syncRoot = new object();
-        readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
+        readonly object _syncRoot = new();
+        readonly JsonSerializerSettings _serializerSettings = new()
         {
             ContractResolver = new DefaultContractResolver
             {

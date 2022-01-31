@@ -17,7 +17,7 @@ namespace Wirehome.Core.Resources
         const string ResourcesDirectory = "Resources";
         const string StringsFilename = "Strings.json";
 
-        readonly Dictionary<string, Dictionary<string, string>> _resources = new Dictionary<string, Dictionary<string, string>>();
+        readonly Dictionary<string, Dictionary<string, string>> _resources = new();
 
         readonly StorageService _storageService;
         readonly JsonSerializerService _jsonSerializerService;

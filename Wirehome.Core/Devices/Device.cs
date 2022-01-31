@@ -5,8 +5,8 @@ namespace Wirehome.Core.Devices
 {
     public class Device
     {
-        readonly Dictionary<string, DeviceProperty> _reportedProperties = new Dictionary<string, DeviceProperty>();
-        readonly Dictionary<string, DeviceProperty> _requestedProperties = new Dictionary<string, DeviceProperty>();
+        readonly Dictionary<string, DeviceProperty> _reportedProperties = new();
+        readonly Dictionary<string, DeviceProperty> _requestedProperties = new();
 
         public DateTime LastUpdate { get; set; }
 

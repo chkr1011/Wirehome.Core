@@ -6,7 +6,7 @@ namespace Wirehome.Core.Foundation
 {
     public class ThreadSafeDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
-        readonly Dictionary<TKey, TValue> _dictionary = new Dictionary<TKey, TValue>(64);
+        readonly Dictionary<TKey, TValue> _dictionary = new(64);
 
         public TValue this[TKey key]
         {

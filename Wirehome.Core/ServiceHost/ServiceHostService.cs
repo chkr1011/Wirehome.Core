@@ -18,7 +18,7 @@ namespace Wirehome.Core.ServiceHost
     {
         const string ServicesDirectory = "Services";
 
-        readonly Dictionary<string, ServiceInstance> _services = new Dictionary<string, ServiceInstance>();
+        readonly Dictionary<string, ServiceInstance> _services = new();
 
         readonly PackageManagerService _repositoryService;
         readonly StorageService _storageService;

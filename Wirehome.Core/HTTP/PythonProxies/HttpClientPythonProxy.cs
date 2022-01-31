@@ -16,7 +16,7 @@ namespace Wirehome.Core.HTTP.PythonProxies
 {
     public sealed class HttpClientPythonProxy : IInjectedPythonProxy, IDisposable
     {
-        readonly HttpClient _httpClient = new HttpClient();
+        readonly HttpClient _httpClient = new();
 
         public string ModuleName { get; } = "http_client";
 

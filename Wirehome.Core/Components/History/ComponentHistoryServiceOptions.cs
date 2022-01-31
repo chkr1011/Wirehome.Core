@@ -12,13 +12,13 @@ namespace Wirehome.Core.Components.History
 
         public TimeSpan ComponentStatusPullInterval { get; set; } = TimeSpan.FromMinutes(5);
 
-        public HashSet<string> ComponentBlacklist { get; set; } = new HashSet<string>();
+        public HashSet<string> ComponentBlacklist { get; set; } = new();
 
-        public HashSet<string> StatusBlacklist { get; set; } = new HashSet<string>();
+        public HashSet<string> StatusBlacklist { get; set; } = new();
 
-        public HashSet<string> ComponentStatusBlacklist { get; set; } = new HashSet<string>();
+        public HashSet<string> ComponentStatusBlacklist { get; set; } = new();
 
-        public Dictionary<string, Dictionary<string, object>> StatusDefaultSettings { get; set; } = new Dictionary<string, Dictionary<string, object>>
+        public Dictionary<string, Dictionary<string, object>> StatusDefaultSettings { get; set; } = new()
         {
             ["temperature.value"] = new Dictionary<string, object>
             {
@@ -31,7 +31,7 @@ namespace Wirehome.Core.Components.History
             }
         };
 
-        public Dictionary<string, Dictionary<string, object>> ComponentStatusDefaultSettings { get; set; } = new Dictionary<string, Dictionary<string, object>>
+        public Dictionary<string, Dictionary<string, object>> ComponentStatusDefaultSettings { get; set; } = new()
         {
         };
     }

@@ -8,7 +8,6 @@ using IronPython.Runtime;
 using MQTTnet;
 using MQTTnet.Adapter;
 using MQTTnet.Client;
-using MQTTnet.Client.Options;
 using MQTTnet.Protocol;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
@@ -144,16 +143,16 @@ namespace Wirehome.Core.Hardware.MQTT
                 throw new ArgumentNullException(nameof(callback));
             }
 
-            return _mqttService.Subscribe(uid, topic_filter, message =>
+            return _mqttService.Subscribe(uid, topic_filter, eventArgs =>
             {
                 var pythonMessage = new PythonDictionary
                 {
                     ["subscription_uid"] = uid,
-                    ["client_id"] = message.ClientId,
-                    ["topic"] = message.ApplicationMessage.Topic,
-                    ["payload"] = new Bytes(message.ApplicationMessage.Payload ?? Array.Empty<byte>()),
-                    ["qos"] = (int) message.ApplicationMessage.QualityOfServiceLevel,
-                    ["retain"] = message.ApplicationMessage.Retain
+                    ["client_id"] = eventArgs.ClientId,
+                    ["topic"] = eventArgs.ApplicationMessage.Topic,
+                    ["payload"] = new Bytes(eventArgs.ApplicationMessage.Payload ?? Array.Empty<byte>()),
+                    ["qos"] = (int) eventArgs.ApplicationMessage.QualityOfServiceLevel,
+                    ["retain"] = eventArgs.ApplicationMessage.Retain
                 };
 
                 callback(pythonMessage);

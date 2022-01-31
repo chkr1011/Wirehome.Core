@@ -1,14 +1,13 @@
 ﻿using System;
-using MQTTnet;
-using MQTTnet.Server.Internal;
+using MQTTnet.Server;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
     public sealed class MqttSubscriber
     {
-        readonly Action<MqttApplicationMessageReceivedEventArgs> _callback;
+        readonly Action<IncomingMqttMessage> _callback;
 
-        public MqttSubscriber(string uid, string topicFilter, Action<MqttApplicationMessageReceivedEventArgs> callback)
+        public MqttSubscriber(string uid, string topicFilter, Action<IncomingMqttMessage> callback)
         {
             Uid = uid ?? throw new ArgumentNullException(nameof(uid));
             TopicFilter = topicFilter ?? throw new ArgumentNullException(nameof(topicFilter));
@@ -26,17 +25,17 @@ namespace Wirehome.Core.Hardware.MQTT
                 throw new ArgumentNullException(nameof(topic));
             }
 
-            return MqttTopicFilterComparer.IsMatch(topic, TopicFilter);
+            return MqttTopicFilterComparer.Compare(topic, TopicFilter) == MqttTopicFilterCompareResult.IsMatch;
         }
 
-        public void Notify(MqttApplicationMessageReceivedEventArgs eventArgs)
+        public void Notify(IncomingMqttMessage incomingMqttMessage)
         {
-            if (eventArgs == null)
+            if (incomingMqttMessage == null)
             {
-                throw new ArgumentNullException(nameof(eventArgs));
+                throw new ArgumentNullException(nameof(incomingMqttMessage));
             }
 
-            _callback(eventArgs);
+            _callback(incomingMqttMessage);
         }
     }
 }

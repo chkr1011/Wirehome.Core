@@ -11,7 +11,7 @@ namespace Wirehome.Core.Diagnostics
 {
     public sealed class DiagnosticsService : WirehomeCoreService
     {
-        readonly List<OperationsPerSecondCounter> _operationsPerSecondCounters = new List<OperationsPerSecondCounter>();
+        readonly List<OperationsPerSecondCounter> _operationsPerSecondCounters = new();
         readonly SystemCancellationToken _systemCancellationToken;
         
         readonly ILogger _logger;

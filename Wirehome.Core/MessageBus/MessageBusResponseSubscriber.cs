@@ -5,7 +5,7 @@ namespace Wirehome.Core.MessageBus
 {
     public class MessageBusResponseSubscriber
     {
-        readonly TaskCompletionSource<MessageBusMessage> _taskCompletionSource = new TaskCompletionSource<MessageBusMessage>();
+        readonly TaskCompletionSource<MessageBusMessage> _taskCompletionSource = new();
 
         public Task<MessageBusMessage> Task => _taskCompletionSource.Task;
 

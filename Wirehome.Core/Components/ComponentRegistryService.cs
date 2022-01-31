@@ -20,7 +20,7 @@ namespace Wirehome.Core.Components
     {
         const string ComponentsDirectory = "Components";
 
-        readonly Dictionary<string, Component> _components = new Dictionary<string, Component>();
+        readonly Dictionary<string, Component> _components = new();
 
         readonly ComponentRegistryMessageBusAdapter _messageBusAdapter;
         readonly StorageService _storageService;

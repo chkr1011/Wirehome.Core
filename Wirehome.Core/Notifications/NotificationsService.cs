@@ -24,7 +24,7 @@ namespace Wirehome.Core.Notifications
     {
         const string StorageFilename = "Notifications.json";
 
-        readonly List<Notification> _notifications = new List<Notification>();
+        readonly List<Notification> _notifications = new();
 
         readonly StorageService _storageService;
         readonly ResourceService _resourcesService;

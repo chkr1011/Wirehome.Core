@@ -9,7 +9,7 @@ namespace Wirehome.Core.Python.Proxies.OS
     {
         public string FileName { get; set; }
 
-        public List<string> Arguments { get; set; } = new List<string>();
+        public List<string> Arguments { get; set; } = new();
 
         public int Timeout { get; set; } = 60000;
     }

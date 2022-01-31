@@ -6,7 +6,7 @@ namespace Wirehome.Core.Diagnostics.Log
 {
     public sealed class LogServiceLoggerProvider : ILoggerProvider
     {
-        readonly Dictionary<string, ILogger> _loggers = new Dictionary<string, ILogger>();
+        readonly Dictionary<string, ILogger> _loggers = new();
 
         readonly LogService _logService;
 

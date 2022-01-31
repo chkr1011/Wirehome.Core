@@ -1,19 +1,25 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
-using MQTTnet.Diagnostics.Logger;
+using MQTTnet.Diagnostics;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
     public sealed class LoggerAdapter : IMqttNetLogger
     {
-        readonly ILogger _logger;
+        private readonly ILogger _logger;
 
         public LoggerAdapter(ILogger logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void Publish(MqttNetLogLevel logLevel, string source, string message, object[] parameters, Exception exception)
+        public bool IsEnabled { get; } = true;
+
+        public void Publish(MqttNetLogLevel logLevel,
+            string source,
+            string message,
+            object[] parameters,
+            Exception exception)
         {
             var newLogLevel = LogLevel.Debug;
 

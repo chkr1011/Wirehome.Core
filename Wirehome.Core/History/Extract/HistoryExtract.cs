@@ -8,6 +8,6 @@ namespace Wirehome.Core.History.Extract
 
         public int EntityCount { get; set; }
 
-        public List<HistoryExtractDataPoint> DataPoints { get; } = new List<HistoryExtractDataPoint>();
+        public List<HistoryExtractDataPoint> DataPoints { get; } = new();
     }
 }

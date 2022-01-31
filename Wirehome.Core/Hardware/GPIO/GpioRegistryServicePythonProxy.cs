@@ -15,7 +15,7 @@ namespace Wirehome.Core.Hardware.GPIO
     public sealed class GpioRegistryServicePythonProxy : IInjectedPythonProxy
     {
         readonly GpioRegistryService _gpioRegistryService;
-        readonly ConcurrentDictionary<string, Interrupt> _interrupts = new ConcurrentDictionary<string, Interrupt>();
+        readonly ConcurrentDictionary<string, Interrupt> _interrupts = new();
         readonly ILogger _logger;
 
         public GpioRegistryServicePythonProxy(GpioRegistryService gpioRegistryService, ILogger<GpioRegistryServicePythonProxy> logger)

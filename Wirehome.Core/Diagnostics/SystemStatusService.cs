@@ -7,8 +7,8 @@ namespace Wirehome.Core.Diagnostics
 {
     public sealed class SystemStatusService : WirehomeCoreService
     {
-        readonly Dictionary<string, Func<object>> _values = new Dictionary<string, Func<object>>();
-        readonly List<Action<Dictionary<string, object>>> _valueProviders = new List<Action<Dictionary<string, object>>>();
+        readonly Dictionary<string, Func<object>> _values = new();
+        readonly List<Action<Dictionary<string, object>>> _valueProviders = new();
 
         readonly ILogger<SystemStatusService> _logger;
 

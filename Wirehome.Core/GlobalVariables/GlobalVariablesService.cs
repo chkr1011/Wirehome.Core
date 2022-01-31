@@ -13,7 +13,7 @@ namespace Wirehome.Core.GlobalVariables
     {
         const string GlobalVariablesFilename = "GlobalVariables.json";
 
-        readonly Dictionary<string, object> _variables = new Dictionary<string, object>();
+        readonly Dictionary<string, object> _variables = new();
         readonly AppService _appService;
         readonly StorageService _storageService;
         readonly MessageBusService _messageBusService;

@@ -7,7 +7,7 @@ namespace Wirehome.Core.Scheduler
 {
     public sealed class ActiveThread : IDisposable
     {
-        readonly CancellationTokenSource _ownCancellationTokenSource = new CancellationTokenSource();
+        readonly CancellationTokenSource _ownCancellationTokenSource = new();
         readonly CancellationToken _externalCancellationToken;
         readonly ILogger _logger;
         readonly Action<StartThreadCallbackParameters> _action;

@@ -13,9 +13,9 @@ namespace Wirehome.Core.Scheduler
 {
     public sealed class SchedulerService : WirehomeCoreService
     {
-        readonly Dictionary<string, ActiveTimer> _activeTimers = new Dictionary<string, ActiveTimer>();
-        readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new Dictionary<string, ActiveCountdown>();
-        readonly Dictionary<string, ActiveThread> _activeThreads = new Dictionary<string, ActiveThread>();
+        readonly Dictionary<string, ActiveTimer> _activeTimers = new();
+        readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new();
+        readonly Dictionary<string, ActiveThread> _activeThreads = new();
 
         readonly ILogger _logger;
         readonly SystemCancellationToken _systemCancellationToken;

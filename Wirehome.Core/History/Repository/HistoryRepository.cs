@@ -11,7 +11,7 @@ namespace Wirehome.Core.History.Repository
     {
         const string ValuesFilename = "Values";
 
-        readonly AsyncLock _lock = new AsyncLock();
+        readonly AsyncLock _lock = new();
 
         public async Task<List<HistoryValueElement>> Read(HistoryReadOperation readOperation, CancellationToken cancellationToken)
         {

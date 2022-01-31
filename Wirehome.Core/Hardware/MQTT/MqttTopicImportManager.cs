@@ -9,8 +9,8 @@ namespace Wirehome.Core.Hardware.MQTT
 {
     public sealed class MqttTopicImportManager : IDisposable
     {
-        readonly Dictionary<string, MqttTopicImporter> _importers = new Dictionary<string, MqttTopicImporter>();
-        readonly AsyncLock _importersLock = new AsyncLock();
+        readonly Dictionary<string, MqttTopicImporter> _importers = new();
+        readonly AsyncLock _importersLock = new();
         readonly ILogger _logger;
 
         readonly MqttService _mqttService;

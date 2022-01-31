@@ -30,7 +30,7 @@ namespace Wirehome.Core.Macros
 
         public string Uid { get; }
 
-        public ConcurrentDictionary<string, object> Settings { get; } = new ConcurrentDictionary<string, object>();
+        public ConcurrentDictionary<string, object> Settings { get; } = new();
 
         public IDictionary<object, object> Destroy()
         {

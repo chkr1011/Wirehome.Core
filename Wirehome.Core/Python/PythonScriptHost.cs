@@ -12,9 +12,9 @@ namespace Wirehome.Core.Python
     public sealed class PythonScriptHost
     {
         readonly object[] _emptyParameters = Array.Empty<object>();
-        readonly object _syncRoot = new object();
+        readonly object _syncRoot = new();
         readonly IDictionary<string, object> _wirehomeWrapper = new ExpandoObject();
-        readonly Dictionary<string, PythonFunction> _functionsCache = new Dictionary<string, PythonFunction>();
+        readonly Dictionary<string, PythonFunction> _functionsCache = new();
 
         readonly ScriptEngine _scriptEngine;
         readonly List<IPythonProxy> _pythonProxies;

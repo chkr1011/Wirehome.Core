@@ -16,7 +16,7 @@ namespace Wirehome.Core.Components.History
 {
     public sealed class ComponentHistoryService : WirehomeCoreService
     {
-        readonly BlockingCollection<ComponentStatusHistoryWorkItem> _pendingStatusWorkItems = new BlockingCollection<ComponentStatusHistoryWorkItem>();
+        readonly BlockingCollection<ComponentStatusHistoryWorkItem> _pendingStatusWorkItems = new();
         readonly ComponentRegistryService _componentRegistryService;
         readonly HistoryService _historyService;
         readonly StorageService _storageService;

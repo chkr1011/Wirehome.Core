@@ -10,7 +10,7 @@ namespace Wirehome.Core.Hardware.I2C.Adapters
         const int I2CSlave = 0x0703;
         const int OpenReadWrite = 0x2;
 
-        readonly object _accessLock = new object();
+        readonly object _accessLock = new();
         readonly string _filename;
         readonly ILogger _logger;
 

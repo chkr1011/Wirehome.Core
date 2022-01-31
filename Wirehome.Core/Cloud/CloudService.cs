@@ -21,9 +21,9 @@ namespace Wirehome.Core.Cloud
 {
     public sealed class CloudService : WirehomeCoreService
     {
-        readonly CloudMessageSerializer _cloudMessageSerializer = new CloudMessageSerializer();
-        readonly Dictionary<string, RawCloudMessageHandler> _rawMessageHandlers = new Dictionary<string, RawCloudMessageHandler>();
-        readonly HttpClient _httpClient = new HttpClient();
+        readonly CloudMessageSerializer _cloudMessageSerializer = new();
+        readonly Dictionary<string, RawCloudMessageHandler> _rawMessageHandlers = new();
+        readonly HttpClient _httpClient = new();
 
         readonly StorageService _storageService;
         readonly SystemCancellationToken _systemCancellationToken;

@@ -10,7 +10,7 @@ namespace Wirehome.Core.Hardware.I2C
 {
     public sealed class I2CBusService : WirehomeCoreService
     {
-        readonly Dictionary<string, II2CBusAdapter> _adapters = new Dictionary<string, II2CBusAdapter>();
+        readonly Dictionary<string, II2CBusAdapter> _adapters = new();
 
         readonly ILogger _logger;
 

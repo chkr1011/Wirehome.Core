@@ -10,7 +10,7 @@ namespace Wirehome.Core.Python.Proxies
 {
     public class StopwatchPythonProxy : IInjectedPythonProxy
     {
-        readonly Dictionary<string, Stopwatch> _stopwatches = new Dictionary<string, Stopwatch>();
+        readonly Dictionary<string, Stopwatch> _stopwatches = new();
 
         public string ModuleName { get; } = "stopwatch";
 

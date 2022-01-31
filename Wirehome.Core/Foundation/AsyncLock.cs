@@ -6,7 +6,7 @@ namespace Wirehome.Core.Foundation
 {
     public sealed class AsyncLock : IDisposable
     {
-        readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        readonly SemaphoreSlim _semaphore = new(1, 1);
 
         public Task EnterAsync(CancellationToken cancellationToken = default)
         {

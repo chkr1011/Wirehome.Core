@@ -15,7 +15,7 @@ namespace Wirehome.Core.History
 {
     public sealed class HistoryService : WirehomeCoreService
     {
-        readonly HistoryValueFormatter _valueFormatter = new HistoryValueFormatter();
+        readonly HistoryValueFormatter _valueFormatter = new();
 
         readonly StorageService _storageService;
         readonly ILogger _logger;

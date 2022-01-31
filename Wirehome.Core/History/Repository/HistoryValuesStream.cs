@@ -12,7 +12,7 @@ namespace Wirehome.Core.History.Repository
 
         readonly Stream _stream;
 
-        HistoryValueStreamSerializer _serializer = new HistoryValueStreamSerializer();
+        HistoryValueStreamSerializer _serializer = new();
 
         public HistoryValuesStream(Stream stream)
         {

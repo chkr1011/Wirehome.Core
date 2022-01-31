@@ -12,7 +12,7 @@ namespace Wirehome.Core.HTTP
 {
     public sealed class HttpServerService : WirehomeCoreService
     {
-        readonly Dictionary<string, HttpRequestInterceptor> _interceptors = new Dictionary<string, HttpRequestInterceptor>();
+        readonly Dictionary<string, HttpRequestInterceptor> _interceptors = new();
 
         readonly JsonSerializerService _jsonSerializerService;
         readonly ILogger _logger;

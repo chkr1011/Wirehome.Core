@@ -9,7 +9,7 @@ namespace Wirehome.Core.Scheduler
 {
     public sealed class ActiveTimer : IDisposable
     {
-        readonly CancellationTokenSource _ownCancellationTokenSource = new CancellationTokenSource();
+        readonly CancellationTokenSource _ownCancellationTokenSource = new();
 
         readonly Action<TimerTickCallbackParameters> _callback;
         readonly object _state;

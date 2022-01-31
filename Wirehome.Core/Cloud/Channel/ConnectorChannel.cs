@@ -15,7 +15,7 @@ namespace Wirehome.Core.Cloud.Channel
         const int ReceiveBufferSize = 1024 * 1024; // 1 MB
 
         readonly ArraySegment<byte> _receiveBuffer = new byte[ReceiveBufferSize];
-        readonly AsyncLock _lock = new AsyncLock();
+        readonly AsyncLock _lock = new();
         readonly ConnectorChannelOptions _options;
         readonly WebSocket _webSocket;
         readonly CloudMessageSerializer _cloudMessageSerializer;

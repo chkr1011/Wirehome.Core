@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MQTTnet;
 using MQTTnet.Protocol;
-using MQTTnet.Server.Status;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MQTTnet.Server;
 using Wirehome.Core.Hardware.MQTT;
 using Wirehome.Core.HTTP.Controllers.Models;
 using Wirehome.Core.HTTP.Filters;
@@ -77,7 +77,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         [HttpGet]
         [Route("api/v1/mqtt/clients")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task<IList<IMqttClientStatus>> GetClients()
+        public Task<IList<MqttClientStatus>> GetClients()
         {
             return _mqttService.GetClientsAsync();
         }
@@ -85,7 +85,7 @@ namespace Wirehome.Core.HTTP.Controllers.Hardware
         [HttpGet]
         [Route("api/v1/mqtt/sessions")]
         [ApiExplorerSettings(GroupName = "v1")]
-        public Task<IList<IMqttSessionStatus>> GetSessions()
+        public Task<IList<MqttSessionStatus>> GetSessions()
         {
             return _mqttService.GetSessionsAsync();
         }

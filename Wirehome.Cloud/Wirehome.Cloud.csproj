@@ -2,9 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <UserSecretsId>9ce0e21f-a96a-419c-92e6-8c7ce8d3eb2c</UserSecretsId>
-    <LangVersion>7.1</LangVersion>
-    <Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

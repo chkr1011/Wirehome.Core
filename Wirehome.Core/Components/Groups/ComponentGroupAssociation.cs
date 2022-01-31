@@ -4,6 +4,6 @@ namespace Wirehome.Core.Components.Groups
 {
     public class ComponentGroupAssociation
     {
-        public ThreadSafeDictionary<string, object> Settings { get; set; } = new ThreadSafeDictionary<string, object>();
+        public ThreadSafeDictionary<string, object> Settings { get; set; } = new();
     }
 }

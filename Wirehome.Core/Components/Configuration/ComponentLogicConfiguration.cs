@@ -7,7 +7,7 @@ namespace Wirehome.Core.Components.Configuration
     {
         public PackageUid Uid { get; set; }
 
-        public Dictionary<string, object> Variables { get; set; } = new Dictionary<string, object>();
+        public Dictionary<string, object> Variables { get; set; } = new();
 
         public ComponentAdapterConfiguration Adapter { get; set; }
     }

@@ -13,8 +13,8 @@ namespace Wirehome.Core.Devices
 {
     public sealed class DeviceRegistryService : WirehomeCoreService
     {
-        readonly Dictionary<string, Device> _devices = new Dictionary<string, Device>();
-        readonly AsyncLock _devicesLock = new AsyncLock();
+        readonly Dictionary<string, Device> _devices = new();
+        readonly AsyncLock _devicesLock = new();
 
         readonly MqttService _mqttService;
         readonly ILogger<DeviceRegistryService> _logger;
@@ -110,7 +110,7 @@ namespace Wirehome.Core.Devices
             }
         }
 
-        void OnPropertyReportedViaMqtt(MqttApplicationMessageReceivedEventArgs eventArgs)
+        void OnPropertyReportedViaMqtt(IncomingMqttMessage eventArgs)
         {
             // $wirehome/devices/+/report/+
             // 0        /1      /2/3     /4

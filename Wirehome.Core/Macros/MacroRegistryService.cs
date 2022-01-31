@@ -17,7 +17,7 @@ namespace Wirehome.Core.Macros
     {
         const string MacrosDirectory = "Macros";
 
-        readonly Dictionary<string, MacroInstance> _macros = new Dictionary<string, MacroInstance>();
+        readonly Dictionary<string, MacroInstance> _macros = new();
 
         readonly MacroRegistryMessageBusWrapper _messageBusWrapper;
         readonly StorageService _storageService;

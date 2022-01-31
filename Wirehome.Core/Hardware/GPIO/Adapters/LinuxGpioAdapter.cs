@@ -11,12 +11,12 @@ namespace Wirehome.Core.Hardware.GPIO.Adapters
 {
     public sealed class LinuxGpioAdapter : IGpioAdapter
     {
-        readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new Dictionary<int, InterruptMonitor>();
+        readonly Dictionary<int, InterruptMonitor> _interruptMonitors = new();
         readonly ILogger _logger;
 
-        readonly BlockingCollection<GpioAdapterStateChangedEventArgs> _pendingEvents = new BlockingCollection<GpioAdapterStateChangedEventArgs>();
+        readonly BlockingCollection<GpioAdapterStateChangedEventArgs> _pendingEvents = new();
 
-        readonly object _syncRoot = new object();
+        readonly object _syncRoot = new();
         readonly SystemCancellationToken _systemCancellationToken;
 
         Thread _eventThread;

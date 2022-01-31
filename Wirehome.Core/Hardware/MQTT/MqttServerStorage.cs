@@ -4,17 +4,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
-using MQTTnet.Server;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public sealed class MqttServerStorage : IMqttServerStorage
+    public sealed class MqttServerStorage
     {
         readonly ILogger _logger;
-        readonly List<MqttApplicationMessage> _messages = new List<MqttApplicationMessage>();
+        readonly List<MqttApplicationMessage> _messages = new();
         readonly StorageService _storageService;
         readonly SystemCancellationToken _systemCancellationToken;
 

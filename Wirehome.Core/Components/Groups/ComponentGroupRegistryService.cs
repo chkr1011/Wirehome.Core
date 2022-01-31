@@ -19,7 +19,7 @@ namespace Wirehome.Core.Components.Groups
     {
         const string ComponentGroupsDirectory = "ComponentGroups";
 
-        readonly Dictionary<string, ComponentGroup> _componentGroups = new Dictionary<string, ComponentGroup>();
+        readonly Dictionary<string, ComponentGroup> _componentGroups = new();
 
         readonly StorageService _storageService;
         readonly MessageBusService _messageBusService;

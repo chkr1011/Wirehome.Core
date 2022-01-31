@@ -8,7 +8,7 @@ namespace Wirehome.Core.Storage
     {
         const string ValueStorageDirectoryName = "ValueStorage";
 
-        readonly object _syncRoot = new object();
+        readonly object _syncRoot = new();
         readonly StorageService _storageService;
         readonly ILogger<ValueStorageService> _logger;
 

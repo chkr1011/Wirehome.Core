@@ -8,7 +8,7 @@ namespace Wirehome.Core.Diagnostics.Log
 {
     public sealed class LogService : WirehomeCoreService
     {
-        readonly LinkedList<LogEntry> _logEntries = new LinkedList<LogEntry>();
+        readonly LinkedList<LogEntry> _logEntries = new();
         readonly SystemStatusService _systemStatusService;
         readonly LogServiceOptions _options;
 

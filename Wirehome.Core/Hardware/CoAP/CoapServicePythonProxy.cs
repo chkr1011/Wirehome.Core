@@ -19,8 +19,8 @@ namespace Wirehome.Core.Hardware.CoAP
 {
     public sealed class CoapServicePythonProxy : IInjectedPythonProxy
     {
-        readonly Dictionary<string, ICoapClient> _clients = new Dictionary<string, ICoapClient>();
-        readonly CoapFactory _coapFactory = new CoapFactory();
+        readonly Dictionary<string, ICoapClient> _clients = new();
+        readonly CoapFactory _coapFactory = new();
 
         public string ModuleName => "coap";
 

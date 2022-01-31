@@ -4,7 +4,7 @@ namespace Wirehome.Core.MessageBus
 {
     public sealed class MessageBusMessageHistory
     {
-        readonly LinkedList<MessageBusMessage> _messages = new LinkedList<MessageBusMessage>();
+        readonly LinkedList<MessageBusMessage> _messages = new();
 
         bool _isEnabled;
         int _maxMessagesCount;

@@ -8,10 +8,10 @@ namespace Wirehome.Core.Components
 {
     public sealed class Component
     {
-        readonly Dictionary<string, object> _status = new Dictionary<string, object>();
-        readonly Dictionary<string, object> _settings = new Dictionary<string, object>();
-        readonly Dictionary<string, object> _configuration = new Dictionary<string, object>();
-        readonly HashSet<string> _tags = new HashSet<string>();
+        readonly Dictionary<string, object> _status = new();
+        readonly Dictionary<string, object> _settings = new();
+        readonly Dictionary<string, object> _configuration = new();
+        readonly HashSet<string> _tags = new();
 
         IComponentLogic _logic;
 

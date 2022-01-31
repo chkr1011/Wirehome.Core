@@ -36,7 +36,7 @@ namespace Wirehome.Core.Storage
             }
         }
 
-        public List<string> Segments { get; } = new List<string>();
+        public List<string> Segments { get; } = new();
 
         public override string ToString()
         {

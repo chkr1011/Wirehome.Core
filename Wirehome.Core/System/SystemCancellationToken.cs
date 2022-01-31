@@ -4,7 +4,7 @@ namespace Wirehome.Core.System
 {
     public sealed class SystemCancellationToken
     {
-        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        readonly CancellationTokenSource _cancellationTokenSource = new();
 
         public SystemCancellationToken()
         {

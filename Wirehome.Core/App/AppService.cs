@@ -7,8 +7,8 @@ namespace Wirehome.Core.App
 {
     public sealed class AppService : WirehomeCoreService
     {
-        readonly Dictionary<string, AppPanelDefinition> _panelDefinitions = new Dictionary<string, AppPanelDefinition>();
-        readonly Dictionary<string, Func<object>> _statusProviders = new Dictionary<string, Func<object>>();
+        readonly Dictionary<string, AppPanelDefinition> _panelDefinitions = new();
+        readonly Dictionary<string, Func<object>> _statusProviders = new();
 
         //readonly ResourceService _resourceService;
 

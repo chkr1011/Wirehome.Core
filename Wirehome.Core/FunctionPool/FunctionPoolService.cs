@@ -10,7 +10,7 @@ namespace Wirehome.Core.FunctionPool
 {
     public sealed class FunctionPoolService : WirehomeCoreService
     {
-        readonly Dictionary<string, Func<IDictionary<object, object>, IDictionary<object, object>>> _functions = new Dictionary<string, Func<IDictionary<object, object>, IDictionary<object, object>>>();
+        readonly Dictionary<string, Func<IDictionary<object, object>, IDictionary<object, object>>> _functions = new();
 
         readonly ILogger<FunctionPoolService> _logger;
 

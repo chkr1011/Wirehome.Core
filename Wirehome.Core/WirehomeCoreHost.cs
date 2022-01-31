@@ -9,7 +9,7 @@ namespace Wirehome.Core
 {
     public static class WirehomeCoreHost
     {
-        static readonly SystemCancellationToken SystemCancellationToken = new SystemCancellationToken();
+        static readonly SystemCancellationToken SystemCancellationToken = new();
 
         public static async Task Run(string[] arguments)
         {

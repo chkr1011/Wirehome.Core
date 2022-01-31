@@ -10,6 +10,6 @@ namespace Wirehome.Core.ServiceHost.Configuration
 
         public string Version { get; set; }
 
-        public Dictionary<string, object> Variables { get; set; } = new Dictionary<string, object>();
+        public Dictionary<string, object> Variables { get; set; } = new();
     }
 }

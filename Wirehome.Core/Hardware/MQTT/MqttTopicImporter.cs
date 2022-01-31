@@ -4,20 +4,19 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Client;
-using MQTTnet.Client.Options;
 using Wirehome.Core.Extensions;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
     public sealed class MqttTopicImporter
     {
-        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        readonly CancellationTokenSource _cancellationTokenSource = new();
         readonly ILogger _logger;
         readonly MqttService _mqttService;
 
         readonly MqttImportTopicParameters _parameters;
 
-        IMqttClient _mqttClient;
+        MqttClient _mqttClient;
         IMqttClientOptions _options;
 
         public MqttTopicImporter(MqttImportTopicParameters parameters, MqttService mqttService, ILogger logger)
@@ -52,7 +51,11 @@ namespace Wirehome.Core.Hardware.MQTT
             }
 
             await _mqttClient.SubscribeAsync(_parameters.Topic, _parameters.QualityOfServiceLevel).ConfigureAwait(false);
-            _mqttClient.UseApplicationMessageReceivedHandler(e => OnApplicationMessageReceived(e));
+            _mqttClient.ApplicationMessageReceivedAsync += e =>
+            {
+                OnApplicationMessageReceived(e);
+                return Task.CompletedTask;
+            };
 
             _ = Task.Run(() => MaintainConnectionLoop(_cancellationTokenSource.Token), _cancellationTokenSource.Token).Forget(_logger);
         }

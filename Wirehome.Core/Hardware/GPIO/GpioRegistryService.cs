@@ -12,7 +12,7 @@ namespace Wirehome.Core.Hardware.GPIO
 {
     public sealed class GpioRegistryService : WirehomeCoreService
     {
-        readonly Dictionary<string, IGpioAdapter> _adapters = new Dictionary<string, IGpioAdapter>();
+        readonly Dictionary<string, IGpioAdapter> _adapters = new();
         readonly ILogger _logger;
         readonly MessageBusService _messageBusService;
         readonly SystemCancellationToken _systemCancellationToken;

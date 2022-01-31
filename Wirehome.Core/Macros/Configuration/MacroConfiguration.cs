@@ -7,6 +7,6 @@ namespace Wirehome.Core.Macros.Configuration
     {
         public bool IsEnabled { get; set; } = true;
 
-        public List<JObject> Actions { get; set; } = new List<JObject>();
+        public List<JObject> Actions { get; set; } = new();
     }
 }

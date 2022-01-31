@@ -11,7 +11,7 @@ namespace Wirehome.Core.System.StartupScripts
     {
         const string StartupScriptsDirectory = "StartupScripts";
 
-        readonly List<StartupScriptInstance> _scripts = new List<StartupScriptInstance>();
+        readonly List<StartupScriptInstance> _scripts = new();
 
         readonly ILogger _logger;
         readonly StorageService _storageService;

@@ -14,9 +14,9 @@ namespace Wirehome.Core.MessageBus
 {
     public sealed class MessageBusService : WirehomeCoreService
     {
-        readonly BlockingCollection<MessageBusMessage> _messageQueue = new BlockingCollection<MessageBusMessage>();
-        readonly MessageBusMessageHistory _messageHistory = new MessageBusMessageHistory();
-        readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new ConcurrentDictionary<string, MessageBusSubscriber>();
+        readonly BlockingCollection<MessageBusMessage> _messageQueue = new();
+        readonly MessageBusMessageHistory _messageHistory = new();
+        readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new();
         
         readonly SystemCancellationToken _systemCancellationToken;
 
