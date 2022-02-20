@@ -21,13 +21,6 @@ using Wirehome.Core.System;
 
 namespace Wirehome.Core.Hardware.MQTT
 {
-    public sealed class IncomingMqttMessage
-    {
-        public string ClientId { get; set; }
-        
-        public MqttApplicationMessage ApplicationMessage { get; set; }
-    }
-    
     public sealed class MqttService : WirehomeCoreService
     {
         readonly OperationsPerSecondCounter _inboundCounter;
@@ -121,14 +114,17 @@ namespace Wirehome.Core.Hardware.MQTT
                 throw new ArgumentNullException(nameof(parameters));
             }
 
-            var message = new MqttApplicationMessageBuilder().WithTopic(parameters.Topic).WithPayload(parameters.Payload)
-                .WithQualityOfServiceLevel(parameters.QualityOfServiceLevel).WithRetainFlag(parameters.Retain).Build();
+            var message = new MqttApplicationMessage
+            {
+                Topic = parameters.Topic,
+                Payload = parameters.Payload,
+                QualityOfServiceLevel = parameters.QualityOfServiceLevel,
+                Retain = parameters.Retain
+            };
 
-            _mqttServer.InjectApplicationMessage(new MqttInjectedApplicationMessage(message)).GetAwaiter().GetResult();
+            _mqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(message)).GetAwaiter().GetResult();
             
             _outboundCounter.Increment();
-
-            _logger.Log(LogLevel.Trace, $"Published MQTT topic '{parameters.Topic}'.");
         }
 
         public Task RunWebSocketConnectionAsync(WebSocket webSocket, HttpContext context)
@@ -331,21 +327,19 @@ namespace Wirehome.Core.Hardware.MQTT
             }
         }
 
-        Task ValidateClientConnection(ValidatingConnectionEventArgs eventArgs)
+        void ValidateClientConnection(ValidatingConnectionEventArgs eventArgs)
         {
             eventArgs.ReasonCode = MqttConnectReasonCode.Success;
 
             if (_options.BlockedClients == null)
             {
-                return Task.CompletedTask;
+                return;
             }
 
             if (_options.BlockedClients.Contains(eventArgs.ClientId ?? string.Empty))
             {
                 eventArgs.ReasonCode = MqttConnectReasonCode.Banned;
             }
-
-            return Task.CompletedTask;
         }
     }
 }

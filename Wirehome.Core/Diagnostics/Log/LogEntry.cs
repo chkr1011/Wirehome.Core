@@ -1,27 +1,24 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
+using MessagePack;
+using Microsoft.Extensions.Logging;
 
-namespace Wirehome.Core.Diagnostics.Log
+namespace Wirehome.Core.Diagnostics.Log;
+
+[MessagePackObject]
+public sealed class LogEntry
 {
-    public class LogEntry
-    {
-        public LogEntry(DateTime timestamp, LogLevel level, string source, string message, string exception)
-        {
-            Timestamp = timestamp;
-            Level = level;
-            Source = source;
-            Message = message;
-            Exception = exception;
-        }
+    [Key(0)]
+    public string Exception { get; set; }
 
-        public DateTime Timestamp { get; }
+    [Key(1)]
+    public LogLevel Level { get; set; }
 
-        public LogLevel Level { get; }
+    [Key(2)]
+    public string Message { get; set; }
 
-        public string Source { get; }
+    [Key(3)]
+    public string Source { get; set; }
 
-        public string Message { get; }
-
-        public string Exception { get; }
-    }
+    [Key(4)]
+    public DateTime Timestamp { get; set; }
 }

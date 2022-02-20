@@ -65,7 +65,10 @@ namespace Wirehome.Core.MessageBus
 
         public void Publish(MessageBusMessage message)
         {
-            if (message == null) throw new ArgumentNullException(nameof(message));
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
 
             message.EnqueuedTimestamp = DateTime.UtcNow;
             _messageQueue.Add(message);
@@ -142,8 +145,10 @@ namespace Wirehome.Core.MessageBus
 
                     _messageHistory.Add(message);
 
-                    foreach (var subscriber in _subscribers.Values)
+                    foreach (var subscriberItem in _subscribers)
                     {
+                        var subscriber = subscriberItem.Value;
+                        
                         if (MessageBusFilterComparer.IsMatch(message.InnerMessage, subscriber.Filter))
                         {
                             subscriber.ProcessMessage(message.InnerMessage);

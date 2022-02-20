@@ -29,7 +29,7 @@ namespace Wirehome.Core.Diagnostics.Log
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            return logLevel >= LogLevel.Information;
+            return logLevel >= LogLevel.Debug;
         }
 
         public IDisposable BeginScope<TState>(TState state)

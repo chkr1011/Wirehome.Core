@@ -2,7 +2,7 @@
 {
     public class LogEntryFilter
     {
-        public bool IncludeInformations { get; set; }
+        public bool IncludeInformation { get; set; }
 
         public bool IncludeWarnings { get; set; }
 
