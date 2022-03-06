@@ -2,92 +2,91 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using IronPython.Runtime;
 using System;
 using System.Collections.Generic;
+using IronPython.Runtime;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Storage
+namespace Wirehome.Core.Storage;
+
+public sealed class ValueStoragePythonProxy : IInjectedPythonProxy
 {
-    public class ValueStoragePythonProxy : IInjectedPythonProxy
+    readonly ValueStorageService _valueStorageService;
+
+    public ValueStoragePythonProxy(ValueStorageService valueStorageService)
     {
-        readonly ValueStorageService _valueStorageService;
+        _valueStorageService = valueStorageService ?? throw new ArgumentNullException(nameof(valueStorageService));
+    }
 
-        public ValueStoragePythonProxy(ValueStorageService valueStorageService)
+    public string ModuleName => "value_storage";
+
+    public void delete(string path)
+    {
+        _valueStorageService.Delete(RelativeValueStoragePath.Parse(path));
+    }
+
+    public object read(string path, object defaultValue = null)
+    {
+        if (_valueStorageService.TryRead<object>(RelativeValueStoragePath.Parse(path), out var value))
         {
-            _valueStorageService = valueStorageService ?? throw new ArgumentNullException(nameof(valueStorageService));
+            return value;
         }
 
-        public string ModuleName => "value_storage";
+        return defaultValue;
+    }
 
-        public void write(string path, object value)
+    public bool read_bool(string path, bool defaultValue = false)
+    {
+        if (_valueStorageService.TryRead<bool>(RelativeValueStoragePath.Parse(path), out var value))
         {
-            _valueStorageService.Write(RelativeValueStoragePath.Parse(path), value);
+            return value;
         }
 
-        public object read(string path, object defaultValue = null)
-        {
-            if (_valueStorageService.TryRead<object>(RelativeValueStoragePath.Parse(path), out var value))
-            {
-                return value;
-            }
+        return defaultValue;
+    }
 
-            return defaultValue;
+    public float read_float(string path, float defaultValue = 0.0F)
+    {
+        if (_valueStorageService.TryRead<float>(RelativeValueStoragePath.Parse(path), out var value))
+        {
+            return value;
         }
 
-        public PythonDictionary read_object(string path, PythonDictionary defaultValue = null)
-        {
-            if (_valueStorageService.TryRead<IDictionary<object, object>>(RelativeValueStoragePath.Parse(path), out var value))
-            {
-                return PythonConvert.ToPythonDictionary(value);
-            }
+        return defaultValue;
+    }
 
-            return defaultValue;
+    public int read_int(string path, int defaultValue = 0)
+    {
+        if (_valueStorageService.TryRead<int>(RelativeValueStoragePath.Parse(path), out var value))
+        {
+            return value;
         }
 
-        public string read_string(string path, string defaultValue = null)
-        {
-            if (_valueStorageService.TryRead<string>(RelativeValueStoragePath.Parse(path), out var value))
-            {
-                return value;
-            }
+        return defaultValue;
+    }
 
-            return defaultValue;
+    public PythonDictionary read_object(string path, PythonDictionary defaultValue = null)
+    {
+        if (_valueStorageService.TryRead<IDictionary<object, object>>(RelativeValueStoragePath.Parse(path), out var value))
+        {
+            return PythonConvert.ToPythonDictionary(value);
         }
 
-        public int read_int(string path, int defaultValue = 0)
-        {
-            if (_valueStorageService.TryRead<int>(RelativeValueStoragePath.Parse(path), out var value))
-            {
-                return value;
-            }
+        return defaultValue;
+    }
 
-            return defaultValue;
+    public string read_string(string path, string defaultValue = null)
+    {
+        if (_valueStorageService.TryRead<string>(RelativeValueStoragePath.Parse(path), out var value))
+        {
+            return value;
         }
 
-        public float read_float(string path, float defaultValue = 0.0F)
-        {
-            if (_valueStorageService.TryRead<float>(RelativeValueStoragePath.Parse(path), out var value))
-            {
-                return value;
-            }
+        return defaultValue;
+    }
 
-            return defaultValue;
-        }
-
-        public bool read_bool(string path, bool defaultValue = false)
-        {
-            if (_valueStorageService.TryRead<bool>(RelativeValueStoragePath.Parse(path), out var value))
-            {
-                return value;
-            }
-
-            return defaultValue;
-        }
-
-        public void delete(string path)
-        {
-            _valueStorageService.Delete(RelativeValueStoragePath.Parse(path));
-        }
+    public void write(string path, object value)
+    {
+        _valueStorageService.Write(RelativeValueStoragePath.Parse(path), value);
     }
 }

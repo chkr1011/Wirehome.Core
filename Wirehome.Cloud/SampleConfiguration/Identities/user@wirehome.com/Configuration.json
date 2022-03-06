@@ -1,14 +1,14 @@
 {
-    "PasswordHash": "AQAAAAEAACcQAAAAENwtffADuTsyx+2jbPM68vx2063D+zDA+WkMdM1XAdQZW39z76YDQ/ssBQVFpXh8Bw==",
-    "IsLocked": false,
-    "IsAdmin": true,
-    "Channels": {
-        "default": {
-            "IsDefault": true,
-            "AccessToken": {
-                "Value": "vRjriJ8pVhLLgbWcYWvN2jjTSWszZXBspjp1EpAobAdgjRzVh7BD6nSt3HVEgqYBYHPfZmup7PtCNoKA619WsQ==",
-                "ValidUntil": "2021-01-03T13:43:32.7031588Z"
-            }
-        }
+  "PasswordHash": "AQAAAAEAACcQAAAAENwtffADuTsyx+2jbPM68vx2063D+zDA+WkMdM1XAdQZW39z76YDQ/ssBQVFpXh8Bw==",
+  "IsLocked": false,
+  "IsAdmin": true,
+  "Channels": {
+    "default": {
+      "IsDefault": true,
+      "AccessToken": {
+        "Value": "vRjriJ8pVhLLgbWcYWvN2jjTSWszZXBspjp1EpAobAdgjRzVh7BD6nSt3HVEgqYBYHPfZmup7PtCNoKA619WsQ==",
+        "ValidUntil": "2021-01-03T13:43:32.7031588Z"
+      }
     }
+  }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using IronPython.Runtime;
 using Wirehome.Core.App;
 using Wirehome.Core.Components.Configuration;
 using Wirehome.Core.Components.Exceptions;
@@ -11,6 +12,7 @@ using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
 using Wirehome.Core.HTTP.Controllers;
 using Wirehome.Core.MessageBus;
+using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 using Wirehome.Core.Storage;
 
@@ -150,7 +152,7 @@ namespace Wirehome.Core.Components
                 {
                     if (_components.TryGetValue(uid, out var existingComponent))
                     {
-                        existingComponent.ProcessMessage(new Dictionary<object, object>
+                        existingComponent.ProcessMessage(new PythonDictionary
                         {
                             ["type"] = WirehomeMessageType.Destroy
                         });
@@ -160,7 +162,7 @@ namespace Wirehome.Core.Components
                 }
 
                 _componentInitializerService.Create(this).InitializeComponent(component, configuration);
-                component.ProcessMessage(new Dictionary<object, object>
+                component.ProcessMessage(new PythonDictionary
                 {
                     ["type"] = WirehomeMessageType.Initialize
                 });
@@ -480,7 +482,7 @@ namespace Wirehome.Core.Components
 
             try
             {
-                return component.ProcessMessage(message);
+                return component.ProcessMessage(PythonConvert.ToPythonDictionary(message));
             }
             catch (Exception exception)
             {

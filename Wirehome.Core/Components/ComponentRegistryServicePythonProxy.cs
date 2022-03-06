@@ -62,12 +62,12 @@ namespace Wirehome.Core.Components
             return _componentRegistryService.ComponentHasStatusValue(component_uid, status_uid);
         }
 
-        public object get_status(string component_uid, string status_uid, [DefaultParameterValue(null)] object default_value)
+        public object get_status(string component_uid, string status_uid, object default_value = null)
         {
             return PythonConvert.ToPython(_componentRegistryService.GetComponentStatusValue(component_uid, status_uid, default_value));
         }
 
-        public object get_configuration(string component_uid, string configuration_uid, [DefaultParameterValue(null)] object default_value)
+        public object get_configuration(string component_uid, string configuration_uid, object default_value = null)
         {
             return PythonConvert.ToPython(_componentRegistryService.GetComponentConfigurationValue(component_uid, configuration_uid, default_value));
         }
@@ -82,7 +82,7 @@ namespace Wirehome.Core.Components
             return _componentRegistryService.ComponentHasSetting(component_uid, setting_uid);
         }
 
-        public object get_setting(string component_uid, string setting_uid, [DefaultParameterValue(null)] object default_value)
+        public object get_setting(string component_uid, string setting_uid, object default_value = null)
         {
             return PythonConvert.ToPython(_componentRegistryService.GetComponentSetting(component_uid, setting_uid, default_value));
         }
@@ -113,7 +113,7 @@ namespace Wirehome.Core.Components
         {
             try
             {
-                return PythonConvert.ToPythonDictionary(_componentRegistryService.ProcessComponentMessage(component_uid, message));
+                return PythonConvert.ToPythonDictionary(PythonConvert.ToPythonDictionary(_componentRegistryService.ProcessComponentMessage(component_uid, message)));
             }
             catch (ComponentNotFoundException)
             {

@@ -9,8 +9,8 @@ namespace Wirehome.Core.Diagnostics.Log;
 
 public sealed class LogSender
 {
-    readonly Socket _logSender = new(SocketType.Dgram, ProtocolType.Udp);
-    readonly MemoryStream _logSenderBuffer = new();
+    readonly Socket _udpSender = new(SocketType.Dgram, ProtocolType.Udp);
+    readonly MemoryStream _buffer = new();
     readonly MqttService _mqttService;
 
     public LogSender(MqttService mqttService)
@@ -37,16 +37,18 @@ public sealed class LogSender
 
         try
         {
-            lock (_logSenderBuffer)
+            lock (_buffer)
             {
-                _logSenderBuffer.Seek(0, SeekOrigin.Begin);
-                MessagePackSerializer.Serialize(_logSenderBuffer, logEntry);
-                var buffer = _logSenderBuffer.GetBuffer();
-                var bufferLength = (int)_logSenderBuffer.Length;
+                _buffer.Seek(0, SeekOrigin.Begin);
+                _buffer.SetLength(0);
+                
+                MessagePackSerializer.Serialize(_buffer, logEntry);
+                var buffer = _buffer.GetBuffer();
+                var bufferLength = (int)_buffer.Length;
                 
                 if (logReceiverEndpoint != null)
                 {
-                   _logSender.SendTo(buffer, 0, bufferLength, SocketFlags.None, logReceiverEndpoint);
+                   _udpSender.SendTo(buffer, 0, bufferLength, SocketFlags.None, logReceiverEndpoint);
                 }
 
                 if (PublishToMqtt)

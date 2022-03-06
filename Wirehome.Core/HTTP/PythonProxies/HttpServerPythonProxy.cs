@@ -1,60 +1,66 @@
-﻿using IronPython.Runtime;
+﻿using System;
+using System.Globalization;
+using IronPython.Runtime;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
-using System;
-using System.Globalization;
 using Wirehome.Core.Python;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-namespace Wirehome.Core.HTTP.PythonProxies
+namespace Wirehome.Core.HTTP.PythonProxies;
+
+public sealed class HttpServerPythonProxy : IInjectedPythonProxy
 {
-    public class HttpServerPythonProxy : IInjectedPythonProxy
+    public delegate PythonDictionary RequestHandler(PythonDictionary request);
+
+    readonly HttpServerService _httpServerService;
+
+    public HttpServerPythonProxy(HttpServerService httpServerService)
     {
-        readonly HttpServerService _httpServerService;
+        _httpServerService = httpServerService ?? throw new ArgumentNullException(nameof(httpServerService));
+    }
 
-        public HttpServerPythonProxy(HttpServerService httpServerService)
+    public string ModuleName { get; } = "http_server";
+
+    public static PythonDictionary match_template(string template, string path)
+    {
+        if (template == null)
         {
-            _httpServerService = httpServerService ?? throw new ArgumentNullException(nameof(httpServerService));
+            throw new ArgumentNullException(nameof(template));
         }
 
-        public delegate PythonDictionary RequestHandler(PythonDictionary request);
-
-        public string ModuleName { get; } = "http_server";
-
-        public string register_route(string uid, string uri_template, RequestHandler handler)
+        if (path == null)
         {
-            return _httpServerService.RegisterRoute(uid, uri_template, request => handler(PythonConvert.ToPythonDictionary(request)));
+            throw new ArgumentNullException(nameof(path));
         }
 
-        public void unregister_route(string uid)
+        var routeTemplate = TemplateParser.Parse(template);
+        var values = new RouteValueDictionary();
+        var templateMatcher = new TemplateMatcher(routeTemplate, values);
+        var isMatch = templateMatcher.TryMatch(path, values);
+
+        var resultValues = new PythonDictionary();
+        foreach (var value in values)
         {
-            _httpServerService.UnregisterRoute(uid);
+            resultValues.Add(value.Key, Convert.ToString(value.Value, CultureInfo.InvariantCulture));
         }
 
-        public static PythonDictionary match_template(string template, string path)
+        return new PythonDictionary
         {
-            if (template == null) throw new ArgumentNullException(nameof(template));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            ["is_match"] = isMatch,
+            ["values"] = resultValues
+        };
+    }
 
-            var routeTemplate = TemplateParser.Parse(template);
-            var values = new RouteValueDictionary();
-            var templateMatcher = new TemplateMatcher(routeTemplate, values);
-            var isMatch = templateMatcher.TryMatch(path, values);
+    public string register_route(string uid, string uri_template, RequestHandler handler)
+    {
+        return _httpServerService.RegisterRoute(uid, uri_template, request => handler(PythonConvert.ToPythonDictionary(request)));
+    }
 
-            var resultValues = new PythonDictionary();
-            foreach (var value in values)
-            {
-                resultValues.Add(value.Key, Convert.ToString(value.Value, CultureInfo.InvariantCulture));
-            }
-
-            return new PythonDictionary
-            {
-                ["is_match"] = isMatch,
-                ["values"] = resultValues
-            };
-        }
+    public void unregister_route(string uid)
+    {
+        _httpServerService.UnregisterRoute(uid);
     }
 }

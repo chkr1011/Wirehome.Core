@@ -4,10 +4,10 @@ using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Diagnostics.Log;
 
-namespace Wirehome.Core.HTTP.Controllers.Diagnostics;
+namespace Wirehome.Core.HTTP.Controllers;
 
 [ApiController]
-public class LogController : Controller
+public sealed class LogController : Controller
 {
     readonly LogService _logService;
 
@@ -29,7 +29,7 @@ public class LogController : Controller
     [ApiExplorerSettings(GroupName = "v1")]
     public void DeletePublishToMqtt()
     {
-        _logService.LogSender.PublishToMqtt = false;
+        _logService.Sender.PublishToMqtt = false;
     }
 
     [HttpDelete]
@@ -37,7 +37,7 @@ public class LogController : Controller
     [ApiExplorerSettings(GroupName = "v1")]
     public void DeletePublishToUdp()
     {
-        _logService.LogSender.UdpReceiverEndPoint = null;
+        _logService.Sender.UdpReceiverEndPoint = null;
     }
 
     [HttpGet]
@@ -61,7 +61,7 @@ public class LogController : Controller
     [ApiExplorerSettings(GroupName = "v1")]
     public void PostPublishToMqtt()
     {
-        _logService.LogSender.PublishToMqtt = true;
+        _logService.Sender.PublishToMqtt = true;
     }
 
     [HttpPost]
@@ -69,6 +69,6 @@ public class LogController : Controller
     [ApiExplorerSettings(GroupName = "v1")]
     public void PostPublishToUdp(string ipAddress, int port)
     {
-        _logService.LogSender.UdpReceiverEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
+        _logService.Sender.UdpReceiverEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
     }
 }

@@ -1,7 +1,6 @@
-﻿namespace Wirehome.Core.Python
+﻿namespace Wirehome.Core.Python;
+
+public interface IPythonConvertible
 {
-    public interface IPythonConvertible
-    {
-        object ConvertToPython();
-    }
+    object ConvertToPython();
 }

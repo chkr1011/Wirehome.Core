@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
@@ -87,7 +86,10 @@ public sealed class SchedulerService : WirehomeCoreService
 
         lock (_activeCountdowns)
         {
-            _activeCountdowns[uid] = new ActiveCountdown(uid, callback, state) { TimeLeft = timeLeft };
+            _activeCountdowns[uid] = new ActiveCountdown(uid, callback, state)
+            {
+                TimeLeft = timeLeft
+            };
         }
 
         return uid;

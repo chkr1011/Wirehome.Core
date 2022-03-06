@@ -1,7 +1,6 @@
-﻿namespace Wirehome.Core.Storage
+﻿namespace Wirehome.Core.Storage;
+
+public static class DefaultDirectoryNames
 {
-    public static class DefaultDirectoryNames
-    {
-        public const string Configuration = "Configuration";
-    }
+    public const string Configuration = "Configuration";
 }

@@ -1,11 +1,9 @@
 ﻿using System;
 
-namespace Wirehome.Cloud.Services.Repository.Entities
-{
-    public class AccessTokenEntity
-    {
-        public string Value { get; set; }
+namespace Wirehome.Cloud.Services.Repository.Entities;
 
-        public DateTime ValidUntil { get; set; }
-    }
+public class AccessTokenEntity
+{
+    public DateTime ValidUntil { get; set; }
+    public string Value { get; set; }
 }

@@ -1,29 +1,28 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.HTTP.Controllers
+namespace Wirehome.Core.HTTP.Controllers;
+
+[ApiController]
+public sealed class PythonApiController : Controller
 {
-    [ApiController]
-    public class PythonApiController : Controller
+    readonly PythonProxyFactory _pythonProxyFactory;
+
+    public PythonApiController(PythonProxyFactory pythonProxyFactory)
     {
-        readonly PythonProxyFactory _pythonProxyFactory;
+        _pythonProxyFactory = pythonProxyFactory ?? throw new ArgumentNullException(nameof(pythonProxyFactory));
+    }
 
-        public PythonApiController(PythonProxyFactory pythonProxyFactory)
-        {
-            _pythonProxyFactory = pythonProxyFactory ?? throw new ArgumentNullException(nameof(pythonProxyFactory));
-        }
+    // TODO: Add reference in JSON format.
 
-        // TODO: Add reference in JSON format.
-
-        [HttpGet]
-        [Route("/api/v1/python_api/reference_document")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public string GetReferenceDocument()
-        {
-            var reference = new PythonProxyReferenceGenerator(_pythonProxyFactory).Generate();
-            HttpContext.Response.ContentType = "text/plain";
-            return reference;
-        }
+    [HttpGet]
+    [Route("/api/v1/python_api/reference_document")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public string GetReferenceDocument()
+    {
+        var reference = new PythonProxyReferenceGenerator(_pythonProxyFactory).Generate();
+        HttpContext.Response.ContentType = "text/plain";
+        return reference;
     }
 }

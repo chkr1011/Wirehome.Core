@@ -3,48 +3,58 @@
 // ReSharper disable UnusedMember.Global
 
 using System;
-using System.Runtime.InteropServices;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.GlobalVariables
+namespace Wirehome.Core.GlobalVariables;
+
+public sealed class GlobalVariablesServicePythonProxy : IInjectedPythonProxy
 {
-    public class GlobalVariablesServicePythonProxy : IInjectedPythonProxy
+    readonly GlobalVariablesService _globalVariablesService;
+
+    public GlobalVariablesServicePythonProxy(GlobalVariablesService globalVariablesService)
     {
-        readonly GlobalVariablesService _globalVariablesService;
+        _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
+    }
 
-        public GlobalVariablesServicePythonProxy(GlobalVariablesService globalVariablesService)
+    public string ModuleName { get; } = "global_variables";
+
+    public void delete(string uid)
+    {
+        if (uid == null)
         {
-            _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public string ModuleName { get; } = "global_variables";
+        _globalVariablesService.DeleteValue(uid);
+    }
 
-        public void set(string uid, object value)
+    public bool exists(string uid)
+    {
+        if (uid == null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            _globalVariablesService.SetValue(uid, value);
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public object get(string uid, [DefaultParameterValue(null)] object defaultValue)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+        return _globalVariablesService.ValueExists(uid);
+    }
 
-            return _globalVariablesService.GetValue(uid, defaultValue);
+    public object get(string uid, object default_value = null)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public void delete(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+        return _globalVariablesService.GetValue(uid, default_value);
+    }
 
-            _globalVariablesService.DeleteValue(uid);
+    public void set(string uid, object value)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public bool exists(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            return _globalVariablesService.ValueExists(uid);
-        }
+        _globalVariablesService.SetValue(uid, value);
     }
 }

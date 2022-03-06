@@ -1,111 +1,111 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="SampleConfiguration\Identities\user%2540wirehome.com\**" />
-    <Compile Remove="wwwroot\semantic-ui\components\**" />
-    <Content Remove="SampleConfiguration\Identities\user%2540wirehome.com\**" />
-    <Content Remove="wwwroot\semantic-ui\components\**" />
-    <EmbeddedResource Remove="SampleConfiguration\Identities\user%2540wirehome.com\**" />
-    <EmbeddedResource Remove="wwwroot\semantic-ui\components\**" />
-    <None Remove="SampleConfiguration\Identities\user%2540wirehome.com\**" />
-    <None Remove="wwwroot\semantic-ui\components\**" />
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Remove="SampleConfiguration\Identities\user%2540wirehome.com\**"/>
+        <Compile Remove="wwwroot\semantic-ui\components\**"/>
+        <Content Remove="SampleConfiguration\Identities\user%2540wirehome.com\**"/>
+        <Content Remove="wwwroot\semantic-ui\components\**"/>
+        <EmbeddedResource Remove="SampleConfiguration\Identities\user%2540wirehome.com\**"/>
+        <EmbeddedResource Remove="wwwroot\semantic-ui\components\**"/>
+        <None Remove="SampleConfiguration\Identities\user%2540wirehome.com\**"/>
+        <None Remove="wwwroot\semantic-ui\components\**"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="SampleConfiguration\Identities\user%40wirehome.com\Configuration.json" />
-  </ItemGroup>
+    <ItemGroup>
+        <Content Include="SampleConfiguration\Identities\user%40wirehome.com\Configuration.json"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <None Include="SampleConfiguration\Identities\user%40wirehome.com\Readme.txt" />
-    <None Include="wwwroot\app\icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\app\touch-icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\images\Banner.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\LICENSE">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.eot">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.svg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.ttf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.woff">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.woff2">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.eot">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.otf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.svg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.ttf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.woff">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.woff2">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.eot">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.svg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.ttf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.woff">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.woff2">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wwwroot\semantic-ui\themes\default\assets\images\flags.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="SampleConfiguration\Identities\user%40wirehome.com\Readme.txt"/>
+        <None Include="wwwroot\app\icon.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\app\touch-icon.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\images\Banner.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\LICENSE">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.eot">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.svg">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.ttf">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.woff">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\brand-icons.woff2">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.eot">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.otf">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.svg">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.ttf">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.woff">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\icons.woff2">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.eot">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.svg">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.ttf">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.woff">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\fonts\outline-icons.woff2">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="wwwroot\semantic-ui\themes\default\assets\images\flags.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.Web" Version="2.20.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.1" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.ApplicationInsights.Web" Version="2.20.0"/>
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.2"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Wirehome.Core\Wirehome.Core.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Wirehome.Core\Wirehome.Core.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Content Update="wwwroot\app\icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\app\touch-icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+    <ItemGroup>
+        <Content Update="wwwroot\app\icon.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Update="wwwroot\app\touch-icon.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
 
 </Project>

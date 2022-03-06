@@ -1,6 +1,5 @@
-﻿namespace Wirehome.Cloud.Services.Repository.Entities
+﻿namespace Wirehome.Cloud.Services.Repository.Entities;
+
+public class AllowedIdentityEntity
 {
-    public class AllowedIdentityEntity
-    {
-    }
 }

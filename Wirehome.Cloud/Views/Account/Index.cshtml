@@ -3,7 +3,6 @@
 }
 
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@using Microsoft.AspNetCore.Http
 @model Wirehome.Cloud.Controllers.Models.LoginModel
 
 <style type="text/css">
@@ -27,11 +26,11 @@
         {
             <form class="ui large form" action="/Cloud/Account/Login?returnUrl=@Model.ReturnUrl" method="post">
                 <div class="ui segment">
-                    
+
                     <div>
                         <img src="/images/Banner.png" class="image" style="width: 256px;">
                     </div>
-                    
+
                     <div class="ui divider"></div>
 
                     <div class="field">
@@ -48,7 +47,10 @@
                     </div>
                     <button type="submit" class="ui fluid large teal button">Log in</button>
 
-                    @Html.ValidationSummary(false, null, new {@class = "lulu"})
+                    @Html.ValidationSummary(false, null, new
+                    {
+                        @class = "lulu"
+                    })
                 </div>
 
             </form>

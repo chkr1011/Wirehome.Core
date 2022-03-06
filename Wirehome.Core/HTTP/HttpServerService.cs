@@ -1,79 +1,91 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.HTTP.PythonProxies;
 using Wirehome.Core.Storage;
 
-namespace Wirehome.Core.HTTP
+namespace Wirehome.Core.HTTP;
+
+public sealed class HttpServerService : WirehomeCoreService
 {
-    public sealed class HttpServerService : WirehomeCoreService
+    readonly Dictionary<string, HttpRequestInterceptor> _interceptors = new();
+
+    readonly JsonSerializerService _jsonSerializerService;
+    readonly ILogger _logger;
+
+    public HttpServerService(JsonSerializerService jsonSerializerService, ILogger<HttpServerService> logger)
     {
-        readonly Dictionary<string, HttpRequestInterceptor> _interceptors = new();
+        _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
 
-        readonly JsonSerializerService _jsonSerializerService;
-        readonly ILogger _logger;
-
-        public HttpServerService(JsonSerializerService jsonSerializerService, ILogger<HttpServerService> logger)
+    public Task HandleRequestAsync(HttpContext context)
+    {
+        if (context == null)
         {
-            _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            throw new ArgumentNullException(nameof(context));
         }
 
-        public string RegisterRoute(string uid, string uriTemplate, Func<IDictionary<object, object>, IDictionary<object, object>> handler)
+        List<HttpRequestInterceptor> interceptors;
+
+        lock (_interceptors)
         {
-            if (uriTemplate == null) throw new ArgumentNullException(nameof(uriTemplate));
-            if (handler == null) throw new ArgumentNullException(nameof(handler));
-
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("D");
-            }
-
-            var interceptor = new HttpRequestInterceptor(uriTemplate, handler, _jsonSerializerService, _logger);
-
-            lock (_interceptors)
-            {
-                _interceptors[uid] = interceptor;
-            }
-
-            return uid;
+            interceptors = new List<HttpRequestInterceptor>(_interceptors.Values);
         }
 
-        public void UnregisterRoute(string uid)
+        foreach (var interceptor in interceptors)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_interceptors)
+            if (interceptor.HandleRequest(context))
             {
-                _interceptors.Remove(uid, out _);
+                return Task.CompletedTask;
             }
         }
 
-        public Task HandleRequestAsync(HttpContext context)
+        context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        return Task.CompletedTask;
+    }
+
+    public string RegisterRoute(string uid, string uriTemplate, Func<IDictionary<object, object>, IDictionary<object, object>> handler)
+    {
+        if (uriTemplate == null)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
+            throw new ArgumentNullException(nameof(uriTemplate));
+        }
 
-            List<HttpRequestInterceptor> interceptors;
+        if (handler == null)
+        {
+            throw new ArgumentNullException(nameof(handler));
+        }
 
-            lock (_interceptors)
-            {
-                interceptors = new List<HttpRequestInterceptor>(_interceptors.Values);
-            }
+        if (string.IsNullOrEmpty(uid))
+        {
+            uid = Guid.NewGuid().ToString("D");
+        }
 
-            foreach (var interceptor in interceptors)
-            {
-                if (interceptor.HandleRequest(context))
-                {
-                    return Task.CompletedTask;
-                }
-            }
+        var interceptor = new HttpRequestInterceptor(uriTemplate, handler, _jsonSerializerService, _logger);
 
-            context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-            return Task.CompletedTask;
+        lock (_interceptors)
+        {
+            _interceptors[uid] = interceptor;
+        }
+
+        return uid;
+    }
+
+    public void UnregisterRoute(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        lock (_interceptors)
+        {
+            _interceptors.Remove(uid, out _);
         }
     }
 }

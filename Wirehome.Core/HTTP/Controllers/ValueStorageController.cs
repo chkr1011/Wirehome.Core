@@ -1,46 +1,45 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Storage;
 
-namespace Wirehome.Core.HTTP.Controllers
+namespace Wirehome.Core.HTTP.Controllers;
+
+[ApiController]
+public sealed class ValueStorageController : Controller
 {
-    [ApiController]
-    public class ValueStorageController : Controller
+    readonly ValueStorageService _valueStorageService;
+
+    public ValueStorageController(ValueStorageService valueStorageService)
     {
-        readonly ValueStorageService _valueStorageService;
+        _valueStorageService = valueStorageService ?? throw new ArgumentNullException(nameof(valueStorageService));
+    }
 
-        public ValueStorageController(ValueStorageService valueStorageService)
+    [HttpDelete]
+    [Route("api/v1/value_storage/{*path}")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public void DeleteValueStorageValue(string path)
+    {
+        _valueStorageService.Delete(RelativeValueStoragePath.Parse(path));
+    }
+
+    [HttpGet]
+    [Route("api/v1/value_storage/{*path}")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public object GetValueStorageValue(string path)
+    {
+        if (_valueStorageService.TryRead<object>(RelativeValueStoragePath.Parse(path), out var value))
         {
-            _valueStorageService = valueStorageService ?? throw new ArgumentNullException(nameof(valueStorageService));
+            return value;
         }
 
-        [HttpGet]
-        [Route("api/v1/value_storage/{*path}")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public object GetValueStorageValue(string path)
-        {
-            if (_valueStorageService.TryRead<object>(RelativeValueStoragePath.Parse(path), out var value))
-            {
-                return value;
-            }
+        return NotFound();
+    }
 
-            return NotFound();
-        }
-
-        [HttpPost]
-        [Route("api/v1/value_storage/{*path}")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public void PostValueStorageValue(string path, [FromBody] object value)
-        {
-            _valueStorageService.Write(RelativeValueStoragePath.Parse(path), value);
-        }
-
-        [HttpDelete]
-        [Route("api/v1/value_storage/{*path}")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public void DeleteValueStorageValue(string path)
-        {
-            _valueStorageService.Delete(RelativeValueStoragePath.Parse(path));
-        }
+    [HttpPost]
+    [Route("api/v1/value_storage/{*path}")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public void PostValueStorageValue(string path, [FromBody] object value)
+    {
+        _valueStorageService.Write(RelativeValueStoragePath.Parse(path), value);
     }
 }

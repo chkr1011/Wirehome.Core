@@ -1,60 +1,63 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
-namespace Wirehome.Core.MessageBus
+namespace Wirehome.Core.MessageBus;
+
+public sealed class MessageBusMessageHistory
 {
-    public sealed class MessageBusMessageHistory
+    readonly LinkedList<MessageBusMessage> _messages = new();
+
+    bool _isEnabled;
+    int _maxMessagesCount;
+
+    public void Add(MessageBusMessage message)
     {
-        readonly LinkedList<MessageBusMessage> _messages = new();
-
-        bool _isEnabled;
-        int _maxMessagesCount;
-
-        public void Enable(int maxMessagesCount)
+        if (message is null)
         {
-            _maxMessagesCount = maxMessagesCount;
-            _isEnabled = true;
+            throw new ArgumentNullException(nameof(message));
         }
 
-        public void Disable()
+        if (!_isEnabled)
         {
-            _isEnabled = false;
+            return;
         }
 
-        public void Add(MessageBusMessage message)
+        lock (_messages)
         {
-            if (message is null) throw new global::System.ArgumentNullException(nameof(message));
-
-            if (!_isEnabled)
+            while (_messages.Count >= _maxMessagesCount)
             {
-                return;
+                _messages.RemoveLast();
             }
 
-            lock (_messages)
-            {
-                while (_messages.Count >= _maxMessagesCount)
-                {
-                    _messages.RemoveLast();
-                }
-
-                // The latest message should be the first in the list!
-                _messages.AddFirst(message);
-            }
+            // The latest message should be the first in the list!
+            _messages.AddFirst(message);
         }
+    }
 
-        public void Clear()
+    public void Clear()
+    {
+        lock (_messages)
         {
-            lock (_messages)
-            {
-                _messages.Clear();
-            }
+            _messages.Clear();
         }
+    }
 
-        public List<MessageBusMessage> GetMessages()
+    public void Disable()
+    {
+        _isEnabled = false;
+    }
+
+    public void Enable(int maxMessagesCount)
+    {
+        _maxMessagesCount = maxMessagesCount;
+        _isEnabled = true;
+    }
+
+    public List<MessageBusMessage> GetMessages()
+    {
+        lock (_messages)
         {
-            lock (_messages)
-            {
-                return new List<MessageBusMessage>(_messages);
-            }
+            return new List<MessageBusMessage>(_messages);
         }
     }
 }

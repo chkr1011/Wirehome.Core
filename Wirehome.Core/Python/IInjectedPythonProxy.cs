@@ -1,6 +1,5 @@
-﻿namespace Wirehome.Core.Python
+﻿namespace Wirehome.Core.Python;
+
+public interface IInjectedPythonProxy : IPythonProxy
 {
-    public interface IInjectedPythonProxy : IPythonProxy
-    {
-    }
 }

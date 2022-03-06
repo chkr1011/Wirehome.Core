@@ -2,39 +2,41 @@
 using Wirehome.Core.Python;
 using Wirehome.Core.ServiceHost.Configuration;
 
-namespace Wirehome.Core.ServiceHost
+namespace Wirehome.Core.ServiceHost;
+
+public sealed class ServiceInstance
 {
-    public sealed class ServiceInstance
+    readonly PythonScriptHost _scriptHost;
+
+    public ServiceInstance(string id, ServiceConfiguration configuration, PythonScriptHost scriptHost)
     {
-        readonly PythonScriptHost _scriptHost;
+        Id = id ?? throw new ArgumentNullException(nameof(id));
+        Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-        public ServiceInstance(string id, ServiceConfiguration configuration, PythonScriptHost scriptHost)
+        _scriptHost = scriptHost ?? throw new ArgumentNullException(nameof(scriptHost));
+    }
+
+    public ServiceConfiguration Configuration { get; }
+
+    public string Id { get; }
+
+    public object ExecuteFunction(string name, object[] parameters)
+    {
+        return _scriptHost.InvokeFunction(name, parameters);
+    }
+
+    public object ExecuteFunction(string name)
+    {
+        return _scriptHost.InvokeFunction(name, null);
+    }
+
+    public void SetVariable(string key, object value)
+    {
+        if (key == null)
         {
-            Id = id ?? throw new ArgumentNullException(nameof(id));
-            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-
-            _scriptHost = scriptHost ?? throw new ArgumentNullException(nameof(scriptHost));
+            throw new ArgumentNullException(nameof(key));
         }
 
-        public string Id { get; }
-
-        public ServiceConfiguration Configuration { get; }
-
-        public void SetVariable(string key, object value)
-        {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-
-            _scriptHost.SetVariable(key, value);
-        }
-
-        public object ExecuteFunction(string name, object[] parameters)
-        {
-            return _scriptHost.InvokeFunction(name, parameters);
-        }
-
-        public object ExecuteFunction(string name)
-        {
-            return _scriptHost.InvokeFunction(name, null);
-        }
+        _scriptHost.SetVariable(key, value);
     }
 }

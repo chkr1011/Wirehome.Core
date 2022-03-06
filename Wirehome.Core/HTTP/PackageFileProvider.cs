@@ -1,73 +1,85 @@
-﻿using Microsoft.Extensions.FileProviders;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Primitives;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Packages;
 
-namespace Wirehome.Core.HTTP
+namespace Wirehome.Core.HTTP;
+
+public sealed class PackageFileProvider : IFileProvider
 {
-    public class PackageFileProvider : IFileProvider
+    readonly HashSet<string> _defaultFileNames = new()
     {
-        readonly HashSet<string> _defaultFileNames = new() { "index.htm", "index.html", "default.htm", "default.html" };
-        readonly string _packageUidGlobalVariableUid;
-        readonly GlobalVariablesService _globalVariablesService;
-        readonly PackageManagerService _packageManagerService;
+        "index.htm",
+        "index.html",
+        "default.htm",
+        "default.html"
+    };
 
-        public PackageFileProvider(string packageUidGlobalVariableUid, GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
+    readonly GlobalVariablesService _globalVariablesService;
+    readonly PackageManagerService _packageManagerService;
+    readonly string _packageUidGlobalVariableUid;
+
+    public PackageFileProvider(string packageUidGlobalVariableUid, GlobalVariablesService globalVariablesService, PackageManagerService packageManagerService)
+    {
+        _packageUidGlobalVariableUid = packageUidGlobalVariableUid ?? throw new ArgumentNullException(nameof(packageUidGlobalVariableUid));
+        _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
+        _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
+    }
+
+    public IDirectoryContents GetDirectoryContents(string subpath)
+    {
+        if (subpath == null)
         {
-            _packageUidGlobalVariableUid = packageUidGlobalVariableUid ?? throw new ArgumentNullException(nameof(packageUidGlobalVariableUid));
-            _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
-            _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
+            throw new ArgumentNullException(nameof(subpath));
         }
 
-        public IFileInfo GetFileInfo(string subpath)
+        var packageUid = _globalVariablesService.GetValue(_packageUidGlobalVariableUid) as string;
+        var packageRootPath = _packageManagerService.GetPackageRootPath(PackageUid.Parse(packageUid));
+
+        var fullPath = Path.Combine(packageRootPath, subpath.Trim(Path.PathSeparator, Path.AltDirectorySeparatorChar));
+
+        if (!Directory.Exists(fullPath))
         {
-            if (subpath == null) throw new ArgumentNullException(nameof(subpath));
-
-            var fullPath = subpath.Trim(Path.PathSeparator, Path.AltDirectorySeparatorChar);
-
-            if (_defaultFileNames.Contains(fullPath))
-            {
-                subpath = "index.html";
-            }
-
-            var packageUid = _globalVariablesService.GetValue(_packageUidGlobalVariableUid) as string;
-            var packageRootPath = _packageManagerService.GetPackageRootPath(PackageUid.Parse(packageUid));
-
-            fullPath = Path.Combine(packageRootPath, fullPath);
-
-            if (!File.Exists(fullPath))
-            {
-                return new NotFoundFileInfo(subpath);
-            }
-
-            return new PhysicalFileInfo(new FileInfo(fullPath));
+            return new NotFoundDirectoryContents();
         }
 
-        public IDirectoryContents GetDirectoryContents(string subpath)
+        return new PhysicalDirectoryContents(fullPath);
+    }
+
+    public IFileInfo GetFileInfo(string subpath)
+    {
+        if (subpath == null)
         {
-            if (subpath == null) throw new ArgumentNullException(nameof(subpath));
-
-            var packageUid = _globalVariablesService.GetValue(_packageUidGlobalVariableUid) as string;
-            var packageRootPath = _packageManagerService.GetPackageRootPath(PackageUid.Parse(packageUid));
-
-            var fullPath = Path.Combine(packageRootPath, subpath.Trim(Path.PathSeparator, Path.AltDirectorySeparatorChar));
-
-            if (!Directory.Exists(fullPath))
-            {
-                return new NotFoundDirectoryContents();
-            }
-
-            return new PhysicalDirectoryContents(fullPath);
+            throw new ArgumentNullException(nameof(subpath));
         }
 
-        public IChangeToken Watch(string filter)
+        var fullPath = subpath.Trim(Path.PathSeparator, Path.AltDirectorySeparatorChar);
+
+        if (_defaultFileNames.Contains(fullPath))
         {
-            return null;
+            subpath = "index.html";
         }
+
+        var packageUid = _globalVariablesService.GetValue(_packageUidGlobalVariableUid) as string;
+        var packageRootPath = _packageManagerService.GetPackageRootPath(PackageUid.Parse(packageUid));
+
+        fullPath = Path.Combine(packageRootPath, fullPath);
+
+        if (!File.Exists(fullPath))
+        {
+            return new NotFoundFileInfo(subpath);
+        }
+
+        return new PhysicalFileInfo(new FileInfo(fullPath));
+    }
+
+    public IChangeToken Watch(string filter)
+    {
+        return null;
     }
 }

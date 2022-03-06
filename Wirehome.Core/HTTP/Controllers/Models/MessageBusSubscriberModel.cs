@@ -2,13 +2,11 @@
 
 namespace Wirehome.Core.HTTP.Controllers.Models
 {
-    public class MessageBusSubscriberModel
+    public sealed class MessageBusSubscriberModel
     {
-        public IDictionary<object, object> Filter { get; set; }
+        public IDictionary<string, string> Filter { get; set; }
 
         public long ProcessedMessagesCount { get; set; }
-
-        public long PendingMessagesCount { get; set; }
 
         public long FaultedMessagesCount { get; set; }
     }

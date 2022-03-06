@@ -1,6 +1,6 @@
 ﻿namespace Wirehome.Core.HTTP.Controllers.Models
 {
-    public class MqttSubscriberModel
+    public sealed class MqttSubscriberModel
     {
         public string TopicFilter { get; set; }
     }

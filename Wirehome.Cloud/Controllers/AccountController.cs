@@ -1,118 +1,120 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Wirehome.Cloud.Controllers.Models;
 using Wirehome.Cloud.Services.Authorization;
 
-namespace Wirehome.Cloud.Controllers
+namespace Wirehome.Cloud.Controllers;
+
+[AllowAnonymous]
+public class AccountController : Controller
 {
-    [AllowAnonymous]
-    public class AccountController : Controller
+    readonly AuthorizationService _authorizationService;
+
+    public AccountController(AuthorizationService authorizationService)
     {
-        readonly AuthorizationService _authorizationService;
+        _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
+    }
 
-        public AccountController(AuthorizationService authorizationService)
+    [Route("cloud/account/channel/{channelUid}/token")]
+    [HttpGet]
+    public async Task<IActionResult> GetToken(string channelUid, string refreshToken = null)
+    {
+        string identityUid;
+        if (HttpContext.User != null)
         {
-            _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
+            identityUid = HttpContext.User.Claims.First(c => c.Type == ClaimTypes.Name).Value;
         }
-
-        [Route("cloud/account/channel/{channelUid}/token")]
-        [HttpGet]
-        public async Task<IActionResult> GetToken(string channelUid, string refreshToken = null)
+        else
         {
-            string identityUid;
-            if (HttpContext.User != null)
+            if (string.IsNullOrEmpty(refreshToken))
             {
-                identityUid = HttpContext.User.Claims.First(c => c.Type == ClaimTypes.Name).Value;
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(refreshToken))
-                {
-                    return StatusCode((int)HttpStatusCode.Unauthorized);
-                }
-
-                var identityEntity = await _authorizationService.FindIdentityUidByChannelAccessToken(refreshToken).ConfigureAwait(false);
-                if (identityEntity.Key == null)
-                {
-                    throw new UnauthorizedAccessException();
-                }
-
-                identityUid = identityEntity.Key;
-
-                throw new NotImplementedException();
+                return StatusCode((int)HttpStatusCode.Unauthorized);
             }
 
-            var newAccessToken = await _authorizationService.UpdateChannelAccessToken(identityUid, channelUid).ConfigureAwait(false);
-                
-            return new ObjectResult(newAccessToken);
-        }
-
-        [Route("cloud/account")]
-        [Route("cloud/account/index")]
-        [HttpGet]
-        public IActionResult Index()
-        {
-            return View(nameof(Index), new LoginModel());
-        }
-
-        [Route("cloud/account/login")]
-        [HttpGet]
-        public IActionResult Login(string returnUrl)
-        {
-            return View(nameof(Index), new LoginModel {ReturnUrl = returnUrl});
-        }
-
-        [Route("cloud/account/login")]
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginModel model)
-        {
-            try
+            var identityEntity = await _authorizationService.FindIdentityUidByChannelAccessToken(refreshToken).ConfigureAwait(false);
+            if (identityEntity.Key == null)
             {
-                await _authorizationService.AuthorizeUser(HttpContext, model.IdentityUid, model.Password).ConfigureAwait(false);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // TODO: Use in Razor!
-                ModelState.TryAddModelError("LoginError", "UNAUTHORIZED");
-                return View(nameof(Index), model);
+                throw new UnauthorizedAccessException();
             }
 
-            if (!string.IsNullOrEmpty(model.ReturnUrl))
-            {
-                return Redirect(model.ReturnUrl);
-            }
+            identityUid = identityEntity.Key;
 
-            return Redirect(nameof(Index));
+            throw new NotImplementedException();
         }
 
-        [Route("cloud/account/logout")]
-        [HttpPost]
-        public async Task<IActionResult> Logout()
+        var newAccessToken = await _authorizationService.UpdateChannelAccessToken(identityUid, channelUid).ConfigureAwait(false);
+
+        return new ObjectResult(newAccessToken);
+    }
+
+    [Route("cloud/account")]
+    [Route("cloud/account/index")]
+    [HttpGet]
+    public IActionResult Index()
+    {
+        return View(nameof(Index), new LoginModel());
+    }
+
+    [Route("cloud/account/login")]
+    [HttpGet]
+    public IActionResult Login(string returnUrl)
+    {
+        return View(nameof(Index), new LoginModel
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme).ConfigureAwait(false);
+            ReturnUrl = returnUrl
+        });
+    }
 
-            return Redirect(nameof(Index));
-        }
-
-        [Route("cloud/account/password")]
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> SetPassword(string newPassword)
+    [Route("cloud/account/login")]
+    [HttpPost]
+    public async Task<IActionResult> Login(LoginModel model)
+    {
+        try
         {
-            if (string.IsNullOrEmpty(newPassword))
-            {
-                throw new InvalidOperationException();
-            }
-
-            await _authorizationService.UpdatePassword(User.Identity.Name, newPassword).ConfigureAwait(false);
-            return await Logout().ConfigureAwait(false);
+            await _authorizationService.AuthorizeUser(HttpContext, model.IdentityUid, model.Password).ConfigureAwait(false);
         }
+        catch (UnauthorizedAccessException)
+        {
+            // TODO: Use in Razor!
+            ModelState.TryAddModelError("LoginError", "UNAUTHORIZED");
+            return View(nameof(Index), model);
+        }
+
+        if (!string.IsNullOrEmpty(model.ReturnUrl))
+        {
+            return Redirect(model.ReturnUrl);
+        }
+
+        return Redirect(nameof(Index));
+    }
+
+    [Route("cloud/account/logout")]
+    [HttpPost]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme).ConfigureAwait(false);
+
+        return Redirect(nameof(Index));
+    }
+
+    [Route("cloud/account/password")]
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> SetPassword(string newPassword)
+    {
+        if (string.IsNullOrEmpty(newPassword))
+        {
+            throw new InvalidOperationException();
+        }
+
+        await _authorizationService.UpdatePassword(User.Identity.Name, newPassword).ConfigureAwait(false);
+        return await Logout().ConfigureAwait(false);
     }
 }

@@ -1,19 +1,18 @@
 ﻿using System;
 
-namespace Wirehome.Core.Notifications
+namespace Wirehome.Core.Notifications;
+
+public sealed class Notification
 {
-    public class Notification
-    {
-        public Guid Uid { get; set; }
+    public string Message { get; set; }
 
-        public NotificationType Type { get; set; }
+    public string Tag { get; set; }
 
-        public DateTime Timestamp { get; set; }
+    public DateTime Timestamp { get; set; }
 
-        public string Message { get; set; }
+    public TimeSpan TimeToLive { get; set; }
 
-        public TimeSpan TimeToLive { get; set; }
-
-        public string Tag { get; set; }
-    }
+    public NotificationType Type { get; set; }
+    
+    public Guid Uid { get; set; }
 }

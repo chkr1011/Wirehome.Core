@@ -2,41 +2,37 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using IronPython.Runtime;
 using System;
+using IronPython.Runtime;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.MessageBus
+namespace Wirehome.Core.MessageBus;
+
+public sealed class MessageBusServicePythonProxy : IInjectedPythonProxy
 {
-    public class MessageBusServicePythonProxy : IInjectedPythonProxy
+    public delegate void MessageCallback(PythonDictionary eventArgs);
+
+    readonly MessageBusService _messageBusService;
+
+    public MessageBusServicePythonProxy(MessageBusService messageBusService)
     {
-        readonly MessageBusService _messageBusService;
+        _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
+    }
 
-        public MessageBusServicePythonProxy(MessageBusService messageBusService)
-        {
-            _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-        }
+    public string ModuleName { get; } = "message_bus";
 
-        public string ModuleName { get; } = "message_bus";
+    public void publish(PythonDictionary message)
+    {
+        _messageBusService.Publish(message);
+    }
 
-        public delegate void MessageCallback(PythonDictionary eventArgs);
+    public string subscribe(string uid, PythonDictionary filter, MessageCallback callback)
+    {
+        return _messageBusService.Subscribe(uid, filter, m => { callback(PythonConvert.ToPythonDictionary(m)); });
+    }
 
-        public void publish(PythonDictionary message)
-        {
-            _messageBusService.Publish(message);
-        }
-
-        public string subscribe(string uid, PythonDictionary filter, MessageCallback callback)
-        {
-            return _messageBusService.Subscribe(uid, filter, m =>
-            {
-                callback(PythonConvert.ToPythonDictionary(m));
-            });
-        }
-
-        public void unsubscribe(string uid)
-        {
-            _messageBusService.Unsubscribe(uid);
-        }
+    public void unsubscribe(string uid)
+    {
+        _messageBusService.Unsubscribe(uid);
     }
 }

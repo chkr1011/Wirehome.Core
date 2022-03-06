@@ -5,33 +5,38 @@
 using System;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Packages
+namespace Wirehome.Core.Packages;
+
+public sealed class PackageManagerServicePythonProxy : IInjectedPythonProxy
 {
-    public class PackageManagerServicePythonProxy : IInjectedPythonProxy
+    readonly PackageManagerService _packageManagerService;
+
+    public PackageManagerServicePythonProxy(PackageManagerService packageManagerService)
     {
-        readonly PackageManagerService _packageManagerService;
+        _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
+    }
 
-        public PackageManagerServicePythonProxy(PackageManagerService packageManagerService)
+    public string ModuleName { get; } = "package_manager";
+
+    public void download_package(string uid)
+    {
+        if (uid == null)
         {
-            _packageManagerService = packageManagerService ?? throw new ArgumentNullException(nameof(packageManagerService));
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public string ModuleName { get; } = "package_manager";
+        var packageUid = PackageUid.Parse(uid);
+        _packageManagerService.DownloadPackageAsync(packageUid).GetAwaiter().GetResult();
+    }
 
-        public string get_file_uri(string uid, string filename)
+    public string get_file_uri(string uid, string filename)
+    {
+        if (uid == null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            var packageUid = PackageUid.Parse(uid);
-            return $"/packages/{packageUid.Id}/{packageUid.Version}/{filename}";
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public void download_package(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            var packageUid = PackageUid.Parse(uid);
-            _packageManagerService.DownloadPackageAsync(packageUid).GetAwaiter().GetResult();
-        }
+        var packageUid = PackageUid.Parse(uid);
+        return $"/packages/{packageUid.Id}/{packageUid.Version}/{filename}";
     }
 }

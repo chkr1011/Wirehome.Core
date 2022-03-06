@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Wirehome.Core.System
-{
-    public class SystemLaunchArguments
-    {
-        public SystemLaunchArguments(IEnumerable<string> values)
-        {
-            if (values == null) throw new ArgumentNullException(nameof(values));
+namespace Wirehome.Core.System;
 
-            Values = new List<string>(values);
+public sealed class SystemLaunchArguments
+{
+    public SystemLaunchArguments(IEnumerable<string> values)
+    {
+        if (values == null)
+        {
+            throw new ArgumentNullException(nameof(values));
         }
 
-        public IList<string> Values { get; }
+        Values = new List<string>(values);
     }
+
+    public IList<string> Values { get; }
 }

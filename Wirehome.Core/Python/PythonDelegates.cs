@@ -1,11 +1,10 @@
 ﻿using IronPython.Runtime;
 
-namespace Wirehome.Core.Python
-{
-    public static class PythonDelegates
-    {
-        public delegate PythonDictionary CallbackWithResultDelegate(PythonDictionary parameters);
+namespace Wirehome.Core.Python;
 
-        public delegate void CallbackDelegate(PythonDictionary parameters);
-    }
+public static class PythonDelegates
+{
+    public delegate void CallbackDelegate(PythonDictionary parameters);
+
+    public delegate PythonDictionary CallbackWithResultDelegate(PythonDictionary parameters);
 }

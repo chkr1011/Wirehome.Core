@@ -9,7 +9,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Resources
 {
-    public class ResourceServicePythonProxy : IInjectedPythonProxy
+    public sealed class ResourceServicePythonProxy : IInjectedPythonProxy
     {
         readonly ResourceService _resourceService;
 
@@ -25,17 +25,17 @@ namespace Wirehome.Core.Resources
             return _resourceService.RegisterResource(uid, languageCode, value);
         }
 
-        public string get_value(string uid, [DefaultParameterValue("")] string defaultValue)
+        public string get_value(string uid, string defaultValue = null)
         {
             return _resourceService.GetResourceValue(uid, defaultValue);
         }
 
-        public string get_language_value(string uid, string languageCode, [DefaultParameterValue("")] string defaultValue)
+        public string get_language_value(string uid, string languageCode, string defaultValue = null)
         {
             return _resourceService.GetLanguageResourceValue(uid, languageCode, defaultValue);
         }
 
-        public string get_formatted_value(string uid, PythonDictionary parameters, [DefaultParameterValue("")] string defaultValue)
+        public string get_formatted_value(string uid, PythonDictionary parameters, string defaultValue = null)
         {
             var value = _resourceService.GetResourceValue(uid, defaultValue);
             value = _resourceService.FormatValue(value, parameters);

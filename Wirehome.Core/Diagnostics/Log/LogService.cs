@@ -22,7 +22,7 @@ public sealed class LogService : WirehomeCoreService
     {
         _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
 
-        LogSender = new LogSender(mqttService);
+        Sender = new LogSender(mqttService);
         
         if (storageService is null)
         {
@@ -35,7 +35,7 @@ public sealed class LogService : WirehomeCoreService
         }
     }
     
-    public LogSender LogSender { get; }
+    public LogSender Sender { get; }
     
     public void Clear()
     {
@@ -102,7 +102,7 @@ public sealed class LogService : WirehomeCoreService
             Exception = exception?.ToString()
         };
         
-        LogSender.TrySend(newLogEntry);
+        Sender.TrySend(newLogEntry);
         
         // Debug level is not tracked in history.
         if (logLevel < LogLevel.Information)

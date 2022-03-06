@@ -1,92 +1,110 @@
-﻿using IronPython.Runtime;
-using System;
+﻿using System;
 using System.Linq;
-using System.Runtime.InteropServices;
+using IronPython.Runtime;
 using Wirehome.Core.Python;
 
 #pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-namespace Wirehome.Core.Notifications
+namespace Wirehome.Core.Notifications;
+
+public sealed class NotificationsServicePythonProxy : IInjectedPythonProxy
 {
-    public class NotificationsServicePythonProxy : IInjectedPythonProxy
+    readonly NotificationsService _notificationsService;
+
+    public NotificationsServicePythonProxy(NotificationsService notificationsService)
     {
-        readonly NotificationsService _notificationsService;
+        _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
+    }
 
-        public NotificationsServicePythonProxy(NotificationsService notificationsService)
+    public string ModuleName { get; } = "notifications";
+
+    public void delete(string uid)
+    {
+        _notificationsService.DeleteNotification(Guid.Parse(uid));
+    }
+
+    public List find_all_by_tag(string tag)
+    {
+        if (tag is null)
         {
-            _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
+            throw new ArgumentNullException(nameof(tag));
         }
 
-        public string ModuleName { get; } = "notifications";
+        var matchingNotifications = _notificationsService.GetNotifications().Where(n => n.Tag == tag).Select(n => n.Uid);
+        var result = new List();
 
-        public List find_all_by_tag(string tag)
+        foreach (var notificationUid in matchingNotifications)
         {
-            if (tag is null) throw new ArgumentNullException(nameof(tag));
-
-            var matchingNotifications = _notificationsService.GetNotifications().Where(n => n.Tag == tag).Select(n => n.Uid);
-            var result = new List();
-
-            foreach (var notificationUid in matchingNotifications)
-            {
-                result.Add(notificationUid);
-            }
-
-            return result;
+            result.Add(notificationUid);
         }
 
-        public string find_first_by_tag(string tag)
+        return result;
+    }
+
+    public string find_first_by_tag(string tag)
+    {
+        if (tag is null)
         {
-            if (tag is null) throw new ArgumentNullException(nameof(tag));
-
-            var matchingNotification = _notificationsService.GetNotifications().FirstOrDefault(n => n.Tag == tag);
-            if (matchingNotification != null)
-            {
-                return matchingNotification.Uid.ToString();
-            }
-
-            return null;
+            throw new ArgumentNullException(nameof(tag));
         }
 
-        public void publish(string type, string message, [DefaultParameterValue(null)] string ttl)
+        var matchingNotification = _notificationsService.GetNotifications().FirstOrDefault(n => n.Tag == tag);
+        if (matchingNotification != null)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
-            if (message == null) throw new ArgumentNullException(nameof(message));
-
-            var typeBuffer = (NotificationType)Enum.Parse(typeof(NotificationType), type, true);
-            TimeSpan? ttlBuffer = null;
-
-            if (!string.IsNullOrEmpty(ttl))
-            {
-                ttlBuffer = TimeSpan.Parse(ttl);
-            }
-
-            _notificationsService.Publish(typeBuffer, message, ttlBuffer);
+            return matchingNotification.Uid.ToString();
         }
 
-        public void publish_from_resource(string type, string resourceUid, [DefaultParameterValue(null)] string ttl)
+        return null;
+    }
+
+    public void publish(string type, string message, string ttl = null)
+    {
+        if (type == null)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
-            if (resourceUid == null) throw new ArgumentNullException(nameof(resourceUid));
-
-            var parameters = new PublishFromResourceParameters
-            {
-                Type = (NotificationType)Enum.Parse(typeof(NotificationType), type, true),
-                ResourceUid = resourceUid
-            };
-
-            if (!string.IsNullOrEmpty(ttl))
-            {
-                parameters.TimeToLive = TimeSpan.Parse(ttl);
-            }
-
-            _notificationsService.PublishFromResource(parameters);
+            throw new ArgumentNullException(nameof(type));
         }
 
-        public void delete(string uid)
+        if (message == null)
         {
-            _notificationsService.DeleteNotification(Guid.Parse(uid));
+            throw new ArgumentNullException(nameof(message));
         }
+
+        var typeBuffer = (NotificationType)Enum.Parse(typeof(NotificationType), type, true);
+        TimeSpan? ttlBuffer = null;
+
+        if (!string.IsNullOrEmpty(ttl))
+        {
+            ttlBuffer = TimeSpan.Parse(ttl);
+        }
+
+        _notificationsService.Publish(typeBuffer, message, ttlBuffer);
+    }
+
+    public void publish_from_resource(string type, string resourceUid, string ttl = null)
+    {
+        if (type == null)
+        {
+            throw new ArgumentNullException(nameof(type));
+        }
+
+        if (resourceUid == null)
+        {
+            throw new ArgumentNullException(nameof(resourceUid));
+        }
+
+        var parameters = new PublishFromResourceParameters
+        {
+            Type = (NotificationType)Enum.Parse(typeof(NotificationType), type, true),
+            ResourceUid = resourceUid
+        };
+
+        if (!string.IsNullOrEmpty(ttl))
+        {
+            parameters.TimeToLive = TimeSpan.Parse(ttl);
+        }
+
+        _notificationsService.PublishFromResource(parameters);
     }
 }

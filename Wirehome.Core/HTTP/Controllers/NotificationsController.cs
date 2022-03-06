@@ -1,50 +1,49 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.Notifications;
 
-namespace Wirehome.Core.HTTP.Controllers
+namespace Wirehome.Core.HTTP.Controllers;
+
+[ApiController]
+public sealed class NotificationsController : Controller
 {
-    [ApiController]
-    public class NotificationsController : Controller
+    readonly NotificationsService _notificationsService;
+
+    public NotificationsController(NotificationsService notificationsService)
     {
-        readonly NotificationsService _notificationsService;
+        _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
+    }
 
-        public NotificationsController(NotificationsService notificationsService)
-        {
-            _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
-        }
+    [HttpDelete]
+    [Route("api/v1/notifications/{uid}")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public void DeleteNotification(Guid uid)
+    {
+        _notificationsService.DeleteNotification(uid);
+    }
 
-        [HttpGet]
-        [Route("api/v1/notifications")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public List<Notification> GetNotifications()
-        {
-            return _notificationsService.GetNotifications();
-        }
+    [HttpDelete]
+    [Route("api/v1/notifications")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public void DeleteNotifications()
+    {
+        _notificationsService.Clear();
+    }
 
-        [HttpPost]
-        [Route("api/v1/notification")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public void PostNotification(NotificationType type, string message, TimeSpan? timetoLive)
-        {
-            _notificationsService.Publish(type, message, timetoLive);
-        }
+    [HttpGet]
+    [Route("api/v1/notifications")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public List<Notification> GetNotifications()
+    {
+        return _notificationsService.GetNotifications();
+    }
 
-        [HttpDelete]
-        [Route("api/v1/notifications/{uid}")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public void DeleteNotification(Guid uid)
-        {
-            _notificationsService.DeleteNotification(uid);
-        }
-
-        [HttpDelete]
-        [Route("api/v1/notifications")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public void DeleteNotifications()
-        {
-            _notificationsService.Clear();
-        }
+    [HttpPost]
+    [Route("api/v1/notification")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public void PostNotification(NotificationType type, string message, TimeSpan? timetoLive)
+    {
+        _notificationsService.Publish(type, message, timetoLive);
     }
 }

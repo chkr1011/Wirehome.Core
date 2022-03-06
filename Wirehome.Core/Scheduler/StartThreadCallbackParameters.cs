@@ -1,15 +1,14 @@
-﻿namespace Wirehome.Core.Scheduler
+﻿namespace Wirehome.Core.Scheduler;
+
+public sealed class StartThreadCallbackParameters
 {
-    public sealed class StartThreadCallbackParameters
+    public StartThreadCallbackParameters(string threadUid, object state)
     {
-        public StartThreadCallbackParameters(string threadUid, object state)
-        {
-            ThreadUid = threadUid;
-            State = state;
-        }
-
-        public string ThreadUid { get; }
-
-        public object State { get; }
+        ThreadUid = threadUid;
+        State = state;
     }
+
+    public object State { get; }
+
+    public string ThreadUid { get; }
 }

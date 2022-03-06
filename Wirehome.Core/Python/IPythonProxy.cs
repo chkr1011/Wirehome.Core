@@ -1,7 +1,6 @@
-﻿namespace Wirehome.Core.Python
+﻿namespace Wirehome.Core.Python;
+
+public interface IPythonProxy
 {
-    public interface IPythonProxy
-    {
-        string ModuleName { get; }
-    }
+    string ModuleName { get; }
 }

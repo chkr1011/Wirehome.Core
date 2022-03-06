@@ -1,7 +1,6 @@
-﻿namespace Wirehome.Core.System.StartupScripts
+﻿namespace Wirehome.Core.System.StartupScripts;
+
+public sealed class StartupScriptConfiguration
 {
-    public class StartupScriptConfiguration
-    {
-        public bool IsEnabled { get; set; } = true;
-    }
+    public bool IsEnabled { get; set; } = true;
 }

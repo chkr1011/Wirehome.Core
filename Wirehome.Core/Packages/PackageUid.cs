@@ -1,54 +1,60 @@
 ﻿using System;
 
-namespace Wirehome.Core.Packages
+namespace Wirehome.Core.Packages;
+
+public sealed class PackageUid
 {
-    public sealed class PackageUid
+    public PackageUid()
     {
-        public string Id { get; set; }
+    }
 
-        public string Version { get; set; }
+    public PackageUid(string id, string version)
+    {
+        Id = id;
+        Version = version;
+    }
 
-        public PackageUid()
+    public string Id { get; set; }
+
+    public string Version { get; set; }
+
+    public static PackageUid Parse(string source)
+    {
+        if (source == null)
         {
+            throw new ArgumentNullException(nameof(source));
         }
 
-        public PackageUid(string id, string version)
+        var parts = source.Split(new[]
         {
-            Id = id;
-            Version = version;
+            "@"
+        }, StringSplitOptions.RemoveEmptyEntries);
+        
+        if (parts.Length < 1 || parts.Length > 2)
+        {
+            throw new ArgumentException("The source is invalid.", nameof(source));
         }
 
-        public static PackageUid Parse(string source)
+        string version = null;
+        if (parts.Length == 2)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-
-            var parts = source.Split(new[] { "@" }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 1 || parts.Length > 2)
-            {
-                throw new ArgumentException("The source is invalid.", nameof(source));
-            }
-
-            string version = null;
-            if (parts.Length == 2)
-            {
-                version = parts[1];
-            }
-
-            return new PackageUid
-            {
-                Id = parts[0],
-                Version = version
-            };
+            version = parts[1];
         }
 
-        public override string ToString()
+        return new PackageUid
         {
-            if (string.IsNullOrEmpty(Version))
-            {
-                return Id + "@<latest>";
-            }
+            Id = parts[0],
+            Version = version
+        };
+    }
 
-            return Id + "@" + Version;
+    public override string ToString()
+    {
+        if (string.IsNullOrEmpty(Version))
+        {
+            return Id + "@<latest>";
         }
+
+        return Id + "@" + Version;
     }
 }

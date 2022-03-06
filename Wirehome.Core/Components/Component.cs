@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using IronPython.Runtime;
 using Wirehome.Core.Components.Logic;
 using Wirehome.Core.Python;
 
@@ -210,13 +211,13 @@ namespace Wirehome.Core.Components
             }
         }
 
-        public IDictionary<object, object> ProcessMessage(IDictionary<object, object> message)
+        public PythonDictionary ProcessMessage(PythonDictionary message)
         {
             ThrowIfLogicNotSet();
-            return _logic.ProcessMessage(PythonConvert.ToPythonDictionary(message));
+            return _logic.ProcessMessage(message);
         }
 
-        public IDictionary<object, object> GetDebugInformation(IDictionary<object, object> parameters)
+        public PythonDictionary GetDebugInformation(PythonDictionary parameters)
         {
             ThrowIfLogicNotSet();
             return _logic.GetDebugInformation(PythonConvert.ToPythonDictionary(parameters));

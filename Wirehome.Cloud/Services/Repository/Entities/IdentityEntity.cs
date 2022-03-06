@@ -1,15 +1,13 @@
 ﻿using System.Collections.Generic;
 
-namespace Wirehome.Cloud.Services.Repository.Entities
+namespace Wirehome.Cloud.Services.Repository.Entities;
+
+public class IdentityEntity
 {
-    public class IdentityEntity
-    {
-        public string PasswordHash { get; set; }
+    public Dictionary<string, ChannelEntity> Channels { get; set; } = new();
 
-        public bool IsLocked { get; set; }
+    public bool IsAdmin { get; set; }
 
-        public bool IsAdmin { get; set; }
-
-        public Dictionary<string, ChannelEntity> Channels { get; set; } = new Dictionary<string, ChannelEntity>();
-    }
+    public bool IsLocked { get; set; }
+    public string PasswordHash { get; set; }
 }

@@ -1,37 +1,43 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using Wirehome.Core.FunctionPool;
 
-namespace Wirehome.Core.HTTP.Controllers
+namespace Wirehome.Core.HTTP.Controllers;
+
+[ApiController]
+public sealed class FunctionPoolController : Controller
 {
-    [ApiController]
-    public class FunctionPoolController : Controller
+    readonly FunctionPoolService _functionPoolService;
+
+    public FunctionPoolController(FunctionPoolService functionPoolService)
     {
-        readonly FunctionPoolService _functionPoolService;
+        _functionPoolService = functionPoolService ?? throw new ArgumentNullException(nameof(functionPoolService));
+    }
 
-        public FunctionPoolController(FunctionPoolService functionPoolService)
+    [HttpGet]
+    [Route("/api/v1/function_pool/functions")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public List<string> GetFunctions()
+    {
+        return _functionPoolService.GetRegisteredFunctions();
+    }
+
+    [HttpPost]
+    [Route("/api/v1/function_pool/functions/{uid}/invoke")]
+    [ApiExplorerSettings(GroupName = "v1")]
+    public IDictionary<object, object> PostInvokeFunction(string uid, [FromBody] IDictionary<object, object> parameters)
+    {
+        if (uid == null)
         {
-            _functionPoolService = functionPoolService ?? throw new ArgumentNullException(nameof(functionPoolService));
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        [HttpGet]
-        [Route("/api/v1/function_pool/functions")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public List<string> GetFunctions()
+        if (parameters == null)
         {
-            return _functionPoolService.GetRegisteredFunctions();
+            throw new ArgumentNullException(nameof(parameters));
         }
 
-        [HttpPost]
-        [Route("/api/v1/function_pool/functions/{uid}/invoke")]
-        [ApiExplorerSettings(GroupName = "v1")]
-        public IDictionary<object, object> PostInvokeFunction(string uid, [FromBody] IDictionary<object, object> parameters)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
-
-            return _functionPoolService.InvokeFunction(uid, parameters);
-        }
+        return _functionPoolService.InvokeFunction(uid, parameters);
     }
 }

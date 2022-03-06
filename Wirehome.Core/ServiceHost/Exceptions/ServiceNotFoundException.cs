@@ -1,13 +1,11 @@
 ﻿using System;
 using Wirehome.Core.Exceptions;
 
-namespace Wirehome.Core.ServiceHost.Exceptions
+namespace Wirehome.Core.ServiceHost.Exceptions;
+
+public sealed class ServiceNotFoundException : NotFoundException
 {
-    public class ServiceNotFoundException : NotFoundException
+    public ServiceNotFoundException(string serviceId, Exception innerException) : base($"Service with ID '{serviceId}' not found.", innerException)
     {
-        public ServiceNotFoundException(string serviceId, Exception innerException)
-            : base($"Service with ID '{serviceId}' not found.", innerException)
-        {
-        }
     }
 }

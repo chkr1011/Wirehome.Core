@@ -1,62 +1,68 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
-namespace Wirehome.Core.MessageBus
+namespace Wirehome.Core.MessageBus;
+
+public sealed class MessageBusSubscriber
 {
-    public sealed class MessageBusSubscriber
+    readonly Action<IDictionary<object, object>> _callback;
+    readonly ILogger _logger;
+    long _faultedMessagesCount;
+
+    long _processedMessagesCount;
+
+    public MessageBusSubscriber(string uid, IDictionary<object, object> filter, Action<IDictionary<object, object>> callback, ILogger logger)
     {
-        readonly Action<IDictionary<object, object>> _callback;
-        readonly ILogger _logger;
-
-        long _processedMessagesCount;
-        long _pendingMessagesCount;
-        long _faultedMessagesCount;
-
-        public MessageBusSubscriber(string uid, IDictionary<object, object> filter, Action<IDictionary<object, object>> callback, ILogger logger)
+        if (filter == null)
         {
-            Uid = uid ?? throw new ArgumentNullException(nameof(uid));
-            Filter = filter ?? throw new ArgumentNullException(nameof(filter));
-            _callback = callback ?? throw new ArgumentNullException(nameof(callback));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            throw new ArgumentNullException(nameof(filter));
         }
 
-        public string Uid { get; }
+        Uid = uid ?? throw new ArgumentNullException(nameof(uid));
+        _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        public IDictionary<object, object> Filter { get; }
-
-        public long ProcessedMessagesCount => Interlocked.Read(ref _processedMessagesCount);
-
-        public long FaultedMessagesCount => Interlocked.Read(ref _faultedMessagesCount);
-
-        public long PendingMessagesCount => Interlocked.Read(ref _pendingMessagesCount);
-
-        public void ProcessMessage(IDictionary<object, object> message)
+        // Pre convert all items to increase performance.
+        Filter = new Dictionary<string, string>();
+        foreach (var filterItem in filter)
         {
-            if (message is null) throw new ArgumentNullException(nameof(message));
+            var key = Convert.ToString(filterItem.Key, CultureInfo.InvariantCulture) ?? string.Empty;
+            Filter[key] = Convert.ToString(filterItem.Value, CultureInfo.InvariantCulture) ?? string.Empty;
+        }
+    }
 
-            try
+    public long FaultedMessagesCount => Interlocked.Read(ref _faultedMessagesCount);
+
+    public IDictionary<string, string> Filter { get; }
+
+    public long ProcessedMessagesCount => Interlocked.Read(ref _processedMessagesCount);
+
+    public string Uid { get; }
+
+    public void ProcessMessage(IDictionary<object, object> message)
+    {
+        if (message is null)
+        {
+            throw new ArgumentNullException(nameof(message));
+        }
+
+        try
+        {
+            _callback.Invoke(message);
+
+            Interlocked.Increment(ref _processedMessagesCount);
+        }
+        catch (Exception exception)
+        {
+            if (!(exception is OperationCanceledException))
             {
-                Interlocked.Increment(ref _pendingMessagesCount);
-
-                _callback.Invoke(message);
-
-                Interlocked.Increment(ref _processedMessagesCount);
+                _logger.LogError(exception, $"Error while processing bus message for subscriber '{Uid}'.");
             }
-            catch (Exception exception)
-            {
-                if (!(exception is OperationCanceledException))
-                {
-                    _logger.LogError(exception, $"Error while processing bus message for subscriber '{Uid}'.");
-                }
 
-                Interlocked.Increment(ref _faultedMessagesCount);
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _pendingMessagesCount);
-            }
+            Interlocked.Increment(ref _faultedMessagesCount);
         }
     }
 }

@@ -19,16 +19,16 @@
   <ItemGroup>
     <PackageReference Include="CoAPnet" Version="1.1.0" />
     <PackageReference Include="CoAPnet.Extensions.DTLS" Version="1.1.0" />
-    <PackageReference Include="IronPython" Version="2.7.11" />
-    <PackageReference Include="IronPython.StdLib" Version="2.7.11" />
+    <PackageReference Include="IronPython" Version="2.7.12" />
+    <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
     <PackageReference Include="MessagePack" Version="2.3.85" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
-    <PackageReference Include="MQTTnet" Version="4.0.0.136" />
-    <PackageReference Include="MQTTnet.AspNetCore" Version="4.0.0.136" />
+    <PackageReference Include="MQTTnet" Version="4.0.0.142" />
+    <PackageReference Include="MQTTnet.AspNetCore" Version="4.0.0.142" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.2.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.2.3" />

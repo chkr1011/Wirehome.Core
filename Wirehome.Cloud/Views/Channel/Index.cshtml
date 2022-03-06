@@ -22,12 +22,12 @@
     <div class="column">
         @foreach (var channel in Model.Channels)
         {
-        <div class="field">
-            <div class="ui radio checkbox">
-                <input type="radio" name="fruit" checked="" tabindex="0" class="hidden">
-                <label>@channel</label>
+            <div class="field">
+                <div class="ui radio checkbox">
+                    <input type="radio" name="fruit" checked="" tabindex="0" class="hidden">
+                    <label>@channel</label>
+                </div>
             </div>
-        </div>
         }
 
         <button class="ui button">
@@ -35,4 +35,3 @@
         </button>
     </div>
 </div>
-

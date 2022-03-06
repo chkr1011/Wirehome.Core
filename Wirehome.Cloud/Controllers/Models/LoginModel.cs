@@ -1,11 +1,10 @@
-﻿namespace Wirehome.Cloud.Controllers.Models
+﻿namespace Wirehome.Cloud.Controllers.Models;
+
+public class LoginModel
 {
-    public class LoginModel
-    {
-        public string IdentityUid { get; set; }
+    public string IdentityUid { get; set; }
 
-        public string Password { get; set; }
+    public string Password { get; set; }
 
-        public string ReturnUrl { get; set; }
-    }
+    public string ReturnUrl { get; set; }
 }

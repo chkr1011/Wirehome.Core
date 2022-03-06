@@ -1,19 +1,18 @@
 ﻿using Newtonsoft.Json;
 
-namespace Wirehome.Core.Packages.GitHub
+namespace Wirehome.Core.Packages.GitHub;
+
+public sealed class GitHubItem
 {
-    public class GitHubItem
-    {
-        [JsonProperty("name")]
-        public string Name { get; set; }
+    [JsonProperty("download_url")]
+    public string DownloadUrl { get; set; }
 
-        [JsonProperty("size")]
-        public int Size { get; set; }
+    [JsonProperty("name")]
+    public string Name { get; set; }
 
-        [JsonProperty("download_url")]
-        public string DownloadUrl { get; set; }
+    [JsonProperty("size")]
+    public int Size { get; set; }
 
-        [JsonProperty("type")]
-        public string Type { get; set; }
-    }
+    [JsonProperty("type")]
+    public string Type { get; set; }
 }
