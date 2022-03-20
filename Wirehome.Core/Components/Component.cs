@@ -1,248 +1,235 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using IronPython.Runtime;
 using Wirehome.Core.Components.Logic;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Components
+namespace Wirehome.Core.Components;
+
+public sealed class Component
 {
-    public sealed class Component
+    readonly ConcurrentDictionary<string, object> _configuration = new();
+    readonly ConcurrentDictionary<string, object> _settings = new();
+    readonly ConcurrentDictionary<string, object> _status = new();
+    readonly HashSet<string> _tags = new();
+
+    long _hash;
+
+    IComponentLogic _logic;
+
+    public Component(string uid)
     {
-        readonly Dictionary<string, object> _status = new();
-        readonly Dictionary<string, object> _settings = new();
-        readonly Dictionary<string, object> _configuration = new();
-        readonly HashSet<string> _tags = new();
+        Uid = uid ?? throw new ArgumentNullException(nameof(uid));
+    }
 
-        IComponentLogic _logic;
+    public long Hash => Interlocked.Read(ref _hash);
+    
+    public string Uid { get; }
 
-        long _hash;
+    public IReadOnlyDictionary<string, object> GetConfiguration()
+    {
+        return new ReadOnlyDictionary<string, object>(_configuration);
+    }
 
-        public Component(string uid)
+    public PythonDictionary GetDebugInformation(PythonDictionary parameters)
+    {
+        ThrowIfLogicNotSet();
+        return _logic.GetDebugInformation(PythonConvert.ToPythonDictionary(parameters));
+    }
+
+    public string GetLogicId()
+    {
+        return _logic?.Id;
+    }
+
+    public IReadOnlyDictionary<string, object> GetSettings()
+    {
+        return new ReadOnlyDictionary<string, object>(_settings);
+    }
+
+    public IReadOnlyDictionary<string, object> GetStatus()
+    {
+        return new ReadOnlyDictionary<string, object>(_status);
+    }
+
+    public IReadOnlyList<string> GetTags()
+    {
+        lock (_tags)
         {
-            Uid = uid ?? throw new ArgumentNullException(nameof(uid));
+            return new List<string>(_tags);
         }
+    }
 
-        public string Uid { get; }
-
-        public long Hash => Interlocked.Read(ref _hash);
-
-        public bool TryGetStatusValue(string uid, out object value)
+    public bool HasTag(string uid)
+    {
+        lock (_tags)
         {
-            lock (_status)
-            {
-                return _status.TryGetValue(uid, out value);
-            }
+            return _tags.Contains(uid);
         }
+    }
 
-        public SetValueResult SetStatusValue(string uid, object value)
+    public PythonDictionary ProcessMessage(PythonDictionary message)
+    {
+        ThrowIfLogicNotSet();
+        return _logic.ProcessMessage(message);
+    }
+
+    public bool RemoveConfigurationValue(string uid, out object oldValue)
+    {
+        lock (_configuration)
         {
-            lock (_status)
+            if (_configuration.TryRemove(uid, out oldValue))
             {
-                var isExistingValue = _status.TryGetValue(uid, out var oldValue);
-
-                _status[uid] = value;
                 IncrementHash();
 
-                return new SetValueResult
-                {
-                    OldValue = oldValue,
-                    IsNewValue = !isExistingValue
-                };
+                return true;
             }
+
+            return false;
         }
+    }
 
-        public Dictionary<string, object> GetStatus()
+    public bool RemoveSetting(string uid, out object oldValue)
+    {
+        lock (_settings)
         {
-            lock (_status)
+            if (_settings.TryRemove(uid, out oldValue))
             {
-                // Create a copy of the internal dictionary because the result only reflects the current
-                // status and will not change when the real status is changing. Also changes to that dictionary
-                // should not affect the internal state.
-                return new Dictionary<string, object>(_status);
-            }
-        }
-
-        public bool TryGetSetting(string uid, out object value)
-        {
-            lock (_settings)
-            {
-                return _settings.TryGetValue(uid, out value);
-            }
-        }
-
-        public SetValueResult SetSetting(string uid, object value)
-        {
-            lock (_settings)
-            {
-                var isExistingValue = _settings.TryGetValue(uid, out var oldValue);
-
-                _settings[uid] = value;
                 IncrementHash();
 
-                return new SetValueResult
-                {
-                    OldValue = oldValue,
-                    IsNewValue = !isExistingValue
-                };
+                return true;
             }
+
+            return false;
         }
+    }
 
-        public bool RemoveSetting(string uid, out object oldValue)
+    public bool RemoveTag(string uid)
+    {
+        lock (_tags)
         {
-            lock (_settings)
+            if (_tags.Remove(uid))
             {
-                if (_settings.TryGetValue(uid, out oldValue))
-                {
-                    _settings.Remove(uid);
-                    IncrementHash();
-
-                    return true;
-                }
-
-                return false;
-            }
-        }
-
-        public Dictionary<string, object> GetSettings()
-        {
-            lock (_settings)
-            {
-                // Create a copy of the internal dictionary because the result only reflects the current
-                // status and will not change when the real status is changing. Also changes to that dictionary
-                // should not affect the internal state.
-                return new Dictionary<string, object>(_settings);
-            }
-        }
-
-        public bool TryGetConfigurationValue(string uid, out object value)
-        {
-            lock (_configuration)
-            {
-                return _configuration.TryGetValue(uid, out value);
-            }
-        }
-
-        public SetValueResult SetConfigurationValue(string uid, object value)
-        {
-            lock (_configuration)
-            {
-                var isExistingValue = _configuration.TryGetValue(uid, out var oldValue);
-
-                _configuration[uid] = value;
                 IncrementHash();
-
-                return new SetValueResult
-                {
-                    OldValue = oldValue,
-                    IsNewValue = !isExistingValue
-                };
+                return true;
             }
-        }
 
-        public bool RemoveConfigurationValue(string uid, out object oldValue)
+            return false;
+        }
+    }
+
+    public SetValueResult SetConfigurationValue(string uid, object value)
+    {
+        lock (_configuration)
         {
-            lock (_configuration)
+            var isExistingValue = _configuration.TryGetValue(uid, out var oldValue);
+
+            _configuration[uid] = value;
+            IncrementHash();
+
+            return new SetValueResult
             {
-                if (_configuration.TryGetValue(uid, out oldValue))
-                {
-                    _configuration.Remove(uid);
-                    IncrementHash();
+                OldValue = oldValue,
+                IsNewValue = !isExistingValue
+            };
+        }
+    }
 
-                    return true;
-                }
-
-                return false;
-            }
+    public void SetLogic(IComponentLogic logic)
+    {
+        if (_logic != null)
+        {
+            throw new InvalidOperationException("A component logic cannot be changed.");
         }
 
-        public Dictionary<string, object> GetConfiguration()
+        _logic = logic ?? throw new ArgumentNullException(nameof(logic));
+    }
+
+    public SetValueResult SetSetting(string uid, object value)
+    {
+        lock (_settings)
         {
-            lock (_configuration)
+            var isExistingValue = _settings.TryGetValue(uid, out var oldValue);
+
+            _settings[uid] = value;
+            IncrementHash();
+
+            return new SetValueResult
             {
-                // Create a copy of the internal dictionary because the result only reflects the current
-                // status and will not change when the real status is changing. Also changes to that dictionary
-                // should not affect the internal state.
-                return new Dictionary<string, object>(_configuration);
-            }
+                OldValue = oldValue,
+                IsNewValue = !isExistingValue
+            };
         }
+    }
 
-        public List<string> GetTags()
+    public SetValueResult SetStatusValue(string uid, object value)
+    {
+        lock (_status)
         {
-            lock (_tags)
+            var isExistingValue = _status.TryGetValue(uid, out var oldValue);
+
+            _status[uid] = value;
+            IncrementHash();
+
+            return new SetValueResult
             {
-                return new List<string>(_tags);
-            }
+                OldValue = oldValue,
+                IsNewValue = !isExistingValue
+            };
         }
+    }
 
-        public bool SetTag(string uid)
+    public bool SetTag(string uid)
+    {
+        lock (_tags)
         {
-            lock (_tags)
+            if (_tags.Add(uid))
             {
-                if (_tags.Add(uid))
-                {
-                    IncrementHash();
-                    return true;
-                }
-
-                return false;
+                IncrementHash();
+                return true;
             }
+
+            return false;
         }
+    }
 
-        public bool RemoveTag(string uid)
+    public bool TryGetConfigurationValue(string uid, out object value)
+    {
+        lock (_configuration)
         {
-            lock (_tags)
-            {
-                if (_tags.Remove(uid))
-                {
-                    IncrementHash();
-                    return true;
-                }
-
-                return false;
-            }
+            return _configuration.TryGetValue(uid, out value);
         }
+    }
 
-        public bool HasTag(string uid)
+    public bool TryGetSetting(string uid, out object value)
+    {
+        lock (_settings)
         {
-            lock (_tags)
-            {
-                return _tags.Contains(uid);
-            }
+            return _settings.TryGetValue(uid, out value);
         }
+    }
 
-        public PythonDictionary ProcessMessage(PythonDictionary message)
+    public bool TryGetStatusValue(string uid, out object value)
+    {
+        lock (_status)
         {
-            ThrowIfLogicNotSet();
-            return _logic.ProcessMessage(message);
+            return _status.TryGetValue(uid, out value);
         }
+    }
 
-        public PythonDictionary GetDebugInformation(PythonDictionary parameters)
+    void IncrementHash()
+    {
+        Interlocked.Increment(ref _hash);
+    }
+
+    void ThrowIfLogicNotSet()
+    {
+        if (_logic == null)
         {
-            ThrowIfLogicNotSet();
-            return _logic.GetDebugInformation(PythonConvert.ToPythonDictionary(parameters));
-        }
-
-        public void SetLogic(IComponentLogic logic)
-        {
-            if (_logic != null) throw new InvalidOperationException("A component logic cannot be changed.");
-
-            _logic = logic ?? throw new ArgumentNullException(nameof(logic));
-        }
-
-        public string GetLogicId()
-        {
-            return _logic?.Id;
-        }
-
-        void ThrowIfLogicNotSet()
-        {
-            if (_logic == null) throw new InvalidOperationException("A component requires a logic to process messages.");
-        }
-
-        void IncrementHash()
-        {
-            Interlocked.Increment(ref _hash);
+            throw new InvalidOperationException("A component requires a logic to process messages.");
         }
     }
 }

@@ -13,7 +13,5 @@ namespace Wirehome.Core.Components
         public object OldValue { get; set; }
 
         public object NewValue { get; set; }
-
-        public bool ValueHasChanged { get; set; }
     }
 }

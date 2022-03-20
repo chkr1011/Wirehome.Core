@@ -140,7 +140,7 @@ public sealed class ComponentsController : Controller
     [HttpGet]
     [Route("/api/v1/components/{uid}/runtime_configuration")]
     [ApiExplorerSettings(GroupName = "v1")]
-    public IDictionary GetConfigurationValues(string uid)
+    public IReadOnlyDictionary<string, object> GetConfigurationValues(string uid)
     {
         return _componentRegistryService.GetComponent(uid).GetConfiguration();
     }
@@ -164,7 +164,7 @@ public sealed class ComponentsController : Controller
     [HttpGet]
     [Route("/api/v1/components/{uid}/settings")]
     [ApiExplorerSettings(GroupName = "v1")]
-    public IDictionary GetSettingValues(string uid)
+    public IReadOnlyDictionary<string, object> GetSettingValues(string uid)
     {
         return _componentRegistryService.GetComponent(uid).GetSettings();
     }
@@ -188,7 +188,7 @@ public sealed class ComponentsController : Controller
     [HttpGet]
     [Route("/api/v1/components/{uid}/status")]
     [ApiExplorerSettings(GroupName = "v1")]
-    public IDictionary GetStatusValues(string uid)
+    public IReadOnlyDictionary<string, object> GetStatusValues(string uid)
     {
         return _componentRegistryService.GetComponent(uid).GetStatus();
     }
@@ -211,7 +211,7 @@ public sealed class ComponentsController : Controller
     [HttpGet]
     [Route("/api/v1/components/{componentUid}/tags")]
     [ApiExplorerSettings(GroupName = "v1")]
-    public List<string> GetTags(string componentUid)
+    public IReadOnlyList<string> GetTags(string componentUid)
     {
         var component = _componentRegistryService.GetComponent(componentUid);
         return component.GetTags();

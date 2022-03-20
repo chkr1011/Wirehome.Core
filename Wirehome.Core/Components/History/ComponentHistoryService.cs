@@ -122,12 +122,9 @@ namespace Wirehome.Core.Components.History
                     return;
                 }
 
-                HistoryValueFormatterOptions formatterOptions = null;
-
                 _options.ComponentStatusDefaultSettings.TryGetValue(statusWorkItem.StatusUid, out var defaultSettings);
 
-                var formatterOptionsFactory = new HistoryValueFormatterOptionsFactory();
-                formatterOptions = formatterOptionsFactory.Create(statusWorkItem.Component.GetSettings(), defaultSettings);
+                var formatterOptions = HistoryValueFormatterOptionsFactory.Create(statusWorkItem.Component.GetSettings(), defaultSettings);
 
                 await _historyService.Update(new HistoryUpdateOperation
                 {
