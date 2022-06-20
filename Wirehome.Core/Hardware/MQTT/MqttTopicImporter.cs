@@ -16,7 +16,7 @@ namespace Wirehome.Core.Hardware.MQTT
 
         readonly MqttImportTopicParameters _parameters;
 
-        MqttClient _mqttClient;
+        IMqttClient _mqttClient;
         MqttClientOptions _options;
 
         public MqttTopicImporter(MqttImportTopicParameters parameters, MqttService mqttService, ILogger logger)

@@ -23,8 +23,10 @@ namespace Wirehome.Core.Hardware.MQTT
 {
     public sealed class MqttService : WirehomeCoreService
     {
+        const string ServerClientId = "SERVER";
+        
         readonly OperationsPerSecondCounter _inboundCounter;
-
+        
         readonly BlockingCollection<IncomingMqttMessage> _incomingMessages = new();
 
         readonly ILogger _logger;
@@ -122,7 +124,10 @@ namespace Wirehome.Core.Hardware.MQTT
                 Retain = parameters.Retain
             };
 
-            _mqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(message)).GetAwaiter().GetResult();
+            _mqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(message)
+            {
+                SenderClientId = ServerClientId
+            }).GetAwaiter().GetResult();
             
             _outboundCounter.Increment();
         }
@@ -170,10 +175,7 @@ namespace Wirehome.Core.Hardware.MQTT
             var retainedMessages = _mqttServer.GetRetainedMessagesAsync().GetAwaiter().GetResult();
             foreach (var retainedMessage in retainedMessages)
             {
-                _incomingMessages.Add(new IncomingMqttMessage
-                {
-                    ApplicationMessage = retainedMessage
-                });
+                _incomingMessages.Add(new IncomingMqttMessage(null, retainedMessage));
             }
 
             return uid;
@@ -256,13 +258,14 @@ namespace Wirehome.Core.Hardware.MQTT
 
         void OnApplicationMessageReceived(InterceptingPublishEventArgs eventArgs)
         {
-            _inboundCounter.Increment();
-            
-            _incomingMessages.Add(new IncomingMqttMessage
+            if (string.Equals(eventArgs.ClientId, ServerClientId))
             {
-                ClientId = eventArgs.ClientId,
-                ApplicationMessage = eventArgs.ApplicationMessage
-            });
+                return;
+            }
+            
+            _inboundCounter.Increment();
+
+            _incomingMessages.Add(new IncomingMqttMessage(eventArgs.ClientId, eventArgs.ApplicationMessage));
         }
 
         void ProcessIncomingMqttMessages()

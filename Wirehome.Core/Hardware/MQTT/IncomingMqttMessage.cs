@@ -4,7 +4,13 @@ namespace Wirehome.Core.Hardware.MQTT;
 
 public sealed class IncomingMqttMessage
 {
-    public string ClientId { get; set; }
+    public IncomingMqttMessage(string clientId, MqttApplicationMessage applicationMessage)
+    {
+        ClientId = clientId;
+        ApplicationMessage = applicationMessage;
+    }
+
+    public string ClientId { get; }
         
-    public MqttApplicationMessage ApplicationMessage { get; set; }
+    public MqttApplicationMessage ApplicationMessage { get; }
 }

@@ -9,22 +9,22 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Remove="SampleConfiguration\Identities\user%2540wirehome.com\**"/>
-        <Compile Remove="wwwroot\semantic-ui\components\**"/>
-        <Content Remove="SampleConfiguration\Identities\user%2540wirehome.com\**"/>
-        <Content Remove="wwwroot\semantic-ui\components\**"/>
-        <EmbeddedResource Remove="SampleConfiguration\Identities\user%2540wirehome.com\**"/>
-        <EmbeddedResource Remove="wwwroot\semantic-ui\components\**"/>
-        <None Remove="SampleConfiguration\Identities\user%2540wirehome.com\**"/>
-        <None Remove="wwwroot\semantic-ui\components\**"/>
+        <Compile Remove="SampleConfiguration\Identities\user%2540wirehome.com\**" />
+        <Compile Remove="wwwroot\semantic-ui\components\**" />
+        <Content Remove="SampleConfiguration\Identities\user%2540wirehome.com\**" />
+        <Content Remove="wwwroot\semantic-ui\components\**" />
+        <EmbeddedResource Remove="SampleConfiguration\Identities\user%2540wirehome.com\**" />
+        <EmbeddedResource Remove="wwwroot\semantic-ui\components\**" />
+        <None Remove="SampleConfiguration\Identities\user%2540wirehome.com\**" />
+        <None Remove="wwwroot\semantic-ui\components\**" />
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="SampleConfiguration\Identities\user%40wirehome.com\Configuration.json"/>
+        <Content Include="SampleConfiguration\Identities\user%40wirehome.com\Configuration.json" />
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="SampleConfiguration\Identities\user%40wirehome.com\Readme.txt"/>
+        <None Include="SampleConfiguration\Identities\user%40wirehome.com\Readme.txt" />
         <None Include="wwwroot\app\icon.png">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
@@ -91,12 +91,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.ApplicationInsights.Web" Version="2.20.0"/>
-        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.2"/>
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.6" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Wirehome.Core\Wirehome.Core.csproj"/>
+        <ProjectReference Include="..\Wirehome.Core\Wirehome.Core.csproj" />
     </ItemGroup>
 
     <ItemGroup>
