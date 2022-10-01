@@ -9,9 +9,9 @@ namespace Wirehome.Core.Extensions
             return BitConverter.ToString(source.ToArray());
         }
 
-        public static string ToHexString(this ArraySegment<byte> source)
+        public static string ToHexString(this byte[] source)
         {
-            return BitConverter.ToString(source.Array, source.Offset, source.Count);
+            return BitConverter.ToString(source, 0, source.Length);
         }
 
         public static ArraySegment<TItem> AsArraySegment<TItem>(this TItem[] source)

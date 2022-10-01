@@ -1,12 +1,11 @@
-﻿using System;
-
-namespace Wirehome.Core.Hardware.I2C.Adapters
+﻿namespace Wirehome.Core.Hardware.I2C.Adapters
 {
     public interface II2CBusAdapter
     {
-        void Read(int deviceAddress, Span<byte> buffer);
-        void Write(int deviceAddress, ReadOnlySpan<byte> buffer);
+        int Read(int deviceAddress, byte[] buffer);
+        
+        int Write(int deviceAddress, byte[] buffer);
 
-        void WriteRead(int deviceAddress, ReadOnlySpan<byte> writeBuffer, Span<byte> readBuffer);
+        int WriteRead(int deviceAddress, byte[] writeBuffer, byte[] readBuffer);
     }
 }

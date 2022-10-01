@@ -20,7 +20,7 @@ public sealed class I2CController : Controller
     public byte[] GetBuffer(string hostId, int deviceAddress, int length)
     {
         var buffer = new byte[length];
-        _i2CBusService.Read(hostId, deviceAddress, new ArraySegment<byte>(buffer));
+        _i2CBusService.Read(hostId, deviceAddress, buffer);
         return buffer;
     }
 
@@ -30,7 +30,7 @@ public sealed class I2CController : Controller
     public byte[] GetBuffer(int deviceAddress, int length)
     {
         var buffer = new byte[length];
-        _i2CBusService.Read(string.Empty, deviceAddress, new ArraySegment<byte>(buffer));
+        _i2CBusService.Read(string.Empty, deviceAddress, buffer);
         return buffer;
     }
 
@@ -39,7 +39,7 @@ public sealed class I2CController : Controller
     [ApiExplorerSettings(GroupName = "v1")]
     public void PostBuffer(string hostId, int deviceAddress, [FromBody] byte[] buffer)
     {
-        _i2CBusService.Write(hostId, deviceAddress, new ArraySegment<byte>(buffer));
+        _i2CBusService.Write(hostId, deviceAddress, buffer);
     }
 
     [HttpPost]
@@ -47,6 +47,6 @@ public sealed class I2CController : Controller
     [ApiExplorerSettings(GroupName = "v1")]
     public void PostBuffer(int deviceAddress, [FromBody] byte[] buffer)
     {
-        _i2CBusService.Write(string.Empty, deviceAddress, new ArraySegment<byte>(buffer));
+        _i2CBusService.Write(string.Empty, deviceAddress, buffer);
     }
 }

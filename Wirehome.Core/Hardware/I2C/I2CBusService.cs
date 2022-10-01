@@ -19,14 +19,14 @@ namespace Wirehome.Core.Hardware.I2C
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void Read(string busId, int deviceAddress, ArraySegment<byte> buffer)
+        public int Read(string busId, int deviceAddress, byte[] buffer)
         {
             if (busId == null)
             {
                 throw new ArgumentNullException(nameof(busId));
             }
 
-            GetAdapter(busId).Read(deviceAddress, buffer);
+            return GetAdapter(busId).Read(deviceAddress, buffer);
         }
 
         public void RegisterAdapter(string busId, II2CBusAdapter adapter)
@@ -40,24 +40,24 @@ namespace Wirehome.Core.Hardware.I2C
             _logger.Log(LogLevel.Information, $"Registered I2C bus ID '{busId}'.");
         }
 
-        public void Write(string busId, int deviceAddress, ReadOnlySpan<byte> buffer)
+        public int Write(string busId, int deviceAddress, byte[] buffer)
         {
             if (busId == null)
             {
                 throw new ArgumentNullException(nameof(busId));
             }
 
-            GetAdapter(busId).Write(deviceAddress, buffer);
+            return GetAdapter(busId).Write(deviceAddress, buffer);
         }
 
-        public void WriteRead(string busId, int deviceAddress, ReadOnlySpan<byte> writeBuffer, ArraySegment<byte> readBuffer)
+        public int WriteRead(string busId, int deviceAddress, byte[] writeBuffer, byte[] readBuffer)
         {
             if (busId == null)
             {
                 throw new ArgumentNullException(nameof(busId));
             }
 
-            GetAdapter(busId).WriteRead(deviceAddress, writeBuffer, readBuffer);
+            return GetAdapter(busId).WriteRead(deviceAddress, writeBuffer, readBuffer);
         }
 
         protected override void OnStart()
