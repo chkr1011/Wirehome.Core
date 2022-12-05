@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
@@ -144,7 +145,7 @@ public sealed class MessageBusService : WirehomeCoreService
     protected override void OnStart()
     {
         var cancellationToken = _systemCancellationToken.Token;
-        ParallelTask.StartLongRunning(() => ProcessMessagesLoop(cancellationToken), cancellationToken, _logger);
+        ParallelTask.Start(() => ProcessMessagesLoop(cancellationToken), cancellationToken, _logger, TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness);
     }
 
     void ProcessMessagesLoop(CancellationToken cancellationToken)

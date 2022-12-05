@@ -222,7 +222,7 @@ namespace Wirehome.Core.Hardware.MQTT
             
             _mqttServer.InterceptingPublishAsync += e =>
             {
-                OnApplicationMessageReceived(e);
+                OnInterceptPublish(e);
                 return Task.CompletedTask;
             };
 
@@ -252,12 +252,37 @@ namespace Wirehome.Core.Hardware.MQTT
             _mqttServer.StartAsync().GetAwaiter().GetResult();
 
             _systemCancellationToken.Token.Register(() => { _mqttServer.StopAsync().GetAwaiter().GetResult(); });
-
-            ParallelTask.StartLongRunning(ProcessIncomingMqttMessages, _systemCancellationToken.Token, _logger);
+            
+            ParallelTask.Start(ProcessIncomingMqttMessages, _systemCancellationToken.Token, _logger, TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness);
         }
 
-        void OnApplicationMessageReceived(InterceptingPublishEventArgs eventArgs)
+        void OnInterceptPublish(InterceptingPublishEventArgs eventArgs)
         {
+            // Check if the message is blocked.
+            var blockedMessage = _options.BlockedMessages?.FirstOrDefault(b =>
+                MqttTopicFilterComparer.Compare(eventArgs.ApplicationMessage.Topic, b.Topic) == MqttTopicFilterCompareResult.IsMatch);
+
+            if (blockedMessage != null)
+            {
+                if (blockedMessage.Payload == null)
+                {
+                    // Any payload should be blocked.
+                    eventArgs.ProcessPublish = false;
+                    _logger.LogTrace($"Blocked MQTT message with topic '{eventArgs.ApplicationMessage.Topic}'");
+                    return;
+                }
+
+                var payload = eventArgs.ApplicationMessage.ConvertPayloadToString();
+                if (string.Equals(payload, blockedMessage.Payload, StringComparison.Ordinal))
+                {
+                    // Matching payload should be blocked.
+                    eventArgs.ProcessPublish = false;
+                    _logger.LogTrace($"Blocked MQTT message with topic '{eventArgs.ApplicationMessage.Topic}' and payload '{payload}'");
+                    return;
+                }
+            }
+
+            // The server should not process messages which were send by itself.
             if (string.Equals(eventArgs.ClientId, ServerClientId))
             {
                 return;

@@ -91,7 +91,7 @@ namespace Wirehome.Core.Components.History
             }
 
             ParallelTask.Start(() => TryProcessWorkItems(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
-            ParallelTask.Start(() => TryUpdateComponentStatusValues(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
+            ParallelTask.Start(() => TryUpdateComponentStatusValues(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger, TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness);
         }
 
         async Task TryProcessWorkItems(CancellationToken cancellationToken)
@@ -146,13 +146,13 @@ namespace Wirehome.Core.Components.History
             }
         }
 
-        async Task TryUpdateComponentStatusValues(CancellationToken cancellationToken)
+        void TryUpdateComponentStatusValues(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(_options.ComponentStatusPullInterval, cancellationToken).ConfigureAwait(false);
+                    Thread.Sleep(_options.ComponentStatusPullInterval);
 
                     foreach (var component in _componentRegistryService.GetComponents())
                     {

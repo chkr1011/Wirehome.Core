@@ -1,17 +1,18 @@
 ﻿using System.Collections.Generic;
 
-namespace Wirehome.Core.Hardware.MQTT
+namespace Wirehome.Core.Hardware.MQTT;
+
+public sealed class MqttServiceOptions
 {
-    public sealed class MqttServiceOptions
-    {
-        public const string Filename = "MqttServiceConfiguration.json";
+    public const string Filename = "MqttServiceConfiguration.json";
 
-        public List<string> BlockedClients { get; set; }
+    public List<string> BlockedClients { get; set; }
 
-        public bool EnableLogging { get; set; } = false;
+    public List<BlockedMqttMessage> BlockedMessages { get; set; }
 
-        public bool PersistRetainedMessages { get; set; } = true;
+    public bool EnableLogging { get; set; } = false;
 
-        public int ServerPort { get; set; } = 1883;
-    }
+    public bool PersistRetainedMessages { get; set; } = true;
+
+    public int ServerPort { get; set; } = 1883;
 }

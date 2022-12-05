@@ -148,7 +148,7 @@ public sealed class NotificationsService : WirehomeCoreService
             Load();
         }
 
-        ParallelTask.Start(() => RemoveNotificationsAsync(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
+        ParallelTask.Start(() => RemoveNotificationsAsync(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger, TaskCreationOptions.LongRunning);
     }
 
     void Load()
@@ -184,7 +184,7 @@ public sealed class NotificationsService : WirehomeCoreService
         });
     }
 
-    async Task RemoveNotificationsAsync(CancellationToken cancellationToken)
+    void RemoveNotificationsAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -213,7 +213,7 @@ public sealed class NotificationsService : WirehomeCoreService
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                Thread.Sleep(TimeSpan.FromSeconds(1));
             }
         }
         catch (OperationCanceledException)

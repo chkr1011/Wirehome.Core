@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
@@ -254,7 +255,7 @@ public sealed class SchedulerService : WirehomeCoreService
 
     protected override void OnStart()
     {
-        ParallelTask.StartLongRunning(ScheduleTasks, _systemCancellationToken.Token, _logger);
+        ParallelTask.Start(ScheduleTasks, _systemCancellationToken.Token, _logger, TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness);
     }
 
     void ScheduleTasks()

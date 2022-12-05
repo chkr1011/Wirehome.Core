@@ -38,17 +38,17 @@ namespace Wirehome.Core.Diagnostics
 
         protected override void OnStart()
         {
-            ParallelTask.Start(() => ResetOperationsPerSecondCountersAsync(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
+            ParallelTask.Start(() => ResetOperationsPerSecondCountersAsync(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger, TaskCreationOptions.LongRunning);
         }
 
-        async Task ResetOperationsPerSecondCountersAsync(CancellationToken cancellationToken)
+        void ResetOperationsPerSecondCountersAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
-
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                    
                     lock (_operationsPerSecondCounters)
                     {
                         foreach (var operationsPerSecondCounter in _operationsPerSecondCounters)
