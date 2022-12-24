@@ -1,17 +1,16 @@
 ﻿using System;
 
-namespace Wirehome.Core.Hardware.GPIO.Adapters
+namespace Wirehome.Core.Hardware.GPIO.Adapters;
+
+public interface IGpioAdapter
 {
-    public interface IGpioAdapter
-    {
-        event EventHandler<GpioAdapterStateChangedEventArgs> GpioStateChanged;
+    event EventHandler<GpioAdapterStateChangedEventArgs> GpioStateChanged;
 
-        void EnableInterrupt(int gpioId, GpioInterruptEdge edge);
+    void EnableInterrupt(int gpioId, GpioInterruptEdge edge);
 
-        GpioState ReadState(int gpioId);
+    GpioState ReadState(int gpioId);
 
-        void SetDirection(int gpioId, GpioDirection direction);
+    void SetDirection(int gpioId, GpioDirection direction);
 
-        void WriteState(int gpioId, GpioState state);
-    }
+    void WriteState(int gpioId, GpioState state);
 }

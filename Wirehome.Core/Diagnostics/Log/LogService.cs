@@ -10,10 +10,10 @@ namespace Wirehome.Core.Diagnostics.Log;
 public sealed class LogService : WirehomeCoreService
 {
     readonly LinkedList<LogEntry> _logEntries = new();
-    
+
     readonly LogServiceOptions _options;
     readonly SystemStatusService _systemStatusService;
-    
+
     int _errorsCount;
     int _informationCount;
     int _warningsCount;
@@ -23,20 +23,20 @@ public sealed class LogService : WirehomeCoreService
         _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
 
         Sender = new LogSender(mqttService);
-        
+
         if (storageService is null)
         {
             throw new ArgumentNullException(nameof(storageService));
         }
-        
+
         if (!storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, LogServiceOptions.Filename))
         {
             _options = new LogServiceOptions();
         }
     }
-    
+
     public LogSender Sender { get; }
-    
+
     public void Clear()
     {
         lock (_logEntries)
@@ -101,9 +101,9 @@ public sealed class LogService : WirehomeCoreService
             Message = message,
             Exception = exception?.ToString()
         };
-        
+
         Sender.TrySend(newLogEntry);
-        
+
         // Debug level is not tracked in history.
         if (logLevel < LogLevel.Information)
         {
@@ -150,7 +150,7 @@ public sealed class LogService : WirehomeCoreService
             UpdateSystemStatus();
         }
     }
-    
+
     void UpdateSystemStatus()
     {
         _systemStatusService.Set("log.information_count", _informationCount);

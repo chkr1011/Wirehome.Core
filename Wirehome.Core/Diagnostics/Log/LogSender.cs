@@ -9,18 +9,18 @@ namespace Wirehome.Core.Diagnostics.Log;
 
 public sealed class LogSender
 {
-    readonly Socket _udpSender = new(SocketType.Dgram, ProtocolType.Udp);
     readonly MemoryStream _buffer = new();
     readonly MqttService _mqttService;
+    readonly Socket _udpSender = new(SocketType.Dgram, ProtocolType.Udp);
 
     public LogSender(MqttService mqttService)
     {
         _mqttService = mqttService ?? throw new ArgumentNullException(nameof(mqttService));
     }
 
-    public IPEndPoint UdpReceiverEndPoint { get; set; } = new(IPAddress.Parse("192.168.1.120"), 55521);
-
     public bool PublishToMqtt { get; set; }
+
+    public IPEndPoint UdpReceiverEndPoint { get; set; } = new(IPAddress.Parse("192.168.1.120"), 55521);
 
     public void TrySend(LogEntry logEntry)
     {
@@ -41,20 +41,24 @@ public sealed class LogSender
             {
                 _buffer.Seek(0, SeekOrigin.Begin);
                 _buffer.SetLength(0);
-                
+
                 MessagePackSerializer.Serialize(_buffer, logEntry);
                 var buffer = _buffer.GetBuffer();
                 var bufferLength = (int)_buffer.Length;
-                
+
                 if (logReceiverEndpoint != null)
                 {
-                   _udpSender.SendTo(buffer, 0, bufferLength, SocketFlags.None, logReceiverEndpoint);
+                    _udpSender.SendTo(buffer, 0, bufferLength, SocketFlags.None, logReceiverEndpoint);
                 }
 
                 if (PublishToMqtt)
                 {
                     var mqttPayload = new ArraySegment<byte>(buffer, 0, bufferLength).ToArray();
-                    _mqttService.Publish(new MqttPublishParameters { Topic = "wirehome/log", Payload = mqttPayload});    
+                    _mqttService.Publish(new MqttPublishParameters
+                    {
+                        Topic = "wirehome/log",
+                        Payload = mqttPayload
+                    });
                 }
             }
         }

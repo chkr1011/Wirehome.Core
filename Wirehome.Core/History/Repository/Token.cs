@@ -1,6 +1,5 @@
-﻿namespace Wirehome.Core.History.Repository
+﻿namespace Wirehome.Core.History.Repository;
+
+public abstract class Token
 {
-    public abstract class Token
-    {
-    }
 }

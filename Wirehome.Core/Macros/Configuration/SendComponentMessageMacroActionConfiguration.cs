@@ -1,11 +1,10 @@
 ﻿using System.Collections.Generic;
 
-namespace Wirehome.Core.Macros.Configuration
-{
-    public class SendComponentMessageMacroActionConfiguration : MacroActionConfiguration
-    {
-        public string ComponentUid { get; set; }
+namespace Wirehome.Core.Macros.Configuration;
 
-        public IDictionary<object, object> Message { get; set; }
-    }
+public class SendComponentMessageMacroActionConfiguration : MacroActionConfiguration
+{
+    public string ComponentUid { get; set; }
+
+    public IDictionary<object, object> Message { get; set; }
 }

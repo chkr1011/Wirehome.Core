@@ -1,8 +1,7 @@
-﻿namespace Wirehome.Core.Constants
+﻿namespace Wirehome.Core.Constants;
+
+public static class NotificationResourceUids
 {
-    public static class NotificationResourceUids
-    {
-        public const string Booted = "notifications.booted";
-        public const string RebootInitiated = "notifications.reboot_initiated";
-    }
+    public const string Booted = "notifications.booted";
+    public const string RebootInitiated = "notifications.reboot_initiated";
 }

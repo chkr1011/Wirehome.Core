@@ -1,19 +1,18 @@
-﻿using IronPython.Runtime;
-using System;
+﻿using System;
+using IronPython.Runtime;
 using Wirehome.Core.Constants;
 
-namespace Wirehome.Core.Components.Adapters
-{
-    public sealed class EmptyComponentAdapter : IComponentAdapter
-    {
-        public Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
+namespace Wirehome.Core.Components.Adapters;
 
-        public PythonDictionary ProcessMessage(PythonDictionary parameters)
+public sealed class EmptyComponentAdapter : IComponentAdapter
+{
+    public Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
+
+    public PythonDictionary ProcessMessage(PythonDictionary parameters)
+    {
+        return new PythonDictionary
         {
-            return new PythonDictionary
-            {
-                ["type"] = WirehomeMessageType.NotSupportedException
-            };
-        }
+            ["type"] = WirehomeMessageType.NotSupportedException
+        };
     }
 }

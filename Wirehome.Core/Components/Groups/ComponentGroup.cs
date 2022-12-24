@@ -3,164 +3,163 @@ using System.Collections.Generic;
 using System.Threading;
 using Wirehome.Core.Foundation;
 
-namespace Wirehome.Core.Components.Groups
+namespace Wirehome.Core.Components.Groups;
+
+public sealed class ComponentGroup
 {
-    public sealed class ComponentGroup
+    readonly Dictionary<string, object> _settings = new();
+    readonly Dictionary<string, object> _status = new();
+    readonly HashSet<string> _tags = new();
+
+    long _hash;
+
+    public ComponentGroup(string uid)
     {
-        readonly Dictionary<string, object> _status = new();
-        readonly Dictionary<string, object> _settings = new();
-        readonly HashSet<string> _tags = new();
+        Uid = uid ?? throw new ArgumentNullException(nameof(uid));
+    }
 
-        long _hash;
+    public ThreadSafeDictionary<string, ComponentGroupAssociation> Components { get; } = new();
 
-        public ComponentGroup(string uid)
+    public long Hash => Interlocked.Read(ref _hash);
+
+    public ThreadSafeDictionary<string, ComponentGroupAssociation> Macros { get; } = new();
+
+    public string Uid { get; }
+
+    public Dictionary<string, object> GetSettings()
+    {
+        lock (_settings)
         {
-            Uid = uid ?? throw new ArgumentNullException(nameof(uid));
+            // Create a copy of the internal dictionary because the result only reflects the current
+            // status and will not change when the real status is changing. Also changes to that dictionary
+            // should not affect the internal state.
+            return new Dictionary<string, object>(_settings);
         }
+    }
 
-        public string Uid { get; }
-
-        public long Hash => Interlocked.Read(ref _hash);
-
-        public bool TryGetStatusValue(string uid, out object value)
+    public Dictionary<string, object> GetStatus()
+    {
+        lock (_status)
         {
-            lock (_status)
-            {
-                return _status.TryGetValue(uid, out value);
-            }
+            // Create a copy of the internal dictionary because the result only reflects the current
+            // status and will not change when the real status is changing. Also changes to that dictionary
+            // should not affect the internal state.
+            return new Dictionary<string, object>(_status);
         }
+    }
 
-        public SetValueResult SetStatusValue(string uid, object value)
+    public List<string> GetTags()
+    {
+        lock (_tags)
         {
-            lock (_status)
-            {
-                var isExistingValue = _status.TryGetValue(uid, out var oldValue);
+            return new List<string>(_tags);
+        }
+    }
 
-                _status[uid] = value;
+    public bool HasTag(string tag)
+    {
+        lock (_tags)
+        {
+            return _tags.Contains(tag);
+        }
+    }
+
+    public bool RemoveSetting(string uid, out object oldValue)
+    {
+        lock (_settings)
+        {
+            if (_settings.TryGetValue(uid, out oldValue))
+            {
+                _settings.Remove(uid);
                 IncrementHash();
 
-                return new SetValueResult
-                {
-                    OldValue = oldValue,
-                    IsNewValue = !isExistingValue
-                };
+                return true;
             }
+
+            return false;
         }
+    }
 
-        public Dictionary<string, object> GetStatus()
+    public bool RemoveTag(string tag)
+    {
+        lock (_tags)
         {
-            lock (_status)
+            if (_tags.Remove(tag))
             {
-                // Create a copy of the internal dictionary because the result only reflects the current
-                // status and will not change when the real status is changing. Also changes to that dictionary
-                // should not affect the internal state.
-                return new Dictionary<string, object>(_status);
-            }
-        }
-
-        public bool TryGetSetting(string uid, out object value)
-        {
-            lock (_settings)
-            {
-                return _settings.TryGetValue(uid, out value);
-            }
-        }
-
-        public SetValueResult SetSetting(string uid, object value)
-        {
-            lock (_settings)
-            {
-                var isExistingValue = _settings.TryGetValue(uid, out var oldValue);
-
-                _settings[uid] = value;
                 IncrementHash();
-
-                return new SetValueResult
-                {
-                    OldValue = oldValue,
-                    IsNewValue = !isExistingValue
-                };
+                return true;
             }
-        }
 
-        public bool RemoveSetting(string uid, out object oldValue)
+            return false;
+        }
+    }
+
+    public SetValueResult SetSetting(string uid, object value)
+    {
+        lock (_settings)
         {
-            lock (_settings)
+            var isExistingValue = _settings.TryGetValue(uid, out var oldValue);
+
+            _settings[uid] = value;
+            IncrementHash();
+
+            return new SetValueResult
             {
-                if (_settings.TryGetValue(uid, out oldValue))
-                {
-                    _settings.Remove(uid);
-                    IncrementHash();
-
-                    return true;
-                }
-
-                return false;
-            }
+                OldValue = oldValue,
+                IsNewValue = !isExistingValue
+            };
         }
+    }
 
-        public Dictionary<string, object> GetSettings()
+    public SetValueResult SetStatusValue(string uid, object value)
+    {
+        lock (_status)
         {
-            lock (_settings)
+            var isExistingValue = _status.TryGetValue(uid, out var oldValue);
+
+            _status[uid] = value;
+            IncrementHash();
+
+            return new SetValueResult
             {
-                // Create a copy of the internal dictionary because the result only reflects the current
-                // status and will not change when the real status is changing. Also changes to that dictionary
-                // should not affect the internal state.
-                return new Dictionary<string, object>(_settings);
-            }
+                OldValue = oldValue,
+                IsNewValue = !isExistingValue
+            };
         }
+    }
 
-        public List<string> GetTags()
+    public bool SetTag(string tag)
+    {
+        lock (_tags)
         {
-            lock (_tags)
+            if (_tags.Add(tag))
             {
-                return new List<string>(_tags);
+                IncrementHash();
+                return true;
             }
-        }
 
-        public bool SetTag(string tag)
+            return false;
+        }
+    }
+
+    public bool TryGetSetting(string uid, out object value)
+    {
+        lock (_settings)
         {
-            lock (_tags)
-            {
-                if (_tags.Add(tag))
-                {
-                    IncrementHash();
-                    return true;
-                }
-
-                return false;
-            }
+            return _settings.TryGetValue(uid, out value);
         }
+    }
 
-        public bool RemoveTag(string tag)
+    public bool TryGetStatusValue(string uid, out object value)
+    {
+        lock (_status)
         {
-            lock (_tags)
-            {
-                if (_tags.Remove(tag))
-                {
-                    IncrementHash();
-                    return true;
-                }
-
-                return false;
-            }
+            return _status.TryGetValue(uid, out value);
         }
+    }
 
-        public bool HasTag(string tag)
-        {
-            lock (_tags)
-            {
-                return _tags.Contains(tag);
-            }
-        }
-
-        public ThreadSafeDictionary<string, ComponentGroupAssociation> Components { get; } = new();
-
-        public ThreadSafeDictionary<string, ComponentGroupAssociation> Macros { get; } = new();
-
-        void IncrementHash()
-        {
-            Interlocked.Increment(ref _hash);
-        }
+    void IncrementHash()
+    {
+        Interlocked.Increment(ref _hash);
     }
 }

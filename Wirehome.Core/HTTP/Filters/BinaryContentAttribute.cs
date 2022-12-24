@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Wirehome.Core.HTTP.Filters
+namespace Wirehome.Core.HTTP.Filters;
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class BinaryContentAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-    public sealed class BinaryContentAttribute : Attribute
-    {
-    }
 }

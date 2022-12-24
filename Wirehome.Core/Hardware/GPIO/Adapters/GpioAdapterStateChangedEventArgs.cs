@@ -1,13 +1,12 @@
 ﻿using System;
 
-namespace Wirehome.Core.Hardware.GPIO.Adapters
+namespace Wirehome.Core.Hardware.GPIO.Adapters;
+
+public class GpioAdapterStateChangedEventArgs : EventArgs
 {
-    public class GpioAdapterStateChangedEventArgs : EventArgs
-    {
-        public int GpioId { get; set; }
+    public int GpioId { get; set; }
 
-        public GpioState NewState { get; set; }
+    public GpioState NewState { get; set; }
 
-        public GpioState? OldState { get; set; }
-    }
+    public GpioState? OldState { get; set; }
 }

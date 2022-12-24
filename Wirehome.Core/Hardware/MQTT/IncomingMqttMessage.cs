@@ -10,7 +10,7 @@ public sealed class IncomingMqttMessage
         ApplicationMessage = applicationMessage;
     }
 
-    public string ClientId { get; }
-        
     public MqttApplicationMessage ApplicationMessage { get; }
+
+    public string ClientId { get; }
 }

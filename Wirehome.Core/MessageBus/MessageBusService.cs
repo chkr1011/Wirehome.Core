@@ -22,7 +22,7 @@ public sealed class MessageBusService : WirehomeCoreService
     readonly ILogger _logger;
     readonly MessageBusMessageHistory _messageHistory = new();
     readonly BlockingCollection<MessageBusMessage> _messageQueue = new();
-    
+
     readonly OperationsPerSecondCounter _processingRateCounter;
     readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new();
 
@@ -44,7 +44,7 @@ public sealed class MessageBusService : WirehomeCoreService
         {
             throw new ArgumentNullException(nameof(storageService));
         }
-        
+
         if (diagnosticsService == null)
         {
             throw new ArgumentNullException(nameof(diagnosticsService));

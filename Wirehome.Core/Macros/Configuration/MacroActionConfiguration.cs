@@ -1,6 +1,5 @@
-﻿namespace Wirehome.Core.Macros.Configuration
+﻿namespace Wirehome.Core.Macros.Configuration;
+
+public class MacroActionConfiguration
 {
-    public class MacroActionConfiguration
-    {
-    }
 }

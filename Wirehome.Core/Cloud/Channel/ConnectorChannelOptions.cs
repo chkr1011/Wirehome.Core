@@ -1,7 +1,6 @@
-﻿namespace Wirehome.Core.Cloud.Channel
+﻿namespace Wirehome.Core.Cloud.Channel;
+
+public class ConnectorChannelOptions
 {
-    public class ConnectorChannelOptions
-    {
-        public bool UseCompression { get; set; }
-    }
+    public bool UseCompression { get; set; }
 }

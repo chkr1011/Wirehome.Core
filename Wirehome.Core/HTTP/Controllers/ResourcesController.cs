@@ -39,7 +39,7 @@ public sealed class ResourcesController : Controller
     {
         return _resourceService.GetResourceDefinition(uid);
     }
-    
+
     [HttpGet]
     [Route("api/v1/resources/uids")]
     [ApiExplorerSettings(GroupName = "v1")]

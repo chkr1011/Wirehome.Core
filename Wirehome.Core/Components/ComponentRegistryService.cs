@@ -539,7 +539,7 @@ public sealed class ComponentRegistryService : WirehomeCoreService
         {
             return;
         }
-        
+
         var statusChangingEventArgs = new ComponentStatusChangingEventArgs
         {
             Timestamp = DateTime.Now,

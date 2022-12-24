@@ -5,47 +5,58 @@
 using System;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Diagnostics
+namespace Wirehome.Core.Diagnostics;
+
+public class SystemStatusPythonProxy : IInjectedPythonProxy
 {
-    public class SystemStatusPythonProxy : IInjectedPythonProxy
+    public delegate object ValueProvider();
+
+    readonly SystemStatusService _systemStatusService;
+
+    public SystemStatusPythonProxy(SystemStatusService systemInformationService)
     {
-        readonly SystemStatusService _systemStatusService;
+        _systemStatusService = systemInformationService ?? throw new ArgumentNullException(nameof(systemInformationService));
+    }
 
-        public SystemStatusPythonProxy(SystemStatusService systemInformationService)
+    public string ModuleName { get; } = "system_status";
+
+    public void delete(string key)
+    {
+        if (key == null)
         {
-            _systemStatusService = systemInformationService ?? throw new ArgumentNullException(nameof(systemInformationService));
+            throw new ArgumentNullException(nameof(key));
         }
 
-        public delegate object ValueProvider();
+        _systemStatusService.Delete(key);
+    }
 
-        public string ModuleName { get; } = "system_status";
-
-        public void set(string key, object value)
+    public object get(string key)
+    {
+        if (key == null)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-
-            _systemStatusService.Set(key, value);
+            throw new ArgumentNullException(nameof(key));
         }
 
-        public void set(string key, ValueProvider valueProvider)
-        {
-            if (key == null) throw new ArgumentNullException(nameof(key));
+        return _systemStatusService.Get(key);
+    }
 
-            _systemStatusService.Set(key, valueProvider);
+    public void set(string key, object value)
+    {
+        if (key == null)
+        {
+            throw new ArgumentNullException(nameof(key));
         }
 
-        public object get(string key)
-        {
-            if (key == null) throw new ArgumentNullException(nameof(key));
+        _systemStatusService.Set(key, value);
+    }
 
-            return _systemStatusService.Get(key);
+    public void set(string key, ValueProvider valueProvider)
+    {
+        if (key == null)
+        {
+            throw new ArgumentNullException(nameof(key));
         }
 
-        public void delete(string key)
-        {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-
-            _systemStatusService.Delete(key);
-        }
+        _systemStatusService.Set(key, valueProvider);
     }
 }

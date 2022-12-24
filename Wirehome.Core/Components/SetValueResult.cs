@@ -1,9 +1,7 @@
-﻿namespace Wirehome.Core.Components
-{
-    public sealed class SetValueResult
-    {
-        public object OldValue { get; set; }
+﻿namespace Wirehome.Core.Components;
 
-        public bool IsNewValue { get; set; }
-    }
+public sealed class SetValueResult
+{
+    public bool IsNewValue { get; set; }
+    public object OldValue { get; set; }
 }

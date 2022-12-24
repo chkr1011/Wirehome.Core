@@ -1,10 +1,9 @@
-﻿namespace Wirehome.Core.Hardware.GPIO
+﻿namespace Wirehome.Core.Hardware.GPIO;
+
+public enum GpioInterruptEdge
 {
-    public enum GpioInterruptEdge
-    {
-        None,
-        Falling,
-        Rising,
-        Both
-    }
+    None,
+    Falling,
+    Rising,
+    Both
 }

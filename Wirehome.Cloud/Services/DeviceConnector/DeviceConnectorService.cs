@@ -156,7 +156,7 @@ public class DeviceConnectorService
 
         try
         {
-            (var username, var password) = ParseBasicAuthenticationHeader(httpContext.Request);
+            var (username, password) = ParseBasicAuthenticationHeader(httpContext.Request);
             if (username != null)
             {
                 await _authorizationService.AuthorizeUser(httpContext, username, password).ConfigureAwait(false);

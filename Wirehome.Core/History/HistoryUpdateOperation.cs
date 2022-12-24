@@ -1,17 +1,15 @@
 ﻿using System;
 
-namespace Wirehome.Core.History
+namespace Wirehome.Core.History;
+
+public class HistoryUpdateOperation
 {
-    public class HistoryUpdateOperation
-    {
-        public string Path { get; set; }
+    public TimeSpan OldValueTimeToLive { get; set; }
+    public string Path { get; set; }
 
-        public DateTime Timestamp { get; set; }
+    public DateTime Timestamp { get; set; }
 
-        public object Value { get; set; }
+    public object Value { get; set; }
 
-        public TimeSpan OldValueTimeToLive { get; set; }
-
-        public HistoryValueFormatterOptions ValueFormatterOptions { get; set; }
-    }
+    public HistoryValueFormatterOptions ValueFormatterOptions { get; set; }
 }

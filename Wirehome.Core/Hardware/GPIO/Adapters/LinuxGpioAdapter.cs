@@ -32,11 +32,17 @@ public sealed class LinuxGpioAdapter : IGpioAdapter
     {
         // Do not use tasks because polling must be fast as possible and task library overhead (continuation,
         // cancellation, async/await, thread pool) is not needed.
-        _workerThread = new Thread(PollGpios) { IsBackground = true };
+        _workerThread = new Thread(PollGpios)
+        {
+            IsBackground = true
+        };
 
         _workerThread.Start();
 
-        _eventThread = new Thread(FireEvents) { IsBackground = true };
+        _eventThread = new Thread(FireEvents)
+        {
+            IsBackground = true
+        };
 
         _eventThread.Start();
 
@@ -78,7 +84,7 @@ public sealed class LinuxGpioAdapter : IGpioAdapter
         }
 
         gpio.SetDirection(direction);
-        
+
         _logger.LogInformation($"GPIO {gpioId} direction set to '{direction}'.");
     }
 
@@ -150,7 +156,12 @@ public sealed class LinuxGpioAdapter : IGpioAdapter
                         continue;
                     }
 
-                    _pendingEvents.Add(new GpioAdapterStateChangedEventArgs { GpioId = interruptMonitor.Key, OldState = oldState, NewState = newState });
+                    _pendingEvents.Add(new GpioAdapterStateChangedEventArgs
+                    {
+                        GpioId = interruptMonitor.Key,
+                        OldState = oldState,
+                        NewState = newState
+                    });
                 }
             }
             catch (OperationCanceledException)

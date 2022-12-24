@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using Wirehome.Core.Components;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
@@ -11,253 +11,301 @@ using Wirehome.Core.Macros.Exceptions;
 using Wirehome.Core.MessageBus;
 using Wirehome.Core.Storage;
 
-namespace Wirehome.Core.Macros
+namespace Wirehome.Core.Macros;
+
+public sealed class MacroRegistryService : WirehomeCoreService
 {
-    public sealed class MacroRegistryService : WirehomeCoreService
+    const string MacrosDirectory = "Macros";
+    readonly ComponentRegistryService _componentRegistryService;
+    readonly ILogger _logger;
+
+    readonly Dictionary<string, MacroInstance> _macros = new();
+    readonly MessageBusService _messageBusService;
+
+    readonly MacroRegistryMessageBusWrapper _messageBusWrapper;
+    readonly StorageService _storageService;
+
+    public MacroRegistryService(StorageService storageService,
+        MessageBusService messageBusService,
+        SystemStatusService systemStatusService,
+        ComponentRegistryService componentRegistryService,
+        ILogger<MacroRegistryService> logger)
     {
-        const string MacrosDirectory = "Macros";
+        _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+        _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
+        _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        readonly Dictionary<string, MacroInstance> _macros = new();
-
-        readonly MacroRegistryMessageBusWrapper _messageBusWrapper;
-        readonly StorageService _storageService;
-        readonly MessageBusService _messageBusService;
-        readonly ComponentRegistryService _componentRegistryService;
-        readonly ILogger _logger;
-
-        public MacroRegistryService(
-            StorageService storageService,
-            MessageBusService messageBusService,
-            SystemStatusService systemStatusService,
-            ComponentRegistryService componentRegistryService,
-            ILogger<MacroRegistryService> logger)
+        if (systemStatusService == null)
         {
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _messageBusService = messageBusService ?? throw new ArgumentNullException(nameof(messageBusService));
-            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
-            systemStatusService.Set("macro_registry.count", () => _macros.Count);
-
-            _messageBusWrapper = new MacroRegistryMessageBusWrapper(_messageBusService);
+            throw new ArgumentNullException(nameof(systemStatusService));
         }
 
-        public List<string> GetMacroUids()
+        systemStatusService.Set("macro_registry.count", () => _macros.Count);
+
+        _messageBusWrapper = new MacroRegistryMessageBusWrapper(_messageBusService);
+    }
+
+    public void DeleteMacro(string uid)
+    {
+        if (uid == null)
         {
-            return _storageService.EnumerateDirectories("*", MacrosDirectory);
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public MacroInstance GetMacro(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+        _storageService.DeletePath(MacrosDirectory, uid);
+    }
 
-            lock (_macros)
+    public IDictionary<object, object> ExecuteMacro(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        MacroInstance macroInstance;
+        lock (_macros)
+        {
+            if (!_macros.TryGetValue(uid, out macroInstance))
             {
-                if (!_macros.TryGetValue(uid, out var macro))
+                return new Dictionary<object, object>
                 {
-                    throw new MacroNotFoundException(uid);
-                }
-
-                return macro;
+                    ["type"] = WirehomeMessageType.ParameterInvalidException
+                };
             }
         }
 
-        public void WriteMacroConfiguration(string uid, MacroConfiguration configuration)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+        var result = macroInstance.TryExecute();
+        _messageBusWrapper.PublishMacroExecutedBusMessage(uid, result);
+        return result;
+    }
 
-            _storageService.WriteSerializedValue(configuration, MacrosDirectory, uid, DefaultFileNames.Configuration);
+    public MacroInstance GetMacro(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public MacroConfiguration ReadMacroConfiguration(string uid)
+        lock (_macros)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            if (!_macros.TryGetValue(uid, out var macro))
+            {
+                throw new MacroNotFoundException(uid);
+            }
 
+            return macro;
+        }
+    }
+
+    public object GetMacroSetting(string macroUid, string settingUid, object defaultValue = null)
+    {
+        if (macroUid == null)
+        {
+            throw new ArgumentNullException(nameof(macroUid));
+        }
+
+        if (settingUid == null)
+        {
+            throw new ArgumentNullException(nameof(settingUid));
+        }
+
+        var macro = GetMacro(macroUid);
+
+        if (macro.Settings.TryGetValue(settingUid, out var value))
+        {
+            return value;
+        }
+
+        return defaultValue;
+    }
+
+    public List<string> GetMacroUids()
+    {
+        return _storageService.EnumerateDirectories("*", MacrosDirectory);
+    }
+
+    public void InitializeMacro(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        try
+        {
             if (!_storageService.TryReadSerializedValue(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
             {
                 throw new MacroNotFoundException(uid);
             }
 
-            return configuration;
-        }
-
-        public void DeleteMacro(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            _storageService.DeletePath(MacrosDirectory, uid);
-        }
-
-        public object GetMacroSetting(string macroUid, string settingUid, object defaultValue = null)
-        {
-            if (macroUid == null) throw new ArgumentNullException(nameof(macroUid));
-            if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
-
-            var macro = GetMacro(macroUid);
-
-            if (macro.Settings.TryGetValue(settingUid, out var value))
+            if (!configuration.IsEnabled)
             {
-                return value;
-            }
-
-            return defaultValue;
-        }
-
-        public void SetMacroSetting(string macroUid, string settingUid, object value)
-        {
-            if (macroUid == null) throw new ArgumentNullException(nameof(macroUid));
-            if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
-
-            var macro = GetMacro(macroUid);
-            macro.Settings.TryGetValue(settingUid, out var oldValue);
-
-            if (Equals(oldValue, value))
-            {
+                _logger.LogInformation($"Macro '{uid}' not initialized because it is disabled.");
                 return;
             }
 
-            macro.Settings[settingUid] = value;
-
-            _storageService.WriteSerializedValue(macro.Settings, MacrosDirectory, macro.Uid, DefaultFileNames.Settings);
-            _messageBusWrapper.PublishSettingChangedBusMessage(macroUid, settingUid, oldValue, value);
-        }
-
-        public object RemoveMacroSetting(string macroUid, string settingUid)
-        {
-            if (macroUid == null) throw new ArgumentNullException(nameof(macroUid));
-            if (settingUid == null) throw new ArgumentNullException(nameof(settingUid));
-
-            var macro = GetMacro(macroUid);
-            macro.Settings.Remove(settingUid, out var value);
-
-            _storageService.WriteSerializedValue(macro.Settings, MacrosDirectory, macroUid, DefaultFileNames.Settings);
-            _messageBusWrapper.PublishSettingRemovedBusMessage(macroUid, settingUid, value);
-
-            return value;
-        }
-
-        public void TryInitializeMacro(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            try
+            var actions = new List<MacroActionConfiguration>();
+            foreach (var actionConfiguration in configuration.Actions)
             {
-                InitializeMacro(uid);
+                actions.Add(ParseActionConfiguration(actionConfiguration));
             }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, $"Error while initializing macro '{uid}'.");
-            }
-        }
 
-        public void InitializeMacro(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+            var macroInstance = new MacroInstance(uid, actions, null, _componentRegistryService, _logger);
+            macroInstance.Initialize();
 
-            try
-            {
-                if (!_storageService.TryReadSerializedValue(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
-                {
-                    throw new MacroNotFoundException(uid);
-                }
-
-                if (!configuration.IsEnabled)
-                {
-                    _logger.LogInformation($"Macro '{uid}' not initialized because it is disabled.");
-                    return;
-                }
-
-                var actions = new List<MacroActionConfiguration>();
-                foreach (var actionConfiguration in configuration.Actions)
-                {
-                    actions.Add(ParseActionConfiguration(actionConfiguration));
-                }
-
-                var macroInstance = new MacroInstance(uid, actions, null, _componentRegistryService, _logger);
-                macroInstance.Initialize();
-
-                lock (_macros)
-                {
-                    if (_macros.TryGetValue(uid, out var existingMacro))
-                    {
-                        existingMacro.Destroy();
-                    }
-
-                    _macros[uid] = macroInstance;
-                }
-
-                _logger.LogInformation($"Macro '{uid}' initialized successfully.");
-            }
-            catch
-            {
-                lock (_macros)
-                {
-                    _macros.Remove(uid, out _);
-                }
-
-                throw;
-            }
-        }
-
-        public IDictionary<object, object> ExecuteMacro(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            MacroInstance macroInstance;
             lock (_macros)
             {
-                if (!_macros.TryGetValue(uid, out macroInstance))
+                if (_macros.TryGetValue(uid, out var existingMacro))
                 {
-                    return new Dictionary<object, object>
-                    {
-                        ["type"] = WirehomeMessageType.ParameterInvalidException
-                    };
+                    existingMacro.Destroy();
                 }
+
+                _macros[uid] = macroInstance;
             }
 
-            var result = macroInstance.TryExecute();
-            _messageBusWrapper.PublishMacroExecutedBusMessage(uid, result);
-            return result;
+            _logger.LogInformation($"Macro '{uid}' initialized successfully.");
         }
-
-        protected override void OnStart()
+        catch
         {
-            foreach (var macroUid in GetMacroUids())
+            lock (_macros)
             {
-                TryInitializeMacro(macroUid);
+                _macros.Remove(uid, out _);
             }
 
-            AttachToMessageBus();
+            throw;
         }
-        
-        void AttachToMessageBus()
+    }
+
+    public MacroConfiguration ReadMacroConfiguration(string uid)
+    {
+        if (uid == null)
         {
-            var filter = new Dictionary<object, object>
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        if (!_storageService.TryReadSerializedValue(out MacroConfiguration configuration, MacrosDirectory, uid, DefaultFileNames.Configuration))
+        {
+            throw new MacroNotFoundException(uid);
+        }
+
+        return configuration;
+    }
+
+    public object RemoveMacroSetting(string macroUid, string settingUid)
+    {
+        if (macroUid == null)
+        {
+            throw new ArgumentNullException(nameof(macroUid));
+        }
+
+        if (settingUid == null)
+        {
+            throw new ArgumentNullException(nameof(settingUid));
+        }
+
+        var macro = GetMacro(macroUid);
+        macro.Settings.Remove(settingUid, out var value);
+
+        _storageService.WriteSerializedValue(macro.Settings, MacrosDirectory, macroUid, DefaultFileNames.Settings);
+        _messageBusWrapper.PublishSettingRemovedBusMessage(macroUid, settingUid, value);
+
+        return value;
+    }
+
+    public void SetMacroSetting(string macroUid, string settingUid, object value)
+    {
+        if (macroUid == null)
+        {
+            throw new ArgumentNullException(nameof(macroUid));
+        }
+
+        if (settingUid == null)
+        {
+            throw new ArgumentNullException(nameof(settingUid));
+        }
+
+        var macro = GetMacro(macroUid);
+        macro.Settings.TryGetValue(settingUid, out var oldValue);
+
+        if (Equals(oldValue, value))
+        {
+            return;
+        }
+
+        macro.Settings[settingUid] = value;
+
+        _storageService.WriteSerializedValue(macro.Settings, MacrosDirectory, macro.Uid, DefaultFileNames.Settings);
+        _messageBusWrapper.PublishSettingChangedBusMessage(macroUid, settingUid, oldValue, value);
+    }
+
+    public void TryInitializeMacro(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        try
+        {
+            InitializeMacro(uid);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, $"Error while initializing macro '{uid}'.");
+        }
+    }
+
+    public void WriteMacroConfiguration(string uid, MacroConfiguration configuration)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        if (configuration == null)
+        {
+            throw new ArgumentNullException(nameof(configuration));
+        }
+
+        _storageService.WriteSerializedValue(configuration, MacrosDirectory, uid, DefaultFileNames.Configuration);
+    }
+
+    protected override void OnStart()
+    {
+        foreach (var macroUid in GetMacroUids())
+        {
+            TryInitializeMacro(macroUid);
+        }
+
+        AttachToMessageBus();
+    }
+
+    void AttachToMessageBus()
+    {
+        var filter = new Dictionary<object, object>
+        {
+            ["type"] = "macro_registry.execute"
+        };
+
+        _messageBusService.Subscribe("macro_registry.execute", filter, OnExecuteMacroBusMessage);
+    }
+
+    void OnExecuteMacroBusMessage(IDictionary<object, object> busMessage)
+    {
+    }
+
+    MacroActionConfiguration ParseActionConfiguration(JObject actionConfiguration)
+    {
+        if (actionConfiguration["type"].Value<string>() == "send_component_message")
+        {
+            return new SendComponentMessageMacroActionConfiguration
             {
-                ["type"] = "macro_registry.execute"
+                ComponentUid = actionConfiguration["component_uid"].Value<string>(),
+                Message = actionConfiguration["message"].ToObject<IDictionary<object, object>>()
             };
-
-            _messageBusService.Subscribe("macro_registry.execute", filter, OnExecuteMacroBusMessage);
         }
 
-        MacroActionConfiguration ParseActionConfiguration(JObject actionConfiguration)
-        {
-            if (actionConfiguration["type"].Value<string>() == "send_component_message")
-            {
-                return new SendComponentMessageMacroActionConfiguration
-                {
-                    ComponentUid = actionConfiguration["component_uid"].Value<string>(),
-                    Message = actionConfiguration["message"].ToObject<IDictionary<object, object>>()
-                };
-            }
-
-            throw new NotSupportedException("Macro action type not supported.");
-        }
-
-        void OnExecuteMacroBusMessage(IDictionary<object, object> busMessage)
-        {
-        }
+        throw new NotSupportedException("Macro action type not supported.");
     }
 }

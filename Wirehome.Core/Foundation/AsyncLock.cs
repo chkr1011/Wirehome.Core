@@ -2,40 +2,39 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Wirehome.Core.Foundation
+namespace Wirehome.Core.Foundation;
+
+public sealed class AsyncLock : IDisposable
 {
-    public sealed class AsyncLock : IDisposable
+    readonly SemaphoreSlim _semaphore = new(1, 1);
+
+    public void Dispose()
     {
-        readonly SemaphoreSlim _semaphore = new(1, 1);
+        _semaphore.Dispose();
+    }
 
-        public Task EnterAsync(CancellationToken cancellationToken = default)
-        {
-            return _semaphore.WaitAsync(cancellationToken);
-        }
+    public void Enter(CancellationToken cancellationToken = default)
+    {
+        _semaphore.Wait(cancellationToken);
+    }
 
-        public void Enter(CancellationToken cancellationToken = default)
-        {
-            _semaphore.Wait(cancellationToken);
-        }
+    public void Enter(TimeSpan timeout)
+    {
+        _semaphore.Wait(timeout);
+    }
 
-        public Task EnterAsync(TimeSpan timeout)
-        {
-            return _semaphore.WaitAsync(timeout);
-        }
+    public Task EnterAsync(CancellationToken cancellationToken = default)
+    {
+        return _semaphore.WaitAsync(cancellationToken);
+    }
 
-        public void Enter(TimeSpan timeout)
-        {
-            _semaphore.Wait(timeout);
-        }
+    public Task EnterAsync(TimeSpan timeout)
+    {
+        return _semaphore.WaitAsync(timeout);
+    }
 
-        public void Exit()
-        {
-            _semaphore.Release();
-        }
-
-        public void Dispose()
-        {
-            _semaphore.Dispose();
-        }
+    public void Exit()
+    {
+        _semaphore.Release();
     }
 }

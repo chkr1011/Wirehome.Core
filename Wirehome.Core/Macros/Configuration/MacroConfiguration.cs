@@ -1,12 +1,10 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
-namespace Wirehome.Core.Macros.Configuration
+namespace Wirehome.Core.Macros.Configuration;
+
+public class MacroConfiguration
 {
-    public class MacroConfiguration
-    {
-        public bool IsEnabled { get; set; } = true;
-
-        public List<JObject> Actions { get; set; } = new();
-    }
+    public List<JObject> Actions { get; set; } = new();
+    public bool IsEnabled { get; set; } = true;
 }

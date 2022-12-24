@@ -2,37 +2,36 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using IronPython.Runtime;
 using System;
+using IronPython.Runtime;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Macros
+namespace Wirehome.Core.Macros;
+
+public class MacroRegistryServicePythonProxy : IInjectedPythonProxy
 {
-    public class MacroRegistryServicePythonProxy : IInjectedPythonProxy
+    readonly MacroRegistryService _macroRegistryService;
+
+    public MacroRegistryServicePythonProxy(MacroRegistryService macroRegistryService)
     {
-        readonly MacroRegistryService _macroRegistryService;
+        _macroRegistryService = macroRegistryService ?? throw new ArgumentNullException(nameof(macroRegistryService));
+    }
 
-        public MacroRegistryServicePythonProxy(MacroRegistryService macroRegistryService)
+    public string ModuleName => "macro_registry";
+
+    public PythonDictionary execute_macro(string uid)
+    {
+        return PythonConvert.ToPythonDictionary(_macroRegistryService.ExecuteMacro(uid));
+    }
+
+    public List get_uids()
+    {
+        var result = new List();
+        foreach (var componentUid in _macroRegistryService.GetMacroUids())
         {
-            _macroRegistryService = macroRegistryService ?? throw new ArgumentNullException(nameof(macroRegistryService));
+            result.Add(componentUid);
         }
 
-        public string ModuleName => "macro_registry";
-
-        public List get_uids()
-        {
-            var result = new List();
-            foreach (var componentUid in _macroRegistryService.GetMacroUids())
-            {
-                result.Add(componentUid);
-            }
-
-            return result;
-        }
-
-        public PythonDictionary execute_macro(string uid)
-        {
-            return PythonConvert.ToPythonDictionary(_macroRegistryService.ExecuteMacro(uid));
-        }
+        return result;
     }
 }

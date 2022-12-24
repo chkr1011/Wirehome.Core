@@ -3,7 +3,7 @@
 public sealed class PackageMetaData
 {
     public string Author { get; set; }
-    
+
     public string Caption { get; set; }
 
     public string ForkOf { get; set; }

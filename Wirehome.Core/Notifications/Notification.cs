@@ -13,6 +13,6 @@ public sealed class Notification
     public TimeSpan TimeToLive { get; set; }
 
     public NotificationType Type { get; set; }
-    
+
     public Guid Uid { get; set; }
 }

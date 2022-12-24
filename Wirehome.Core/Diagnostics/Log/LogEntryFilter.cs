@@ -1,13 +1,11 @@
-﻿namespace Wirehome.Core.Diagnostics.Log
+﻿namespace Wirehome.Core.Diagnostics.Log;
+
+public class LogEntryFilter
 {
-    public class LogEntryFilter
-    {
-        public bool IncludeInformation { get; set; }
+    public bool IncludeErrors { get; set; }
+    public bool IncludeInformation { get; set; }
 
-        public bool IncludeWarnings { get; set; }
+    public bool IncludeWarnings { get; set; }
 
-        public bool IncludeErrors { get; set; }
-
-        public int TakeCount { get; set; }
-    }
+    public int TakeCount { get; set; }
 }

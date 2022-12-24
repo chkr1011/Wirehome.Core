@@ -1,29 +1,28 @@
 ﻿using System;
 using System.Threading;
 
-namespace Wirehome.Core.Diagnostics
+namespace Wirehome.Core.Diagnostics;
+
+public class OperationsPerSecondCounter
 {
-    public class OperationsPerSecondCounter
+    int _current;
+
+    public OperationsPerSecondCounter(string uid)
     {
-        int _current;
+        Uid = uid ?? throw new ArgumentNullException(nameof(uid));
+    }
 
-        public OperationsPerSecondCounter(string uid)
-        {
-            Uid = uid ?? throw new ArgumentNullException(nameof(uid));
-        }
+    public int Count { get; private set; }
 
-        public string Uid { get; }
+    public string Uid { get; }
 
-        public int Count { get; private set; }
+    public void Increment()
+    {
+        Interlocked.Increment(ref _current);
+    }
 
-        public void Increment()
-        {
-            Interlocked.Increment(ref _current);
-        }
-
-        public void Reset()
-        {
-            Count = Interlocked.Exchange(ref _current, 0);
-        }
+    public void Reset()
+    {
+        Count = Interlocked.Exchange(ref _current, 0);
     }
 }

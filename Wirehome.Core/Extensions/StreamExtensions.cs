@@ -2,24 +2,37 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Wirehome.Core.Extensions
+namespace Wirehome.Core.Extensions;
+
+public static class StreamExtensions
 {
-    public static class StreamExtensions
+    public static void Write(this Stream stream, byte[] buffer)
     {
-        public static Task WriteAsync(this Stream stream, byte[] buffer)
+        if (stream == null)
         {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-
-            return stream.WriteAsync(buffer, 0, buffer.Length);
+            throw new ArgumentNullException(nameof(stream));
         }
 
-        public static void Write(this Stream stream, byte[] buffer)
+        if (buffer == null)
         {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-
-            stream.Write(buffer, 0, buffer.Length);
+            throw new ArgumentNullException(nameof(buffer));
         }
+
+        stream.Write(buffer, 0, buffer.Length);
+    }
+
+    public static Task WriteAsync(this Stream stream, byte[] buffer)
+    {
+        if (stream == null)
+        {
+            throw new ArgumentNullException(nameof(stream));
+        }
+
+        if (buffer == null)
+        {
+            throw new ArgumentNullException(nameof(buffer));
+        }
+
+        return stream.WriteAsync(buffer, 0, buffer.Length);
     }
 }

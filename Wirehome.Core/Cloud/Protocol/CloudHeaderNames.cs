@@ -1,9 +1,8 @@
-﻿namespace Wirehome.Core.Cloud.Protocol
-{
-    public static class CloudHeaderNames
-    {
-        public const string ChannelAccessToken = "WirehomeCloud-ChannelAccessToken";
+﻿namespace Wirehome.Core.Cloud.Protocol;
 
-        public const string Version = "WirehomeCloud-Version";
-    }
+public static class CloudHeaderNames
+{
+    public const string ChannelAccessToken = "WirehomeCloud-ChannelAccessToken";
+
+    public const string Version = "WirehomeCloud-Version";
 }

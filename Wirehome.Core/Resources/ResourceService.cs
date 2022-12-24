@@ -1,270 +1,305 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.Constants;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.GlobalVariables;
 using Wirehome.Core.Resources.Exceptions;
 using Wirehome.Core.Storage;
 
-namespace Wirehome.Core.Resources
+namespace Wirehome.Core.Resources;
+
+public sealed class ResourceService : WirehomeCoreService
 {
-    public sealed class ResourceService : WirehomeCoreService
+    const string ResourcesDirectory = "Resources";
+    const string StringsFilename = "Strings.json";
+    readonly GlobalVariablesService _globalVariablesService;
+    readonly JsonSerializerService _jsonSerializerService;
+    readonly ILogger _logger;
+
+    readonly Dictionary<string, Dictionary<string, string>> _resources = new();
+
+    readonly StorageService _storageService;
+
+    public ResourceService(StorageService storageService,
+        JsonSerializerService jsonSerializerService,
+        GlobalVariablesService globalVariablesService,
+        ILogger<ResourceService> logger)
     {
-        const string ResourcesDirectory = "Resources";
-        const string StringsFilename = "Strings.json";
+        _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+        _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
+        _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
 
-        readonly Dictionary<string, Dictionary<string, string>> _resources = new();
-
-        readonly StorageService _storageService;
-        readonly JsonSerializerService _jsonSerializerService;
-        readonly GlobalVariablesService _globalVariablesService;
-        readonly ILogger _logger;
-
-        public ResourceService(
-            StorageService storageService,
-            JsonSerializerService jsonSerializerService,
-            GlobalVariablesService globalVariablesService,
-            ILogger<ResourceService> logger)
+    public void DeleteResource(string uid)
+    {
+        if (uid == null)
         {
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _jsonSerializerService = jsonSerializerService ?? throw new ArgumentNullException(nameof(jsonSerializerService));
-            _globalVariablesService = globalVariablesService ?? throw new ArgumentNullException(nameof(globalVariablesService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public Dictionary<string, string> GetResources(string languageCode)
+        lock (_resources)
         {
-            lock (_resources)
+            if (_resources.Remove(uid))
             {
-                var resources = new Dictionary<string, string>();
-                foreach (var resource in _resources)
-                {
-                    resources.Add(resource.Key, GetLanguageResourceValue(resource.Key, languageCode));
-                }
-
-                return resources;
+                _storageService.DeletePath(ResourcesDirectory, uid);
             }
         }
+    }
 
-        public IList<string> GetResourceUids()
+    public string FormatValue(string message, IDictionary parameters)
+    {
+        if (string.IsNullOrEmpty(message) || parameters == null || parameters.Count == 0)
         {
-            return _storageService.EnumerateDirectories("*", ResourcesDirectory);
-        }
-
-        public IDictionary<string, string> GetResourceDefinition(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_resources)
-            {
-                if (!_resources.TryGetValue(uid, out var resource))
-                {
-                    throw new ResourceNotFoundException(uid);
-                }
-
-                return resource;
-            }
-        }
-
-        public void DeleteResource(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_resources)
-            {
-                if (_resources.Remove(uid))
-                {
-                    _storageService.DeletePath(ResourcesDirectory, uid);
-                }
-            }
-        }
-
-        public string FormatValue(string message, IDictionary parameters)
-        {
-            if (string.IsNullOrEmpty(message) || parameters == null || parameters.Count == 0)
-            {
-                return message;
-            }
-
-            foreach (var key in parameters.Keys)
-            {
-                var value = ConvertValue(parameters[key]);
-                message = message.Replace("{" + key + "}", value, StringComparison.Ordinal);
-            }
-
             return message;
         }
 
-        public bool RegisterResource(string uid, string languageCode, string value)
+        foreach (var key in parameters.Keys)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (languageCode == null) throw new ArgumentNullException(nameof(languageCode));
-            if (value == null) throw new ArgumentNullException(nameof(value));
+            var value = ConvertValue(parameters[key]);
+            message = message.Replace("{" + key + "}", value, StringComparison.Ordinal);
+        }
 
-            lock (_resources)
+        return message;
+    }
+
+    public string GetLanguageResourceValue(string uid, string languageCode, string defaultValue = "")
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        if (languageCode == null)
+        {
+            throw new ArgumentNullException(nameof(languageCode));
+        }
+
+        lock (_resources)
+        {
+            if (_resources.TryGetValue(uid, out var resource))
             {
-                if (_resources.TryGetValue(uid, out var resource))
+                if (resource.TryGetValue(languageCode, out var value))
                 {
-                    if (resource.ContainsKey(languageCode))
-                    {
-                        return false;
-                    }
+                    return value;
                 }
 
-                SetResourceValue(uid, languageCode, value);
-                return true;
-            }
-        }
-
-        public void SetResourceValue(string uid, string languageCode, string value)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (languageCode == null) throw new ArgumentNullException(nameof(languageCode));
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            lock (_resources)
-            {
-                if (!_resources.TryGetValue(uid, out var resource))
+                if (resource.TryGetValue("", out value))
                 {
-                    resource = new Dictionary<string, string>();
-                    _resources.Add(uid, resource);
+                    return value;
                 }
+            }
 
-                if (resource.TryGetValue(languageCode, out var existingValue))
+            return defaultValue;
+        }
+    }
+
+    public IDictionary<string, string> GetResourceDefinition(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        lock (_resources)
+        {
+            if (!_resources.TryGetValue(uid, out var resource))
+            {
+                throw new ResourceNotFoundException(uid);
+            }
+
+            return resource;
+        }
+    }
+
+    public Dictionary<string, string> GetResources(string languageCode)
+    {
+        lock (_resources)
+        {
+            var resources = new Dictionary<string, string>();
+            foreach (var resource in _resources)
+            {
+                resources.Add(resource.Key, GetLanguageResourceValue(resource.Key, languageCode));
+            }
+
+            return resources;
+        }
+    }
+
+    public IList<string> GetResourceUids()
+    {
+        return _storageService.EnumerateDirectories("*", ResourcesDirectory);
+    }
+
+    public string GetResourceValue(string uid, string defaultValue = "")
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        var systemLanguageCode = _globalVariablesService.GetValue(GlobalVariableUids.LanguageCode) as string;
+        return GetLanguageResourceValue(uid, systemLanguageCode, defaultValue);
+    }
+
+    public bool RegisterResource(string uid, string languageCode, string value)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        if (languageCode == null)
+        {
+            throw new ArgumentNullException(nameof(languageCode));
+        }
+
+        if (value == null)
+        {
+            throw new ArgumentNullException(nameof(value));
+        }
+
+        lock (_resources)
+        {
+            if (_resources.TryGetValue(uid, out var resource))
+            {
+                if (resource.ContainsKey(languageCode))
                 {
-                    if (string.Equals(existingValue, value, StringComparison.Ordinal))
-                    {
-                        return;
-                    }
+                    return false;
                 }
-
-                resource[languageCode] = value;
-
-                Save();
             }
+
+            SetResourceValue(uid, languageCode, value);
+            return true;
+        }
+    }
+
+    public void SetResourceValue(string uid, string languageCode, string value)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public string GetLanguageResourceValue(string uid, string languageCode, string defaultValue = "")
+        if (languageCode == null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (languageCode == null) throw new ArgumentNullException(nameof(languageCode));
-
-            lock (_resources)
-            {
-                if (_resources.TryGetValue(uid, out var resource))
-                {
-                    if (resource.TryGetValue(languageCode, out var value))
-                    {
-                        return value;
-                    }
-
-                    if (resource.TryGetValue("", out value))
-                    {
-                        return value;
-                    }
-                }
-
-                return defaultValue;
-            }
+            throw new ArgumentNullException(nameof(languageCode));
         }
 
-        public string GetResourceValue(string uid, string defaultValue = "")
+        if (value == null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            var systemLanguageCode = _globalVariablesService.GetValue(GlobalVariableUids.LanguageCode) as string;
-            return GetLanguageResourceValue(uid, systemLanguageCode, defaultValue);
+            throw new ArgumentNullException(nameof(value));
         }
 
-        protected override void OnStart()
+        lock (_resources)
         {
-            foreach (var resourceUid in GetResourceUids())
+            if (!_resources.TryGetValue(uid, out var resource))
             {
-                TryLoadResource(resourceUid);
+                resource = new Dictionary<string, string>();
+                _resources.Add(uid, resource);
             }
 
-            var filename = Path.Combine(_storageService.BinPath, "Resources.json");
-            TryRegisterDefaultResources(filename);
-        }
-
-        string ConvertValue(object value)
-        {
-            var systemLanguageCode = _globalVariablesService.GetValue(GlobalVariableUids.LanguageCode) as string ?? "en";
-
-            try
+            if (resource.TryGetValue(languageCode, out var existingValue))
             {
-                var cultureInfo = CultureInfo.GetCultureInfo(systemLanguageCode);
-                return Convert.ToString(value, cultureInfo);
-            }
-            catch (CultureNotFoundException)
-            {
-                return Convert.ToString(value);
-            }
-        }
-
-        void TryLoadResource(string uid)
-        {
-            if (!_storageService.TryReadSerializedValue(out Dictionary<string, string> strings, ResourcesDirectory, uid, StringsFilename))
-            {
-                strings = new Dictionary<string, string>();
-            }
-
-            lock (_resources)
-            {
-                _resources[uid] = strings ?? new Dictionary<string, string>();
-            }
-        }
-
-        void TryRegisterDefaultResources(string filename)
-        {
-            try
-            {
-                var json = File.ReadAllText(filename);
-
-                // TODO: Refactor to use the resource service.
-                var resources =
-                    _jsonSerializerService.Deserialize<Dictionary<string, Dictionary<string, string>>>(json);
-                if (resources == null)
+                if (string.Equals(existingValue, value, StringComparison.Ordinal))
                 {
                     return;
                 }
+            }
 
-                foreach (var defaultResource in resources)
+            resource[languageCode] = value;
+
+            Save();
+        }
+    }
+
+    protected override void OnStart()
+    {
+        foreach (var resourceUid in GetResourceUids())
+        {
+            TryLoadResource(resourceUid);
+        }
+
+        var filename = Path.Combine(_storageService.BinPath, "Resources.json");
+        TryRegisterDefaultResources(filename);
+    }
+
+    string ConvertValue(object value)
+    {
+        var systemLanguageCode = _globalVariablesService.GetValue(GlobalVariableUids.LanguageCode) as string ?? "en";
+
+        try
+        {
+            var cultureInfo = CultureInfo.GetCultureInfo(systemLanguageCode);
+            return Convert.ToString(value, cultureInfo);
+        }
+        catch (CultureNotFoundException)
+        {
+            return Convert.ToString(value);
+        }
+    }
+
+    void Save()
+    {
+        foreach (var resource in _resources)
+        {
+            _storageService.WriteSerializedValue(resource.Value, ResourcesDirectory, resource.Key, StringsFilename);
+        }
+
+        _logger.LogInformation("Resources written to disk.");
+    }
+
+    void TryLoadResource(string uid)
+    {
+        if (!_storageService.TryReadSerializedValue(out Dictionary<string, string> strings, ResourcesDirectory, uid, StringsFilename))
+        {
+            strings = new Dictionary<string, string>();
+        }
+
+        lock (_resources)
+        {
+            _resources[uid] = strings ?? new Dictionary<string, string>();
+        }
+    }
+
+    void TryRegisterDefaultResources(string filename)
+    {
+        try
+        {
+            var json = File.ReadAllText(filename);
+
+            // TODO: Refactor to use the resource service.
+            var resources = _jsonSerializerService.Deserialize<Dictionary<string, Dictionary<string, string>>>(json);
+            if (resources == null)
+            {
+                return;
+            }
+
+            foreach (var defaultResource in resources)
+            {
+                if (defaultResource.Value == null)
                 {
-                    if (defaultResource.Value == null)
+                    continue;
+                }
+
+                foreach (var defaultResourceValue in defaultResource.Value)
+                {
+                    if (defaultResourceValue.Value == null)
                     {
                         continue;
                     }
 
-                    foreach (var defaultResourceValue in defaultResource.Value)
-                    {
-                        if (defaultResourceValue.Value == null)
-                        {
-                            continue;
-                        }
-
-                        RegisterResource(defaultResource.Key, defaultResourceValue.Key, defaultResourceValue.Value);
-                    }
+                    RegisterResource(defaultResource.Key, defaultResourceValue.Key, defaultResourceValue.Value);
                 }
             }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "Error while registering default resources.");
-            }
         }
-
-        void Save()
+        catch (Exception exception)
         {
-            foreach (var resource in _resources)
-            {
-                _storageService.WriteSerializedValue(resource.Value, ResourcesDirectory, resource.Key, StringsFilename);
-            }
-
-            _logger.LogInformation("Resources written to disk.");
+            _logger.LogError(exception, "Error while registering default resources.");
         }
     }
 }

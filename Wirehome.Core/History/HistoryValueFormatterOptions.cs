@@ -1,9 +1,8 @@
-﻿namespace Wirehome.Core.History
-{
-    public class HistoryValueFormatterOptions
-    {
-        public int? Decimals { get; set; }
+﻿namespace Wirehome.Core.History;
 
-        public string Format { get; set; }
-    }
+public class HistoryValueFormatterOptions
+{
+    public int? Decimals { get; set; }
+
+    public string Format { get; set; }
 }

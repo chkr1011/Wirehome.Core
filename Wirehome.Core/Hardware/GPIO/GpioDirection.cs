@@ -1,8 +1,7 @@
-﻿namespace Wirehome.Core.Hardware.GPIO
+﻿namespace Wirehome.Core.Hardware.GPIO;
+
+public enum GpioDirection
 {
-    public enum GpioDirection
-    {
-        Input,
-        Output
-    }
+    Input,
+    Output
 }

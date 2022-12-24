@@ -6,120 +6,134 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Wirehome.Core.Python.Proxies
+namespace Wirehome.Core.Python.Proxies;
+
+public class StopwatchPythonProxy : IInjectedPythonProxy
 {
-    public class StopwatchPythonProxy : IInjectedPythonProxy
+    readonly Dictionary<string, Stopwatch> _stopwatches = new();
+
+    public string ModuleName { get; } = "stopwatch";
+
+    public object get_elapsed_hours(string uid)
     {
-        readonly Dictionary<string, Stopwatch> _stopwatches = new();
-
-        public string ModuleName { get; } = "stopwatch";
-
-        public string start(string uid)
+        if (uid == null)
         {
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("D");
-            }
-
-            lock (_stopwatches)
-            {
-                if (!_stopwatches.TryGetValue(uid, out var stopwatch))
-                {
-                    stopwatch = Stopwatch.StartNew();
-                    _stopwatches.Add(uid, stopwatch);
-                }
-                else
-                {
-                    stopwatch.Start();
-                }
-            }
-
-            return uid;
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public string restart(string uid)
+        lock (_stopwatches)
         {
-            if (string.IsNullOrEmpty(uid))
+            if (!_stopwatches.TryGetValue(uid, out var stopwatch))
             {
-                uid = Guid.NewGuid().ToString("D");
+                return null;
             }
 
-            lock (_stopwatches)
-            {
-                _stopwatches[uid] = Stopwatch.StartNew();
-            }
+            return stopwatch.Elapsed.Hours;
+        }
+    }
 
-            return uid;
+    public object get_elapsed_millis(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public void stop(string uid)
+        lock (_stopwatches)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_stopwatches)
+            if (!_stopwatches.TryGetValue(uid, out var stopwatch))
             {
-                _stopwatches.Remove(uid);
+                return null;
+            }
+
+            return stopwatch.ElapsedMilliseconds;
+        }
+    }
+
+    public object get_elapsed_minutes(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        lock (_stopwatches)
+        {
+            if (!_stopwatches.TryGetValue(uid, out var stopwatch))
+            {
+                return null;
+            }
+
+            return stopwatch.Elapsed.Minutes;
+        }
+    }
+
+    public object get_elapsed_seconds(string uid)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
+
+        lock (_stopwatches)
+        {
+            if (!_stopwatches.TryGetValue(uid, out var stopwatch))
+            {
+                return null;
+            }
+
+            return stopwatch.Elapsed.Seconds;
+        }
+    }
+
+    public string restart(string uid)
+    {
+        if (string.IsNullOrEmpty(uid))
+        {
+            uid = Guid.NewGuid().ToString("D");
+        }
+
+        lock (_stopwatches)
+        {
+            _stopwatches[uid] = Stopwatch.StartNew();
+        }
+
+        return uid;
+    }
+
+    public string start(string uid)
+    {
+        if (string.IsNullOrEmpty(uid))
+        {
+            uid = Guid.NewGuid().ToString("D");
+        }
+
+        lock (_stopwatches)
+        {
+            if (!_stopwatches.TryGetValue(uid, out var stopwatch))
+            {
+                stopwatch = Stopwatch.StartNew();
+                _stopwatches.Add(uid, stopwatch);
+            }
+            else
+            {
+                stopwatch.Start();
             }
         }
 
-        public object get_elapsed_millis(string uid)
+        return uid;
+    }
+
+    public void stop(string uid)
+    {
+        if (uid == null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_stopwatches)
-            {
-                if (!_stopwatches.TryGetValue(uid, out var stopwatch))
-                {
-                    return null;
-                }
-
-                return stopwatch.ElapsedMilliseconds;
-            }
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public object get_elapsed_seconds(string uid)
+        lock (_stopwatches)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_stopwatches)
-            {
-                if (!_stopwatches.TryGetValue(uid, out var stopwatch))
-                {
-                    return null;
-                }
-
-                return stopwatch.Elapsed.Seconds;
-            }
-        }
-
-        public object get_elapsed_minutes(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_stopwatches)
-            {
-                if (!_stopwatches.TryGetValue(uid, out var stopwatch))
-                {
-                    return null;
-                }
-
-                return stopwatch.Elapsed.Minutes;
-            }
-        }
-
-        public object get_elapsed_hours(string uid)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            lock (_stopwatches)
-            {
-                if (!_stopwatches.TryGetValue(uid, out var stopwatch))
-                {
-                    return null;
-                }
-
-                return stopwatch.Elapsed.Hours;
-            }
+            _stopwatches.Remove(uid);
         }
     }
 }

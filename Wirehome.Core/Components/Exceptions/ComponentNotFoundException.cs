@@ -1,12 +1,10 @@
 ﻿using Wirehome.Core.Exceptions;
 
-namespace Wirehome.Core.Components.Exceptions
+namespace Wirehome.Core.Components.Exceptions;
+
+public sealed class ComponentNotFoundException : NotFoundException
 {
-    public sealed class ComponentNotFoundException : NotFoundException
+    public ComponentNotFoundException(string uid) : base($"Component with UID '{uid}' not found.")
     {
-        public ComponentNotFoundException(string uid) :
-            base($"Component with UID '{uid}' not found.")
-        {
-        }
     }
 }

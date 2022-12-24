@@ -1,14 +1,13 @@
-﻿namespace Wirehome.Core.Contracts
-{
-    public abstract class WirehomeCoreService
-    {
-        public void Start()
-        {
-            OnStart();
-        }
+﻿namespace Wirehome.Core.Contracts;
 
-        protected virtual void OnStart()
-        {
-        }
+public abstract class WirehomeCoreService
+{
+    public void Start()
+    {
+        OnStart();
+    }
+
+    protected virtual void OnStart()
+    {
     }
 }

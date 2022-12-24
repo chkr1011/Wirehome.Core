@@ -1,17 +1,16 @@
 ﻿using System;
 
-namespace Wirehome.Core.Devices
+namespace Wirehome.Core.Devices;
+
+public class DeviceProperty
 {
-    public class DeviceProperty
+    public DeviceProperty(object value, DateTime timestamp)
     {
-        public DeviceProperty(object value, DateTime timestamp)
-        {
-            Value = value;
-            Timestamp = timestamp;
-        }
-
-        public DateTime Timestamp { get; }
-
-        public object Value { get; }
+        Value = value;
+        Timestamp = timestamp;
     }
+
+    public DateTime Timestamp { get; }
+
+    public object Value { get; }
 }

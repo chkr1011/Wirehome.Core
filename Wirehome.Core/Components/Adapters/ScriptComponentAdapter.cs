@@ -1,61 +1,75 @@
-﻿using IronPython.Runtime;
+﻿using System;
+using IronPython.Runtime;
 using Microsoft.Extensions.Logging;
-using System;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.Components.Adapters
+namespace Wirehome.Core.Components.Adapters;
+
+public sealed class ScriptComponentAdapter : IComponentAdapter
 {
-    public sealed class ScriptComponentAdapter : IComponentAdapter
+    readonly ComponentRegistryService _componentRegistryService;
+    readonly ILogger _logger;
+    readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
+
+    PythonScriptHost _scriptHost;
+
+    public ScriptComponentAdapter(PythonScriptHostFactoryService pythonScriptHostFactoryService,
+        ComponentRegistryService componentRegistryService,
+        ILogger<ScriptComponentAdapter> logger)
     {
-        readonly PythonScriptHostFactoryService _pythonScriptHostFactoryService;
-        readonly ComponentRegistryService _componentRegistryService;
-        readonly ILogger _logger;
+        _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
+        _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
 
-        PythonScriptHost _scriptHost;
+    public Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
 
-        public ScriptComponentAdapter(PythonScriptHostFactoryService pythonScriptHostFactoryService, ComponentRegistryService componentRegistryService, ILogger<ScriptComponentAdapter> logger)
+    public void AddToWirehomeWrapper(string name, object value)
+    {
+        if (name == null)
         {
-            _pythonScriptHostFactoryService = pythonScriptHostFactoryService ?? throw new ArgumentNullException(nameof(pythonScriptHostFactoryService));
-            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            throw new ArgumentNullException(nameof(name));
         }
 
-        public Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
+        _scriptHost.AddToWirehomeWrapper(name, value);
+    }
 
-        public void Compile(string componentUid, string script)
+    public void Compile(string componentUid, string script)
+    {
+        if (componentUid == null)
         {
-            if (componentUid == null) throw new ArgumentNullException(nameof(componentUid));
-            if (script == null) throw new ArgumentNullException(nameof(script));
-
-            _scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(new ComponentPythonProxy(componentUid, _componentRegistryService));
-            _scriptHost.SetVariable("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnMessageReceived);
-            _scriptHost.AddToWirehomeWrapper("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnMessageReceived);
-
-            _scriptHost.Compile(script);
+            throw new ArgumentNullException(nameof(componentUid));
         }
 
-        public void SetVariable(string name, object value)
+        if (script == null)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-
-            _scriptHost.SetVariable(name, value);
+            throw new ArgumentNullException(nameof(script));
         }
 
-        public void AddToWirehomeWrapper(string name, object value)
-        {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+        _scriptHost = _pythonScriptHostFactoryService.CreateScriptHost(new ComponentPythonProxy(componentUid, _componentRegistryService));
+        _scriptHost.SetVariable("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnMessageReceived);
+        _scriptHost.AddToWirehomeWrapper("publish_adapter_message", (PythonDelegates.CallbackWithResultDelegate)OnMessageReceived);
 
-            _scriptHost.AddToWirehomeWrapper(name, value);
+        _scriptHost.Compile(script);
+    }
+
+    public PythonDictionary ProcessMessage(PythonDictionary message)
+    {
+        return _scriptHost.InvokeFunction("process_adapter_message", message) as PythonDictionary ?? new PythonDictionary();
+    }
+
+    public void SetVariable(string name, object value)
+    {
+        if (name == null)
+        {
+            throw new ArgumentNullException(nameof(name));
         }
 
-        public PythonDictionary ProcessMessage(PythonDictionary message)
-        {
-            return _scriptHost.InvokeFunction("process_adapter_message", message) as PythonDictionary ?? new PythonDictionary();
-        }
+        _scriptHost.SetVariable(name, value);
+    }
 
-        PythonDictionary OnMessageReceived(PythonDictionary message)
-        {
-            return MessagePublishedCallback?.Invoke(message) as PythonDictionary ?? new PythonDictionary();
-        }
+    PythonDictionary OnMessageReceived(PythonDictionary message)
+    {
+        return MessagePublishedCallback?.Invoke(message) ?? new PythonDictionary();
     }
 }

@@ -1,9 +1,9 @@
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Wirehome.Core.Backup;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
@@ -12,210 +12,213 @@ using Wirehome.Core.History;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
-namespace Wirehome.Core.Components.History
+namespace Wirehome.Core.Components.History;
+
+public sealed class ComponentHistoryService : WirehomeCoreService
 {
-    public sealed class ComponentHistoryService : WirehomeCoreService
+    readonly BackupService _backupService;
+    readonly ComponentRegistryService _componentRegistryService;
+    readonly HistoryService _historyService;
+    readonly ILogger<ComponentHistoryService> _logger;
+    readonly BlockingCollection<ComponentStatusHistoryWorkItem> _pendingStatusWorkItems = new();
+    readonly StorageService _storageService;
+    readonly SystemCancellationToken _systemCancellationToken;
+
+    ComponentHistoryServiceOptions _options;
+
+    public ComponentHistoryService(ComponentRegistryService componentRegistryService,
+        HistoryService historyService,
+        StorageService storageService,
+        SystemStatusService systemStatusService,
+        SystemCancellationToken systemCancellationToken,
+        BackupService backupService,
+        ILogger<ComponentHistoryService> logger)
     {
-        readonly BlockingCollection<ComponentStatusHistoryWorkItem> _pendingStatusWorkItems = new();
-        readonly ComponentRegistryService _componentRegistryService;
-        readonly HistoryService _historyService;
-        readonly StorageService _storageService;
-        readonly SystemCancellationToken _systemCancellationToken;
-        readonly BackupService _backupService;
-        readonly ILogger<ComponentHistoryService> _logger;
+        _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
+        _historyService = historyService ?? throw new ArgumentNullException(nameof(historyService));
+        _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+        _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
+        _backupService = backupService ?? throw new ArgumentNullException(nameof(backupService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        ComponentHistoryServiceOptions _options;
-
-        public ComponentHistoryService(
-            ComponentRegistryService componentRegistryService,
-            HistoryService historyService,
-            StorageService storageService,
-            SystemStatusService systemStatusService,
-            SystemCancellationToken systemCancellationToken,
-            BackupService backupService,
-            ILogger<ComponentHistoryService> logger)
+        if (systemStatusService == null)
         {
-            _componentRegistryService = componentRegistryService ?? throw new ArgumentNullException(nameof(componentRegistryService));
-            _historyService = historyService ?? throw new ArgumentNullException(nameof(historyService));
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
-            _backupService = backupService ?? throw new ArgumentNullException(nameof(backupService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            if (systemStatusService == null) throw new ArgumentNullException(nameof(systemStatusService));
-            systemStatusService.Set("component_history.pending_status_work_items", _pendingStatusWorkItems.Count);
-
-            _componentRegistryService.ComponentStatusChanged += OnComponentStatusChanged;
+            throw new ArgumentNullException(nameof(systemStatusService));
         }
 
-        public string BuildComponentHistoryPath(string componentUid)
+        systemStatusService.Set("component_history.pending_status_work_items", _pendingStatusWorkItems.Count);
+
+        _componentRegistryService.ComponentStatusChanged += OnComponentStatusChanged;
+    }
+
+    public string BuildComponentHistoryPath(string componentUid)
+    {
+        return Path.Combine(_storageService.DataPath, "History", "Components", componentUid);
+    }
+
+    public string BuildComponentStatusHistoryPath(string componentUid, string statusUid)
+    {
+        return Path.Combine(BuildComponentHistoryPath(componentUid), "Status", statusUid);
+    }
+
+    protected override void OnStart()
+    {
+        _backupService.ExcludePathFromBackup(Path.Combine(_storageService.DataPath, "History"));
+
+        _storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, ComponentHistoryServiceOptions.Filename);
+        if (!_options.IsEnabled)
         {
-            return Path.Combine(_storageService.DataPath, "History", "Components", componentUid);
+            _logger.LogInformation("Component history is disabled.");
+            return;
         }
 
-        public string BuildComponentStatusHistoryPath(string componentUid, string statusUid)
+        ParallelTask.Start(() => TryProcessWorkItems(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
+        ParallelTask.Start(() => TryUpdateComponentStatusValues(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger,
+            TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness);
+    }
+
+    bool IsComponentStatusBlacklisted(string componentUid, string statusUid)
+    {
+        if (_options.ComponentBlacklist?.Contains(componentUid) == true)
         {
-            return Path.Combine(BuildComponentHistoryPath(componentUid), "Status", statusUid);
+            return true;
         }
 
-        void OnComponentStatusChanged(object sender, ComponentStatusChangedEventArgs e)
+        if (_options.StatusBlacklist?.Contains(statusUid) == true)
         {
-            var updateOnValueChanged = true;
+            return true;
+        }
 
-            // TODO: Get filter settings and skip if disabled.
+        if (_options.ComponentStatusBlacklist?.Contains(componentUid + "." + statusUid) == true)
+        {
+            return true;
+        }
 
-            if (!updateOnValueChanged)
+        return false;
+    }
+
+    void OnComponentStatusChanged(object sender, ComponentStatusChangedEventArgs e)
+    {
+        var updateOnValueChanged = true;
+
+        // TODO: Get filter settings and skip if disabled.
+
+        if (!updateOnValueChanged)
+        {
+            _logger.LogTrace($"Skipping value changed update trigger for '{e.Component.Uid}.{e.StatusUid}'.");
+            return;
+        }
+
+        TryEnqueueWorkItem(new ComponentStatusHistoryWorkItem
+        {
+            Timestamp = e.Timestamp,
+            Component = e.Component,
+            StatusUid = e.StatusUid,
+            Value = e.NewValue
+        });
+    }
+
+    void TryEnqueueWorkItem(ComponentStatusHistoryWorkItem workItem)
+    {
+        try
+        {
+            if (IsComponentStatusBlacklisted(workItem.Component.Uid, workItem.StatusUid))
             {
-                _logger.LogTrace($"Skipping value changed update trigger for '{e.Component.Uid}.{e.StatusUid}'.");
                 return;
             }
 
-            TryEnqueueWorkItem(new ComponentStatusHistoryWorkItem
-            {
-                Timestamp = e.Timestamp,
-                Component = e.Component,
-                StatusUid = e.StatusUid,
-                Value = e.NewValue
-            });
+            _pendingStatusWorkItems.Add(workItem);
         }
-
-        protected override void OnStart()
+        catch (OperationCanceledException)
         {
-            _backupService.ExcludePathFromBackup(Path.Combine(_storageService.DataPath, "History"));
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, $"Error while enqueue component status value '{workItem.Component.Uid}.{workItem.StatusUid}'.");
+        }
+    }
 
-            _storageService.SafeReadSerializedValue(out _options, DefaultDirectoryNames.Configuration, ComponentHistoryServiceOptions.Filename);
-            if (!_options.IsEnabled)
+    async Task TryProcessNextWorkItem(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var statusWorkItem = _pendingStatusWorkItems.Take(cancellationToken);
+            if (statusWorkItem == null || cancellationToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Component history is disabled.");
                 return;
             }
 
-            ParallelTask.Start(() => TryProcessWorkItems(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger);
-            ParallelTask.Start(() => TryUpdateComponentStatusValues(_systemCancellationToken.Token), _systemCancellationToken.Token, _logger, TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness);
-        }
+            _options.ComponentStatusDefaultSettings.TryGetValue(statusWorkItem.StatusUid, out var defaultSettings);
 
-        async Task TryProcessWorkItems(CancellationToken cancellationToken)
+            var formatterOptions = HistoryValueFormatterOptionsFactory.Create(statusWorkItem.Component.GetSettings(), defaultSettings);
+
+            await _historyService.Update(new HistoryUpdateOperation
+            {
+                Path = BuildComponentStatusHistoryPath(statusWorkItem.Component.Uid, statusWorkItem.StatusUid),
+                Timestamp = statusWorkItem.Timestamp,
+                Value = statusWorkItem.Value,
+                ValueFormatterOptions = formatterOptions,
+                // Give the pulling code some time to complete before declaring an entity
+                // as outdated. 1.25 might be enough additional time.
+                OldValueTimeToLive = _options.ComponentStatusPullInterval * 1.25
+            }, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
         {
-            try
-            {
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    await TryProcessNextWorkItem(cancellationToken).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                _logger.Log(LogLevel.Error, exception, "Error while processing messages.");
-            }
         }
-
-        async Task TryProcessNextWorkItem(CancellationToken cancellationToken)
+        catch (Exception exception)
         {
-            try
-            {
-                var statusWorkItem = _pendingStatusWorkItems.Take(cancellationToken);
-                if (statusWorkItem == null || cancellationToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                _options.ComponentStatusDefaultSettings.TryGetValue(statusWorkItem.StatusUid, out var defaultSettings);
-
-                var formatterOptions = HistoryValueFormatterOptionsFactory.Create(statusWorkItem.Component.GetSettings(), defaultSettings);
-
-                await _historyService.Update(new HistoryUpdateOperation
-                {
-                    Path = BuildComponentStatusHistoryPath(statusWorkItem.Component.Uid, statusWorkItem.StatusUid),
-                    Timestamp = statusWorkItem.Timestamp,
-                    Value = statusWorkItem.Value,
-                    ValueFormatterOptions = formatterOptions,
-                    // Give the pulling code some time to complete before declaring an entity
-                    // as outdated. 1.25 might be enough additional time.
-                    OldValueTimeToLive = _options.ComponentStatusPullInterval * 1.25
-                }, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                _logger.Log(LogLevel.Error, exception, "Error while processing message.");
-            }
+            _logger.Log(LogLevel.Error, exception, "Error while processing message.");
         }
+    }
 
-        void TryUpdateComponentStatusValues(CancellationToken cancellationToken)
+    async Task TryProcessWorkItems(CancellationToken cancellationToken)
+    {
+        try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                try
-                {
-                    Thread.Sleep(_options.ComponentStatusPullInterval);
-
-                    foreach (var component in _componentRegistryService.GetComponents())
-                    {
-                        foreach (var status in component.GetStatus())
-                        {
-                            TryEnqueueWorkItem(new ComponentStatusHistoryWorkItem
-                            {
-                                Timestamp = DateTime.UtcNow,
-                                Component = component,
-                                StatusUid = status.Key,
-                                Value = status.Value
-                            });
-                        }
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                catch (Exception exception)
-                {
-                    _logger.Log(LogLevel.Error, exception, "Error while updating component property values.");
-                }
+                await TryProcessNextWorkItem(cancellationToken).ConfigureAwait(false);
             }
         }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            _logger.Log(LogLevel.Error, exception, "Error while processing messages.");
+        }
+    }
 
-        void TryEnqueueWorkItem(ComponentStatusHistoryWorkItem workItem)
+    void TryUpdateComponentStatusValues(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                if (IsComponentStatusBlacklisted(workItem.Component.Uid, workItem.StatusUid))
-                {
-                    return;
-                }
+                Thread.Sleep(_options.ComponentStatusPullInterval);
 
-                _pendingStatusWorkItems.Add(workItem);
+                foreach (var component in _componentRegistryService.GetComponents())
+                {
+                    foreach (var status in component.GetStatus())
+                    {
+                        TryEnqueueWorkItem(new ComponentStatusHistoryWorkItem
+                        {
+                            Timestamp = DateTime.UtcNow,
+                            Component = component,
+                            StatusUid = status.Key,
+                            Value = status.Value
+                        });
+                    }
+                }
             }
             catch (OperationCanceledException)
             {
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, $"Error while enqueue component status value '{workItem.Component.Uid}.{workItem.StatusUid}'.");
+                _logger.Log(LogLevel.Error, exception, "Error while updating component property values.");
             }
-        }
-
-        bool IsComponentStatusBlacklisted(string componentUid, string statusUid)
-        {
-            if (_options.ComponentBlacklist?.Contains(componentUid) == true)
-            {
-                return true;
-            }
-
-            if (_options.StatusBlacklist?.Contains(statusUid) == true)
-            {
-                return true;
-            }
-
-            if (_options.ComponentStatusBlacklist?.Contains(componentUid + "." + statusUid) == true)
-            {
-                return true;
-            }
-
-            return false;
         }
     }
 }

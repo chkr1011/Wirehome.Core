@@ -10,6 +10,6 @@ public sealed class PublishFromResourceParameters
     public string ResourceUid { get; set; }
 
     public TimeSpan? TimeToLive { get; set; }
-    
+
     public NotificationType Type { get; set; } = NotificationType.Information;
 }

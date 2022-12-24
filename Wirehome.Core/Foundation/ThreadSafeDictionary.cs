@@ -2,131 +2,130 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Wirehome.Core.Foundation
+namespace Wirehome.Core.Foundation;
+
+public class ThreadSafeDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 {
-    public class ThreadSafeDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    readonly Dictionary<TKey, TValue> _dictionary = new(64);
+
+    public int Count
     {
-        readonly Dictionary<TKey, TValue> _dictionary = new(64);
-
-        public TValue this[TKey key]
-        {
-            get
-            {
-                lock (_dictionary)
-                {
-                    return _dictionary[key];
-                }
-            }
-
-            set
-            {
-                lock (_dictionary)
-                {
-                    _dictionary[key] = value;
-                }
-            }
-        }
-
-        public ICollection<TKey> Keys
-        {
-            get
-            {
-                lock (_dictionary)
-                {
-                    return new List<TKey>(_dictionary.Keys);
-                }
-            }
-        }
-
-        public ICollection<TValue> Values => new List<TValue>(_dictionary.Values);
-
-        public int Count
-        {
-            get
-            {
-                lock (_dictionary)
-                {
-                    return _dictionary.Count;
-                }
-            }
-        }
-
-        public bool IsReadOnly => false;
-
-        public void Add(TKey key, TValue value)
+        get
         {
             lock (_dictionary)
             {
-                _dictionary.Add(key, value);
+                return _dictionary.Count;
             }
         }
+    }
 
-        public void Add(KeyValuePair<TKey, TValue> item)
+    public bool IsReadOnly => false;
+
+    public TValue this[TKey key]
+    {
+        get
         {
             lock (_dictionary)
             {
-                _dictionary.Add(item.Key, item.Value);
+                return _dictionary[key];
             }
         }
 
-        public void Clear()
+        set
         {
             lock (_dictionary)
             {
-                _dictionary.Clear();
+                _dictionary[key] = value;
             }
         }
+    }
 
-        public bool Contains(KeyValuePair<TKey, TValue> item)
-        {
-            throw new NotSupportedException();
-        }
-
-        public bool ContainsKey(TKey key)
+    public ICollection<TKey> Keys
+    {
+        get
         {
             lock (_dictionary)
             {
-                return _dictionary.ContainsKey(key);
+                return new List<TKey>(_dictionary.Keys);
             }
         }
+    }
 
-        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
-        {
-            throw new NotSupportedException();
-        }
+    public ICollection<TValue> Values => new List<TValue>(_dictionary.Values);
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+    public void Add(TKey key, TValue value)
+    {
+        lock (_dictionary)
         {
-            lock (_dictionary)
-            {
-                return new List<KeyValuePair<TKey, TValue>>(_dictionary).GetEnumerator();
-            }
+            _dictionary.Add(key, value);
         }
+    }
 
-        public bool Remove(TKey key)
+    public void Add(KeyValuePair<TKey, TValue> item)
+    {
+        lock (_dictionary)
         {
-            lock (_dictionary)
-            {
-                return _dictionary.Remove(key);
-            }
+            _dictionary.Add(item.Key, item.Value);
         }
+    }
 
-        public bool Remove(KeyValuePair<TKey, TValue> item)
+    public void Clear()
+    {
+        lock (_dictionary)
         {
-            throw new NotSupportedException();
+            _dictionary.Clear();
         }
+    }
 
-        public bool TryGetValue(TKey key, out TValue value)
-        {
-            lock (_dictionary)
-            {
-                return _dictionary.TryGetValue(key, out value);
-            }
-        }
+    public bool Contains(KeyValuePair<TKey, TValue> item)
+    {
+        throw new NotSupportedException();
+    }
 
-        IEnumerator IEnumerable.GetEnumerator()
+    public bool ContainsKey(TKey key)
+    {
+        lock (_dictionary)
         {
-            return GetEnumerator();
+            return _dictionary.ContainsKey(key);
         }
+    }
+
+    public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+    {
+        throw new NotSupportedException();
+    }
+
+    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+    {
+        lock (_dictionary)
+        {
+            return new List<KeyValuePair<TKey, TValue>>(_dictionary).GetEnumerator();
+        }
+    }
+
+    public bool Remove(TKey key)
+    {
+        lock (_dictionary)
+        {
+            return _dictionary.Remove(key);
+        }
+    }
+
+    public bool Remove(KeyValuePair<TKey, TValue> item)
+    {
+        throw new NotSupportedException();
+    }
+
+    public bool TryGetValue(TKey key, out TValue value)
+    {
+        lock (_dictionary)
+        {
+            return _dictionary.TryGetValue(key, out value);
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

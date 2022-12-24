@@ -29,7 +29,7 @@ public sealed class PackageUid
         {
             "@"
         }, StringSplitOptions.RemoveEmptyEntries);
-        
+
         if (parts.Length < 1 || parts.Length > 2)
         {
             throw new ArgumentException("The source is invalid.", nameof(source));

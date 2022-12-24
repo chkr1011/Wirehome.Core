@@ -2,43 +2,55 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-using IronPython.Runtime;
 using System;
+using IronPython.Runtime;
 using Wirehome.Core.Python;
 
-namespace Wirehome.Core.FunctionPool
+namespace Wirehome.Core.FunctionPool;
+
+public class FunctionPoolServicePythonProxy : IInjectedPythonProxy
 {
-    public class FunctionPoolServicePythonProxy : IInjectedPythonProxy
+    readonly FunctionPoolService _functionPoolService;
+
+    public FunctionPoolServicePythonProxy(FunctionPoolService functionPoolService)
     {
-        readonly FunctionPoolService _functionPoolService;
+        _functionPoolService = functionPoolService ?? throw new ArgumentNullException(nameof(functionPoolService));
+    }
 
-        public FunctionPoolServicePythonProxy(FunctionPoolService functionPoolService)
+    public string ModuleName { get; } = "function_pool";
+
+    public bool function_exists(string uid)
+    {
+        if (uid == null)
         {
-            _functionPoolService = functionPoolService ?? throw new ArgumentNullException(nameof(functionPoolService));
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public string ModuleName { get; } = "function_pool";
+        return _functionPoolService.GetRegisteredFunctions().Contains(uid);
+    }
 
-        public bool function_exists(string uid)
+    public PythonDictionary invoke(string uid, PythonDictionary parameters)
+    {
+        if (uid == null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-
-            return _functionPoolService.GetRegisteredFunctions().Contains(uid);
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public PythonDictionary invoke(string uid, PythonDictionary parameters)
-        {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
+        return PythonConvert.ToPythonDictionary(_functionPoolService.InvokeFunction(uid, parameters));
+    }
 
-            return PythonConvert.ToPythonDictionary(_functionPoolService.InvokeFunction(uid, parameters));
+    public void register(string uid, PythonDelegates.CallbackWithResultDelegate function)
+    {
+        if (uid == null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public void register(string uid, PythonDelegates.CallbackWithResultDelegate function)
+        if (function == null)
         {
-            if (uid == null) throw new ArgumentNullException(nameof(uid));
-            if (function == null) throw new ArgumentNullException(nameof(function));
-
-            _functionPoolService.RegisterFunction(uid, p => function(PythonConvert.ToPythonDictionary(p)));
+            throw new ArgumentNullException(nameof(function));
         }
+
+        _functionPoolService.RegisterFunction(uid, p => function(PythonConvert.ToPythonDictionary(p)));
     }
 }

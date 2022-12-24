@@ -9,7 +9,7 @@ public sealed class MessageBusMessage
     {
         InnerMessage = innerMessage ?? throw new ArgumentNullException(nameof(innerMessage));
     }
-    
+
     public DateTime EnqueuedTimestamp { get; set; }
 
     public IDictionary<object, object> InnerMessage { get; }

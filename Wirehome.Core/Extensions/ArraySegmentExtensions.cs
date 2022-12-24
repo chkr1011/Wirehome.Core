@@ -1,24 +1,26 @@
 ﻿using System;
 
-namespace Wirehome.Core.Extensions
+namespace Wirehome.Core.Extensions;
+
+public static class ArraySegmentExtensions
 {
-    public static class ArraySegmentExtensions
+    public static ArraySegment<TItem> AsArraySegment<TItem>(this TItem[] source)
     {
-        public static string ToHexString(this ReadOnlySpan<byte> source)
+        if (source is null)
         {
-            return BitConverter.ToString(source.ToArray());
+            throw new ArgumentNullException(nameof(source));
         }
 
-        public static string ToHexString(this byte[] source)
-        {
-            return BitConverter.ToString(source, 0, source.Length);
-        }
+        return new ArraySegment<TItem>(source, 0, source.Length);
+    }
 
-        public static ArraySegment<TItem> AsArraySegment<TItem>(this TItem[] source)
-        {
-            if (source is null) throw new ArgumentNullException(nameof(source));
+    public static string ToHexString(this ReadOnlySpan<byte> source)
+    {
+        return BitConverter.ToString(source.ToArray());
+    }
 
-            return new ArraySegment<TItem>(source, 0, source.Length);
-        }
+    public static string ToHexString(this byte[] source)
+    {
+        return BitConverter.ToString(source, 0, source.Length);
     }
 }

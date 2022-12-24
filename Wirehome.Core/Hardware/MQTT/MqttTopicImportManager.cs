@@ -5,96 +5,95 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Foundation;
 
-namespace Wirehome.Core.Hardware.MQTT
+namespace Wirehome.Core.Hardware.MQTT;
+
+public sealed class MqttTopicImportManager : IDisposable
 {
-    public sealed class MqttTopicImportManager : IDisposable
+    readonly Dictionary<string, MqttTopicImporter> _importers = new();
+    readonly AsyncLock _importersLock = new();
+    readonly ILogger _logger;
+
+    readonly MqttService _mqttService;
+
+    public MqttTopicImportManager(MqttService mqttService, ILogger logger)
     {
-        readonly Dictionary<string, MqttTopicImporter> _importers = new();
-        readonly AsyncLock _importersLock = new();
-        readonly ILogger _logger;
+        _mqttService = mqttService ?? throw new ArgumentNullException(nameof(mqttService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
 
-        readonly MqttService _mqttService;
+    public void Dispose()
+    {
+        _importersLock.Dispose();
+    }
 
-        public MqttTopicImportManager(MqttService mqttService, ILogger logger)
+    public List<string> GetTopicImportUids()
+    {
+        _importersLock.Enter();
+        try
         {
-            _mqttService = mqttService ?? throw new ArgumentNullException(nameof(mqttService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            return _importers.Select(i => i.Key).ToList();
+        }
+        finally
+        {
+            _importersLock.Exit();
+        }
+    }
+
+    public async Task<string> StartTopicImport(string uid, MqttImportTopicParameters parameters)
+    {
+        if (parameters == null)
+        {
+            throw new ArgumentNullException(nameof(parameters));
         }
 
-        public void Dispose()
+        if (string.IsNullOrEmpty(uid))
         {
-            _importersLock.Dispose();
+            uid = Guid.NewGuid().ToString("D");
         }
 
-        public List<string> GetTopicImportUids()
+        var importer = new MqttTopicImporter(parameters, _mqttService, _logger);
+        await importer.Start().ConfigureAwait(false);
+
+        await _importersLock.EnterAsync().ConfigureAwait(false);
+        try
         {
-            _importersLock.Enter();
-            try
+            if (_importers.TryGetValue(uid, out var existingImporter))
             {
-                return _importers.Select(i => i.Key).ToList();
+                await existingImporter.Stop().ConfigureAwait(false);
             }
-            finally
-            {
-                _importersLock.Exit();
-            }
+
+            _importers[uid] = importer;
+        }
+        finally
+        {
+            _importersLock.Exit();
         }
 
-        public async Task<string> StartTopicImport(string uid, MqttImportTopicParameters parameters)
+        _logger.Log(LogLevel.Information, "Started importer '{0}' for topic '{1}' from server '{2}'.", uid, parameters.Topic, parameters.Server);
+        return uid;
+    }
+
+    public async Task StopTopicImport(string uid)
+    {
+        if (uid == null)
         {
-            if (parameters == null)
-            {
-                throw new ArgumentNullException(nameof(parameters));
-            }
-
-            if (string.IsNullOrEmpty(uid))
-            {
-                uid = Guid.NewGuid().ToString("D");
-            }
-
-            var importer = new MqttTopicImporter(parameters, _mqttService, _logger);
-            await importer.Start().ConfigureAwait(false);
-
-            await _importersLock.EnterAsync().ConfigureAwait(false);
-            try
-            {
-                if (_importers.TryGetValue(uid, out var existingImporter))
-                {
-                    await existingImporter.Stop().ConfigureAwait(false);
-                }
-
-                _importers[uid] = importer;
-            }
-            finally
-            {
-                _importersLock.Exit();
-            }
-
-            _logger.Log(LogLevel.Information, "Started importer '{0}' for topic '{1}' from server '{2}'.", uid, parameters.Topic, parameters.Server);
-            return uid;
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public async Task StopTopicImport(string uid)
+        await _importersLock.EnterAsync().ConfigureAwait(false);
+        try
         {
-            if (uid == null)
+            if (_importers.TryGetValue(uid, out var importer))
             {
-                throw new ArgumentNullException(nameof(uid));
+                await importer.Stop().ConfigureAwait(false);
+                _logger.Log(LogLevel.Information, "Stopped importer '{0}'.", uid);
             }
 
-            await _importersLock.EnterAsync().ConfigureAwait(false);
-            try
-            {
-                if (_importers.TryGetValue(uid, out var importer))
-                {
-                    await importer.Stop().ConfigureAwait(false);
-                    _logger.Log(LogLevel.Information, "Stopped importer '{0}'.", uid);
-                }
-
-                _importers.Remove(uid);
-            }
-            finally
-            {
-                _importersLock.Exit();
-            }
+            _importers.Remove(uid);
+        }
+        finally
+        {
+            _importersLock.Exit();
         }
     }
 }

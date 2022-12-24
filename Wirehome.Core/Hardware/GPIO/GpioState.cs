@@ -1,8 +1,7 @@
-﻿namespace Wirehome.Core.Hardware.GPIO
+﻿namespace Wirehome.Core.Hardware.GPIO;
+
+public enum GpioState
 {
-    public enum GpioState
-    {
-        Low,
-        High
-    }
+    Low,
+    High
 }

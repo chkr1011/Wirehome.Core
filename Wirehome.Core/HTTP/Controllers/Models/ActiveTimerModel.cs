@@ -1,15 +1,14 @@
 ﻿using Wirehome.Core.Python.Models;
 
-namespace Wirehome.Core.HTTP.Controllers.Models
+namespace Wirehome.Core.HTTP.Controllers.Models;
+
+public sealed class ActiveTimerModel
 {
-    public sealed class ActiveTimerModel
-    {
-        public int Interval { get; set; }
+    public int Interval { get; set; }
 
-        public ExceptionPythonModel LastException { get; set; }
+    public long InvocationCount { get; set; }
 
-        public long LastDuration { get; set; }
+    public long LastDuration { get; set; }
 
-        public long InvocationCount { get; set; }
-    }
+    public ExceptionPythonModel LastException { get; set; }
 }

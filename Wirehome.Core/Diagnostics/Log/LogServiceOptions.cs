@@ -1,9 +1,8 @@
-﻿namespace Wirehome.Core.Diagnostics.Log
-{
-    public class LogServiceOptions
-    {
-        public const string Filename = "LogServiceConfiguration.json";
+﻿namespace Wirehome.Core.Diagnostics.Log;
 
-        public int MessageCount { get; set; } = 1000;
-    }
+public class LogServiceOptions
+{
+    public const string Filename = "LogServiceConfiguration.json";
+
+    public int MessageCount { get; set; } = 1000;
 }

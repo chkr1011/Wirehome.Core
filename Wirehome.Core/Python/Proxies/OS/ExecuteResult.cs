@@ -2,14 +2,12 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
-namespace Wirehome.Core.Python.Proxies.OS
+namespace Wirehome.Core.Python.Proxies.OS;
+
+public class ExecuteResult
 {
-    public class ExecuteResult
-    {
-        public string OutputData { get; set; }
+    public string ErrorData { get; set; }
 
-        public string ErrorData { get; set; }
-
-        public int ExitCode { get; set; }
-    }
+    public int ExitCode { get; set; }
+    public string OutputData { get; set; }
 }

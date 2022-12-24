@@ -3,96 +3,114 @@ using System.Collections.Generic;
 using System.Linq;
 using Wirehome.Core.Contracts;
 
-namespace Wirehome.Core.App
+namespace Wirehome.Core.App;
+
+public sealed class AppService : WirehomeCoreService
 {
-    public sealed class AppService : WirehomeCoreService
+    readonly Dictionary<string, AppPanelDefinition> _panelDefinitions = new();
+    readonly Dictionary<string, Func<object>> _statusProviders = new();
+
+    public Dictionary<string, object> GenerateStatusContainer()
     {
-        readonly Dictionary<string, AppPanelDefinition> _panelDefinitions = new();
-        readonly Dictionary<string, Func<object>> _statusProviders = new();
-
-        //readonly ResourceService _resourceService;
-
-        //public AppService(ResourceService resourceService)
-        //{
-        //    _resourceService = resourceService ?? throw new ArgumentNullException(nameof(resourceService));
-        //}
-
-        public List<AppPanelDefinition> GetRegisteredPanels()
+        var statusContainer = new Dictionary<string, object>
         {
-            lock (_panelDefinitions)
+            ["panels"] = GetRegisteredPanels()
+            //["resources"] = _resourceService.GetResources("")
+        };
+
+        lock (_statusProviders)
+        {
+            foreach (var statusProvider in _statusProviders)
             {
-                return _panelDefinitions.Values.ToList();
+                statusContainer[statusProvider.Key] = statusProvider.Value();
             }
         }
 
-        public void RegisterPanel(AppPanelDefinition definition)
-        {
-            if (definition == null) throw new ArgumentNullException(nameof(definition));
+        return statusContainer;
+    }
 
-            lock (_panelDefinitions)
-            {
-                _panelDefinitions[definition.Uid] = definition;
-            }
+    //readonly ResourceService _resourceService;
+
+    //public AppService(ResourceService resourceService)
+    //{
+    //    _resourceService = resourceService ?? throw new ArgumentNullException(nameof(resourceService));
+    //}
+
+    public List<AppPanelDefinition> GetRegisteredPanels()
+    {
+        lock (_panelDefinitions)
+        {
+            return _panelDefinitions.Values.ToList();
+        }
+    }
+
+    public bool PanelRegistered(string uid)
+    {
+        if (uid is null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public bool UnregisterPanel(string uid)
+        lock (_panelDefinitions)
         {
-            if (uid is null) throw new ArgumentNullException(nameof(uid));
+            return _panelDefinitions.ContainsKey(uid);
+        }
+    }
 
-            lock (_panelDefinitions)
-            {
-                return _panelDefinitions.Remove(uid);
-            }
+    public void RegisterPanel(AppPanelDefinition definition)
+    {
+        if (definition == null)
+        {
+            throw new ArgumentNullException(nameof(definition));
         }
 
-        public bool PanelRegistered(string uid)
+        lock (_panelDefinitions)
         {
-            if (uid is null) throw new ArgumentNullException(nameof(uid));
+            _panelDefinitions[definition.Uid] = definition;
+        }
+    }
 
-            lock (_panelDefinitions)
-            {
-                return _panelDefinitions.ContainsKey(uid);
-            }
+    public void RegisterStatusProvider(string uid, Func<object> provider)
+    {
+        if (uid is null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public void RegisterStatusProvider(string uid, Func<object> provider)
+        if (provider is null)
         {
-            if (uid is null) throw new ArgumentNullException(nameof(uid));
-            if (provider is null) throw new ArgumentNullException(nameof(provider));
-
-            lock (_statusProviders)
-            {
-                _statusProviders[uid] = provider;
-            }
+            throw new ArgumentNullException(nameof(provider));
         }
 
-        public void UnregisterStatusProvider(string uid)
+        lock (_statusProviders)
         {
-            if (uid is null) throw new ArgumentNullException(nameof(uid));
+            _statusProviders[uid] = provider;
+        }
+    }
 
-            lock (_statusProviders)
-            {
-                _statusProviders.Remove(uid);
-            }
+    public bool UnregisterPanel(string uid)
+    {
+        if (uid is null)
+        {
+            throw new ArgumentNullException(nameof(uid));
         }
 
-        public Dictionary<string, object> GenerateStatusContainer()
+        lock (_panelDefinitions)
         {
-            var statusContainer = new Dictionary<string, object>
-            {
-                ["panels"] = GetRegisteredPanels(),
-                //["resources"] = _resourceService.GetResources("")
-            };
+            return _panelDefinitions.Remove(uid);
+        }
+    }
 
-            lock (_statusProviders)
-            {
-                foreach (var statusProvider in _statusProviders)
-                {
-                    statusContainer[statusProvider.Key] = statusProvider.Value();
-                }
-            }
+    public void UnregisterStatusProvider(string uid)
+    {
+        if (uid is null)
+        {
+            throw new ArgumentNullException(nameof(uid));
+        }
 
-            return statusContainer;
+        lock (_statusProviders)
+        {
+            _statusProviders.Remove(uid);
         }
     }
 }

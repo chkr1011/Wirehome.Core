@@ -15,7 +15,7 @@ public sealed class MessageBusSender
     {
         _mqttService = mqttService ?? throw new ArgumentNullException(nameof(mqttService));
     }
-    
+
     public bool PublishToMqtt { get; set; }
 
     public void TrySend(MessageBusMessage messageBusMessage)
@@ -24,7 +24,7 @@ public sealed class MessageBusSender
         {
             return;
         }
-        
+
         if (messageBusMessage == null)
         {
             throw new ArgumentNullException(nameof(messageBusMessage));
@@ -42,7 +42,7 @@ public sealed class MessageBusSender
                 // var bufferLength = (int)_buffer.Length;
                 //
                 // var mqttPayload = new ArraySegment<byte>(buffer, 0, bufferLength).ToArray();
-                
+
                 _mqttService.Publish(new MqttPublishParameters
                 {
                     Topic = "wirehome/message_bus",

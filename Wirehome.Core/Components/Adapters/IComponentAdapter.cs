@@ -1,12 +1,11 @@
-﻿using IronPython.Runtime;
-using System;
+﻿using System;
+using IronPython.Runtime;
 
-namespace Wirehome.Core.Components.Adapters
+namespace Wirehome.Core.Components.Adapters;
+
+public interface IComponentAdapter
 {
-    public interface IComponentAdapter
-    {
-        Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
+    Func<PythonDictionary, PythonDictionary> MessagePublishedCallback { get; set; }
 
-        PythonDictionary ProcessMessage(PythonDictionary message);
-    }
+    PythonDictionary ProcessMessage(PythonDictionary message);
 }

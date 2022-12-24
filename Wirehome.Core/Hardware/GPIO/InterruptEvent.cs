@@ -1,9 +1,8 @@
-﻿namespace Wirehome.Core.Hardware.GPIO
+﻿namespace Wirehome.Core.Hardware.GPIO;
+
+public enum InterruptEvent
 {
-    public enum InterruptEvent
-    {
-        Rising,
-        
-        Falling
-    }
+    Rising,
+
+    Falling
 }

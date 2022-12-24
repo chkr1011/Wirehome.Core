@@ -1,21 +1,25 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
-namespace Wirehome.Core.Extensions
+namespace Wirehome.Core.Extensions;
+
+public static class TaskExtensions
 {
-    public static class TaskExtensions
+    public static Task Forget(this Task task, ILogger logger)
     {
-        public static Task Forget(this Task task, ILogger logger)
+        if (task == null)
         {
-            if (task == null) throw new ArgumentNullException(nameof(task));
-            if (logger == null) throw new ArgumentNullException(nameof(logger));
-
-            task.ContinueWith(
-                t => { logger.LogWarning(t.Exception, "A task exception was not observed."); },
-                TaskContinuationOptions.OnlyOnFaulted);
-
-            return task;
+            throw new ArgumentNullException(nameof(task));
         }
+
+        if (logger == null)
+        {
+            throw new ArgumentNullException(nameof(logger));
+        }
+
+        task.ContinueWith(t => { logger.LogWarning(t.Exception, "A task exception was not observed."); }, TaskContinuationOptions.OnlyOnFaulted);
+
+        return task;
     }
 }

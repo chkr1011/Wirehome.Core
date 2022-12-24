@@ -44,7 +44,7 @@ public sealed class SystemService : WirehomeCoreService
     public event EventHandler ConfigurationLoaded;
 
     public event EventHandler ServicesInitialized;
-    
+
     public event EventHandler StartupCompleted;
 
     public void OnConfigurationLoaded()

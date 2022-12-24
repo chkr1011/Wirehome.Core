@@ -29,7 +29,7 @@ public sealed class I2CBusServicePythonProxy : IInjectedPythonProxy
             // Return an empty list to indicate failure.
             return new List();
         }
-        
+
         return PythonConvert.ToPythonList(buffer);
     }
 
@@ -42,7 +42,7 @@ public sealed class I2CBusServicePythonProxy : IInjectedPythonProxy
             // Return a constant value to indicate failure.
             return ulong.MaxValue;
         }
-        
+
         return ConverterPythonProxy.ArrayToULong(buffer);
     }
 

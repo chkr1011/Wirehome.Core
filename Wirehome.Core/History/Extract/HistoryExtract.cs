@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace Wirehome.Core.History.Extract
+namespace Wirehome.Core.History.Extract;
+
+public class HistoryExtract
 {
-    public class HistoryExtract
-    {
-        public string Path { get; set; }
+    public List<HistoryExtractDataPoint> DataPoints { get; } = new();
 
-        public int EntityCount { get; set; }
-
-        public List<HistoryExtractDataPoint> DataPoints { get; } = new();
-    }
+    public int EntityCount { get; set; }
+    public string Path { get; set; }
 }

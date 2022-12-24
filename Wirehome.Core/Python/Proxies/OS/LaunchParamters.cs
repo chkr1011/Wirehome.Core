@@ -3,14 +3,12 @@
 // ReSharper disable UnusedMember.Global
 using System.Collections.Generic;
 
-namespace Wirehome.Core.Python.Proxies.OS
+namespace Wirehome.Core.Python.Proxies.OS;
+
+public class LaunchParamters
 {
-    public class LaunchParamters
-    {
-        public string FileName { get; set; }
+    public List<string> Arguments { get; set; } = new();
+    public string FileName { get; set; }
 
-        public List<string> Arguments { get; set; } = new();
-
-        public int Timeout { get; set; } = 60000;
-    }
+    public int Timeout { get; set; } = 60000;
 }

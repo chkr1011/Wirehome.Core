@@ -26,7 +26,7 @@ public sealed class Component
     }
 
     public long Hash => Interlocked.Read(ref _hash);
-    
+
     public string Uid { get; }
 
     public IReadOnlyDictionary<string, object> GetConfiguration()

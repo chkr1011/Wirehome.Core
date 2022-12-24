@@ -1,13 +1,12 @@
 ﻿using IronPython.Runtime;
 
-namespace Wirehome.Core.Components.Logic
+namespace Wirehome.Core.Components.Logic;
+
+public interface IComponentLogic
 {
-    public interface IComponentLogic
-    {
-        string Id { get; }
+    string Id { get; }
 
-        PythonDictionary ProcessMessage(PythonDictionary message);
+    PythonDictionary GetDebugInformation(PythonDictionary parameters);
 
-        PythonDictionary GetDebugInformation(PythonDictionary parameters);
-    }
+    PythonDictionary ProcessMessage(PythonDictionary message);
 }

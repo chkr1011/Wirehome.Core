@@ -1,7 +1,6 @@
-﻿namespace Wirehome.Core.HTTP.Controllers.Models
+﻿namespace Wirehome.Core.HTTP.Controllers.Models;
+
+public sealed class ActiveCountdownModel
 {
-    public sealed class ActiveCountdownModel
-    {
-        public int TimeLeft { get; set; }
-    }
+    public int TimeLeft { get; set; }
 }

@@ -1,8 +1,7 @@
-﻿namespace Wirehome.Core.History.Extract
+﻿namespace Wirehome.Core.History.Extract;
+
+public enum HistoryExtractDataType
 {
-    public enum HistoryExtractDataType
-    {
-        Text,
-        Number
-    }
+    Text,
+    Number
 }

@@ -1,40 +1,42 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
+using Microsoft.Extensions.Logging;
 
-namespace Wirehome.Core.Diagnostics.Log
+namespace Wirehome.Core.Diagnostics.Log;
+
+public class LogServiceLogger : ILogger
 {
-    public class LogServiceLogger : ILogger
+    readonly string _categoryName;
+    readonly LogService _logService;
+
+    public LogServiceLogger(LogService logService, string categoryName)
     {
-        readonly LogService _logService;
-        readonly string _categoryName;
+        _logService = logService ?? throw new ArgumentNullException(nameof(logService));
 
-        public LogServiceLogger(LogService logService, string categoryName)
+        _categoryName = categoryName;
+    }
+
+    public IDisposable BeginScope<TState>(TState state)
+    {
+        return null;
+    }
+
+    public bool IsEnabled(LogLevel logLevel)
+    {
+        return logLevel >= LogLevel.Debug;
+    }
+
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+    {
+        if (formatter == null)
         {
-            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
-
-            _categoryName = categoryName;
+            throw new ArgumentNullException(nameof(formatter));
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        if (!IsEnabled(logLevel))
         {
-            if (formatter == null) throw new ArgumentNullException(nameof(formatter));
-
-            if (!IsEnabled(logLevel))
-            {
-                return;
-            }
-
-            _logService.Publish(DateTime.UtcNow, logLevel, _categoryName, formatter(state, exception), exception);
+            return;
         }
 
-        public bool IsEnabled(LogLevel logLevel)
-        {
-            return logLevel >= LogLevel.Debug;
-        }
-
-        public IDisposable BeginScope<TState>(TState state)
-        {
-            return null;
-        }
+        _logService.Publish(DateTime.UtcNow, logLevel, _categoryName, formatter(state, exception), exception);
     }
 }

@@ -8,33 +8,35 @@ using System.Threading;
 using Wirehome.Core.Python;
 using Wirehome.Core.Storage;
 
-namespace Wirehome.Core.History
+namespace Wirehome.Core.History;
+
+public class HistoryServicePythonProxy : IInjectedPythonProxy
 {
-    public class HistoryServicePythonProxy : IInjectedPythonProxy
+    readonly HistoryService _historyService;
+    readonly StorageService _storageService;
+
+    public HistoryServicePythonProxy(StorageService storageService, HistoryService historyService)
     {
-        readonly StorageService _storageService;
-        readonly HistoryService _historyService;
+        _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+        _historyService = historyService ?? throw new ArgumentNullException(nameof(historyService));
+    }
 
-        public HistoryServicePythonProxy(StorageService storageService, HistoryService historyService)
+    public string ModuleName { get; } = "history";
+
+    public void publish(string path, object value)
+    {
+        if (path == null)
         {
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _historyService = historyService ?? throw new ArgumentNullException(nameof(historyService));
+            throw new ArgumentNullException(nameof(path));
         }
 
-        public string ModuleName { get; } = "history";
+        path = Path.Combine(_storageService.DataPath, path);
 
-        public void publish(string path, object value)
+        _historyService.Update(new HistoryUpdateOperation
         {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-
-            path = Path.Combine(_storageService.DataPath, path);
-
-            _historyService.Update(new HistoryUpdateOperation()
-            {
-                Path = path,
-                Timestamp = DateTime.UtcNow,
-                Value = value
-            }, CancellationToken.None).GetAwaiter().GetResult();
-        }
+            Path = path,
+            Timestamp = DateTime.UtcNow,
+            Value = value
+        }, CancellationToken.None).GetAwaiter().GetResult();
     }
 }

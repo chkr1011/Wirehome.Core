@@ -1,7 +1,5 @@
-﻿namespace Wirehome.Core.Devices
-{
-    public class DeviceRepository
-    {
+﻿namespace Wirehome.Core.Devices;
 
-    }
+public class DeviceRepository
+{
 }

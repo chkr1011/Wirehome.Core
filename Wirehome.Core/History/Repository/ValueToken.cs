@@ -1,12 +1,11 @@
-﻿namespace Wirehome.Core.History.Repository
-{
-    public class ValueToken : Token
-    {
-        public ValueToken(string value)
-        {
-            Value = value;
-        }
+﻿namespace Wirehome.Core.History.Repository;
 
-        public string Value { get; }
+public class ValueToken : Token
+{
+    public ValueToken(string value)
+    {
+        Value = value;
     }
+
+    public string Value { get; }
 }

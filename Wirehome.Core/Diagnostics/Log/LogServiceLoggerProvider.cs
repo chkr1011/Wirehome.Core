@@ -1,43 +1,42 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 
-namespace Wirehome.Core.Diagnostics.Log
+namespace Wirehome.Core.Diagnostics.Log;
+
+public sealed class LogServiceLoggerProvider : ILoggerProvider
 {
-    public sealed class LogServiceLoggerProvider : ILoggerProvider
+    readonly Dictionary<string, ILogger> _loggers = new();
+
+    readonly LogService _logService;
+
+    public LogServiceLoggerProvider(LogService logService)
     {
-        readonly Dictionary<string, ILogger> _loggers = new();
+        _logService = logService ?? throw new ArgumentNullException(nameof(logService));
+    }
 
-        readonly LogService _logService;
-
-        public LogServiceLoggerProvider(LogService logService)
+    public ILogger CreateLogger(string categoryName)
+    {
+        if (categoryName == null)
         {
-            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
+            categoryName = string.Empty;
         }
 
-        public ILogger CreateLogger(string categoryName)
+        lock (_loggers)
         {
-            if (categoryName == null)
+            if (_loggers.TryGetValue(categoryName, out var logger))
             {
-                categoryName = string.Empty;
-            }
-
-            lock (_loggers)
-            {
-                if (_loggers.TryGetValue(categoryName, out var logger))
-                {
-                    return logger;
-                }
-
-                logger = new LogServiceLogger(_logService, categoryName);
-                _loggers.Add(categoryName, logger);
-
                 return logger;
             }
-        }
 
-        public void Dispose()
-        {
+            logger = new LogServiceLogger(_logService, categoryName);
+            _loggers.Add(categoryName, logger);
+
+            return logger;
         }
+    }
+
+    public void Dispose()
+    {
     }
 }

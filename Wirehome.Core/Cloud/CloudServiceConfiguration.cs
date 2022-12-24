@@ -1,19 +1,18 @@
 ﻿using System;
 
-namespace Wirehome.Core.Cloud
+namespace Wirehome.Core.Cloud;
+
+public sealed class CloudServiceConfiguration
 {
-    public sealed class CloudServiceConfiguration
-    {
-        public const string Filename = "CloudServiceConfiguration.json";
+    public const string Filename = "CloudServiceConfiguration.json";
 
-        public bool IsEnabled { get; set; } = true;
+    public string ChannelAccessToken { get; set; }
 
-        public string Host { get; set; } = "wirehomecloud.azurewebsites.net";
+    public string Host { get; set; } = "wirehomecloud.azurewebsites.net";
 
-        public string ChannelAccessToken { get; set; }
+    public bool IsEnabled { get; set; } = true;
 
-        public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(10);
+    public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(10);
 
-        public bool UseCompression { get; set; } = true;
-    }
+    public bool UseCompression { get; set; } = true;
 }

@@ -1,6 +1,5 @@
-﻿namespace Wirehome.Core.Components.Groups
+﻿namespace Wirehome.Core.Components.Groups;
+
+public class ComponentGroupConfiguration
 {
-    public class ComponentGroupConfiguration
-    {
-    }
 }

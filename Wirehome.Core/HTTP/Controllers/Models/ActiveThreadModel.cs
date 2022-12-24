@@ -1,11 +1,10 @@
-﻿namespace Wirehome.Core.HTTP.Controllers.Models
+﻿namespace Wirehome.Core.HTTP.Controllers.Models;
+
+public sealed class ActiveThreadModel
 {
-    public sealed class ActiveThreadModel
-    {
-        public string CreatedTimestamp { get; set; }
+    public string CreatedTimestamp { get; set; }
 
-        public int Uptime { get; set; }
+    public int ManagedThreadId { get; set; }
 
-        public int ManagedThreadId { get; set; }
-    }
+    public int Uptime { get; set; }
 }
