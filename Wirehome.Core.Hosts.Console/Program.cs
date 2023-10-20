@@ -16,7 +16,7 @@ public static class Program
 
   {WirehomeCoreVersion.Version}
 
-  (c) Christian Kratky 2011 - 2022
+  (c) Christian Kratky 2011 - 2023
   https://github.com/chkr1011/Wirehome.Core
 
 ";

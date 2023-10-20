@@ -120,7 +120,7 @@ public sealed class MqttService : WirehomeCoreService
         var message = new MqttApplicationMessage
         {
             Topic = parameters.Topic,
-            Payload = parameters.Payload,
+            PayloadSegment = parameters.Payload,
             QualityOfServiceLevel = parameters.QualityOfServiceLevel,
             Retain = parameters.Retain
         };
@@ -236,11 +236,11 @@ public sealed class MqttService : WirehomeCoreService
 
             _mqttServer.LoadingRetainedMessageAsync += async e =>
             {
-                var retainedMessages = await storage.LoadRetainedMessagesAsync();
+                var retainedMessages = await storage.Load();
                 e.LoadedRetainedMessages.AddRange(retainedMessages);
             };
 
-            _mqttServer.RetainedMessageChangedAsync += async e => { await storage.SaveRetainedMessagesAsync(e.StoredRetainedMessages); };
+            _mqttServer.RetainedMessageChangedAsync += e => storage.Update(e.StoredRetainedMessages);
         }
 
         _mqttServer.StartAsync().GetAwaiter().GetResult();

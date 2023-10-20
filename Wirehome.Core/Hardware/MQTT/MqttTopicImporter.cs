@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -29,10 +30,7 @@ public sealed class MqttTopicImporter
     public async Task Start()
     {
         var optionsBuilder = new MqttClientOptionsBuilder().WithTcpServer(_parameters.Server, _parameters.Port).WithCredentials(_parameters.Username, _parameters.Password)
-            .WithClientId(_parameters.ClientId).WithTls(new MqttClientOptionsBuilderTlsParameters
-            {
-                UseTls = _parameters.UseTls
-            });
+            .WithClientId(_parameters.ClientId).WithTlsOptions(o => o.UseTls(_parameters.UseTls));
 
         if (!string.IsNullOrEmpty(_parameters.ClientId))
         {
@@ -105,7 +103,7 @@ public sealed class MqttTopicImporter
         _mqttService.Publish(new MqttPublishParameters
         {
             Topic = e.ApplicationMessage.Topic,
-            Payload = e.ApplicationMessage.Payload,
+            Payload = e.ApplicationMessage.PayloadSegment.Array,
             QualityOfServiceLevel = e.ApplicationMessage.QualityOfServiceLevel,
             Retain = e.ApplicationMessage.Retain
         });
