@@ -111,8 +111,8 @@ public sealed class GpioRegistryService : WirehomeCoreService
             ["type"] = "gpio_registry.event.state_changed",
             ["gpio_host_id"] = hostId,
             ["gpio_id"] = e.GpioId,
-            ["old_state"] = e.OldState?.ToString().ToLowerInvariant(),
-            ["new_state"] = e.NewState.ToString().ToLowerInvariant()
+            ["old_state"] = SerializeGpioState(e.OldState),
+            ["new_state"] = SerializeGpioState(e.NewState)
         };
 
         _messageBusService.Publish(properties);
@@ -124,5 +124,20 @@ public sealed class GpioRegistryService : WirehomeCoreService
             OldState = e.OldState,
             NewState = e.NewState
         });
+    }
+
+    static string SerializeGpioState(GpioState? state)
+    {
+        if (state == null)
+        {
+            return null;
+        }
+
+        if (state.Value == GpioState.High)
+        {
+            return "high";
+        }
+
+        return "low";
     }
 }

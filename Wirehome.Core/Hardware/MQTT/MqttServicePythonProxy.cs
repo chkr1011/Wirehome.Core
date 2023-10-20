@@ -16,6 +16,12 @@ namespace Wirehome.Core.Hardware.MQTT;
 
 public sealed class MqttServicePythonProxy : IInjectedPythonProxy
 {
+    static readonly object TrueBox = true;
+    static readonly object FalseBox = false;
+    static readonly object QoS0Box = 0;
+    static readonly object QoS1Box = 1;
+    static readonly object QoS2Box = 2;
+
     readonly MqttService _mqttService;
 
     public MqttServicePythonProxy(MqttService mqttService)
@@ -35,7 +41,7 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
         var topic = Convert.ToString(parameters.get("topic"));
         var payload = parameters.get("payload", Array.Empty<byte>());
         var qos = Convert.ToInt32(parameters.get("qos", 0));
-        var retain = Convert.ToBoolean(parameters.get("retain", false));
+        var retain = Convert.ToBoolean(parameters.get("retain", FalseBox));
 
         _mqttService.Publish(new MqttPublishParameters
         {
@@ -60,8 +66,8 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
         var clientId = Convert.ToString(parameters.get("client_id", Guid.NewGuid().ToString("N")));
         var topic = Convert.ToString(parameters.get("topic"));
         var qos = Convert.ToInt32(parameters.get("qos", 0));
-        var retain = Convert.ToBoolean(parameters.get("retain", false));
-        var tls = Convert.ToBoolean(parameters.get("tls", false));
+        var retain = Convert.ToBoolean(parameters.get("retain", FalseBox));
+        var tls = Convert.ToBoolean(parameters.get("tls", FalseBox));
         var timeout = Convert.ToInt32(parameters.get("timeout", 5000));
         var payload = parameters.get("payload", null);
 
@@ -69,10 +75,7 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
         try
         {
             var options = new MqttClientOptionsBuilder().WithTcpServer(server, port).WithCredentials(username, password).WithClientId(clientId)
-                .WithTimeout(TimeSpan.FromMilliseconds(timeout)).WithTls(new MqttClientOptionsBuilderTlsParameters
-                {
-                    UseTls = tls
-                }).Build();
+                .WithTimeout(TimeSpan.FromMilliseconds(timeout)).WithTlsOptions(o => o.UseTls(tls)).Build();
 
             mqttClient.ConnectAsync(options).GetAwaiter().GetResult();
 
@@ -99,8 +102,8 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
         }
         finally
         {
-            mqttClient?.DisconnectAsync().GetAwaiter().GetResult();
-            mqttClient?.Dispose();
+            mqttClient.DisconnectAsync().GetAwaiter().GetResult();
+            mqttClient.Dispose();
         }
     }
 
@@ -115,7 +118,7 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
         {
             Server = Convert.ToString(parameters.get("server")),
             Port = Convert.ToInt32(parameters.get("port", 1883)),
-            UseTls = Convert.ToBoolean(parameters.get("tls", false)),
+            UseTls = Convert.ToBoolean(parameters.get("tls", FalseBox)),
             Username = Convert.ToString(parameters.get("username")),
             Password = Convert.ToString(parameters.get("password")),
             ClientId = Convert.ToString(parameters.get("client_id", Guid.NewGuid().ToString("N"))),
@@ -150,9 +153,9 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
                 ["subscription_uid"] = uid,
                 ["client_id"] = eventArgs.ClientId,
                 ["topic"] = eventArgs.ApplicationMessage.Topic,
-                ["payload"] = new Bytes(eventArgs.ApplicationMessage.Payload ?? Array.Empty<byte>()),
-                ["qos"] = (int)eventArgs.ApplicationMessage.QualityOfServiceLevel,
-                ["retain"] = eventArgs.ApplicationMessage.Retain
+                ["payload"] = new Bytes(eventArgs.ApplicationMessage.PayloadSegment.Array),
+                ["qos"] = ConvertQoS(eventArgs.ApplicationMessage.QualityOfServiceLevel),
+                ["retain"] = eventArgs.ApplicationMessage.Retain ? TrueBox : FalseBox
             };
 
             callback(pythonMessage);
@@ -167,5 +170,22 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
         }
 
         _mqttService.Unsubscribe(uid);
+    }
+
+    static object ConvertQoS(MqttQualityOfServiceLevel qos)
+    {
+        switch (qos)
+        {
+            case MqttQualityOfServiceLevel.ExactlyOnce:
+                return QoS2Box;
+
+            case MqttQualityOfServiceLevel.AtLeastOnce:
+                return QoS1Box;
+
+            case MqttQualityOfServiceLevel.AtMostOnce:
+                return QoS0Box;
+        }
+
+        throw new NotSupportedException();
     }
 }

@@ -46,7 +46,7 @@ public sealed class LinuxGpioAdapter : IGpioAdapter
 
         _eventThread.Start();
 
-        _logger.LogInformation("Started GPIO polling thread.");
+        _logger.LogInformation("Started GPIO polling thread");
     }
 
     public void EnableInterrupt(int gpioId, GpioInterruptEdge edge)
@@ -85,7 +85,7 @@ public sealed class LinuxGpioAdapter : IGpioAdapter
 
         gpio.SetDirection(direction);
 
-        _logger.LogInformation($"GPIO {gpioId} direction set to '{direction}'.");
+        _logger.LogInformation("GPIO {0} direction set to '{1}'", gpioId, direction);
     }
 
     public void WriteState(int gpioId, GpioState state)
@@ -111,7 +111,7 @@ public sealed class LinuxGpioAdapter : IGpioAdapter
         var gpio = new Gpio(gpioId);
         _gpios[gpioId] = gpio;
 
-        _logger.LogInformation($"Exported GPIO {gpioId}.");
+        _logger.LogInformation("Exported GPIO {0}", gpioId);
 
         return gpio;
     }
@@ -130,14 +130,14 @@ public sealed class LinuxGpioAdapter : IGpioAdapter
             }
             catch (Exception exception)
             {
-                _logger.Log(LogLevel.Error, exception, "Error while firing GPIO state changed event.");
+                _logger.Log(LogLevel.Error, exception, "Error while firing GPIO state changed event");
             }
         }
     }
 
     void OnGpioChanged(GpioAdapterStateChangedEventArgs eventArgs)
     {
-        _logger.Log(LogLevel.Information, $"Interrupt GPIO {eventArgs.GpioId} changed from {eventArgs.OldState} to {eventArgs.NewState}.");
+        _logger.LogInformation("Interrupt GPIO {0} changed from {1} to {2}", eventArgs.GpioId, eventArgs.OldState, eventArgs.NewState);
 
         GpioStateChanged?.Invoke(this, eventArgs);
     }
@@ -172,11 +172,11 @@ public sealed class LinuxGpioAdapter : IGpioAdapter
             }
             catch (Exception exception)
             {
-                _logger.Log(LogLevel.Error, exception, "Error while polling interrupt inputs.");
+                _logger.Log(LogLevel.Error, exception, "Error while polling interrupt inputs");
             }
             finally
             {
-                Thread.Sleep(10);
+                Thread.Sleep(50);
             }
         }
     }
