@@ -1,11 +1,12 @@
-﻿using System;
+﻿#pragma warning disable IDE1006 // Naming Styles
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedType.Global
+
+using System;
 using System.Linq;
 using IronPython.Runtime;
 using Wirehome.Core.Python;
-
-#pragma warning disable IDE1006 // Naming Styles
-// ReSharper disable InconsistentNaming
-// ReSharper disable UnusedMember.Global
 
 namespace Wirehome.Core.Notifications;
 

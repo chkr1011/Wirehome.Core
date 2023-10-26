@@ -12,7 +12,7 @@ using IronPython.Runtime;
 
 namespace Wirehome.Core.Python.Proxies;
 
-public class ConverterPythonProxy : IInjectedPythonProxy
+public sealed class ConverterPythonProxy : IInjectedPythonProxy
 {
     public string ModuleName { get; } = "convert";
 
@@ -154,7 +154,7 @@ public class ConverterPythonProxy : IInjectedPythonProxy
     {
         if (value is IEnumerable enumerable)
         {
-            PythonConvert.ToPythonList(enumerable);
+            return PythonConvert.ToPythonList(enumerable);
         }
 
         return new List
@@ -177,7 +177,7 @@ public class ConverterPythonProxy : IInjectedPythonProxy
 
         if (value is Bytes b1)
         {
-            return Encoding.UTF8.GetString(b1.GetUnsafeByteArray());
+            return Encoding.UTF8.GetString(b1.ToArray());
         }
 
         if (value is byte[] b2)
@@ -200,7 +200,7 @@ public class ConverterPythonProxy : IInjectedPythonProxy
 
     internal static ulong ArrayToULong(IList<byte> array)
     {
-        ulong result = 0;
+        var result = 0UL;
         for (var i = 0; i < array.Count; i++)
         {
             result |= (ulong)array[i] << (8 * i);
@@ -208,19 +208,16 @@ public class ConverterPythonProxy : IInjectedPythonProxy
 
         return result;
     }
-
-    internal static byte[] ListToByteArray(List list)
+    
+    internal static void ListToByteArray(List list, byte[] target)
     {
-        var buffer = new byte[list.Count];
         for (var i = 0; i < list.Count; i++)
         {
-            buffer[i] = Convert.ToByte(list[i]);
+            target[i] = Convert.ToByte(list[i]);
         }
-
-        return buffer;
     }
 
-    internal static byte[] ULongToArray(ulong buffer, int length)
+    static byte[] ULongToArray(ulong buffer, int length)
     {
         var result = new byte[length];
         for (var i = 0; i < length; i++)
@@ -229,5 +226,13 @@ public class ConverterPythonProxy : IInjectedPythonProxy
         }
 
         return result;
+    }
+    
+    internal static void ULongToArray(ulong buffer, byte[] target, int length)
+    {
+        for (var i = 0; i < length; i++)
+        {
+            target[i] = (byte)(buffer >> (8 * i));
+        }
     }
 }

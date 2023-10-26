@@ -19,14 +19,14 @@ public sealed class I2CBusService : WirehomeCoreService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public int Read(string busId, int deviceAddress, byte[] buffer)
+    public int Read(string busId, int deviceAddress, byte[] buffer, int length)
     {
         if (busId == null)
         {
             throw new ArgumentNullException(nameof(busId));
         }
 
-        return GetAdapter(busId).Read(deviceAddress, buffer);
+        return GetAdapter(busId).Read(deviceAddress, buffer, length);
     }
 
     public void RegisterAdapter(string busId, II2CBusAdapter adapter)
@@ -37,27 +37,27 @@ public sealed class I2CBusService : WirehomeCoreService
         }
 
         _adapters[busId] = adapter ?? throw new ArgumentNullException(nameof(adapter));
-        _logger.Log(LogLevel.Information, $"Registered I2C bus ID '{busId}'.");
+        _logger.Log(LogLevel.Information, "Registered I2C bus ID '{0}'", busId);
     }
 
-    public int Write(string busId, int deviceAddress, byte[] buffer)
+    public int Write(string busId, int deviceAddress, byte[] buffer, int length)
     {
         if (busId == null)
         {
             throw new ArgumentNullException(nameof(busId));
         }
 
-        return GetAdapter(busId).Write(deviceAddress, buffer);
+        return GetAdapter(busId).Write(deviceAddress, buffer, length);
     }
 
-    public int WriteRead(string busId, int deviceAddress, byte[] writeBuffer, byte[] readBuffer)
+    public int WriteRead(string busId, int deviceAddress, byte[] writeBuffer, int writeBufferLength, byte[] readBuffer, int readBufferLength)
     {
         if (busId == null)
         {
             throw new ArgumentNullException(nameof(busId));
         }
 
-        return GetAdapter(busId).WriteRead(deviceAddress, writeBuffer, readBuffer);
+        return GetAdapter(busId).WriteRead(deviceAddress, writeBuffer, writeBufferLength, readBuffer, readBufferLength);
     }
 
     protected override void OnStart()

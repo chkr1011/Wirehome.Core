@@ -82,7 +82,7 @@ public static class PythonConvert
 
         if (payload is Bytes bytes)
         {
-            return bytes.GetUnsafeByteArray();
+            return bytes.ToArray();
         }
 
         if (payload is string s)
@@ -120,12 +120,7 @@ public static class PythonConvert
             return new Bytes(buffer);
         }
 
-        if (value is null || value is string || value is bool)
-        {
-            return value;
-        }
-
-        if (value is int || value is float || value is long || value is double || value is Complex)
+        if (value is null or string or bool or int or float or long or double or Complex or BigInteger)
         {
             return value;
         }
@@ -217,6 +212,22 @@ public static class PythonConvert
         }
 
         return pythonDictionary;
+    }
+
+    public static List ToPythonList(IEnumerable<byte> items)
+    {
+        if (items == null)
+        {
+            return null;
+        }
+
+        var list = new List();
+        foreach (var item in items)
+        {
+            list.Add(item);
+        }
+
+        return list;
     }
 
     public static List ToPythonList(IEnumerable items)

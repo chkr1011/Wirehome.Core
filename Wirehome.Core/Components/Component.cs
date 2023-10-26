@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading;
@@ -11,9 +10,9 @@ namespace Wirehome.Core.Components;
 
 public sealed class Component
 {
-    readonly ConcurrentDictionary<string, object> _configuration = new();
-    readonly ConcurrentDictionary<string, object> _settings = new();
-    readonly ConcurrentDictionary<string, object> _status = new();
+    readonly Dictionary<string, object> _configuration = new();
+    readonly Dictionary<string, object> _settings = new();
+    readonly Dictionary<string, object> _status = new();
     readonly HashSet<string> _tags = new();
 
     long _hash;
@@ -81,7 +80,7 @@ public sealed class Component
     {
         lock (_configuration)
         {
-            if (_configuration.TryRemove(uid, out oldValue))
+            if (_configuration.Remove(uid, out oldValue))
             {
                 IncrementHash();
 
@@ -96,7 +95,7 @@ public sealed class Component
     {
         lock (_settings)
         {
-            if (_settings.TryRemove(uid, out oldValue))
+            if (_settings.Remove(uid, out oldValue))
             {
                 IncrementHash();
 

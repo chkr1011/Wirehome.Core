@@ -12,19 +12,19 @@ public sealed class TestI2CBusAdapter : II2CBusAdapter
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public int Read(int deviceAddress, byte[] buffer)
+    public int Read(int deviceAddress, byte[] buffer, int length)
     {
         //_logger.Log(LogLevel.Information, $"Fake Read: Device = {deviceAddress}");
         return 0;
     }
 
-    public int Write(int deviceAddress, byte[] buffer)
+    public int Write(int deviceAddress, byte[] buffer, int length)
     {
         //_logger.Log(LogLevel.Information, $"Fake Write: Device = {deviceAddress}; Buffer = {buffer.ToHexString()}");
         return 0;
     }
 
-    public int WriteRead(int deviceAddress, byte[] writeBuffer, byte[] readBuffer)
+    public int WriteRead(int deviceAddress, byte[] writeBuffer, int writeBufferLength, byte[] readBuffer, int readBufferLength)
     {
         //_logger.Log(LogLevel.Information, $"Fake WriteRead: Device = {deviceAddress}; WriteBuffer = {writeBuffer.ToHexString()}");
         return 0;

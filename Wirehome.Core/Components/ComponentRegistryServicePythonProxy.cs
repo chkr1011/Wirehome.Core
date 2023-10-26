@@ -87,7 +87,7 @@ public sealed class ComponentRegistryServicePythonProxy : IInjectedPythonProxy
     {
         try
         {
-            return PythonConvert.ToPythonDictionary(PythonConvert.ToPythonDictionary(_componentRegistryService.ProcessComponentMessage(component_uid, message)));
+            return PythonConvert.ToPythonDictionary(_componentRegistryService.ProcessComponentMessage(component_uid, message));
         }
         catch (ComponentNotFoundException)
         {

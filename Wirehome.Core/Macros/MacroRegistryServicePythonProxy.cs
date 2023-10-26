@@ -1,6 +1,7 @@
 ﻿#pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedType.Global
 
 using System;
 using IronPython.Runtime;
@@ -8,7 +9,7 @@ using Wirehome.Core.Python;
 
 namespace Wirehome.Core.Macros;
 
-public class MacroRegistryServicePythonProxy : IInjectedPythonProxy
+public sealed class MacroRegistryServicePythonProxy : IInjectedPythonProxy
 {
     readonly MacroRegistryService _macroRegistryService;
 
