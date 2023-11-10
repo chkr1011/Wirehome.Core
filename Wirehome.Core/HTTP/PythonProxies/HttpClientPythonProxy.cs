@@ -48,7 +48,7 @@ public sealed class HttpClientPythonProxy : IInjectedPythonProxy, IDisposable
                 var responseContentType = Convert.ToString(parameters.get("response_content_type", "text"));
                 if (responseContentType == "raw")
                 {
-                    var rawContent = new List();
+                    var rawContent = new PythonList();
                     foreach (var contentByte in content)
                     {
                         rawContent.Add(contentByte);

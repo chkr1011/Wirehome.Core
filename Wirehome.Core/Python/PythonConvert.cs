@@ -24,7 +24,7 @@ public static class PythonConvert
             return ToWirehomeDictionary(pythonDictionary);
         }
 
-        if (value is List pythonList)
+        if (value is PythonList pythonList)
         {
             var list = new List<object>();
             foreach (var item in pythonList)
@@ -51,7 +51,7 @@ public static class PythonConvert
             return @object;
         }
 
-        if (value is List pythonList) // Python list
+        if (value is PythonList pythonList) // Python list
         {
             var array = new JArray();
             foreach (var item in pythonList)
@@ -110,7 +110,7 @@ public static class PythonConvert
             return value;
         }
 
-        if (value is List)
+        if (value is PythonList)
         {
             return value;
         }
@@ -149,7 +149,7 @@ public static class PythonConvert
         // Convert JSON stuff.
         if (value is JArray array)
         {
-            var result = new List(); // This is a python list.
+            var result = new PythonList(); // This is a python list.
             foreach (var item in array)
             {
                 result.Add(ToPython(item));
@@ -181,7 +181,7 @@ public static class PythonConvert
 
         if (value is IEnumerable items)
         {
-            var result = new List(); // This is a python list.
+            var result = new PythonList(); // This is a python list.
             foreach (var item in items)
             {
                 result.Add(ToPython(item));
@@ -214,14 +214,14 @@ public static class PythonConvert
         return pythonDictionary;
     }
 
-    public static List ToPythonList(IEnumerable<byte> items)
+    public static PythonList ToPythonList(IEnumerable<byte> items)
     {
         if (items == null)
         {
             return null;
         }
 
-        var list = new List();
+        var list = new PythonList();
         foreach (var item in items)
         {
             list.Add(item);
@@ -230,14 +230,14 @@ public static class PythonConvert
         return list;
     }
 
-    public static List ToPythonList(IEnumerable items)
+    public static PythonList ToPythonList(IEnumerable items)
     {
         if (items == null)
         {
             return null;
         }
 
-        var list = new List();
+        var list = new PythonList();
         foreach (var item in items)
         {
             list.Add(ToPython(item));

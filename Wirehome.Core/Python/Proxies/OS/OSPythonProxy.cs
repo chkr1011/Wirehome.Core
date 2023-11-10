@@ -106,7 +106,7 @@ public class OSPythonProxy : IInjectedPythonProxy
         {
             launchParameters.Arguments.Add(argumentsText);
         }
-        else if (arguments is List argumentsList)
+        else if (arguments is PythonList argumentsList)
         {
             foreach (var argument in argumentsList)
             {

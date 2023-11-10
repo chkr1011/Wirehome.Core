@@ -19,8 +19,8 @@ public static class ArraySegmentExtensions
         return BitConverter.ToString(source.ToArray());
     }
 
-    public static string ToHexString(this byte[] source)
+    public static string ToHexString(this byte[] source, int length)
     {
-        return BitConverter.ToString(source, 0, source.Length);
+        return BitConverter.ToString(source, 0, length);
     }
 }

@@ -16,7 +16,7 @@ public sealed class ConverterPythonProxy : IInjectedPythonProxy
 {
     public string ModuleName { get; } = "convert";
 
-    public static List hex_string_to_list(string hexString)
+    public static PythonList hex_string_to_list(string hexString)
     {
         if (hexString == null)
         {
@@ -25,7 +25,7 @@ public sealed class ConverterPythonProxy : IInjectedPythonProxy
 
         if (hexString.Length == 0)
         {
-            return new List();
+            return new PythonList();
         }
 
         if (hexString.Length % 2 != 0)
@@ -43,7 +43,7 @@ public sealed class ConverterPythonProxy : IInjectedPythonProxy
         return PythonConvert.ToPythonList(buffer);
     }
 
-    public static string list_to_bit_string(List list)
+    public static string list_to_bit_string(PythonList list)
     {
         if (list == null)
         {
@@ -75,7 +75,7 @@ public sealed class ConverterPythonProxy : IInjectedPythonProxy
         return new string(buffer);
     }
 
-    public static string list_to_hex_string(List list)
+    public static string list_to_hex_string(PythonList list)
     {
         if (list == null)
         {
@@ -91,7 +91,7 @@ public sealed class ConverterPythonProxy : IInjectedPythonProxy
         return BitConverter.ToString(buffer).Replace("-", string.Empty, StringComparison.Ordinal);
     }
 
-    public static ulong list_to_ulong(List list)
+    public static ulong list_to_ulong(PythonList list)
     {
         if (list == null)
         {
@@ -150,14 +150,14 @@ public sealed class ConverterPythonProxy : IInjectedPythonProxy
         return result;
     }
 
-    public static List to_list(object value)
+    public static PythonList to_list(object value)
     {
         if (value is IEnumerable enumerable)
         {
             return PythonConvert.ToPythonList(enumerable);
         }
 
-        return new List
+        return new PythonList
         {
             PythonConvert.ToPython(value)
         };
@@ -193,7 +193,7 @@ public sealed class ConverterPythonProxy : IInjectedPythonProxy
         return Convert.ToString(value, CultureInfo.InvariantCulture);
     }
 
-    public static List ulong_to_list(ulong buffer, int length)
+    public static PythonList ulong_to_list(ulong buffer, int length)
     {
         return PythonConvert.ToPythonList(ULongToArray(buffer, length));
     }
@@ -209,7 +209,7 @@ public sealed class ConverterPythonProxy : IInjectedPythonProxy
         return result;
     }
     
-    internal static void ListToByteArray(List list, byte[] target)
+    internal static void ListToByteArray(PythonList list, byte[] target)
     {
         for (var i = 0; i < list.Count; i++)
         {

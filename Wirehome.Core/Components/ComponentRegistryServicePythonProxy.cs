@@ -52,9 +52,9 @@ public sealed class ComponentRegistryServicePythonProxy : IInjectedPythonProxy
         return PythonConvert.ToPython(_componentRegistryService.GetComponentStatusValue(component_uid, status_uid, default_value));
     }
 
-    public List get_uids()
+    public PythonList get_uids()
     {
-        var result = new List();
+        var result = new PythonList();
         foreach (var componentUid in _componentRegistryService.GetComponentUids())
         {
             result.Add(componentUid);

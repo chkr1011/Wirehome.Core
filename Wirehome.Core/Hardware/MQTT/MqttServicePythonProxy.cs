@@ -2,8 +2,10 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 // ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedType.Global
 
 using System;
+using System.Text;
 using IronPython.Runtime;
 using MQTTnet;
 using MQTTnet.Adapter;
@@ -148,12 +150,14 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
 
         return _mqttService.Subscribe(uid, topic_filter, eventArgs =>
         {
+            var payload = eventArgs.ApplicationMessage.PayloadSegment.ToArray();
+
             var pythonMessage = new PythonDictionary
             {
                 ["subscription_uid"] = uid,
                 ["client_id"] = eventArgs.ClientId,
                 ["topic"] = eventArgs.ApplicationMessage.Topic,
-                ["payload"] = new Bytes(eventArgs.ApplicationMessage.PayloadSegment.Array),
+                ["payload"] = new Bytes(payload),
                 ["qos"] = ConvertQoS(eventArgs.ApplicationMessage.QualityOfServiceLevel),
                 ["retain"] = eventArgs.ApplicationMessage.Retain ? TrueBox : FalseBox
             };

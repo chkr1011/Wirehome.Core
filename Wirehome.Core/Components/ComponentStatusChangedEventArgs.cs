@@ -11,5 +11,6 @@ public sealed class ComponentStatusChangedEventArgs : EventArgs
     public object OldValue { get; set; }
 
     public string StatusUid { get; set; }
+
     public DateTime Timestamp { get; set; }
 }

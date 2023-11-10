@@ -21,10 +21,10 @@
     <ItemGroup>
         <PackageReference Include="CoAPnet" Version="1.2.0" />
         <PackageReference Include="CoAPnet.Extensions.DTLS" Version="1.2.0" />
-        <PackageReference Include="IronPython" Version="2.7.12" />
-        <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
+        <PackageReference Include="IronPython" Version="3.4.1" />
+        <PackageReference Include="IronPython.StdLib" Version="3.4.1" />
         <PackageReference Include="MessagePack" Version="2.5.129" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.12" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.13" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />

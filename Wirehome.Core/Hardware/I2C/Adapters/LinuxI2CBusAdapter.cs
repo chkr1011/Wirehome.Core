@@ -55,7 +55,7 @@ public sealed class LinuxI2CBusAdapter : II2CBusAdapter
             SafeNativeMethods.Ioctl(_handle, I2CSlave, deviceAddress);
             var writeResult = SafeNativeMethods.Write(_handle, buffer, length, 0);
 
-            _logger.LogDebug("Written to '{0}' (Address: {1}; Buffer: {2}; Result: {3})", _filename, deviceAddress, buffer.ToHexString(), writeResult);
+            _logger.LogDebug("Written to '{0}' (Address: {1}; Buffer: {2}; Result: {3})", _filename, deviceAddress, buffer.ToHexString(length), writeResult);
 
             return writeResult;
         }

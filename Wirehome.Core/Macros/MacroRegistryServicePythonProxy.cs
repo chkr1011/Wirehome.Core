@@ -25,9 +25,9 @@ public sealed class MacroRegistryServicePythonProxy : IInjectedPythonProxy
         return PythonConvert.ToPythonDictionary(_macroRegistryService.ExecuteMacro(uid));
     }
 
-    public List get_uids()
+    public PythonList get_uids()
     {
-        var result = new List();
+        var result = new PythonList();
         foreach (var componentUid in _macroRegistryService.GetMacroUids())
         {
             result.Add(componentUid);

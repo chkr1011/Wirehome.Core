@@ -37,11 +37,11 @@ public class DebuggerPythonProxy : IPythonProxy
         _isEnabled = true;
     }
 
-    public List get_trace()
+    public PythonList get_trace()
     {
         lock (_trace)
         {
-            var trace = new List();
+            var trace = new PythonList();
             trace.AddRange(_trace);
             return trace;
         }

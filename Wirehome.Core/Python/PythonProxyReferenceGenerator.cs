@@ -148,7 +148,7 @@ public sealed class PythonProxyReferenceGenerator
             return "dictionary";
         }
 
-        if (type == typeof(List))
+        if (type == typeof(PythonList))
         {
             return "list";
         }

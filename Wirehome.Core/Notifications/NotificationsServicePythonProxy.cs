@@ -26,7 +26,7 @@ public sealed class NotificationsServicePythonProxy : IInjectedPythonProxy
         _notificationsService.DeleteNotification(Guid.Parse(uid));
     }
 
-    public List find_all_by_tag(string tag)
+    public PythonList find_all_by_tag(string tag)
     {
         if (tag is null)
         {
@@ -34,7 +34,7 @@ public sealed class NotificationsServicePythonProxy : IInjectedPythonProxy
         }
 
         var matchingNotifications = _notificationsService.GetNotifications().Where(n => n.Tag == tag).Select(n => n.Uid);
-        var result = new List();
+        var result = new PythonList();
 
         foreach (var notificationUid in matchingNotifications)
         {

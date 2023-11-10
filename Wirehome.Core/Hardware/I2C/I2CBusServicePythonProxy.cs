@@ -22,7 +22,7 @@ public sealed class I2CBusServicePythonProxy : IInjectedPythonProxy
 
     public string ModuleName => "i2c";
 
-    public List read(string bus_id, int device_address, int length)
+    public PythonList read(string bus_id, int device_address, int length)
     {
         var buffer = ArrayPool<byte>.Shared.Rent(length);
         try
@@ -31,7 +31,7 @@ public sealed class I2CBusServicePythonProxy : IInjectedPythonProxy
             if (result == -1)
             {
                 // Return an empty list to indicate failure.
-                return new List();
+                return new PythonList();
             }
 
             return PythonConvert.ToPythonList(buffer);
@@ -62,7 +62,7 @@ public sealed class I2CBusServicePythonProxy : IInjectedPythonProxy
         }
     }
 
-    public int write(string bus_id, int device_address, List value)
+    public int write(string bus_id, int device_address, PythonList value)
     {
         if (bus_id == null)
         {
@@ -105,7 +105,7 @@ public sealed class I2CBusServicePythonProxy : IInjectedPythonProxy
         }
     }
 
-    public List write_read(string bus_id, int device_address, List write_buffer, int read_buffer_length)
+    public PythonList write_read(string bus_id, int device_address, PythonList write_buffer, int read_buffer_length)
     {
         if (write_buffer is null)
         {
@@ -122,7 +122,7 @@ public sealed class I2CBusServicePythonProxy : IInjectedPythonProxy
             if (result == -1)
             {
                 // Return a list with 0 items to indicate failure.
-                return new List();
+                return new PythonList();
             }
 
             return PythonConvert.ToPythonList(readBuffer);
