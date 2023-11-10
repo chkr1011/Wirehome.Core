@@ -4,8 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
-using MQTTnet.Packets;
-using MQTTnet.Protocol;
 using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
@@ -66,13 +64,14 @@ public sealed class MqttServerStorage
             try
             {
                 List<MqttApplicationMessage> messages;
+                
+                if (!_messagesHaveChanged)
+                {
+                    continue;
+                }
+                
                 lock (_messagesSyncRoot)
                 {
-                    if (!_messagesHaveChanged)
-                    {
-                        continue;
-                    }
-
                     messages = _messages;
                     _messages = null;
                     _messagesHaveChanged = false;
@@ -81,7 +80,7 @@ public sealed class MqttServerStorage
                 var model = messages.ConvertAll(MqttRetainedMessageModel.Create);
                 _storageService.WriteSerializedValue(model, "RetainedMqttMessages.json");
 
-                _logger.LogInformation($"{messages.Count} retained MQTT messages written to storage");
+                _logger.LogInformation("{MessagesCount} retained MQTT messages written to storage", messages.Count);
             }
             catch (Exception exception)
             {
@@ -89,63 +88,10 @@ public sealed class MqttServerStorage
             }
             finally
             {
-                await Task.Delay(TimeSpan.FromSeconds(60), _systemCancellationToken.Token).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromMinutes(15), _systemCancellationToken.Token).ConfigureAwait(false);
             }
         }
     }
 
-    sealed class MqttRetainedMessageModel
-    {
-        public string ContentType { get; set; }
-        public byte[] CorrelationData { get; set; }
-        public byte[] Payload { get; set; }
-        public MqttPayloadFormatIndicator PayloadFormatIndicator { get; set; }
-        public MqttQualityOfServiceLevel QualityOfServiceLevel { get; set; }
-        public string ResponseTopic { get; set; }
-        public string Topic { get; set; }
-        public List<MqttUserProperty> UserProperties { get; set; }
-
-        public static MqttRetainedMessageModel Create(MqttApplicationMessage message)
-        {
-            if (message == null)
-            {
-                throw new ArgumentNullException(nameof(message));
-            }
-
-            return new MqttRetainedMessageModel
-            {
-                Topic = message.Topic,
-
-                // Create a copy of the buffer from the payload segment because 
-                // it cannot be serialized and deserialized with the JSON serializer.
-                Payload = message.PayloadSegment.ToArray(),
-                UserProperties = message.UserProperties,
-                ResponseTopic = message.ResponseTopic,
-                CorrelationData = message.CorrelationData,
-                ContentType = message.ContentType,
-                PayloadFormatIndicator = message.PayloadFormatIndicator,
-                QualityOfServiceLevel = message.QualityOfServiceLevel
-
-                // Other properties like "Retain" are not if interest in the storage.
-                // That's why a custom model makes sense.
-            };
-        }
-
-        public MqttApplicationMessage ToApplicationMessage()
-        {
-            return new MqttApplicationMessage
-            {
-                Topic = Topic,
-                PayloadSegment = new ArraySegment<byte>(Payload ?? Array.Empty<byte>()),
-                PayloadFormatIndicator = PayloadFormatIndicator,
-                ResponseTopic = ResponseTopic,
-                CorrelationData = CorrelationData,
-                ContentType = ContentType,
-                UserProperties = UserProperties,
-                QualityOfServiceLevel = QualityOfServiceLevel,
-                Dup = false,
-                Retain = true
-            };
-        }
-    }
+   
 }
