@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MessagePack.Formatters;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Contracts;
 using Wirehome.Core.Diagnostics;
@@ -24,9 +26,11 @@ public sealed class MessageBusService : WirehomeCoreService
     readonly BlockingCollection<MessageBusMessage> _messageQueue = new();
 
     readonly OperationsPerSecondCounter _processingRateCounter;
-    readonly ConcurrentDictionary<string, MessageBusSubscriber> _subscribers = new();
 
+    readonly object _subscribersSyncRoot = new();
     readonly SystemCancellationToken _systemCancellationToken;
+
+    ReadOnlyDictionary<string, MessageBusSubscriber> _subscribers = new(new Dictionary<string, MessageBusSubscriber>());
 
     public MessageBusService(StorageService storageService,
         SystemStatusService systemStatusService,
@@ -127,7 +131,15 @@ public sealed class MessageBusService : WirehomeCoreService
             uid = Guid.NewGuid().ToString("D");
         }
 
-        _subscribers[uid] = new MessageBusSubscriber(uid, filter, callback, _logger);
+        lock (_subscribersSyncRoot)
+        {
+            var subscribers = new Dictionary<string, MessageBusSubscriber>(_subscribers)
+            {
+                [uid] = new(uid, filter, callback, _logger)
+            };
+
+            _subscribers = subscribers.AsReadOnly();
+        }
 
         return uid;
     }
@@ -139,17 +151,25 @@ public sealed class MessageBusService : WirehomeCoreService
             throw new ArgumentNullException(nameof(uid));
         }
 
-        _subscribers.Remove(uid, out _);
+        lock (_subscribers)
+        {
+            var subscribers = new Dictionary<string, MessageBusSubscriber>(_subscribers);
+            subscribers.Remove(uid);
+
+            _subscribers = subscribers.AsReadOnly();
+        }
     }
 
     protected override void OnStart()
     {
         var cancellationToken = _systemCancellationToken.Token;
-        ParallelTask.Start(() => ProcessMessagesLoop(cancellationToken), cancellationToken, _logger, TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness);
+        ParallelTask.Start(() => ProcessMessagesLoop(cancellationToken), cancellationToken, _logger, TaskCreationOptions.LongRunning);
     }
 
     void ProcessMessagesLoop(CancellationToken cancellationToken)
     {
+        Thread.CurrentThread.Priority = ThreadPriority.Highest;
+
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -175,13 +195,12 @@ public sealed class MessageBusService : WirehomeCoreService
                 }
 
                 // Check for affected subscribers.
-                foreach (var subscriberItem in _subscribers)
+                // ReSharper disable once InconsistentlySynchronizedField
+                foreach (var subscriberItem in _subscribers.Values)
                 {
-                    var subscriber = subscriberItem.Value;
-
-                    if (MessageBusFilterComparer.IsMatch(compareMessage, subscriber.Filter))
+                    if (MessageBusFilterComparer.IsMatch(compareMessage, subscriberItem.Filter))
                     {
-                        subscriber.ProcessMessage(messageBusMessage.InnerMessage);
+                        subscriberItem.ProcessMessage(messageBusMessage.InnerMessage);
 
                         _processingRateCounter.Increment();
                     }
@@ -195,7 +214,7 @@ public sealed class MessageBusService : WirehomeCoreService
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, "Error while dispatching messages.");
+                _logger.LogError(exception, "Error while dispatching messages");
                 Thread.Sleep(TimeSpan.FromSeconds(1));
             }
         }
