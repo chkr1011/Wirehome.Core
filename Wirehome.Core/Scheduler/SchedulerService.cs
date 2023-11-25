@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace Wirehome.Core.Scheduler;
 
 public sealed class SchedulerService : WirehomeCoreService
 {
-    readonly Dictionary<string, ActiveCountdown> _activeCountdowns = new();
+    readonly List<ActiveCountdown> _activeCountdowns = new();
     readonly Dictionary<string, ActiveThread> _activeThreads = new();
     readonly Dictionary<string, ActiveTimer> _activeTimers = new();
 
@@ -45,31 +46,31 @@ public sealed class SchedulerService : WirehomeCoreService
 
         lock (_activeCountdowns)
         {
-            return _activeCountdowns.ContainsKey(uid);
+            return _activeCountdowns.Any(i => i.Uid.Equals(uid));
         }
     }
 
-    public List<ActiveCountdown> GetActiveCountdowns()
+    public ReadOnlyCollection<ActiveCountdown> GetActiveCountdowns()
     {
         lock (_activeCountdowns)
         {
-            return _activeCountdowns.Values.ToList();
+            return _activeCountdowns.AsReadOnly();
         }
     }
 
-    public IList<ActiveThread> GetActiveThreads()
+    public ReadOnlyCollection<ActiveThread> GetActiveThreads()
     {
         lock (_activeThreads)
         {
-            return _activeThreads.Values.ToList();
+            return _activeThreads.Values.ToList().AsReadOnly();
         }
     }
 
-    public List<ActiveTimer> GetActiveTimers()
+    public ReadOnlyCollection<ActiveTimer> GetActiveTimers()
     {
-        lock (_activeThreads)
+        lock (_activeTimers)
         {
-            return _activeTimers.Values.ToList();
+            return _activeTimers.Values.ToList().AsReadOnly();
         }
     }
 
@@ -87,10 +88,12 @@ public sealed class SchedulerService : WirehomeCoreService
 
         lock (_activeCountdowns)
         {
-            _activeCountdowns[uid] = new ActiveCountdown(uid, callback, state)
+            StopCountdown(uid);
+
+            _activeCountdowns.Add(new ActiveCountdown(uid, callback, state)
             {
                 TimeLeft = timeLeft
-            };
+            });
         }
 
         return uid;
@@ -170,7 +173,7 @@ public sealed class SchedulerService : WirehomeCoreService
 
         lock (_activeCountdowns)
         {
-            return _activeCountdowns.Remove(uid);
+            return _activeCountdowns.RemoveAll(i => i.Uid.Equals(uid)) > 0;
         }
     }
 
@@ -198,7 +201,7 @@ public sealed class SchedulerService : WirehomeCoreService
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, $"Error while stopping thread '{uid}'.");
+            _logger.LogError(exception, "Error while stopping thread '{0}'", uid);
         }
 
         return false;
@@ -283,29 +286,29 @@ public sealed class SchedulerService : WirehomeCoreService
     {
         lock (_activeCountdowns)
         {
-            var activeCountdowns = _activeCountdowns.ToList();
-
-            foreach (var activeCountdown in activeCountdowns)
+            for (var i = _activeCountdowns.Count - 1; i >= 0; i--)
             {
-                activeCountdown.Value.TimeLeft -= elapsed;
+                var activeCountdown = _activeCountdowns[i];
 
-                if (activeCountdown.Value.TimeLeft > TimeSpan.Zero)
+                activeCountdown.TimeLeft -= elapsed;
+
+                if (activeCountdown.TimeLeft > TimeSpan.Zero)
                 {
                     continue;
                 }
 
-                _activeCountdowns.Remove(activeCountdown.Key);
-                _logger.LogTrace($"Countdown '{activeCountdown.Key}' elapsed. Invoking callback.");
+                StopCountdown(activeCountdown.Uid);
+                _logger.LogTrace("Countdown '{0}' elapsed. Invoking callback", activeCountdown.Uid);
 
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
                     try
                     {
-                        activeCountdown.Value.Callback.Invoke(new CountdownElapsedParameters(activeCountdown.Key, activeCountdown.Value.State));
+                        activeCountdown.Callback.Invoke(new CountdownElapsedParameters(activeCountdown.Uid, activeCountdown.State));
                     }
                     catch (Exception exception)
                     {
-                        _logger.LogError(exception, $"Error while executing callback of countdown '{activeCountdown.Key}'.");
+                        _logger.LogError(exception, "Error while executing callback of countdown '{0}'", activeCountdown.Uid);
                     }
                 });
             }

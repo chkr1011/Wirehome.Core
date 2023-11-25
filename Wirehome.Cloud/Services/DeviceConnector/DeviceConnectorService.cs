@@ -211,7 +211,7 @@ public class DeviceConnectorService
         {
             foreach (var header in responseContent.Headers)
             {
-                httpResponse.Headers.Add(header.Key, new StringValues(header.Value));
+                httpResponse.Headers[header.Key] = new StringValues(header.Value);
             }
         }
 

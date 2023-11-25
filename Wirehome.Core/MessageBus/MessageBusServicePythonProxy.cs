@@ -1,6 +1,7 @@
 ﻿#pragma warning disable IDE1006 // Naming Styles
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedType.Global
 
 using System;
 using IronPython.Runtime;
@@ -28,6 +29,11 @@ public sealed class MessageBusServicePythonProxy : IInjectedPythonProxy
 
     public string subscribe(string uid, PythonDictionary filter, MessageCallback callback)
     {
+        if (callback == null)
+        {
+            throw new ArgumentNullException(nameof(callback));
+        }
+
         return _messageBusService.Subscribe(uid, filter, m => { callback(PythonConvert.ToPythonDictionary(m)); });
     }
 

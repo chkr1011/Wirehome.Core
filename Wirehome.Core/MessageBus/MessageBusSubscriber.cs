@@ -10,8 +10,8 @@ public sealed class MessageBusSubscriber
 {
     readonly Action<IDictionary<object, object>> _callback;
     readonly ILogger _logger;
-    long _faultedMessagesCount;
 
+    long _faultedMessagesCount;
     long _processedMessagesCount;
 
     public MessageBusSubscriber(string uid, IDictionary<object, object> filter, Action<IDictionary<object, object>> callback, ILogger logger)
@@ -36,7 +36,7 @@ public sealed class MessageBusSubscriber
 
     public long FaultedMessagesCount => Interlocked.Read(ref _faultedMessagesCount);
 
-    public IDictionary<string, string> Filter { get; }
+    public Dictionary<string, string> Filter { get; }
 
     public long ProcessedMessagesCount => Interlocked.Read(ref _processedMessagesCount);
 
@@ -57,9 +57,9 @@ public sealed class MessageBusSubscriber
         }
         catch (Exception exception)
         {
-            if (!(exception is OperationCanceledException))
+            if (exception is not OperationCanceledException)
             {
-                _logger.LogError(exception, $"Error while processing bus message for subscriber '{Uid}'.");
+                _logger.LogError(exception, "Error while processing bus message for subscriber '{0}'", Uid);
             }
 
             Interlocked.Increment(ref _faultedMessagesCount);
