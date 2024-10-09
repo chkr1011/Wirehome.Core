@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Wirehome.Core.Foundation;
 
-namespace Wirehome.Core.Hardware.MQTT;
+namespace Wirehome.Core.Hardware.MQTT.TopicImport;
 
 public sealed class MqttTopicImportManager : IDisposable
 {
@@ -39,11 +39,11 @@ public sealed class MqttTopicImportManager : IDisposable
         }
     }
 
-    public async Task<string> StartTopicImport(string uid, MqttImportTopicParameters parameters)
+    public async Task<string> StartTopicImport(string uid, MqttTopicImportOptions options)
     {
-        if (parameters == null)
+        if (options == null)
         {
-            throw new ArgumentNullException(nameof(parameters));
+            throw new ArgumentNullException(nameof(options));
         }
 
         if (string.IsNullOrEmpty(uid))
@@ -51,7 +51,7 @@ public sealed class MqttTopicImportManager : IDisposable
             uid = Guid.NewGuid().ToString("D");
         }
 
-        var importer = new MqttTopicImporter(parameters, _mqttService, _logger);
+        var importer = new MqttTopicImporter(options, _mqttService, _logger);
         await importer.Start().ConfigureAwait(false);
 
         await _importersLock.EnterAsync().ConfigureAwait(false);
@@ -69,7 +69,7 @@ public sealed class MqttTopicImportManager : IDisposable
             _importersLock.Exit();
         }
 
-        _logger.Log(LogLevel.Information, "Started importer '{0}' for topic '{1}' from server '{2}'.", uid, parameters.Topic, parameters.Server);
+        _logger.Log(LogLevel.Information, "Started importer '{0}' for topic '{1}' from server '{2}'.", uid, options.Topic, options.Server);
         return uid;
     }
 

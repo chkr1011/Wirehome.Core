@@ -43,11 +43,11 @@ public sealed class MessageBusSender
                 //
                 // var mqttPayload = new ArraySegment<byte>(buffer, 0, bufferLength).ToArray();
 
-                _mqttService.Publish(new MqttPublishParameters
+                _mqttService.Publish(new MqttPublishOptions
                 {
                     Topic = "wirehome/message_bus",
                     Payload = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(messageBusMessage))
-                });
+                }).GetAwaiter().GetResult();
             }
         }
         catch (Exception exception)

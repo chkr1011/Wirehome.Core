@@ -10,9 +10,13 @@ public sealed class MqttServiceOptions
 
     public List<BlockedMqttMessage> BlockedMessages { get; set; }
 
-    public bool EnableLogging { get; set; } = false;
+    public bool EnableLogging { get; set; }
 
     public bool PersistRetainedMessages { get; set; } = true;
 
     public int ServerPort { get; set; } = 1883;
+
+    public string RemoteServerHost { get; set; }
+
+    public int RemoteServerPort { get; set; } = 1883;
 }

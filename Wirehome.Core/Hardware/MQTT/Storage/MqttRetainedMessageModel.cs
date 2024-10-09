@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using MQTTnet;
 using MQTTnet.Packets;
 using MQTTnet.Protocol;
 
-namespace Wirehome.Core.Hardware.MQTT;
+namespace Wirehome.Core.Hardware.MQTT.Storage;
 
 public sealed class MqttRetainedMessageModel
 {
@@ -30,7 +31,7 @@ public sealed class MqttRetainedMessageModel
 
             // Create a copy of the buffer from the payload segment because 
             // it cannot be serialized and deserialized with the JSON serializer.
-            Payload = message.PayloadSegment.ToArray(),
+            Payload = message.Payload.ToArray(),
             UserProperties = message.UserProperties,
             ResponseTopic = message.ResponseTopic,
             CorrelationData = message.CorrelationData,
@@ -48,7 +49,7 @@ public sealed class MqttRetainedMessageModel
         return new MqttApplicationMessage
         {
             Topic = Topic,
-            PayloadSegment = new ArraySegment<byte>(Payload ?? Array.Empty<byte>()),
+            PayloadSegment = new ArraySegment<byte>(Payload ?? []),
             PayloadFormatIndicator = PayloadFormatIndicator,
             ResponseTopic = ResponseTopic,
             CorrelationData = CorrelationData,

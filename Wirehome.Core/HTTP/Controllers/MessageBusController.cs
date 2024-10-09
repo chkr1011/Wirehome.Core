@@ -33,7 +33,7 @@ public sealed class MessageBusController : Controller
     [ApiExplorerSettings(GroupName = "v1")]
     public void DeletePublishToMqtt()
     {
-        _messageBusService.Sender.PublishToMqtt = false;
+        _messageBusService.DebugMessageSender.PublishToMqtt = false;
     }
 
     [HttpDelete]
@@ -110,7 +110,7 @@ public sealed class MessageBusController : Controller
     [ApiExplorerSettings(GroupName = "v1")]
     public void PostPublishToMqtt()
     {
-        _messageBusService.Sender.PublishToMqtt = true;
+        _messageBusService.DebugMessageSender.PublishToMqtt = true;
     }
 
     [HttpPost]

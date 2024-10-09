@@ -23,18 +23,19 @@
         <PackageReference Include="CoAPnet.Extensions.DTLS" Version="1.2.0" />
         <PackageReference Include="IronPython" Version="3.4.1" />
         <PackageReference Include="IronPython.StdLib" Version="3.4.1" />
-        <PackageReference Include="MessagePack" Version="2.5.171" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.7" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
-        <PackageReference Include="MQTTnet" Version="4.3.6.1152" />
-        <PackageReference Include="MQTTnet.AspNetCore" Version="4.3.6.1152" />
+        <PackageReference Include="MessagePack" Version="2.5.172" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.10" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+        <PackageReference Include="MQTTnet" Version="5.0.0.1214-RC" />
+        <PackageReference Include="MQTTnet.AspNetCore" Version="5.0.0.1214-RC" />
+        <PackageReference Include="MQTTnet.Server" Version="5.0.0.1214-RC" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.6.2" />
-        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.6.2" />
-        <PackageReference Include="System.IO.Packaging" Version="8.0.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.8.1" />
+        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.8.1" />
+        <PackageReference Include="System.IO.Packaging" Version="8.0.1" />
         <PackageReference Include="System.Net.WebSockets.Client" Version="4.3.2" />
     </ItemGroup>
 

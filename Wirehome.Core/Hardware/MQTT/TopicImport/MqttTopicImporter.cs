@@ -1,59 +1,53 @@
 ﻿using System;
-using System.Linq;
+using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
-using MQTTnet.Client;
 using Wirehome.Core.Extensions;
 
-namespace Wirehome.Core.Hardware.MQTT;
+namespace Wirehome.Core.Hardware.MQTT.TopicImport;
 
 public sealed class MqttTopicImporter
 {
     readonly CancellationTokenSource _cancellationTokenSource = new();
     readonly ILogger _logger;
     readonly MqttService _mqttService;
-
-    readonly MqttImportTopicParameters _parameters;
+    readonly MqttTopicImportOptions _options;
 
     IMqttClient _mqttClient;
-    MqttClientOptions _options;
+    MqttClientOptions _mqttClientOptions;
 
-    public MqttTopicImporter(MqttImportTopicParameters parameters, MqttService mqttService, ILogger logger)
+    public MqttTopicImporter(MqttTopicImportOptions options, MqttService mqttService, ILogger logger)
     {
-        _parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
         _mqttService = mqttService ?? throw new ArgumentNullException(nameof(mqttService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task Start()
     {
-        var optionsBuilder = new MqttClientOptionsBuilder().WithTcpServer(_parameters.Server, _parameters.Port).WithCredentials(_parameters.Username, _parameters.Password)
-            .WithClientId(_parameters.ClientId).WithTlsOptions(o => o.UseTls(_parameters.UseTls));
+        var optionsBuilder = new MqttClientOptionsBuilder().WithTcpServer(_options.Server, _options.Port).WithCredentials(_options.Username, _options.Password)
+            .WithClientId(_options.ClientId).WithTlsOptions(o => o.UseTls(_options.UseTls));
 
-        if (!string.IsNullOrEmpty(_parameters.ClientId))
+        if (!string.IsNullOrEmpty(_options.ClientId))
         {
-            optionsBuilder = optionsBuilder.WithClientId(_parameters.ClientId);
+            optionsBuilder = optionsBuilder.WithClientId(_options.ClientId);
         }
 
-        _options = optionsBuilder.Build();
+        _mqttClientOptions = optionsBuilder.Build();
 
-        if (_mqttService.IsLowLevelMqttLoggingEnabled)
+        if (_options.EnableLogging)
         {
-            _mqttClient = new MqttFactory(new LoggerAdapter(_logger)).CreateMqttClient();
+            _mqttClient = new MqttClientFactory(new LoggerAdapter(_logger)).CreateMqttClient();
         }
         else
         {
-            _mqttClient = new MqttFactory().CreateMqttClient();
+            _mqttClient = new MqttClientFactory().CreateMqttClient();
         }
 
-        await _mqttClient.SubscribeAsync(_parameters.Topic, _parameters.QualityOfServiceLevel).ConfigureAwait(false);
-        _mqttClient.ApplicationMessageReceivedAsync += e =>
-        {
-            OnApplicationMessageReceived(e);
-            return Task.CompletedTask;
-        };
+        await _mqttClient.SubscribeAsync(_options.Topic, _options.QualityOfServiceLevel).ConfigureAwait(false);
+        _mqttClient.ApplicationMessageReceivedAsync += OnApplicationMessageReceived;
 
         _ = Task.Run(() => MaintainConnectionLoop(_cancellationTokenSource.Token), _cancellationTokenSource.Token).Forget(_logger);
     }
@@ -62,7 +56,7 @@ public sealed class MqttTopicImporter
     {
         try
         {
-            _cancellationTokenSource?.Cancel();
+            await _cancellationTokenSource.CancelAsync();
 
             if (_mqttClient != null)
             {
@@ -84,7 +78,7 @@ public sealed class MqttTopicImporter
             {
                 if (!_mqttClient.IsConnected)
                 {
-                    await _mqttClient.ConnectAsync(_options, cancellationToken).ConfigureAwait(false);
+                    await _mqttClient.ConnectAsync(_mqttClientOptions, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exception)
@@ -98,12 +92,12 @@ public sealed class MqttTopicImporter
         }
     }
 
-    void OnApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
+    Task OnApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
     {
-        _mqttService.Publish(new MqttPublishParameters
+        return _mqttService.Publish(new MqttPublishOptions
         {
             Topic = e.ApplicationMessage.Topic,
-            Payload = e.ApplicationMessage.PayloadSegment.Array,
+            Payload = e.ApplicationMessage.Payload.ToArray(),
             QualityOfServiceLevel = e.ApplicationMessage.QualityOfServiceLevel,
             Retain = e.ApplicationMessage.Retain
         });

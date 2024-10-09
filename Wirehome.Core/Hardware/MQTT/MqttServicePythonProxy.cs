@@ -5,12 +5,12 @@
 // ReSharper disable UnusedType.Global
 
 using System;
-using System.Text;
+using System.Buffers;
 using IronPython.Runtime;
 using MQTTnet;
 using MQTTnet.Adapter;
-using MQTTnet.Client;
 using MQTTnet.Protocol;
+using Wirehome.Core.Hardware.MQTT.TopicImport;
 using Wirehome.Core.Python;
 using Wirehome.Core.Python.Models;
 
@@ -45,13 +45,13 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
         var qos = Convert.ToInt32(parameters.get("qos", 0));
         var retain = Convert.ToBoolean(parameters.get("retain", FalseBox));
 
-        _mqttService.Publish(new MqttPublishParameters
+        _mqttService.Publish(new MqttPublishOptions
         {
             Topic = topic,
             Payload = PythonConvert.ToPayload(payload),
             QualityOfServiceLevel = (MqttQualityOfServiceLevel)qos,
             Retain = retain
-        });
+        }).GetAwaiter().GetResult();
     }
 
     public static PythonDictionary publish_external(PythonDictionary parameters)
@@ -73,7 +73,7 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
         var timeout = Convert.ToInt32(parameters.get("timeout", 5000));
         var payload = parameters.get("payload", null);
 
-        var mqttClient = new MqttFactory().CreateMqttClient();
+        var mqttClient = new MqttClientFactory().CreateMqttClient();
         try
         {
             var options = new MqttClientOptionsBuilder().WithTcpServer(server, port).WithCredentials(username, password).WithClientId(clientId)
@@ -116,7 +116,7 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
             throw new ArgumentNullException(nameof(parameters));
         }
 
-        var topicImportParameters = new MqttImportTopicParameters
+        var topicImportParameters = new MqttTopicImportOptions
         {
             Server = Convert.ToString(parameters.get("server")),
             Port = Convert.ToInt32(parameters.get("port", 1883)),
@@ -125,6 +125,7 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
             Password = Convert.ToString(parameters.get("password")),
             ClientId = Convert.ToString(parameters.get("client_id", Guid.NewGuid().ToString("N"))),
             Topic = Convert.ToString(parameters.get("topic")),
+            EnableLogging = Convert.ToBoolean(parameters.get("enable_logging", FalseBox)),
             QualityOfServiceLevel = (MqttQualityOfServiceLevel)Convert.ToInt32(parameters.get("qos"))
         };
 
@@ -150,7 +151,7 @@ public sealed class MqttServicePythonProxy : IInjectedPythonProxy
 
         return _mqttService.Subscribe(uid, topic_filter, eventArgs =>
         {
-            var payload = eventArgs.ApplicationMessage.PayloadSegment.ToArray();
+            var payload = eventArgs.ApplicationMessage.Payload.ToArray();
 
             var pythonMessage = new PythonDictionary
             {

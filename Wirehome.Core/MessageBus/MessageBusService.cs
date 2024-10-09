@@ -39,7 +39,7 @@ public sealed class MessageBusService : WirehomeCoreService
         MqttService mqttService,
         ILogger<MessageBusService> logger)
     {
-        Sender = new MessageBusSender(mqttService);
+        DebugMessageSender = new MessageBusSender(mqttService);
 
         _systemCancellationToken = systemCancellationToken ?? throw new ArgumentNullException(nameof(systemCancellationToken));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -68,7 +68,7 @@ public sealed class MessageBusService : WirehomeCoreService
         systemStatusService.Set("message_bus.processing_rate", () => _processingRateCounter.Count);
     }
 
-    public MessageBusSender Sender { get; }
+    public MessageBusSender DebugMessageSender { get; }
 
     public void ClearHistory()
     {
@@ -107,7 +107,7 @@ public sealed class MessageBusService : WirehomeCoreService
             EnqueuedTimestamp = DateTime.UtcNow
         };
 
-        Sender.TrySend(busMessage);
+        DebugMessageSender.TrySend(busMessage);
 
         _messageQueue.Add(busMessage);
 

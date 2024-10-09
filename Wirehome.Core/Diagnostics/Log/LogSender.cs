@@ -20,7 +20,7 @@ public sealed class LogSender
 
     public bool PublishToMqtt { get; set; }
 
-    public IPEndPoint UdpReceiverEndPoint { get; set; } = new(IPAddress.Parse("192.168.1.120"), 55521);
+    public IPEndPoint UdpReceiverEndPoint { get; set; }
 
     public void TrySend(LogEntry logEntry)
     {
@@ -54,11 +54,12 @@ public sealed class LogSender
                 if (PublishToMqtt)
                 {
                     var mqttPayload = new ArraySegment<byte>(buffer, 0, bufferLength).ToArray();
-                    _mqttService.Publish(new MqttPublishParameters
+
+                    _mqttService.Publish(new MqttPublishOptions
                     {
                         Topic = "wirehome/log",
                         Payload = mqttPayload
-                    });
+                    }).GetAwaiter().GetResult();
                 }
             }
         }

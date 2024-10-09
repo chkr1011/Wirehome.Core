@@ -1,11 +1,10 @@
-﻿using System;
-using MQTTnet.Protocol;
+﻿using MQTTnet.Protocol;
 
 namespace Wirehome.Core.Hardware.MQTT;
 
-public sealed class MqttPublishParameters
+public sealed class MqttPublishOptions
 {
-    public byte[] Payload { get; set; } = Array.Empty<byte>();
+    public byte[] Payload { get; set; } = [];
 
     public MqttQualityOfServiceLevel QualityOfServiceLevel { get; set; } = MqttQualityOfServiceLevel.AtMostOnce;
 

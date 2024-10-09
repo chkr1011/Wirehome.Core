@@ -7,6 +7,7 @@ using MQTTnet;
 using MQTTnet.Protocol;
 using MQTTnet.Server;
 using Wirehome.Core.Hardware.MQTT;
+using Wirehome.Core.Hardware.MQTT.TopicImport;
 using Wirehome.Core.HTTP.Controllers.Models;
 using Wirehome.Core.HTTP.Filters;
 
@@ -38,12 +39,12 @@ public sealed class MqttController : Controller
     [HttpDelete]
     [Route("api/v1/mqtt/retained_messages/{topic}")]
     [ApiExplorerSettings(GroupName = "v1")]
-    public void DeleteRetainedMessage(string topic)
+    public Task DeleteRetainedMessage(string topic)
     {
-        _mqttService.Publish(new MqttPublishParameters
+        return _mqttService.Publish(new MqttPublishOptions
         {
             Topic = topic,
-            Payload = Array.Empty<byte>(),
+            Payload = [],
             QualityOfServiceLevel = MqttQualityOfServiceLevel.AtMostOnce,
             Retain = true
         });
@@ -111,19 +112,19 @@ public sealed class MqttController : Controller
     [HttpPost]
     [Route("/api/v1/mqtt/imports/{uid}")]
     [ApiExplorerSettings(GroupName = "v1")]
-    public Task PostImport(string uid, [FromBody] MqttImportTopicParameters parameters)
+    public Task PostImport(string uid, [FromBody] MqttTopicImportOptions options)
     {
         if (uid == null)
         {
             throw new ArgumentNullException(nameof(uid));
         }
 
-        if (parameters == null)
+        if (options == null)
         {
-            throw new ArgumentNullException(nameof(parameters));
+            throw new ArgumentNullException(nameof(options));
         }
 
-        return _mqttService.StartTopicImport(uid, parameters);
+        return _mqttService.StartTopicImport(uid, options);
     }
 
     [HttpPost]
@@ -143,12 +144,12 @@ public sealed class MqttController : Controller
             await Request.Body.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
         }
 
-        _mqttService.Publish(new MqttPublishParameters
+        await _mqttService.Publish(new MqttPublishOptions
         {
             Topic = topic,
             Payload = buffer,
             QualityOfServiceLevel = (MqttQualityOfServiceLevel)qos,
             Retain = retain
-        });
+        }).ConfigureAwait(false);
     }
 }

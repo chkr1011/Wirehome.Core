@@ -8,7 +8,7 @@ using Wirehome.Core.Extensions;
 using Wirehome.Core.Storage;
 using Wirehome.Core.System;
 
-namespace Wirehome.Core.Hardware.MQTT;
+namespace Wirehome.Core.Hardware.MQTT.Storage;
 
 public sealed class MqttServerStorage
 {
@@ -64,12 +64,12 @@ public sealed class MqttServerStorage
             try
             {
                 List<MqttApplicationMessage> messages;
-                
+
                 if (!_messagesHaveChanged)
                 {
                     continue;
                 }
-                
+
                 lock (_messagesSyncRoot)
                 {
                     messages = _messages;
@@ -92,6 +92,4 @@ public sealed class MqttServerStorage
             }
         }
     }
-
-   
 }
