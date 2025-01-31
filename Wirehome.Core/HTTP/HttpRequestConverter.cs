@@ -93,7 +93,7 @@ public sealed class HttpRequestConverter
         if (context.Request.ContentLength.HasValue)
         {
             body = new byte[context.Request.ContentLength.Value];
-            context.Request.Body.Read(body, 0, body.Length);
+            context.Request.Body.ReadExactly(body);
         }
 
         return new Dictionary<object, object>
@@ -111,7 +111,7 @@ public sealed class HttpRequestConverter
             ["connection"] = new Dictionary<object, object>
             {
                 ["id"] = context.Connection.Id,
-                ["remote_address"] = context.Connection.RemoteIpAddress.ToString()
+                ["remote_address"] = context.Connection.RemoteIpAddress?.ToString()
             }
         };
     }

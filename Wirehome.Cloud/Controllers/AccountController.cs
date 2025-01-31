@@ -12,7 +12,6 @@ using Wirehome.Cloud.Services.Authorization;
 
 namespace Wirehome.Cloud.Controllers;
 
-[AllowAnonymous]
 public class AccountController : Controller
 {
     readonly AuthorizationService _authorizationService;
@@ -22,6 +21,7 @@ public class AccountController : Controller
         _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
     }
 
+    [AllowAnonymous]
     [Route("cloud/account/channel/{channelUid}/token")]
     [HttpGet]
     public async Task<IActionResult> GetToken(string channelUid, string refreshToken = null)
@@ -54,6 +54,7 @@ public class AccountController : Controller
         return new ObjectResult(newAccessToken);
     }
 
+    [AllowAnonymous]
     [Route("cloud/account")]
     [Route("cloud/account/index")]
     [HttpGet]
@@ -62,6 +63,7 @@ public class AccountController : Controller
         return View(nameof(Index), new LoginModel());
     }
 
+    [AllowAnonymous]
     [Route("cloud/account/login")]
     [HttpGet]
     public IActionResult Login(string returnUrl)
@@ -72,6 +74,7 @@ public class AccountController : Controller
         });
     }
 
+    [AllowAnonymous]
     [Route("cloud/account/login")]
     [HttpPost]
     public async Task<IActionResult> Login(LoginModel model)
@@ -95,6 +98,7 @@ public class AccountController : Controller
         return Redirect(nameof(Index));
     }
 
+    [AllowAnonymous]
     [Route("cloud/account/logout")]
     [HttpPost]
     public async Task<IActionResult> Logout()

@@ -7,8 +7,6 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-        <WarningsAsErrors />
         <NoWarn>1701;1702;CA1031;IDE1006</NoWarn>
     </PropertyGroup>
 
@@ -21,22 +19,21 @@
     <ItemGroup>
         <PackageReference Include="CoAPnet" Version="1.2.0" />
         <PackageReference Include="CoAPnet.Extensions.DTLS" Version="1.2.0" />
-        <PackageReference Include="IronPython" Version="3.4.1" />
-        <PackageReference Include="IronPython.StdLib" Version="3.4.1" />
-        <PackageReference Include="MessagePack" Version="2.5.172" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.10" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
-        <PackageReference Include="MQTTnet" Version="5.0.0.1214-RC" />
-        <PackageReference Include="MQTTnet.AspNetCore" Version="5.0.0.1214-RC" />
-        <PackageReference Include="MQTTnet.Server" Version="5.0.0.1214-RC" />
+        <PackageReference Include="IronPython" Version="3.4.2" />
+        <PackageReference Include="IronPython.StdLib" Version="3.4.2" />
+        <PackageReference Include="MessagePack" Version="3.1.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.11" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.1" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
+        <PackageReference Include="MQTTnet" Version="5.0.1.1416" />
+        <PackageReference Include="MQTTnet.AspNetCore" Version="5.0.1.1416" />
+        <PackageReference Include="MQTTnet.Server" Version="5.0.1.1416" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.8.1" />
-        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.8.1" />
-        <PackageReference Include="System.IO.Packaging" Version="8.0.1" />
-        <PackageReference Include="System.Net.WebSockets.Client" Version="4.3.2" />
+        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.2.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.2.0" />
+        <PackageReference Include="System.IO.Packaging" Version="9.0.1" />
     </ItemGroup>
 
     <ItemGroup>

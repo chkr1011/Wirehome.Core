@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Formatter;
-using MQTTnet.Protocol;
 using MQTTnet.Server;
 using Wirehome.Core.System;
 
@@ -127,7 +126,7 @@ public sealed class MqttClientBackend : IMqttBackend
 
     Task OnApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs eventArgs)
     {
-        var interceptingPublish = new InterceptingPublishEventArgs(eventArgs.ApplicationMessage, CancellationToken.None, "CLIENT", SessionItems);
+        var interceptingPublish = new InterceptingPublishEventArgs(eventArgs.ApplicationMessage, CancellationToken.None, "", "", SessionItems);
 
         MessageReceived?.Invoke(this, interceptingPublish);
 

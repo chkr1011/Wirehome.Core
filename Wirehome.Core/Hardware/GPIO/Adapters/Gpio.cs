@@ -21,18 +21,16 @@ public sealed class Gpio
 
     public GpioState Read()
     {
-        using (var fileStream = File.OpenRead(_valuePath))
+        using var fileStream = File.OpenRead(_valuePath);
+        fileStream.ReadExactly(_readBuffer, 0, 1);
+
+        // ASCII '1' is DEC 49.
+        if (_readBuffer[0] == 49)
         {
-            fileStream.Read(_readBuffer, 0, 1);
-
-            // ASCII '1' is DEC 49.
-            if (_readBuffer[0] == 49)
-            {
-                return GpioState.High;
-            }
-
-            return GpioState.Low;
+            return GpioState.High;
         }
+
+        return GpioState.Low;
     }
 
     public void SetDirection(GpioDirection direction)
@@ -46,18 +44,16 @@ public sealed class Gpio
 
     public void Write(GpioState state)
     {
-        using (var fileStream = File.OpenWrite(_valuePath))
+        using var fileStream = File.OpenWrite(_valuePath);
+        if (state == GpioState.Low)
         {
-            if (state == GpioState.Low)
-            {
-                // ASCII '0' is DEC 48.
-                fileStream.WriteByte(48);
-            }
-            else
-            {
-                // ASCII '1' is DEC 49.
-                fileStream.WriteByte(49);
-            }
+            // ASCII '0' is DEC 48.
+            fileStream.WriteByte(48);
+        }
+        else
+        {
+            // ASCII '1' is DEC 49.
+            fileStream.WriteByte(49);
         }
     }
 }
